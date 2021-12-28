@@ -20,6 +20,7 @@ using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Models.SaturnAPI;
 using Saturn.Backend.Data.Utils;
+using Saturn.Backend.Data.Utils.FortniteUtils;
 using Serilog;
 
 namespace Saturn.Backend.Data.Services
@@ -226,7 +227,7 @@ namespace Saturn.Backend.Data.Services
 
                                 await ItemUtil.UpdateStatus(item, option, "Checking for customs", Colors.C_YELLOW);
                                 Dictionary<long, byte[]> lengths = new();
-                                if (!await TryHandleOffsets(asset, compressed.Length, data.Length, lengths, file))
+                                if (!await CustomAssets.TryHandleOffsets(asset, compressed.Length, data.Length, lengths, file, _saturnAPIService))
                                     Logger.Log(
                                         $"Unable to apply custom assets to '{asset.ParentAsset}.' Asset might not have custom assets at all!",
                                         LogLevel.Error);
@@ -305,8 +306,8 @@ namespace Saturn.Backend.Data.Services
 
                                 await ItemUtil.UpdateStatus(item, option, "Checking for customs", Colors.C_YELLOW);
                                 Dictionary<long, byte[]> lengths = new();
-                                if (!await TryHandleOffsets(asset, compressedData.Length, decompressedData.Length,
-                                    lengths, file))
+                                if (!await CustomAssets.TryHandleOffsets(asset, compressedData.Length, decompressedData.Length,
+                                    lengths, file, _saturnAPIService))
                                     Logger.Log(
                                         $"Unable to apply custom assets to '{asset.ParentAsset}.' Asset might not have custom assets at all!",
                                         LogLevel.Error);
@@ -428,7 +429,7 @@ namespace Saturn.Backend.Data.Services
 
                                 await ItemUtil.UpdateStatus(item, option, "Checking for customs", Colors.C_YELLOW);
                                 Dictionary<long, byte[]> lengths = new();
-                                if (!await TryHandleOffsets(asset, compressed.Length, data.Length, lengths, file))
+                                if (!await CustomAssets.TryHandleOffsets(asset, compressed.Length, data.Length, lengths, file, _saturnAPIService))
                                     Logger.Log(
                                         $"Unable to apply custom assets to '{asset.ParentAsset}.' Asset might not have custom assets at all!",
                                         LogLevel.Error);
@@ -555,7 +556,7 @@ namespace Saturn.Backend.Data.Services
                                 file = file.Replace("ucas", "utoc");
                                 
                                 Dictionary<long, byte[]> lengths = new();
-                                if (!await TryHandleOffsets(asset, compressed.Length, data.Length, lengths, file))
+                                if (!await CustomAssets.TryHandleOffsets(asset, compressed.Length, data.Length, lengths, file, _saturnAPIService))
                                     Logger.Log(
                                         $"Unable to apply custom offsets to '{asset.ParentAsset}.' Asset might not have custom assets at all!",
                                         LogLevel.Error);
@@ -1463,119 +1464,6 @@ namespace Saturn.Backend.Data.Services
             }
         }
 
-        public async Task<bool> TryHandleOffsets(SaturnAsset asset, int compressedLength, int decompressedLength,
-            Dictionary<long, byte[]> lengths, string file)
-        {
-            try
-            {
-                if (asset.ParentAsset.Contains("DefaultGameDataCosmetics") 
-                    || asset.ParentAsset.Contains("EID_DanceMoves") 
-                    || asset.ParentAsset.Contains("CP_Head_F_ScholarFestiveWinter") 
-                    || asset.ParentAsset.Contains("CP_Body_Commando_F_ScholarFestiveWinter") 
-                    || asset.ParentAsset.Contains("CP_F_MED_ScholarFestiveWinter_FaceAcc"))
-                {
-                    Offsets assetData;
-                    if (asset.ParentAsset.Contains("DefaultGameDataCosmetics"))
-                        assetData = await _saturnAPIService.GetOffsets("DefaultGameDataCosmetics");
-                    else if (asset.ParentAsset.Contains("EID_DanceMoves"))
-                        assetData = await _saturnAPIService.GetOffsets("EID_DanceMoves");
-                    else if (asset.ParentAsset.Contains("CP_Head_F_ScholarFestiveWinter"))
-                        assetData = await _saturnAPIService.GetOffsets("CP_Head_F_ScholarFestiveWinter");
-                    else if (asset.ParentAsset.Contains("CP_Body_Commando_F_ScholarFestiveWinter"))
-                        assetData = await _saturnAPIService.GetOffsets("CP_Body_Commando_F_ScholarFestiveWinter");
-                    else if (asset.ParentAsset.Contains("CP_F_MED_ScholarFestiveWinter_FaceAcc"))
-                        assetData = await _saturnAPIService.GetOffsets("CP_F_MED_ScholarFestiveWinter_FaceAcc");
-                    else
-                        return false;
-
-                    var n = 1;
-
-                    #region Handling compressed offsets
-
-                    foreach (var compressedOffset in assetData.CompressedOffsets)
-                        if (n == 1)
-                        {
-                            lengths.Add(compressedOffset,
-                                FileUtil.GetBytes(
-                                    await File.ReadAllBytesAsync(Path.Combine(FortniteUtil.PakPath, file)),
-                                    compressedOffset, 2));
-
-                            FileUtil.WriteIntToFile(Path.Combine(FortniteUtil.PakPath, file),
-                                compressedOffset, compressedLength);
-
-                            n++;
-                        }
-                        else
-                        {
-                            lengths.Add(compressedOffset,
-                                FileUtil.GetBytes(
-                                    await File.ReadAllBytesAsync(Path.Combine(FortniteUtil.PakPath, file)),
-                                    compressedOffset, 2));
-
-                            FileUtil.WriteHexToFile(Path.Combine(FortniteUtil.PakPath, file),
-                                compressedOffset, FileUtil.IntToHex(compressedLength));
-
-                            n++;
-                        }
-
-                    #endregion
-
-                    n = 1;
-
-                    #region Handling decompressed offsets
-
-                    foreach (var decompressedOffset in assetData.DecompressedOffsets)
-                        if (n == 1)
-                        {
-                            lengths.Add(decompressedOffset,
-                                FileUtil.GetBytes(
-                                    await File.ReadAllBytesAsync(Path.Combine(FortniteUtil.PakPath, file)),
-                                    decompressedOffset, 2));
-
-                            FileUtil.WriteIntToFile(Path.Combine(FortniteUtil.PakPath, file),
-                                decompressedOffset, decompressedLength);
-
-                            n++;
-                        }
-#if !DEBUG
-								    else if (n == 2)
-								    {
-									    lengths.Add(decompressedOffset,
-							                FileUtil.GetBytes(
-								                await File.ReadAllBytesAsync(Path.Combine(FortniteUtil.PakPath, file)),
-								                decompressedOffset, 2));
-
-						                FileUtil.WriteHexToFile(Path.Combine(FortniteUtil.PakPath, file),
-							                decompressedOffset, FileUtil.IntToHex(decompressedLength + 20));
-
-						                n++;
-								    }
-#endif
-                        else
-                        {
-                            lengths.Add(decompressedOffset,
-                                FileUtil.GetBytes(
-                                    await File.ReadAllBytesAsync(Path.Combine(FortniteUtil.PakPath, file)),
-                                    decompressedOffset, 2));
-
-                            FileUtil.WriteHexToFile(Path.Combine(FortniteUtil.PakPath, file),
-                                decompressedOffset, FileUtil.IntToHex(decompressedLength));
-
-                            n++;
-                        }
-
-                    #endregion
-
-                    return true;
-                }
-                return false;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         private bool TryExportAsset(string asset, out byte[] data)
         {
             data = null;
@@ -1604,160 +1492,6 @@ namespace Saturn.Backend.Data.Services
             {
                 Logger.Log($"Failed to export asset \"{asset}\"! Reason: {e.Message}", LogLevel.Error);
                 return false;
-            }
-        }
-
-        private static void EditCustomAsset(ref byte[] data, string search, string replace)
-        {
-            var searchBytes = Encoding.Default.GetBytes(search);
-            var replaceBytes = Encoding.Default.GetBytes(replace);
-
-            var offset = 0;
-
-            while (offset < data.Length)
-            {
-                var found = true;
-                for (var i = 0; i < searchBytes.Length; i++)
-                {
-                    if (data[offset + i] == searchBytes[i])
-                        continue;
-
-                    found = false;
-                    break;
-                }
-
-                if (!found)
-                {
-                    offset++;
-                    continue;
-                }
-
-                for (var i = 0; i < replaceBytes.Length; i++)
-                    data[offset + i] = replaceBytes[i];
-
-                break;
-            }
-        }
-
-        private static void EditAsset(ref byte[] data, string search, string replace, string asset)
-        {
-            var searchBytes = Encoding.Default.GetBytes(search);
-            var replaceBytes = Encoding.Default.GetBytes(replace);
-
-            var diff = search.Length - replace.Length;
-            if (diff < 0)
-            {
-                Logger.Log("Difference is less than 0!", LogLevel.Warning);
-                //AnyLength.ReplaceAnyLength(ref data, searchBytes, replaceBytes);
-                return;
-            }
-
-            AddInvalidBytes(ref replaceBytes, diff);
-
-            var offset = 0;
-
-            while (offset < data.Length)
-            {
-                var found = true;
-                for (var i = 0; i < searchBytes.Length; i++)
-                {
-                    if (data[offset + i] == searchBytes[i])
-                        continue;
-
-                    found = false;
-                    break;
-                }
-
-                if (!found)
-                {
-                    offset++;
-                    continue;
-                }
-
-                for (var i = 0; i < replaceBytes.Length; i++)
-                    data[offset + i] = replaceBytes[i];
-
-                break;
-            }
-        }
-
-        private static void EditAsset(ref byte[] data, byte[] searchBytes, string replace, string asset)
-        {
-            var replaceBytes = Encoding.Default.GetBytes(replace);
-
-            var diff = searchBytes.Length - replace.Length;
-            if (diff < 0)
-            {
-                Logger.Log("Difference is less than 0!", LogLevel.Warning);
-                //AnyLength.ReplaceAnyLength(ref data, searchBytes, replaceBytes);
-                return;
-            }
-
-            AddInvalidBytes(ref replaceBytes, diff);
-
-            var offset = 0;
-
-            while (offset < data.Length)
-            {
-                var found = true;
-                for (var i = 0; i < searchBytes.Length; i++)
-                {
-                    if (data[offset + i] == searchBytes[i])
-                        continue;
-
-                    found = false;
-                    break;
-                }
-
-                if (!found)
-                {
-                    offset++;
-                    continue;
-                }
-
-                for (var i = 0; i < replaceBytes.Length; i++)
-                    data[offset + i] = replaceBytes[i];
-
-                break;
-            }
-        }
-        
-        private static void EditAsset(ref byte[] data, byte[] searchBytes, byte[] replaceBytes, string asset)
-        {
-            var diff = searchBytes.Length - replaceBytes.Length;
-            if (diff < 0)
-            {
-                Logger.Log("Difference is less than 0!", LogLevel.Warning);
-                //AnyLength.ReplaceAnyLength(ref data, searchBytes, replaceBytes);
-                return;
-            }
-
-            AddInvalidBytes(ref replaceBytes, diff);
-
-            var offset = 0;
-
-            while (offset < data.Length)
-            {
-                var found = true;
-                for (var i = 0; i < searchBytes.Length; i++)
-                {
-                    if (data[offset + i] == searchBytes[i])
-                        continue;
-
-                    found = false;
-                    break;
-                }
-
-                if (!found)
-                {
-                    offset++;
-                    continue;
-                }
-
-                for (var i = 0; i < replaceBytes.Length; i++)
-                    data[offset + i] = replaceBytes[i];
-
-                break;
             }
         }
 
