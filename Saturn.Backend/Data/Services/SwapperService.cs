@@ -133,17 +133,12 @@ namespace Saturn.Backend.Data.Services
         {
             try
             {
+                option.Status = null;
                 var itemCheck = await IsTypeConverted(itemType);
                 if (itemCheck != null)
                 {
-                    if (isRandom)
-                        await ItemUtil.UpdateStatus(random, option,
-                            $"You already have {itemCheck} converted! Revert it before converting another item of the same type.",
-                            Colors.C_RED);
-                    else
-                        await ItemUtil.UpdateStatus(item, option,
-                            $"You already have {itemCheck} converted! Revert it before converting another item of the same type.",
-                            Colors.C_RED);
+                    option.Status =
+                            $"Revert {itemCheck} before converting another item of the same type.";
                     return false;
                 }
 
@@ -182,339 +177,7 @@ namespace Saturn.Backend.Data.Services
                 else
                     await ItemUtil.UpdateStatus(item, option, "Checking item type");
                 Changes cloudChanges = new();
-
-                if (isDefault)
-                    switch (itemType)
-                    {
-                        case ItemType.IT_Skin:
-
-                            #region AutoSkins
-
-                            await ItemUtil.UpdateStatus(item, option, "Generating swaps", Colors.C_YELLOW);
-                            var skin = await GenerateSwaps(item);
-
-                            foreach (var asset in skin.Assets)
-                            {
-                                Directory.CreateDirectory(Config.CompressedDataPath);
-                                await ItemUtil.UpdateStatus(item, option, "Exporting asset", Colors.C_YELLOW);
-                                if (!TryExportAsset(asset.ParentAsset, out var data))
-                                {
-                                    Logger.Log($"Failed to export \"{asset.ParentAsset}\"!", LogLevel.Error);
-                                    return false;
-                                }
-
-                                var file = SaturnData.Path.Replace("utoc", "ucas");
-
-                                await BackupFile(file, item, option);
-
-                                
-                                if (asset.ParentAsset.ToLower().Contains("defaultgamedatacosmetics"))
-                                    data = new WebClient().DownloadData(new Uri(
-                                        await _saturnAPIService.GetDownloadUrl(
-                                            Path.GetFileNameWithoutExtension(asset.ParentAsset))));
-
-                                try
-                                {
-                                    var changes = _cloudStorageService.GetChanges(Path.GetFileNameWithoutExtension(asset.ParentAsset), item.Id);
-                                    cloudChanges = _cloudStorageService.DecodeChanges(changes);
-                                }
-                                catch
-                                {
-                                    Logger.Log("There was no hotfix found for this item!", LogLevel.Warning);
-                                }
-
-                                if (cloudChanges.SkinName == skin.Name)
-                                {
-                                    if (cloudChanges.Searches[0] != "none")
-                                    {
-                                        Trace.WriteLine("Searches are not empty");
-                                        skin.Assets[skin.Assets.IndexOf(asset)].Swaps = new();
-                                        foreach (var search in cloudChanges.Searches)
-                                        {
-                                            skin.Assets[skin.Assets.IndexOf(asset)].Swaps[cloudChanges.Searches.IndexOf(search)].Search = search;
-                                            skin.Assets[skin.Assets.IndexOf(asset)].Swaps[cloudChanges.Searches.IndexOf(search)].Replace = cloudChanges.Replaces[cloudChanges.Searches.IndexOf(search)];
-                                        }
-                                    }
-                                    
-                                    if (cloudChanges.CharacterParts[0] != "none")
-                                    {
-                                        Trace.WriteLine("CharacterParts are not empty");
-                                        foreach (var swap in skin.Assets[skin.Assets.IndexOf(asset)].Swaps)
-                                            swap.Replace = "/Game/Tamely";
-                                        foreach (var characterPart in cloudChanges.CharacterParts)
-                                            skin.Assets[skin.Assets.IndexOf(asset)].Swaps[cloudChanges.CharacterParts.IndexOf(characterPart)].Replace = characterPart;
-                                    }
-                                        
-                                }
-
-                                cloudChanges = new();
-                                
-
-                                if (!TryIsB64(ref data, asset))
-                                    Logger.Log($"Cannot swap/determine if '{asset.ParentAsset}' is Base64 or not!",
-                                        LogLevel.Fatal);
-                                
-                                var compressed = SaturnData.isCompressed ? Oodle.Compress(data) : data;
-
-                                Directory.CreateDirectory(Config.DecompressedDataPath);
-                                File.SetAttributes(Config.DecompressedDataPath,
-                                    FileAttributes.Hidden | FileAttributes.System);
-                                await File.WriteAllBytesAsync(
-                                    Config.DecompressedDataPath + Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset", data);
-
-
-                                file = file.Replace("WindowsClient", "SaturnClient");
-
-                                await ItemUtil.UpdateStatus(item, option, "Adding asset to UCAS", Colors.C_YELLOW);
-
-                                await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, file), SaturnData.Offset,
-                                    compressed);
-
-                                file = file.Replace("ucas", "utoc");
-
-                                await ItemUtil.UpdateStatus(item, option, "Checking for customs", Colors.C_YELLOW);
-                                Dictionary<long, byte[]> lengths = new();
-                                if (!await CustomAssets.TryHandleOffsets(asset, compressed.Length, data.Length, lengths, file, _saturnAPIService))
-                                    Logger.Log(
-                                        $"Unable to apply custom assets to '{asset.ParentAsset}.' Asset might not have custom assets at all!",
-                                        LogLevel.Error);
-
-                                await ItemUtil.UpdateStatus(item, option, "Adding swap to item's config", Colors.C_YELLOW);
-                                convItem.Swaps.Add(new ActiveSwap
-                                {
-                                    File = file.Replace("utoc", "ucas"),
-                                    Offset = SaturnData.Offset,
-                                    ParentAsset = asset.ParentAsset,
-                                    Lengths = lengths
-                                });
-                            }
-
-                            item.IsConverted = true;
-
-                            sw.Stop();
-
-                            if (!await _configService.AddConvertedItem(convItem))
-                                Logger.Log("Could not add converted item to config!", LogLevel.Error);
-                            else
-                                Logger.Log($"Added {item.Name} to converted items list in config.");
-
-                            _configService.SaveConfig();
-
-                            if (sw.Elapsed.Seconds > 1)
-                                await ItemUtil.UpdateStatus(item, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
-                                    Colors.C_GREEN);
-                            else
-                                await ItemUtil.UpdateStatus(item, option,
-                                    $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
-                            Trace.WriteLine($"Converted in {sw.Elapsed.Seconds} seconds!");
-                            Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
-
-
-                            break;
-
-                        #endregion
-
-                        case ItemType.IT_Backbling:
-                            itemCheck = await IsSkinStillConverted();
-                            if (itemCheck == null)
-                            {
-                                await ItemUtil.UpdateStatus(item, option,
-                                    "You need to have a skin converted before you can add a backpack to it!",
-                                    Colors.C_RED);
-                                return false;
-                            }
-
-                            #region AutoBackblings
-
-                            await ItemUtil.UpdateStatus(item, option, "Generating swaps", Colors.C_YELLOW);
-                            var backbling = await GenerateBackbling(item, option);
-
-                            foreach (var asset in backbling.Assets)
-                            {
-                                await ItemUtil.UpdateStatus(item, option, "Exporting asset", Colors.C_YELLOW);
-                                var decompressedData = await File.ReadAllBytesAsync(Config.DecompressedDataPath +
-                                    "DefaultGameDataCosmetics.uasset");
-
-                                if (!TryIsB64(ref decompressedData, asset))
-                                    Logger.Log($"Cannot swap/determine if '{asset.ParentAsset}' is Base64 or not!",
-                                        LogLevel.Fatal);
-
-                                var compressedData = Oodle.Compress(decompressedData);
-
-                                var keyValuePair = await GetFileNameAndOffsetFromConvertedItems(backbling);
-                                var file = keyValuePair.Keys.FirstOrDefault();
-                                var offset = keyValuePair.Values.FirstOrDefault();
-
-                                await ItemUtil.UpdateStatus(item, option, "Adding asset to UCAS", Colors.C_YELLOW);
-
-                                await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, file), offset, compressedData);
-
-                                file = file.Replace("ucas", "utoc");
-
-                                await ItemUtil.UpdateStatus(item, option, "Checking for customs", Colors.C_YELLOW);
-                                Dictionary<long, byte[]> lengths = new();
-                                if (!await CustomAssets.TryHandleOffsets(asset, compressedData.Length, decompressedData.Length,
-                                    lengths, file, _saturnAPIService))
-                                    Logger.Log(
-                                        $"Unable to apply custom assets to '{asset.ParentAsset}.' Asset might not have custom assets at all!",
-                                        LogLevel.Error);
-
-                                await ItemUtil.UpdateStatus(item, option, "Adding swap to item's config", Colors.C_YELLOW);
-                                convItem.Swaps.Add(new ActiveSwap
-                                {
-                                    File = file.Replace("utoc", "ucas"),
-                                    Offset = offset,
-                                    ParentAsset = asset.ParentAsset,
-                                    Lengths = lengths
-                                });
-                            }
-
-                            item.IsConverted = true;
-
-                            sw.Stop();
-
-                            if (!await _configService.AddConvertedItem(convItem))
-                                Logger.Log("Could not add converted item to config!", LogLevel.Error);
-                            else
-                                Logger.Log($"Added {item.Name} to converted items list in config.");
-
-                            _configService.SaveConfig();
-
-                            if (sw.Elapsed.Seconds > 1)
-                                await ItemUtil.UpdateStatus(item, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
-                                    Colors.C_GREEN);
-                            else
-                                await ItemUtil.UpdateStatus(item, option,
-                                    $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
-                            Trace.WriteLine($"Converted in {sw.Elapsed.Seconds} seconds!");
-                            Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
-
-                            break;
-
-                        #endregion
-                        
-                        case ItemType.IT_Dance:
-                            itemCheck = await IsTypeConverted(ItemType.IT_Dance);
-                            if (itemCheck != null)
-                            {
-                                await ItemUtil.UpdateStatus(item, option,
-                                    $"You need to revert {itemCheck} before you can swap {item.Name}!",
-                                    Colors.C_RED);
-                                return false;
-                            }
-
-                            var emote = await GenerateEmote(item, option);
-                            
-                            foreach (var asset in emote.Assets)
-                            {
-                                Directory.CreateDirectory(Config.CompressedDataPath);
-                                await ItemUtil.UpdateStatus(item, option, "Exporting asset", Colors.C_YELLOW);
-                                if (!TryExportAsset(asset.ParentAsset, out var data))
-                                {
-                                    Logger.Log($"Failed to export \"{asset.ParentAsset}\"!", LogLevel.Error);
-                                    return false;
-                                }
-
-                                var file = SaturnData.Path.Replace("utoc", "ucas");
-
-                                await BackupFile(file, item, option);
-
-
-                                try
-                                {
-                                    data = new WebClient().DownloadData(new Uri(
-                                        await _saturnAPIService.GetDownloadUrl(
-                                            Path.GetFileNameWithoutExtension(asset.ParentAsset))));
-                                }
-                                catch
-                                {
-                                    Logger.Log("There was no custom asset found for this item!", LogLevel.Warning);
-                                }
-
-                                try
-                                {
-                                    var changes = _cloudStorageService.GetChanges(Path.GetFileNameWithoutExtension(asset.ParentAsset), item.Id);
-                                    cloudChanges = _cloudStorageService.DecodeChanges(changes);
-                                }
-                                catch
-                                {
-                                    Logger.Log("There was no hotfix found for this item!", LogLevel.Warning);
-                                }
-
-                                if (cloudChanges.SkinName == emote.Name)
-                                {
-                                    if (cloudChanges.Searches[0] != "none")
-                                    {
-                                        Trace.WriteLine("Searches are not empty");
-                                        emote.Assets[emote.Assets.IndexOf(asset)].Swaps = new();
-                                        foreach (var search in cloudChanges.Searches)
-                                        {
-                                            emote.Assets[emote.Assets.IndexOf(asset)].Swaps[cloudChanges.Searches.IndexOf(search)].Search = search;
-                                            emote.Assets[emote.Assets.IndexOf(asset)].Swaps[cloudChanges.Searches.IndexOf(search)].Replace = cloudChanges.Replaces[cloudChanges.Searches.IndexOf(search)];
-                                        }
-                                    }
-                                }
-
-                                cloudChanges = new();
-                                
-
-                                if (!TryIsB64(ref data, asset))
-                                    Logger.Log($"Cannot swap/determine if '{asset.ParentAsset}' is Base64 or not!",
-                                        LogLevel.Fatal);
-
-                                var compressed = Oodle.Compress(data);
-
-
-                                file = file.Replace("WindowsClient", "SaturnClient");
-
-                                await ItemUtil.UpdateStatus(item, option, "Adding asset to UCAS", Colors.C_YELLOW);
-
-                                await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, file), SaturnData.Offset,
-                                    compressed);
-
-                                file = file.Replace("ucas", "utoc");
-
-                                await ItemUtil.UpdateStatus(item, option, "Checking for customs", Colors.C_YELLOW);
-                                Dictionary<long, byte[]> lengths = new();
-                                if (!await CustomAssets.TryHandleOffsets(asset, compressed.Length, data.Length, lengths, file, _saturnAPIService))
-                                    Logger.Log(
-                                        $"Unable to apply custom assets to '{asset.ParentAsset}.' Asset might not have custom assets at all!",
-                                        LogLevel.Error);
-
-                                await ItemUtil.UpdateStatus(item, option, "Adding swap to item's config", Colors.C_YELLOW);
-                                convItem.Swaps.Add(new ActiveSwap
-                                {
-                                    File = file.Replace("utoc", "ucas"),
-                                    Offset = SaturnData.Offset,
-                                    ParentAsset = asset.ParentAsset,
-                                    Lengths = lengths
-                                });
-                            }
-
-                            item.IsConverted = true;
-
-                            sw.Stop();
-
-                            if (!await _configService.AddConvertedItem(convItem))
-                                Logger.Log("Could not add converted item to config!", LogLevel.Error);
-                            else
-                                Logger.Log($"Added {item.Name} to converted items list in config.");
-
-                            _configService.SaveConfig();
-
-                            if (sw.Elapsed.Seconds > 1)
-                                await ItemUtil.UpdateStatus(item, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
-                                    Colors.C_GREEN);
-                            else
-                                await ItemUtil.UpdateStatus(item, option,
-                                    $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
-                            Trace.WriteLine($"Converted in {sw.Elapsed.Seconds} seconds!");
-                            Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
-
-                            break;
-                    }
-                else
-                {
+                
                     if (isRandom)
                         await ItemUtil.UpdateStatus(random, option, "Generating swaps", Colors.C_YELLOW);
                     else
@@ -634,8 +297,11 @@ namespace Saturn.Backend.Data.Services
                             Lengths = lengths
                         });
                     }
-
-                    item.IsConverted = true;
+                    
+                    if (isRandom)
+                        random.IsConverted = true;
+                    else
+                        item.IsConverted = true;
 
                     sw.Stop();
 
@@ -662,10 +328,9 @@ namespace Saturn.Backend.Data.Services
                                 $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
                     Trace.WriteLine($"Converted in {sw.Elapsed.Seconds} seconds!");
                     Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
-                }
-                
 
-                return true;
+
+                    return true;
             }
             catch (Exception ex)
             {
@@ -686,19 +351,7 @@ namespace Saturn.Backend.Data.Services
 
                 var sw = Stopwatch.StartNew();
 
-                switch (itemType)
-                {
-                    case ItemType.IT_Skin:
-                        var itemCheck = await IsTypeConverted(ItemType.IT_Backbling);
-                        Trace.WriteLine(itemCheck);
-                        if (itemCheck != null)
-                        {
-                            await ItemUtil.UpdateStatus(item, option,
-                                $"You need to revert {itemCheck} before you can revert {item.Name}!", Colors.C_RED);
-                            return false;
-                        }
-
-                        await ItemUtil.UpdateStatus(item, option, "Checking config file for item", Colors.C_YELLOW);
+                await ItemUtil.UpdateStatus(item, option, "Checking config file for item", Colors.C_YELLOW);
                         _configService.ConfigFile.ConvertedItems.Any(x =>
                         {
                             if (x.ItemDefinition != id) return false;
@@ -733,75 +386,6 @@ namespace Saturn.Backend.Data.Services
 
                             return true;
                         });
-                        break;
-                    case ItemType.IT_Backbling:
-                        await ItemUtil.UpdateStatus(item, option, "Checking config file for item", Colors.C_YELLOW);
-                        _configService.ConfigFile.ConvertedItems.Any(x =>
-                        {
-                            if (x.ItemDefinition != id) return false;
-                            foreach (var asset in x.Swaps)
-                            {
-                                ItemUtil.UpdateStatus(item, option, "Reading compressed data", Colors.C_YELLOW).GetAwaiter()
-                                    .GetResult();
-                                var data = File.ReadAllBytes(Path.Combine(Config.DecompressedDataPath,
-                                    Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset"));
-
-                                var compressed = Oodle.Compress(data);
-
-                                ItemUtil.UpdateStatus(item, option, "Writing compressed data back to UCAS", Colors.C_YELLOW)
-                                    .GetAwaiter().GetResult();
-                                TrySwapAsset(Path.Combine(FortniteUtil.PakPath, asset.File), asset.Offset, compressed)
-                                    .GetAwaiter()
-                                    .GetResult();
-
-                                ItemUtil.UpdateStatus(item, option, "Checking for customs", Colors.C_YELLOW).GetAwaiter()
-                                    .GetResult();
-                                if (asset.Lengths != new Dictionary<long, byte[]>())
-                                    foreach (var (key, value) in asset.Lengths)
-                                        TrySwapAsset(
-                                            Path.Combine(FortniteUtil.PakPath, asset.File.Replace("ucas", "utoc")),
-                                            key, value).GetAwaiter().GetResult();
-                            }
-
-                            return true;
-                        });
-                        break;
-                    case ItemType.IT_Dance:
-                        await ItemUtil.UpdateStatus(item, option, "Checking config file for item", Colors.C_YELLOW);
-                        _configService.ConfigFile.ConvertedItems.Any(x =>
-                        {
-                            if (x.ItemDefinition != id) return false;
-                            foreach (var asset in x.Swaps)
-                            {
-                                ItemUtil.UpdateStatus(item, option, "Reading compressed data", Colors.C_YELLOW).GetAwaiter()
-                                    .GetResult();
-                                var data = File.ReadAllBytes(Path.Combine(Config.CompressedDataPath,
-                                    Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset"));
-
-                                ItemUtil.UpdateStatus(item, option, "Writing compressed data back to UCAS", Colors.C_YELLOW)
-                                    .GetAwaiter().GetResult();
-                                TrySwapAsset(Path.Combine(FortniteUtil.PakPath, asset.File), asset.Offset, data)
-                                    .GetAwaiter()
-                                    .GetResult();
-
-                                ItemUtil.UpdateStatus(item, option, "Checking for customs", Colors.C_YELLOW).GetAwaiter()
-                                    .GetResult();
-                                if (asset.Lengths != new Dictionary<long, byte[]>())
-                                    foreach (var (key, value) in asset.Lengths)
-                                        TrySwapAsset(
-                                            Path.Combine(FortniteUtil.PakPath, asset.File.Replace("ucas", "utoc")),
-                                            key, value).GetAwaiter().GetResult();
-
-                                ItemUtil.UpdateStatus(item, option, "Deleting compressed data", Colors.C_YELLOW).GetAwaiter()
-                                    .GetResult();
-                                File.Delete(Path.Combine(Config.CompressedDataPath,
-                                    Path.GetFileName(asset.ParentAsset)));
-                            }
-
-                            return true;
-                        });
-                        break;
-                }
 
 
                 if (!await _configService.RemoveConvertedItem(id))
@@ -1226,157 +810,6 @@ namespace Saturn.Backend.Data.Services
             };
         }
         #endregion
-
-        #region GenerateCPSwaps
-
-        private async Task<SaturnOption> GenerateSwaps(Cosmetic item)
-        {
-            var characterParts = await GetCharacterPartsById(item.Id);
-            if (characterParts == new Dictionary<string, string>())
-            {
-                Logger.Log($"Failed to find character parts for \"{item.Id}\"!", LogLevel.Error);
-                return new SaturnOption();
-            }
-
-            return new SaturnOption
-            {
-                Name = item.Name,
-                Icon = item.Images.SmallIcon,
-                Rarity = item.Rarity.BackendValue,
-                Assets = new List<SaturnAsset>
-                {
-                    new SaturnAsset
-                    {
-                        ParentAsset = "FortniteGame/Content/Balance/DefaultGameDataCosmetics.uasset",
-                        Swaps = new List<SaturnSwap>
-                        {
-                            new()
-                            {
-                                Search =
-                                    "/Game/Athena/Heroes/Wslt/Is/A/Skid/And/Will/Probably/Steal/This/CustomCharacterParts/PlaceholderCustomCharacterPartNumber1UsedForSwappingByTamely.PlaceholderCustomCharacterPartNumber1UsedForSwappingByTamely",
-                                Replace = characterParts["Body"],
-                                Type = SwapType.BodyCharacterPart
-                            },
-                            new()
-                            {
-                                Search =
-                                    "/Game/Athena/Heroes/Wslt/Is/A/Skid/And/Will/Probably/Steal/This/CustomCharacterParts/PlaceholderCustomCharacterPartNumber2UsedForSwappingByTamely.PlaceholderCustomCharacterPartNumber2UsedForSwappingByTamely",
-                                Replace = characterParts["Head"],
-                                Type = SwapType.HeadCharacterPart
-                            },
-                            new()
-                            {
-                                Search =
-                                    "/Game/Athena/Heroes/Wslt/Is/A/Skid/And/Will/Probably/Steal/This/CustomCharacterParts/PlaceholderCustomCharacterPartNumber3UsedForSwappingByTamely.PlaceholderCustomCharacterPartNumber3UsedForSwappingByTamely",
-                                Replace = characterParts["FaceACC"],
-                                Type = SwapType.FaceAccessoryCharacterPart
-                            },
-                            new()
-                            {
-                                Search =
-                                    "/Game/Athena/Heroes/Wslt/Is/A/Skid/And/Will/Probably/Steal/This/CustomCharacterParts/PlaceholderCustomCharacterPartNumber4UsedForSwappingByTamely.PlaceholderCustomCharacterPartNumber4UsedForSwappingByTamely",
-                                Replace = characterParts["MiscOrTail"],
-                                Type = SwapType.MiscOrTailCharacterPart
-                            },
-                            new()
-                            {
-                                Search =
-                                    "/Game/Athena/Heroes/Wslt/Is/A/Skid/And/Will/Probably/Steal/This/CustomCharacterParts/PlaceholderCustomCharacterPartNumber5UsedForSwappingByTamely.PlaceholderCustomCharacterPartNumber5UsedForSwappingByTamely",
-                                Replace = characterParts["Other"],
-                                Type = SwapType.OtherCharacterPart
-                            },
-                            new()
-                            {
-                                Search =
-                                    "/Game/Athena/Heroes/Wslt/Is/A/Skid/And/Will/Probably/Steal/This/CustomCharacterParts/PlaceholderCustomCharacterPartNumber6UsedForSwappingByTamely.PlaceholderCustomCharacterPartNumber6UsedForSwappingByTamely",
-                                Replace = "/Game/Tamely",
-                                Type = SwapType.OtherCharacterPart
-                            },
-                            new()
-                            {
-                                Search =
-                                    "/Game/Athena/Heroes/Wslt/Is/A/Skid/And/Will/Probably/Steal/This/CustomCharacterParts/PlaceholderCustomBackpackCharacterPartUsedByTamelyForSwapping.PlaceholderCustomBackpackCharacterPartUsedByTamelyForSwapping",
-                                Replace = "/Game/Tamely",
-                                Type = SwapType.OtherCharacterPart
-                            }
-                        }
-                    },
-                    new SaturnAsset
-                    {
-                        ParentAsset =
-                            "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_RebirthDefaultA.uasset",
-                        Swaps = new List<SaturnSwap>
-                        {
-                            new()
-                            {
-                                Search = "\"CP_Body_Commando_F_RebirthDefaultA",
-                                Replace = "Tamely",
-                                Type = SwapType.BodyCharacterPart
-                            }
-                        }
-                    },
-                    new SaturnAsset
-                    {
-                        ParentAsset =
-                            "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Athena_Body_M_RebirthSoldier.uasset",
-                        Swaps = new List<SaturnSwap>
-                        {
-                            new()
-                            {
-                                Search = System.Convert.ToBase64String(new byte[]
-                                {
-                                    0, 31, 67, 80, 95, 65, 116, 104, 101, 110, 97, 95, 66, 111, 100, 121, 95, 77, 95,
-                                    82, 101, 98, 105, 114, 116, 104, 83, 111, 108, 100, 105, 101, 114
-                                }),
-                                Replace = "Tamely",
-                                Type = SwapType.Base64
-                            }
-                        }
-                    }
-                }
-            };
-        }
-
-        #endregion
-
-        #region GenerateBackblingCPSwaps
-
-        private async Task<SaturnOption> GenerateBackbling(Cosmetic item, SaturnItem option)
-        {
-            var characterPart = await GetBackblingCharacterPart(item);
-            if (characterPart == null)
-            {
-                await ItemUtil.UpdateStatus(item, option, $"Failed to find character parts for \"{item.Id}\"!",
-                    Colors.C_YELLOW);
-                Logger.Log($"Failed to find character parts for \"{item.Id}\"!", LogLevel.Error);
-                return new SaturnOption();
-            }
-
-            return new SaturnOption
-            {
-                Name = item.Name,
-                Icon = item.Images.SmallIcon,
-                Rarity = item.Rarity.BackendValue,
-                Assets = new List<SaturnAsset>
-                {
-                    new SaturnAsset
-                    {
-                        ParentAsset = "FortniteGame/Content/Balance/DefaultGameDataCosmetics.uasset",
-                        Swaps = new List<SaturnSwap>
-                        {
-                            new()
-                            {
-                                Search = "/Game/Tamely",
-                                Replace = characterPart,
-                                Type = SwapType.BackblingCharacterPart
-                            }
-                        }
-                    }
-                }
-            };
-        }
-
-        #endregion
         
         #region GenerateEmoteSwaps
 
@@ -1431,74 +864,6 @@ namespace Saturn.Backend.Data.Services
 
         #endregion
         
-        #region GenerateEmoteSwaps
-
-        private async Task<SaturnOption> GenerateEmote(Cosmetic item, SaturnItem option)
-        {
-            var swaps = await GetEmoteDataByItem(item);
-            if (swaps == new Dictionary<string, string>())
-            {
-                await ItemUtil.UpdateStatus(item, option, $"Failed to find data for \"{item.Id}\"!",
-                    Colors.C_YELLOW);
-                Logger.Log($"Failed to find data for \"{item.Id}\"!", LogLevel.Error);
-                return new SaturnOption();
-            }
-
-            return new SaturnOption
-            {
-                Name = item.Name,
-                Icon = item.Images.SmallIcon,
-                Rarity = item.Rarity.BackendValue,
-                Assets = new List<SaturnAsset>
-                {
-                    new SaturnAsset
-                    {
-                        ParentAsset = "FortniteGame/Content/Athena/Items/Cosmetics/Dances/EID_DanceMoves.uasset",
-                        Swaps = new List<SaturnSwap>
-                        {
-                            new()
-                            {
-                                Search = "/Game/Athena/Heroes/Wslt/Is/A/Skid/And/Will/Probably/Steal/This/Animations/PlaceholderEmoteOrAnythingAnimationUsedForSwappingByTamely_CMF.PlaceholderEmoteOrAnythingAnimationUsedForSwappingByTamely_CMF",
-                                Replace = swaps["CMF"],
-                                Type = SwapType.BodyAnim
-                            },
-                            new()
-                            {
-                                Search = "/Game/Athena/Heroes/Wslt/Is/A/Skid/And/Will/Probably/Steal/This/Animations/PlaceholderEmoteOrAnythingAnimationUsedForSwappingByTamely_CMM.PlaceholderEmoteOrAnythingAnimationUsedForSwappingByTamely_CMM",
-                                Replace = swaps["CMM"],
-                                Type = SwapType.BodyAnim
-                            },
-                            new()
-                            {
-                                Search = "/Game/Athena/Heroes/Wslt/Is/A/Skid/And/Will/Probably/Steal/This/Icons/PlaceholderCosmeticIconUsedForSwappingByTamely.PlaceholderCosmeticIconUsedForSwappingByTamely",
-                                Replace = swaps["SmallIcon"],
-                                Type = SwapType.Modifier
-                            },
-                            new()
-                            {
-                                Search = "/Game/Athena/Heroes/Wslt/Is/A/Skid/And/Will/Probably/Steal/This/Icons/PlaceholderCosmeticIconUsedForSwappingByTamely-L.PlaceholderCosmeticIconUsedForSwappingByTamely-L",
-                                Replace = swaps["LargeIcon"],
-                                Type = SwapType.Modifier
-                            },
-                            new()
-                            {
-                                Search = "Emote Name For Tamely's Emote Assets",
-                                Replace = item.Name,
-                                Type = SwapType.Modifier
-                            },
-                            new()
-                            {
-                                Search = "Emote Description For Tamely's Emote Assets But I Need To Make This Longer So It Fits Every Single Description.",
-                                Replace = item.Description,
-                                Type = SwapType.Modifier
-                            }
-                        }
-                    }
-                }
-            };
-        }
-
-        #endregion
 
         private async Task<Dictionary<string, long>> GetFileNameAndOffsetFromConvertedItems(SaturnOption item)
         {
