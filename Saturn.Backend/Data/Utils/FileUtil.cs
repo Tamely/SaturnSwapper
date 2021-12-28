@@ -112,6 +112,8 @@ namespace Saturn.Backend.Data.Utils
                     var item = Encoding.UTF8.GetString(ReadBytes(value, Vars.StopOffset - Vars.CurrentOffset, Vars.CurrentOffset));
                     if (item.Split('.')[0].ToLower().Contains("bp"))
                         output.Add(item.Split('.')[0] + '.' + SubstringFromLast(item.Split('.')[0], '/') + "_C");
+                    else if (item.StartsWith("/Game/MainPlayer"))
+                        output.Add("/Game/Animation" + item);
                     else
                         output.Add(item.Split('.')[0] + '.' + SubstringFromLast(item.Split('.')[0], '/'));
                     Logger.Log(output.Last(), Enums.LogLevel.Fatal);
@@ -119,7 +121,6 @@ namespace Saturn.Backend.Data.Utils
             }
 
             output.Remove(output.Last());
-
             return output;
         }
 

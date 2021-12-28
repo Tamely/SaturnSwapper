@@ -101,42 +101,7 @@ namespace Saturn.Backend.Data.Models.FortniteAPI
         [JsonProperty("printColor")] public Colors PrintColor { get; set; } = Colors.C_WHITE;
         [JsonProperty("isPickingStyles")] public bool IsPickingStyles { get; set; } = false;
         [JsonProperty("hatType")] public HatTypes HatTypes { get; set; } = HatTypes.HT_FaceACC;
-        [JsonProperty("cosmeticOptions")] public List<SaturnItem> CosmeticOptions { get; set; } = new()
-        {
-            new SaturnItem
-            {
-                ItemDefinition = "CID_A_311_Athena_Commando_F_ScholarFestiveWinter",
-                Name = "Blizzabelle",
-                Description = "Voted Teen Queen of Winterfest by a jury of her witchy peers.",
-                Icon = "https://fortnite-api.com/images/cosmetics/br/cid_a_311_athena_commando_f_scholarfestivewinter/smallicon.png",
-                Rarity = "Rare"
-            },
-            new SaturnItem
-            {
-                ItemDefinition = "CID_A_007_Athena_Commando_F_StreetFashionEclipse",
-                Name = "Ruby Shadows",
-                Description = "Sometimes you gotta go dark.",
-                Icon = "https://fortnite-api.com/images/cosmetics/br/cid_a_007_athena_commando_f_streetfashioneclipse/smallicon.png",
-                Rarity = "Epic",
-                Series = "ShadowSeries"
-            },
-            new SaturnItem
-            {
-                ItemDefinition = "CID_936_Athena_Commando_F_RaiderSilver",
-                Name = "Diamond Diva",
-                Description = "Synthetic diamonds need not apply.",
-                Icon = "https://fortnite-api.com/images/cosmetics/br/cid_936_athena_commando_f_raidersilver/smallicon.png",
-                Rarity = "Rare"
-            },
-            new SaturnItem
-            {
-                ItemDefinition = "CID_784_Athena_Commando_F_RenegadeRaiderFire",
-                Name = "Blaze",
-                Description = "Fill the world with flames.",
-                Icon = "https://fortnite-api.com/images/cosmetics/br/cid_784_athena_commando_f_renegaderaiderfire/smallicon.png",
-                Rarity = "Legendary"
-            }
-        };
+        [JsonProperty("cosmeticOptions")] public List<SaturnItem> CosmeticOptions { get; set; }
     }
 
     public class CosmeticList

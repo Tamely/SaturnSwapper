@@ -10,6 +10,7 @@ using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Utils;
 using Serilog;
+using Type = Saturn.Backend.Data.Models.FortniteAPI.Type;
 
 namespace Saturn.Backend.Data.Services
 {
@@ -87,21 +88,61 @@ namespace Saturn.Backend.Data.Services
             Logger.Log("Decoding hat types");
             var DifferentHats = _cloudStorageService.DecodeChanges(DifferentHatsStr);
             
-            foreach (var skin in skins.Where(skin => DifferentHats.HatSkins.IndexOf(skin.Id) != -1))
+            foreach (var skin in skins)
             {
-                skin.HatTypes = HatTypes.HT_Hat;
-                skin.CosmeticOptions = new List<SaturnItem>()
+                skin.CosmeticOptions= new()
                 {
                     new SaturnItem
                     {
-                        ItemDefinition = "CID_162_Athena_Commando_F_StreetRacer",
-                        Name = "Redline",
-                        Description = "Revving beyond the limit.",
-                        Icon =
-                            "https://fortnite-api.com/images/cosmetics/br/cid_162_athena_commando_f_streetracer/smallicon.png",
-                        Rarity = "Epic"
+                        ItemDefinition = "CID_A_311_Athena_Commando_F_ScholarFestiveWinter",
+                        Name = "Blizzabelle",
+                        Description = "Voted Teen Queen of Winterfest by a jury of her witchy peers.",
+                        Icon = "https://fortnite-api.com/images/cosmetics/br/cid_a_311_athena_commando_f_scholarfestivewinter/smallicon.png",
+                        Rarity = "Rare"
+                    },
+                    new SaturnItem
+                    {
+                        ItemDefinition = "CID_A_007_Athena_Commando_F_StreetFashionEclipse",
+                        Name = "Ruby Shadows",
+                        Description = "Sometimes you gotta go dark.",
+                        Icon = "https://fortnite-api.com/images/cosmetics/br/cid_a_007_athena_commando_f_streetfashioneclipse/smallicon.png",
+                        Rarity = "Epic",
+                        Series = "ShadowSeries"
+                    },
+                    new SaturnItem
+                    {
+                        ItemDefinition = "CID_936_Athena_Commando_F_RaiderSilver",
+                        Name = "Diamond Diva",
+                        Description = "Synthetic diamonds need not apply.",
+                        Icon = "https://fortnite-api.com/images/cosmetics/br/cid_936_athena_commando_f_raidersilver/smallicon.png",
+                        Rarity = "Rare"
+                    },
+                    new SaturnItem
+                    {
+                        ItemDefinition = "CID_784_Athena_Commando_F_RenegadeRaiderFire",
+                        Name = "Blaze",
+                        Description = "Fill the world with flames.",
+                        Icon = "https://fortnite-api.com/images/cosmetics/br/cid_784_athena_commando_f_renegaderaiderfire/smallicon.png",
+                        Rarity = "Legendary"
                     }
                 };
+
+                if (DifferentHats.HatSkins.IndexOf(skin.Id) != -1)
+                {
+                    skin.HatTypes = HatTypes.HT_Hat;
+                    skin.CosmeticOptions = new List<SaturnItem>()
+                    {
+                        new SaturnItem
+                        {
+                            ItemDefinition = "CID_162_Athena_Commando_F_StreetRacer",
+                            Name = "Redline",
+                            Description = "Revving beyond the limit.",
+                            Icon =
+                                "https://fortnite-api.com/images/cosmetics/br/cid_162_athena_commando_f_streetracer/smallicon.png",
+                            Rarity = "Epic"
+                        }
+                    };
+                }
             }
             
             return skins;
@@ -114,6 +155,7 @@ namespace Saturn.Backend.Data.Services
             var convertedItems = await _configService.TryGetConvertedItems();
             convertedItems.Any(x => ret.Any(y =>
             {
+
                 if (y.Id != x.ItemDefinition) return false;
                 y.IsConverted = true;
                 return true;

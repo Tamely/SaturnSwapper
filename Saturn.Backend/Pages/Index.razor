@@ -10,6 +10,7 @@
 @using Saturn.Backend.Data.Models.FortniteAPI
 @using Saturn.Backend.Data.Services
 @using System.Diagnostics
+@using Saturn.Backend.Data.Models.Items
 @using Saturn.Backend.Data.Utils
 @inherits LayoutComponentBase
 
@@ -320,6 +321,25 @@
     {
         saturnState = SaturnState.S_Loading;
         Items = await _fortniteAPIService.GetSaturnDances();
+
+        foreach (var item in Items)
+        {
+            if (item.Id.Contains("EID"))
+            {
+                item.CosmeticOptions = new()
+                {
+                    new SaturnItem
+                    {
+                        ItemDefinition = "EID_DanceMoves",
+                        Name = "Dance Moves",
+                        Description = "Express yourself on the battlefield.",
+                        Icon =
+                            "https://fortnite-api.com/images/cosmetics/br/eid_dancemoves/smallicon.png",
+                        Rarity = "Common"
+                    }
+                };
+            }
+        }
         currentType = ItemType.IT_Dance;
         saturnState = SaturnState.S_Items;
     }
