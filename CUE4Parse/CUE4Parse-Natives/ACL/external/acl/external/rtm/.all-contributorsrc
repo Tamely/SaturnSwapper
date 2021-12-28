@@ -1,0 +1,36 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "CodyDWJones",
+      "name": "CodyDWJones",
+      "avatar_url": "https://avatars.githubusercontent.com/u/28773740?v=4",
+      "profile": "https://github.com/CodyDWJones",
+      "contributions": [
+        "code",
+        "platform",
+        "infra"
+      ]
+    },
+    {
+      "login": "mwerschy",
+      "name": "Malte Werschy",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6616804?v=4",
+      "profile": "https://github.com/mwerschy",
+      "contributions": [
+        "code",
+        "platform"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "rtm",
+  "projectOwner": "nfrechette",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true
+}

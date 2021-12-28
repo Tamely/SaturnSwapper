@@ -1,0 +1,20 @@
+{
+  "allow": [
+    {
+      "origins": [
+        "https://teams.microsoft.com"
+      ],
+      "protocol": "msteams"
+    },
+    {
+      "origins": [
+        "https://get.microsoft.com",
+        "https://apps.microsoft.com",
+        "https://bing.com"
+      ],
+      "protocol": "ms-windows-store"
+    }
+  ],
+  "warn": [],
+  "block": []
+}
