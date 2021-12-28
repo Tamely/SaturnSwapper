@@ -22,3 +22,8 @@ SaturnLogo_Circle.ico
 /CUE4Parse/.idea/
 /CUE4Parse/.vscode/
 /CUE4Parse/.omnisharp/
+/Saturn.Backend/bin/
+/Saturn.Backend/obj/
+/Saturn.Backend/Data/Utils/FortniteUtils/CustomAssets.cs
+/Saturn.Client/bin/
+/Saturn.Client/obj/
