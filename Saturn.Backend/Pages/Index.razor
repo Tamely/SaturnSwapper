@@ -107,7 +107,6 @@
                 <div class="container">
                     @foreach (var item in Items)
                     {
-
                         if (!item.IsPickingStyles)
                         {
                             <div class="card" id="item-@item.Id" @onclick=@(async () => await SwitchItemStyleChoice(item))>
