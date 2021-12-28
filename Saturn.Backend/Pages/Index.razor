@@ -190,7 +190,7 @@
                                 
                                 @foreach (var option in item.CosmeticOptions)
                                 {
-                                    <div style="cursor: help" @onclick=@(async () => await _swapperService.Swap(item, option, currentType, false))>
+                                    <div style="cursor: help" @onclick=@(async () => await _swapperService.Swap(item, option, currentType, Items, false))>
                                         @if (option.Series != null)
                                         {
                                             <img class="base" src="img/Series/@(option.Series).png" alt=""/>

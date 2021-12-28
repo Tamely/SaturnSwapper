@@ -54,18 +54,11 @@ namespace Saturn.Backend.Data.Services
             var data = await GetDataAsync(CosmeticsByType("AthenaDance"));
             var Emotes = JsonConvert.DeserializeObject<CosmeticList>(data);
             
-            foreach (var item in Emotes.Data)
+            Emotes.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd");
+
+            foreach (var item in Emotes.Data.Where(item => item.Name.ToLower() == "random"))
             {
-                switch (item.Name.ToLower())
-                {
-                    case "null":
-                    case "tbd":
-                        Emotes.Data.Remove(item);
-                        break;
-                    case "random":
-                        item.IsRandom = true;
-                        break;
-                }
+                item.IsRandom = true;
             }
             
             Trace.WriteLine($"Deserialized {Emotes.Data.Count} objects");
@@ -79,18 +72,11 @@ namespace Saturn.Backend.Data.Services
             var data = await GetDataAsync(CosmeticsByType("AthenaBackpack"));
             var Backs = JsonConvert.DeserializeObject<CosmeticList>(data);
             
-            foreach (var item in Backs.Data)
+            Backs.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd");
+
+            foreach (var item in Backs.Data.Where(item => item.Name.ToLower() == "random"))
             {
-                switch (item.Name.ToLower())
-                {
-                    case "null":
-                    case "tbd":
-                        Backs.Data.Remove(item);
-                        break;
-                    case "random":
-                        item.IsRandom = true;
-                        break;
-                }
+                item.IsRandom = true;
             }
             
             Trace.WriteLine($"Deserialized {Backs.Data.Count} objects");
@@ -104,18 +90,12 @@ namespace Saturn.Backend.Data.Services
             var data = await GetDataAsync(CosmeticsByType("AthenaCharacter"));
             var Skins = JsonConvert.DeserializeObject<CosmeticList>(data);
 
-            foreach (var item in Skins.Data)
+            
+            Skins.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd");
+            
+            foreach (var item in Skins.Data.Where(item => item.Name.ToLower() == "random"))
             {
-                switch (item.Name.ToLower())
-                {
-                    case "null":
-                    case "tbd":
-                        Skins.Data.Remove(item);
-                        break;
-                    case "random":
-                        item.IsRandom = true;
-                        break;
-                }
+                item.IsRandom = true;
             }
             
             Trace.WriteLine($"Deserialized {Skins.Data.Count} objects");

@@ -22,14 +22,15 @@ using Saturn.Backend.Data.Models.SaturnAPI;
 using Saturn.Backend.Data.Utils;
 using Saturn.Backend.Data.Utils.FortniteUtils;
 using Serilog;
+using Index = Saturn.Backend.Pages.Index;
 
 namespace Saturn.Backend.Data.Services
 {
     public interface ISwapperService
     {
-        public Task<bool> Convert(Cosmetic item, SaturnItem option, ItemType itemType, bool isAuto = true);
+        public Task<bool> Convert(Cosmetic item, SaturnItem option, ItemType itemType, bool isAuto = true, bool isRandom = false, Cosmetic random = null);
         public Task<bool> Revert(Cosmetic item, SaturnItem option, ItemType itemType);
-        public Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, bool isAuto = true);
+        public Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = true);
     }
 
     public class SwapperService : ISwapperService
@@ -73,7 +74,7 @@ namespace Saturn.Backend.Data.Services
             Trace.WriteLine($"File provider initialized with {_provider.Keys.Count} keys");
         }
 
-        public async Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, bool isAuto = true)
+        public async Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = true)
         {
             if (!_halted)
             {
@@ -94,7 +95,27 @@ namespace Saturn.Backend.Data.Services
                 else
                 {
                     Logger.Log("Item is not converted! Converting!");
-                    if (!await Convert(item, option, itemType, isAuto))
+
+                    if (item.IsRandom)
+                    {
+                        // Get a random number between two values.
+                        var random = new Random();
+                        var randomNumber = random.Next(0, Items.Count - 1);
+
+                        while ((Items[randomNumber].HatTypes == HatTypes.HT_FaceACC &&
+                                option.Name == "Redline") || (Items[randomNumber].HatTypes == HatTypes.HT_Hat &&
+                                                              option.Name != "Redline"))
+                            randomNumber = random.Next(0, Items.Count - 1);
+                        
+                        if (!await Convert(Items[randomNumber], option, itemType, isAuto, true, item))
+                        {
+                            await ItemUtil.UpdateStatus(item, option,
+                                $"There was an error converting {Items[randomNumber].Name}!",
+                                Colors.C_RED);
+                            Logger.Log($"There was an error converting {Items[randomNumber].Name}!", LogLevel.Error);
+                        }   
+                    }
+                    else if (!await Convert(item, option, itemType, isAuto))
                     {
                         await ItemUtil.UpdateStatus(item, option,
                         $"There was an error converting {item.Name}!",
@@ -108,32 +129,58 @@ namespace Saturn.Backend.Data.Services
             }
         }
 
-        public async Task<bool> Convert(Cosmetic item, SaturnItem option, ItemType itemType, bool isDefault = true)
+        public async Task<bool> Convert(Cosmetic item, SaturnItem option, ItemType itemType, bool isDefault = true, bool isRandom = false, Cosmetic random = null)
         {
             try
             {
                 var itemCheck = await IsTypeConverted(itemType);
                 if (itemCheck != null)
                 {
-                    await ItemUtil.UpdateStatus(item, option,
-                        $"You already have {itemCheck} converted! Revert it before converting another item of the same type.",
-                        Colors.C_RED);
+                    if (isRandom)
+                        await ItemUtil.UpdateStatus(random, option,
+                            $"You already have {itemCheck} converted! Revert it before converting another item of the same type.",
+                            Colors.C_RED);
+                    else
+                        await ItemUtil.UpdateStatus(item, option,
+                            $"You already have {itemCheck} converted! Revert it before converting another item of the same type.",
+                            Colors.C_RED);
                     return false;
                 }
 
                 var sw = Stopwatch.StartNew();
 
-                await ItemUtil.UpdateStatus(item, option, "Starting...");
+                if (isRandom)
+                    await ItemUtil.UpdateStatus(random, option, "Starting...");
+                else
+                    await ItemUtil.UpdateStatus(item, option, "Starting...");
 
-                ConvertedItem convItem = new()
+                ConvertedItem convItem = new();
+
+                if (isRandom)
                 {
-                    Name = item.Name,
-                    ItemDefinition = item.Id,
-                    Type = itemType.ToString(),
-                    Swaps = new List<ActiveSwap>()
-                };
-
-                await ItemUtil.UpdateStatus(item, option, "Checking item type");
+                    convItem = new ConvertedItem()
+                    {
+                        Name = item.Name,
+                        ItemDefinition = random.Id,
+                        Type = itemType.ToString(),
+                        Swaps = new List<ActiveSwap>()
+                    };
+                }
+                else
+                {
+                    convItem = new ConvertedItem()
+                    {
+                        Name = item.Name,
+                        ItemDefinition = item.Id,
+                        Type = itemType.ToString(),
+                        Swaps = new List<ActiveSwap>()
+                    };
+                }
+                
+                if (isRandom)
+                    await ItemUtil.UpdateStatus(random, option, "Checking item type");
+                else
+                    await ItemUtil.UpdateStatus(item, option, "Checking item type");
                 Changes cloudChanges = new();
 
                 if (isDefault)
@@ -468,7 +515,10 @@ namespace Saturn.Backend.Data.Services
                     }
                 else
                 {
-                    await ItemUtil.UpdateStatus(item, option, "Generating swaps", Colors.C_YELLOW);
+                    if (isRandom)
+                        await ItemUtil.UpdateStatus(random, option, "Generating swaps", Colors.C_YELLOW);
+                    else
+                        await ItemUtil.UpdateStatus(item, option, "Generating swaps", Colors.C_YELLOW);
                     Logger.Log("Generating swaps...");
 
                     var itemSwap = itemType switch
@@ -483,7 +533,10 @@ namespace Saturn.Backend.Data.Services
                     {
                         Logger.Log($"Starting swaps for {asset.ParentAsset}");
                         Directory.CreateDirectory(Config.CompressedDataPath);
-                        await ItemUtil.UpdateStatus(item, option, "Exporting asset", Colors.C_YELLOW);
+                        if (isRandom)
+                            await ItemUtil.UpdateStatus(random, option, "Exporting asset", Colors.C_YELLOW);
+                        else
+                            await ItemUtil.UpdateStatus(item, option, "Exporting asset", Colors.C_YELLOW);
                         Logger.Log("Exporting asset");
                         if (!TryExportAsset(asset.ParentAsset, out var data))
                         {
@@ -495,7 +548,11 @@ namespace Saturn.Backend.Data.Services
 
                         var file = SaturnData.Path.Replace("utoc", "ucas");
 
-                        await BackupFile(file, item, option);
+                        if (isRandom)
+                            await BackupFile(file, random, option);
+                        else
+                            await BackupFile(file, item, option);
+                        
 
                         try
                         {
@@ -549,7 +606,10 @@ namespace Saturn.Backend.Data.Services
 
                         file = file.Replace("WindowsClient", "SaturnClient");
 
-                        await ItemUtil.UpdateStatus(item, option, "Adding asset to UCAS", Colors.C_YELLOW);
+                        if (isRandom)
+                            await ItemUtil.UpdateStatus(random, option, "Adding asset to UCAS", Colors.C_YELLOW);
+                        else 
+                            await ItemUtil.UpdateStatus(item, option, "Adding asset to UCAS", Colors.C_YELLOW);
 
                         await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, file), SaturnData.Offset,
                             compressed);
@@ -561,8 +621,10 @@ namespace Saturn.Backend.Data.Services
                             Logger.Log(
                                 $"Unable to apply custom offsets to '{asset.ParentAsset}.' Asset might not have custom assets at all!",
                                 LogLevel.Error);
-                                
-                        await ItemUtil.UpdateStatus(item, option, "Adding swap to item's config", Colors.C_YELLOW);
+                        if (isRandom)
+                            await ItemUtil.UpdateStatus(random, option, "Adding swap to item's config", Colors.C_YELLOW);
+                        else
+                            await ItemUtil.UpdateStatus(item, option, "Adding swap to item's config", Colors.C_YELLOW);
                         convItem.Swaps.Add(new ActiveSwap
                         {
                             File = file.Replace("utoc", "ucas"),
@@ -585,11 +647,19 @@ namespace Saturn.Backend.Data.Services
                     _configService.SaveConfig();
 
                     if (sw.Elapsed.Seconds > 1)
-                        await ItemUtil.UpdateStatus(item, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
+                        if (isRandom)
+                            await ItemUtil.UpdateStatus(random, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
                             Colors.C_GREEN);
+                        else
+                            await ItemUtil.UpdateStatus(item, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
+                                Colors.C_GREEN);
                     else
-                        await ItemUtil.UpdateStatus(item, option,
-                            $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
+                        if (isRandom)
+                            await ItemUtil.UpdateStatus(random, option,
+                              $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
+                        else
+                            await ItemUtil.UpdateStatus(item, option,
+                                $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
                     Trace.WriteLine($"Converted in {sw.Elapsed.Seconds} seconds!");
                     Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
                 }
