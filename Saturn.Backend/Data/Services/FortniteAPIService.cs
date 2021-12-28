@@ -53,6 +53,21 @@ namespace Saturn.Backend.Data.Services
         {
             var data = await GetDataAsync(CosmeticsByType("AthenaDance"));
             var Emotes = JsonConvert.DeserializeObject<CosmeticList>(data);
+            
+            foreach (var item in Emotes.Data)
+            {
+                switch (item.Name.ToLower())
+                {
+                    case "null":
+                    case "tbd":
+                        Emotes.Data.Remove(item);
+                        break;
+                    case "random":
+                        item.IsRandom = true;
+                        break;
+                }
+            }
+            
             Trace.WriteLine($"Deserialized {Emotes.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Emotes.Data.Count} different emotes");
@@ -63,6 +78,21 @@ namespace Saturn.Backend.Data.Services
         {
             var data = await GetDataAsync(CosmeticsByType("AthenaBackpack"));
             var Backs = JsonConvert.DeserializeObject<CosmeticList>(data);
+            
+            foreach (var item in Backs.Data)
+            {
+                switch (item.Name.ToLower())
+                {
+                    case "null":
+                    case "tbd":
+                        Backs.Data.Remove(item);
+                        break;
+                    case "random":
+                        item.IsRandom = true;
+                        break;
+                }
+            }
+            
             Trace.WriteLine($"Deserialized {Backs.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Backs.Data.Count} different backpacks");
@@ -73,6 +103,21 @@ namespace Saturn.Backend.Data.Services
         {
             var data = await GetDataAsync(CosmeticsByType("AthenaCharacter"));
             var Skins = JsonConvert.DeserializeObject<CosmeticList>(data);
+
+            foreach (var item in Skins.Data)
+            {
+                switch (item.Name.ToLower())
+                {
+                    case "null":
+                    case "tbd":
+                        Skins.Data.Remove(item);
+                        break;
+                    case "random":
+                        item.IsRandom = true;
+                        break;
+                }
+            }
+            
             Trace.WriteLine($"Deserialized {Skins.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Skins.Data.Count} different skins");
