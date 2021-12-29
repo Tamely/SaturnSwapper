@@ -36,9 +36,7 @@ namespace Saturn.Backend.Data.Services
 
         public async Task<Offsets> GetOffsets(string parentAsset)
         {
-            var json = JsonConvert.DeserializeObject<List<Offsets>>(
-                await ReturnEndpointAsync("/api/v1/ProjectPlatoV2/Offsets"));
-            return json.Find(x => x.ParentAsset.Contains(parentAsset));
+            return new Offsets();
         }
 
         public async Task<string> ReturnEndpointAsync(string url)
