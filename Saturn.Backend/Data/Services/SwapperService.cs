@@ -14,6 +14,7 @@ using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
 using CUE4Parse.UE4.Assets.Exports.Material.Parameters;
 using CUE4Parse.UE4.Objects.Core.Misc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.CloudStorage;
@@ -956,7 +957,7 @@ namespace Saturn.Backend.Data.Services
                             {
                                 Search =
                                     "/Game/UI/Foundation/Textures/Icons/Weapons/Items/T-Icon-Pickaxes-DefaultMarkIIIPickaxe-L.T-Icon-Pickaxes-DefaultMarkIIIPickaxe-L",
-                                Replace = swaps["LargeIcon"],
+                                Replace = "/",
                                 Type = SwapType.LargeIcon
                             },
                             new SaturnSwap()
@@ -1330,17 +1331,19 @@ namespace Saturn.Backend.Data.Services
             
             try
             {
-                                
-                Searches.Add(Encoding.ASCII.GetBytes(asset.ParentAsset.Replace(".uasset", "").Replace("FortniteGame/Content/", "/Game/")));
-                Replaces.Add(Encoding.ASCII.GetBytes("/"));
+                if (!asset.ParentAsset.Contains("WID") && !asset.ParentAsset.Contains("Rarity"))
+                {
+                    Searches.Add(Encoding.ASCII.GetBytes(asset.ParentAsset.Replace(".uasset", "").Replace("FortniteGame/Content/", "/Game/")));
+                    Replaces.Add(Encoding.ASCII.GetBytes("/"));
+                }
                 foreach (var swap in asset.Swaps)
-                    switch (swap.Type)
+                    switch (swap)
                     {
-                        case SwapType.Base64:
+                        case { Type: SwapType.Base64 }:
                             Searches.Add(System.Convert.FromBase64String(swap.Search));
                             Replaces.Add(Encoding.ASCII.GetBytes(swap.Replace));
                             break;
-                        case SwapType.Property:
+                        case { Type: SwapType.Property }:
                             Searches.Add(System.Convert.FromBase64String(swap.Search));
                             Replaces.Add(System.Convert.FromBase64String(swap.Replace));
                             break;
@@ -1349,8 +1352,11 @@ namespace Saturn.Backend.Data.Services
                             Replaces.Add(Encoding.ASCII.GetBytes(swap.Replace));
                             break;
                     }
-
-                AnyLength.TrySwap(ref data, Searches, Replaces);
+                
+                if (asset.ParentAsset.Contains("Rarity"))
+                    AnyLength.TrySwap(ref data, Searches, Replaces, true);
+                else
+                    AnyLength.TrySwap(ref data, Searches, Replaces);
                 return true;
             }
             catch (Exception ex)

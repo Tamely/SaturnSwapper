@@ -12,7 +12,7 @@ namespace Saturn.Backend.Data.Utils
     {
         private static readonly byte[] End = { 248, 112 };
 
-        public static bool TrySwap(ref byte[] array, List<byte[]> searches, List<byte[]> replaces)
+        public static bool TrySwap(ref byte[] array, List<byte[]> searches, List<byte[]> replaces, bool isRarity = false)
         {
             try
             {
@@ -27,21 +27,30 @@ namespace Saturn.Backend.Data.Utils
 
                 for (int i = 0; i < searches.Count; i++)
                 {
-                    int searchOffset = IndexOfSequence(arr.ToArray(), searches[i]);
-                    int sizeOffset = NumFromTop(arr.ToArray(), startOffset, lastOffset, searchOffset, array[44]);
-                    Logger.Log("Size offset is " + sizeOffset);
-                    if (sizeOffset < 0)
+                    if (searches[i].Length < replaces[i].Length)
                         continue;
-                    arr.RemoveAt(sizeOffset);
-                    arr.Insert(sizeOffset, (byte)replaces[i].Length);
-                
+                    int searchOffset = IndexOfSequence(arr.ToArray(), searches[i]);
+                    if (!isRarity)
+                    {
+                        int sizeOffset = NumFromTop(arr.ToArray(), startOffset, lastOffset, searchOffset, array[44]);
+                        Logger.Log("Size offset is " + sizeOffset);
+                        if (sizeOffset < 0)
+                            continue;
+                        arr.RemoveAt(sizeOffset);
+                        arr.Insert(sizeOffset, (byte)replaces[i].Length);
+                    }
                     arr.RemoveRange(searchOffset, searches[i].Length);
                     arr.InsertRange(searchOffset, replaces[i]);
                     diff += searches[i].Length - replaces[i].Length;
 
                 }
 
-                int end = IndexOfSequence(arr.ToArray(), End) - 3;
+                int end = lastOffset + 1;
+                
+                // foreach in range step 2
+                for (int i = startOffset; i <= lastOffset; i += 2)
+                    end += (int)arr[i];
+
                 int a = 0;
                 List<byte> append = new();
                 if (diff > -1)
@@ -105,6 +114,14 @@ namespace Saturn.Backend.Data.Utils
             }
 
             return -1;
+        }
+        
+        // Add 0 to the end of a byte[] to make it the same size as another array
+        public static byte[] AddZero(byte[] array, int size)
+        {
+            var newArray = new byte[size];
+            Array.Copy(array, newArray, array.Length);
+            return newArray;
         }
     }
 }

@@ -104,9 +104,9 @@ namespace Saturn.Backend.Data.Utils
                 Vars.HexOffset = 0;
 
                 if (!Engine.FindHex(0, value, "3E FF FF FF FF")) continue;
-                if ((uint)value[Vars.HexOffset + 6] > 9)
+                if ((uint)value[Vars.HexOffset + 5] > 9)
                     return EFortRarity.Common;
-                return (EFortRarity)value[Vars.HexOffset + 6];
+                return (EFortRarity)value[Vars.HexOffset + 5];
             }
 
             return EFortRarity.Common;
@@ -136,7 +136,6 @@ namespace Saturn.Backend.Data.Utils
                         output.Add("/Game/Animation" + item);
                     else
                         output.Add(item.Split('.')[0] + '.' + SubstringFromLast(item.Split('.')[0], '/'));
-                    Logger.Log(output.Last(), Enums.LogLevel.Fatal);
                 }
             }
 
