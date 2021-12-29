@@ -1004,6 +1004,7 @@ namespace Saturn.Backend.Data.Services
             var Rarity = await FileUtil.GetRarityFromAsset(item.DefinitionPath, _provider);
             if (Rarity != EFortRarity.Common)
             {
+                option.Status = $"All common items are going to be {Rarity.ToString()} and {option.Status}";
                 output.Assets.Add(
                     Rarity switch
                     {

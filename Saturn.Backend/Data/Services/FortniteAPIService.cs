@@ -257,13 +257,13 @@ namespace Saturn.Backend.Data.Services
             return ret;
         }
 
-        public string GetData(Uri uri)
+        private string GetData(Uri uri)
         {
             using var wc = new WebClient();
             return wc.DownloadString(uri);
         }
 
-        public async Task<string> GetDataAsync(Uri uri)
+        private async Task<string> GetDataAsync(Uri uri)
         {
             using var wc = new WebClient();
             return await wc.DownloadStringTaskAsync(uri);
