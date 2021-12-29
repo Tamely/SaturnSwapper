@@ -34,11 +34,20 @@ namespace Saturn.Backend.Data.Utils
             return result;
         }
 
-        public static bool FindHex(long start, byte[] bytes, byte[] a, long max = 0L)
+        public static bool FindHex(long start, byte[] bytes, string a, long max = 0L)
         {
+            // Convert hex string to byte[]
+            
+            
+            var b = new byte[a.Replace(" ", "").Length / 2];
+            for (var i = 0; i < b.Length; i++)
+            {
+                b[i] = Convert.ToByte(a.Replace(" ", "").Substring(i * 2, 2), 16);
+            }
+            
             var result = false;
             Stream s = new MemoryStream(bytes);
-            var task = Task.Run(() => D(s, start + 1, a, max));
+            var task = Task.Run(() => D(s, start + 1, b, max));
             var flag3 = task.Wait(TimeSpan.FromSeconds(10.0));
             long num;
             if (flag3)

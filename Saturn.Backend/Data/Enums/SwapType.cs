@@ -34,6 +34,18 @@
         MiscOrTailCharacterPart,
         OtherCharacterPart,
         BackblingCharacterPart,
+        
+        WeaponMesh,
+        WeaponMaterial,
+        WeaponAnim,
+        WeaponFx,
+        WeaponSound,
+        WeaponTrail,
+        
+        LargeIcon,
+        SmallIcon,
+        
+        Color,
 
         Modifier,
         Property,

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using CUE4Parse;
@@ -188,6 +189,7 @@ namespace Saturn.Backend.Data.Services
                     {
                         ItemType.IT_Skin => await GenerateMeshSkins(item, option),
                         ItemType.IT_Dance => await GenerateMeshEmote(item, option),
+                        ItemType.IT_Pickaxe => await GenerateMeshPickaxe(item, option),
                         _ => new()
                     };
 
@@ -467,20 +469,74 @@ namespace Saturn.Backend.Data.Services
                        strs.FirstOrDefault(x => x.ToLower().Contains("characterpart")).Split('.')[0]);
         }
 
-        public async Task<string> IsSkinStillConverted()
-        {
-            foreach (var convItem in (await _configService.TryGetConvertedItems()).Where(x =>
-                x.Type == ItemType.IT_Skin.ToString()))
-                return convItem.Name;
-            return null;
-        }
-
         public async Task<string> IsTypeConverted(ItemType itemType)
         {
             foreach (var convItem in (await _configService.TryGetConvertedItems()).Where(x =>
                 x.Type == itemType.ToString()))
                 return convItem.Name;
             return null;
+        }
+
+        public async Task<Dictionary<string, string>> GetAssetsFromWID(string wid)
+        {
+            var output = new Dictionary<string, string>();
+            
+            
+            var strs = await FileUtil.GetStringsFromAsset(wid, _provider);
+
+            
+            string Mesh = "/";
+            string Material = "/";
+            string SmallIcon = "/";
+            string LargeIcon = "/";
+            string FX = "/";
+            string SwingCue = "/";
+            string EquipCue = "/";
+            string ImpactCue = "/";
+            string ActorClass = "/";
+            string Trail = "/";
+            
+            foreach (var str in strs)
+            {
+                if (str.Contains('.'))
+                {
+                    if (str.ToLower().Contains("meshes"))
+                        Mesh = str;
+                    if (str.ToLower().Contains("material"))
+                        Material = str;
+                    if (str.ToLower().Contains("impact") && !str.ToLower().Contains("fx"))
+                        ImpactCue = str;
+                    if (str.ToLower().Contains("swing") && !str.ToLower().Contains("fx"))
+                        SwingCue = str;
+                    if ((str.ToLower().Contains("ready") || str.ToLower().Contains("equip")) &&
+                        !str.ToLower().Contains("fx"))
+                        EquipCue = str;
+                    if (str.ToLower().Contains("icon") && str.ToLower().Contains("-l"))
+                        LargeIcon = str;
+                    if (str.ToLower().Contains("icon") && !str.ToLower().Contains("-l"))
+                        SmallIcon = str;
+                    if (str ==
+                        "/Game/Weapons/FORT_Melee/Blueprints/B_Athena_Pickaxe_Generic.B_Athena_Pickaxe_Generic_C")
+                        ActorClass = str;
+                    if (str.ToLower().Contains("fx") && !str.ToLower().Contains("trail"))
+                        FX = str;
+                    if (str.ToLower().Contains("fx") && str.ToLower().Contains("trail"))
+                        Trail = str;
+                }
+            }
+            
+            output.Add("Mesh", Mesh);
+            output.Add("Material", Material);
+            output.Add("SmallIcon", SmallIcon);
+            output.Add("LargeIcon", LargeIcon);
+            output.Add("FX", FX);
+            output.Add("SwingCue", SwingCue);
+            output.Add("EquipCue", EquipCue);
+            output.Add("ImpactCue", ImpactCue);
+            output.Add("ActorClass", ActorClass);
+            output.Add("Trail", Trail);
+
+            return output;
         }
 
 
@@ -862,6 +918,361 @@ namespace Saturn.Backend.Data.Services
             };
         }
 
+        #endregion
+        
+        #region GeneratePickaxeSwaps
+        
+        private async Task<SaturnOption> GenerateMeshPickaxe(Cosmetic item, SaturnItem option)
+        {
+            Logger.Log($"Getting wid for {item.Name}");
+            var swaps = await GetAssetsFromWID(item.DefinitionPath);
+            
+            if (swaps["FX"] != "/" || swaps["Material"] != "/" || swaps["ActorClass"] == "/")
+                option.Status = "This item might not be perfect!";
+            
+
+            Logger.Log("Generating swaps");
+
+            var output = new SaturnOption()
+            {
+                Name = item.Name,
+                Icon = item.Images.SmallIcon,
+                Rarity = item.Rarity.BackendValue,
+                Assets = new List<SaturnAsset>()
+                {
+                    new SaturnAsset()
+                    {
+                        ParentAsset = "FortniteGame/Content/Athena/Items/Weapons/WID_Harvest_Pickaxe_Athena_C_T01",
+                        Swaps = new List<SaturnSwap>()
+                        {
+                            new SaturnSwap()
+                            {
+                                Search =
+                                    "/Game/UI/Foundation/Textures/Icons/Weapons/Items/T-Icon-Pickaxes-DefaultMarkIIIPickaxe.T-Icon-Pickaxes-DefaultMarkIIIPickaxe",
+                                Replace = swaps["SmallIcon"],
+                                Type = SwapType.SmallIcon
+                            },
+                            new SaturnSwap()
+                            {
+                                Search =
+                                    "/Game/UI/Foundation/Textures/Icons/Weapons/Items/T-Icon-Pickaxes-DefaultMarkIIIPickaxe-L.T-Icon-Pickaxes-DefaultMarkIIIPickaxe-L",
+                                Replace = swaps["LargeIcon"],
+                                Type = SwapType.LargeIcon
+                            },
+                            new SaturnSwap()
+                            {
+                                Search =
+                                    "/Game/Weapons/FORT_Melee/Pickaxe_Default_Mark_III/Meshes/Default_Mark_III_Axe.Default_Mark_III_Axe",
+                                Replace = swaps["Mesh"],
+                                Type = SwapType.WeaponMesh
+                            },
+                            new SaturnSwap()
+                            {
+                                Search =
+                                    "/Game/Athena/Sounds/Weapons/PickAxes/MarkIIIMale/PickaxeSwing_MarkIIIMale.PickaxeSwing_MarkIIIMale",
+                                Replace = swaps["SwingCue"],
+                                Type = SwapType.WeaponSound
+                            },
+                            new SaturnSwap()
+                            {
+                                Search =
+                                    "/Game/Athena/Sounds/Weapons/PickAxes/MarkIIIMale/PickaxeReady_MarkIIIMale.PickaxeReady_MarkIIIMale",
+                                Replace = swaps["EquipCue"],
+                                Type = SwapType.WeaponSound
+                            },
+                            new SaturnSwap()
+                            {
+                                Search =
+                                    "/Game/Athena/Sounds/Weapons/PickAxes/MarkIIIMale/PickaxeImpactEnemy_MarkIIIMale.PickaxeImpactEnemy_MarkIIIMale",
+                                Replace = swaps["ImpactCue"],
+                                Type = SwapType.WeaponSound
+                            },
+                            new SaturnSwap()
+                            {
+                                Search =
+                                    "/Game/Weapons/FORT_Melee/Pickaxe_Default_Mark_III/FX/NS_Pickaxe_Defualt_Mark_III_Trail.NS_Pickaxe_Defualt_Mark_III_Trail",
+                                Replace = swaps["Trail"],
+                                Type = SwapType.WeaponTrail
+                            }
+                        }
+                    }
+                }
+            };
+
+
+            var Rarity = await FileUtil.GetRarityFromAsset(item.DefinitionPath, _provider);
+            if (Rarity != EFortRarity.Common)
+            {
+                output.Assets.Add(
+                    Rarity switch
+                    {
+                        EFortRarity.Uncommon => new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Balance/RarityData",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {152,161,49,63,152,161,49,63,152,161,49,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {16,122,182,62,220,184,125,63,0,0,0,0,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {168,114,242,62,254,95,5,63,95,239,14,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {87,208,244,61,254,95,5,63,0,0,0,0,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {170,214,50,62,241,73,71,62,170,10,93,62,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {0,0,0,0,170,10,93,62,161,247,198,58,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {113,255,81,61,22,221,122,61,130,253,151,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {21,31,31,58,129,32,160,61,45,208,110,58,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {30,53,166,60,120,211,173,60,26,168,12,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {21,31,31,58,28,153,7,61,21,31,31,58,0,0,128,63}),
+                                    Type = SwapType.Property
+                                }
+                            }
+                        },
+                        EFortRarity.Rare => new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Balance/RarityData",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {152,161,49,63,152,161,49,63,152,161,49,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {0,0,0,0,0,0,128,63,169,245,118,63,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {168,114,242,62,254,95,5,63,95,239,14,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {0,0,0,0,65,125,219,62,0,0,128,63,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {170,214,50,62,241,73,71,62,170,10,93,62,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {0,0,0,0,177,219,199,61,254,95,5,63,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {113,255,81,61,22,221,122,61,130,253,151,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {0,0,0,0,206,193,115,61,54,32,130,62,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {30,53,166,60,120,211,173,60,26,168,12,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {41,63,41,60,92,171,189,60,125,150,39,61,0,0,128,63}),
+                                    Type = SwapType.Property
+                                }
+                            }
+                        },
+                        EFortRarity.Epic => new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Balance/RarityData",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {152,161,49,63,152,161,49,63,152,161,49,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {207,47,86,63,10,215,163,60,0,0,128,63,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {168,114,242,62,254,95,5,63,95,239,14,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {71,1,30,63,217,151,204,61,0,0,128,63,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {170,214,50,62,241,73,71,62,170,10,93,62,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {9,166,58,62,190,79,213,60,160,166,38,63,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {113,255,81,61,22,221,122,61,130,253,151,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {88,3,148,61,212,68,31,60,154,210,74,62,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {30,53,166,60,120,211,173,60,26,168,12,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {94,247,214,60,135,166,108,60,125,150,39,61,0,0,128,63}),
+                                    Type = SwapType.Property
+                                }
+                            }
+                        },
+                        EFortRarity.Legendary => new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Balance/RarityData",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {152,161,49,63,152,161,49,63,152,161,49,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {186,245,118,63,68,136,11,63,56,107,0,62,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {168,114,242,62,254,95,5,63,95,239,14,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {0,0,128,63,10,215,131,62,10,215,35,60,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {170,214,50,62,241,73,71,62,170,10,93,62,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {254,95,5,63,149,12,160,61,0,0,0,0,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {113,255,81,61,22,221,122,61,130,253,151,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {54,32,130,62,16,233,55,61,55,53,80,60,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {30,53,166,60,120,211,173,60,26,168,12,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {10,215,35,61,20,63,70,60,188,116,19,60,0,0,128,63}),
+                                    Type = SwapType.Property
+                                }
+                            }
+                        },
+                        EFortRarity.Mythic => new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Balance/RarityData",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {152,161,49,63,152,161,49,63,152,161,49,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {0,0,128,63,232,17,95,63,41,61,195,62,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {168,114,242,62,254,95,5,63,95,239,14,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {242,149,72,63,169,48,18,63,16,120,160,61,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {170,214,50,62,241,73,71,62,170,10,93,62,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {254,95,5,63,2,99,149,62,213,174,137,60,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {113,255,81,61,22,221,122,61,130,253,151,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {205,204,76,62,235,224,224,61,245,160,160,60,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {30,53,166,60,120,211,173,60,26,168,12,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {125,150,39,61,248,84,206,60,41,63,41,60,0,0,128,63}),
+                                    Type = SwapType.Property
+                                }
+                            }
+                        },
+                        EFortRarity.Transcendent or EFortRarity.Unattainable => new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Balance/RarityData",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {152,161,49,63,152,161,49,63,152,161,49,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {0,0,0,0,34,84,53,63,186,245,118,63,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {168,114,242,62,254,95,5,63,95,239,14,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {0,0,0,0,0,0,128,63,251,121,211,62,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {170,214,50,62,241,73,71,62,170,10,93,62,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {19,129,58,62,254,95,5,63,0,0,128,63,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {113,255,81,61,22,221,122,61,130,253,151,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {143,170,22,62,18,192,77,61,54,32,130,62,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {30,53,166,60,120,211,173,60,26,168,12,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {20,151,35,61,35,75,102,60,10,215,35,61,0,0,128,63}),
+                                    Type = SwapType.Property
+                                }
+                            }
+                        },
+                        EFortRarity.NumRarityValues or EFortRarity.EFortRarity_MAX => new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Balance/RarityData",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {152,161,49,63,152,161,49,63,152,161,49,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {95,11,186,61,35,134,21,63,177,54,198,59,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {168,114,242,62,254,95,5,63,95,239,14,63,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {95,11,186,61,35,134,21,63,177,54,198,59,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {170,214,50,62,241,73,71,62,170,10,93,62,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {95,11,186,61,35,134,21,63,177,54,198,59,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {113,255,81,61,22,221,122,61,130,253,151,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {95,11,186,61,35,134,21,63,177,54,198,59,0,0,128,63}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {30,53,166,60,120,211,173,60,26,168,12,61,0,0,128,63}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {95,11,186,61,35,134,21,63,177,54,198,59,0,0,128,63}),
+                                    Type = SwapType.Property
+                                }
+                            }
+                        },
+                        
+                        _ => throw new Exception("Rarity not found")
+                    });
+            }
+
+            return output;
+        }
+        
         #endregion
         
 

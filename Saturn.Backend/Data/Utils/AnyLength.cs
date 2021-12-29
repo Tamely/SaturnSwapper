@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -28,6 +29,9 @@ namespace Saturn.Backend.Data.Utils
                 {
                     int searchOffset = IndexOfSequence(arr.ToArray(), searches[i]);
                     int sizeOffset = NumFromTop(arr.ToArray(), startOffset, lastOffset, searchOffset, array[44]);
+                    Logger.Log("Size offset is " + sizeOffset);
+                    if (sizeOffset < 0)
+                        continue;
                     arr.RemoveAt(sizeOffset);
                     arr.Insert(sizeOffset, (byte)replaces[i].Length);
                 
@@ -54,6 +58,7 @@ namespace Saturn.Backend.Data.Utils
                 {
                     while (array.Length != arr.Count)
                     {
+                        Logger.Log($"Changing end from {end} to {end + diff}");
                         int newEnd = end + diff;
                         arr.RemoveRange(newEnd, Math.Abs(diff));
                     }
@@ -64,7 +69,7 @@ namespace Saturn.Backend.Data.Utils
             }
             catch (Exception e)
             {
-                Logger.Log(e.Message, LogLevel.Error);
+                Logger.Log(e.ToString(), LogLevel.Error);
                 throw new Exception("Failed to swap!");
             }
         }

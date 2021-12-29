@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CUE4Parse.FileProvider;
+using Saturn.Backend.Data.Enums;
 
 namespace Saturn.Backend.Data.Utils
 {
@@ -94,10 +95,29 @@ namespace Saturn.Backend.Data.Utils
             return list.OrderBy(x => x.Length).First();
         }
 
+        public static async Task<EFortRarity> GetRarityFromAsset(string assetPath, DefaultFileProvider _provider)
+        {
+            if (!_provider.TrySavePackage(assetPath, out var assets)) return EFortRarity.Common;
+
+            foreach (var (_, value) in assets)
+            {
+                Vars.HexOffset = 0;
+
+                if (!Engine.FindHex(0, value, "3E FF FF FF FF")) continue;
+                if ((uint)value[Vars.HexOffset + 6] > 9)
+                    return EFortRarity.Common;
+                return (EFortRarity)value[Vars.HexOffset + 6];
+            }
+
+            return EFortRarity.Common;
+
+        }
+
         // Export asset to memory then return all strings in asset
         public static async Task<List<string>> GetStringsFromAsset(string assetPath, DefaultFileProvider _provider)
         {
             List<string> output = new();
+            Logger.Log(assetPath);
             if (!_provider.TrySavePackage(assetPath, out var assets)) return output;
             foreach (var (_, value) in assets)
             {
@@ -110,7 +130,7 @@ namespace Saturn.Backend.Data.Utils
                 {
                     Engine.FindStop(value);
                     var item = Encoding.UTF8.GetString(ReadBytes(value, Vars.StopOffset - Vars.CurrentOffset, Vars.CurrentOffset));
-                    if (item.Split('.')[0].ToLower().Contains("bp"))
+                    if (item.Split('.')[0].ToLower().Contains("bp") || item.Split('.')[0].ToLower().Contains("blueprint"))
                         output.Add(item.Split('.')[0] + '.' + SubstringFromLast(item.Split('.')[0], '/') + "_C");
                     else if (item.StartsWith("/Game/MainPlayer"))
                         output.Add("/Game/Animation" + item);

@@ -88,7 +88,7 @@ namespace Saturn.Backend.Data.Models.FortniteAPI
 
         [JsonProperty("displayAssetPath")] public string DisplayAssetPath { get; set; }
 
-        [JsonProperty("definitionPath")] public object DefinitionPath { get; set; }
+        [JsonProperty("definitionPath")] public string DefinitionPath { get; set; }
 
         [JsonProperty("path")] public string Path { get; set; }
 

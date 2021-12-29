@@ -54,7 +54,7 @@
                     <img src="img/UI/backblings.png" alt="">
                     <h2>Backblings</h2>
                 </div>
-                <div class="option">
+                <div class="option" @onclick=@(async() => await GetSaturnPickaxes())>
                     <img src="img/UI/pickaxes.png" alt="">
                     <h2>Pickaxes</h2>
                 </div>
@@ -323,23 +323,44 @@
 
         foreach (var item in Items)
         {
-            if (item.Id.Contains("EID"))
+            item.CosmeticOptions = new()
             {
-                item.CosmeticOptions = new()
+                new SaturnItem
                 {
-                    new SaturnItem
-                    {
-                        ItemDefinition = "EID_DanceMoves",
-                        Name = "Dance Moves",
-                        Description = "Express yourself on the battlefield.",
-                        Icon =
-                            "https://fortnite-api.com/images/cosmetics/br/eid_dancemoves/smallicon.png",
-                        Rarity = "Common"
-                    }
-                };
-            }
+                    ItemDefinition = "EID_DanceMoves",
+                    Name = "Dance Moves",
+                    Description = "Express yourself on the battlefield.", 
+                    Icon = 
+                        "https://fortnite-api.com/images/cosmetics/br/eid_dancemoves/smallicon.png",
+                    Rarity = "Common"
+                }
+            };
         }
         currentType = ItemType.IT_Dance;
+        saturnState = SaturnState.S_Items;
+    }
+    
+    private async Task GetSaturnPickaxes()
+    {
+        saturnState = SaturnState.S_Loading;
+        Items = await _fortniteAPIService.GetSaturnPickaxes();
+
+        foreach (var item in Items)
+        {
+            item.CosmeticOptions = new()
+            {
+                new SaturnItem
+                {
+                    ItemDefinition = "DefaultPickaxe",
+                    Name = "Default Pickaxe",
+                    Description = "Perfectly unremarkable.",
+                    Icon =
+                        "https://fortnite-api.com/images/cosmetics/br/defaultpickaxe/smallicon.png",
+                    Rarity = "Common"
+                }
+            };
+        }
+        currentType = ItemType.IT_Pickaxe;
         saturnState = SaturnState.S_Items;
     }
 

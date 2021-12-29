@@ -18,6 +18,7 @@ namespace Saturn.Backend.Data.Services
     {
         public Task<List<Cosmetic>> GetSaturnSkins();
         public Task<List<Cosmetic>> GetSaturnBackblings();
+        public Task<List<Cosmetic>> GetSaturnPickaxes();
         public Task<List<Cosmetic>> GetSaturnDances();
         public Models.FortniteAPI.Data GetAES();
         public Task<List<Cosmetic>> AreItemsConverted(List<Cosmetic> items);
@@ -83,6 +84,24 @@ namespace Saturn.Backend.Data.Services
 
             _discordRPCService.UpdatePresence($"Looking at {Backs.Data.Count} different backpacks");
             return await AreItemsConverted(Backs.Data);
+        }
+        
+        public async Task<List<Cosmetic>> GetSaturnPickaxes()
+        {
+            var data = await GetDataAsync(CosmeticsByType("AthenaPickaxe"));
+            var Picks = JsonConvert.DeserializeObject<CosmeticList>(data);
+            
+            Picks.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd");
+
+            foreach (var item in Picks.Data.Where(item => item.Name.ToLower() == "random"))
+            {
+                item.IsRandom = true;
+            }
+            
+            Trace.WriteLine($"Deserialized {Picks.Data.Count} objects");
+
+            _discordRPCService.UpdatePresence($"Looking at {Picks.Data.Count} different pickaxes");
+            return await AreItemsConverted(Picks.Data);
         }
 
         public async Task<List<Cosmetic>> GetSaturnSkins()
