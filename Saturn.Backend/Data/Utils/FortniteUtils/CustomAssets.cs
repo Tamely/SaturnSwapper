@@ -18,7 +18,9 @@ public class CustomAssets
                     || asset.ParentAsset.Contains("EID_DanceMoves") 
                     || asset.ParentAsset.Contains("CP_Head_F_ScholarFestiveWinter") 
                     || asset.ParentAsset.Contains("CP_Body_Commando_F_ScholarFestiveWinter") 
-                    || asset.ParentAsset.Contains("CP_F_MED_ScholarFestiveWinter_FaceAcc"))
+                    || asset.ParentAsset.Contains("CP_F_MED_ScholarFestiveWinter_FaceAcc")
+                    || asset.ParentAsset.Contains("WID_Harvest_Pickaxe_Athena_C_T01")
+                    || asset.ParentAsset.Contains("RarityData"))
                 {
                     Offsets assetData;
                     if (asset.ParentAsset.Contains("DefaultGameDataCosmetics"))
@@ -31,6 +33,10 @@ public class CustomAssets
                         assetData = await _saturnAPIService.GetOffsets("CP_Body_Commando_F_ScholarFestiveWinter");
                     else if (asset.ParentAsset.Contains("CP_F_MED_ScholarFestiveWinter_FaceAcc"))
                         assetData = await _saturnAPIService.GetOffsets("CP_F_MED_ScholarFestiveWinter_FaceAcc");
+                    else if (asset.ParentAsset.Contains("WID_Harvest_Pickaxe_Athena_C_T01"))
+                        assetData = await _saturnAPIService.GetOffsets("WID_Harvest_Pickaxe_Athena_C_T01");
+                    else if (asset.ParentAsset.Contains("RarityData"))
+                        assetData = await _saturnAPIService.GetOffsets("RarityData");
                     else
                         return false;
 
