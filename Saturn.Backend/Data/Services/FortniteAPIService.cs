@@ -128,7 +128,7 @@ namespace Saturn.Backend.Data.Services
         private async Task<List<Cosmetic>> RemoveItems(List<Cosmetic> items)
         {
             Logger.Log("Removing items");
-            foreach (var section in _cloudStorageService.CloudChanges.GetSections())
+            foreach (var section in _cloudStorageService.GetSections())
             {
                 foreach (var key in section.Keys)
                 {
@@ -147,7 +147,7 @@ namespace Saturn.Backend.Data.Services
         private async Task<List<Cosmetic>> AddExtraItems(List<Cosmetic> items)
         {
             Logger.Log("Adding extra items");
-            items.AddRange(from section in _cloudStorageService.CloudChanges.GetSections()
+            items.AddRange(from section in _cloudStorageService.GetSections()
             from key in section.Keys
             select _cloudStorageService.DecodeChanges(key.Value)
             into changes

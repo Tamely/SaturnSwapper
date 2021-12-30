@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using IniParser.Model;
 using Newtonsoft.Json;
 using Saturn.Backend.Data.Models.CloudStorage;
 using Saturn.Backend.Data.Utils;
@@ -13,13 +14,13 @@ namespace Saturn.Backend.Data.Services
     {
         public string GetChanges(string optionName, string itemDef);
         public Changes DecodeChanges(string changes);
-        public IniUtil CloudChanges { get; set; }
+        public SectionDataCollection GetSections();
     }
 
     public class CloudStorageService : ICloudStorageService
     {
         private readonly ISaturnAPIService _saturnAPIService;
-        public IniUtil CloudChanges { get; set; } = new (Config.CloudStoragePath);
+        private readonly IniUtil CloudChanges = new (Config.CloudStoragePath);
 
         public CloudStorageService(ISaturnAPIService saturnAPIService)
         {
@@ -37,5 +38,8 @@ namespace Saturn.Backend.Data.Services
 
         public Changes DecodeChanges(string changes)
             => JsonConvert.DeserializeObject<Changes>(changes) ?? new Changes();
+
+        public SectionDataCollection GetSections()
+            => CloudChanges.GetSections();
     }
 }
