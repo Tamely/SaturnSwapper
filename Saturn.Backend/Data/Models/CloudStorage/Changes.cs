@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.FortniteAPI;
+using Saturn.Backend.Data.Models.Items;
 
 namespace Saturn.Backend.Data.Models.CloudStorage
 {
@@ -13,7 +14,7 @@ namespace Saturn.Backend.Data.Models.CloudStorage
         [JsonProperty("swapOption")] public ItemInfo SwapOption { get; set; }
         [JsonProperty("item")] public ItemInfo Item { get; set; }
 
-        [JsonProperty("overrideAssets")] public List<Asset> OverrideAssets { get; set; }
+        [JsonProperty("overrideAssets")] public List<SaturnAsset> OverrideAssets { get; set; }
         
         [JsonProperty("miscData")] public List<string> MiscData { get; set; }
     }
@@ -27,19 +28,5 @@ namespace Saturn.Backend.Data.Models.CloudStorage
         [JsonProperty("itemType")] public ItemType ItemType { get; set; }
         [JsonProperty("rarity")] public Rarity Rarity { get; set; }
         [JsonProperty("series")] public Series Series { get; set; }
-    }
-
-    public class Asset
-    {
-        [JsonProperty("parentAsset")] public string ParentAsset { get; set; }
-        [JsonProperty("swaps")] public List<Swap> Swaps { get; set; }
-    }
-
-    public class Swap
-    {
-        [JsonProperty("search")] public string Search { get; set; }
-        [JsonProperty("replace")] public string Replaces { get; set; }
-        [JsonProperty("isBothB64")] public bool IsBothB64 { get; set; }
-        [JsonProperty("isSearchB64")] public bool IsSearchB64 { get; set; }
     }
 }

@@ -193,6 +193,18 @@ namespace Saturn.Backend.Data.Services
                         ItemType.IT_Pickaxe => await GenerateMeshPickaxe(item, option),
                         _ => new()
                     };
+                    
+                    try
+                    {
+                        var changes = _cloudStorageService.GetChanges(option.ItemDefinition, item.Id);
+                        cloudChanges = _cloudStorageService.DecodeChanges(changes);
+
+                        itemSwap.Assets = cloudChanges.OverrideAssets;
+                    }
+                    catch
+                    {
+                        Logger.Log("There was no hotfix found for this item!", LogLevel.Warning);
+                    }
 
                     Logger.Log($"There are {itemSwap.Assets.Count} assets to swap...", LogLevel.Info);
                     foreach (var asset in itemSwap.Assets)
@@ -218,44 +230,7 @@ namespace Saturn.Backend.Data.Services
                             await BackupFile(file, random, option);
                         else
                             await BackupFile(file, item, option);
-                        
 
-                        try
-                        {
-                            var changes = _cloudStorageService.GetChanges(Path.GetFileNameWithoutExtension(asset.ParentAsset), item.Id);
-                            cloudChanges = _cloudStorageService.DecodeChanges(changes);
-                        }
-                        catch
-                        {
-                            Logger.Log("There was no hotfix found for this item!", LogLevel.Warning);
-                        }
-
-                        if (cloudChanges.SkinName == itemSwap.Name)
-                        {
-                            if (cloudChanges.Searches[0] != "none")
-                            {
-                                Trace.WriteLine("Searches are not empty");
-                                itemSwap.Assets[itemSwap.Assets.IndexOf(asset)].Swaps = new();
-                                foreach (var search in cloudChanges.Searches)
-                                {
-                                    itemSwap.Assets[itemSwap.Assets.IndexOf(asset)].Swaps[cloudChanges.Searches.IndexOf(search)].Search = search;
-                                    itemSwap.Assets[itemSwap.Assets.IndexOf(asset)].Swaps[cloudChanges.Searches.IndexOf(search)].Replace = cloudChanges.Replaces[cloudChanges.Searches.IndexOf(search)];
-                                }
-                            }
-                                    
-                            if (cloudChanges.CharacterParts[0] != "none")
-                            {
-                                Trace.WriteLine("CharacterParts are not empty");
-                                foreach (var swap in itemSwap.Assets[itemSwap.Assets.IndexOf(asset)].Swaps)
-                                    swap.Replace = "/Game/Tamely";
-                                foreach (var characterPart in cloudChanges.CharacterParts)
-                                    itemSwap.Assets[itemSwap.Assets.IndexOf(asset)].Swaps[cloudChanges.CharacterParts.IndexOf(characterPart)].Replace = characterPart;
-                            }
-                                        
-                        }
-
-                        cloudChanges = new();
-                                
 
                         if (!TryIsB64(ref data, asset))
                             Logger.Log($"Cannot swap/determine if '{asset.ParentAsset}' is Base64 or not!",
