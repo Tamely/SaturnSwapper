@@ -103,6 +103,7 @@ namespace Saturn.Backend.Data.Models.FortniteAPI
         [JsonProperty("hatType")] public HatTypes HatTypes { get; set; } = HatTypes.HT_FaceACC;
         [JsonProperty("cosmeticOptions")] public List<SaturnItem> CosmeticOptions { get; set; }
         [JsonProperty("isRandom")] public bool IsRandom { get; set; }
+        [JsonProperty("isCloudAdded")] public bool IsCloudAdded { get; set; }
     }
 
     public class CosmeticList

@@ -1,52 +1,26 @@
-﻿using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Text;
+﻿using System.Reflection;
+using IniParser;
+using IniParser.Model;
 
 namespace Saturn.Backend.Data.Utils.CloudStorage
 {
-    internal class IniUtil
+    public class IniUtil
     {
+        
         private readonly string EXE = Assembly.GetExecutingAssembly().GetName().Name;
-        private readonly string Path;
+        private readonly IniData _data;
 
         public IniUtil(string IniPath = null)
         {
-            Path = new FileInfo(IniPath ?? EXE + ".ini").FullName;
+            var parser = new FileIniDataParser();
+            _data = parser.ReadFile(IniPath ?? EXE + ".ini");
         }
-
-        [DllImport("kernel32", CharSet = CharSet.Unicode)]
-        private static extern long WritePrivateProfileString(string Section, string Key, string Value, string FilePath);
-
-        [DllImport("kernel32", CharSet = CharSet.Unicode)]
-        private static extern int GetPrivateProfileString(string Section, string Key, string Default,
-            StringBuilder RetVal, int Size, string FilePath);
 
         public string Read(string Key, string Section = null)
-        {
-            var RetVal = new StringBuilder(9999);
-            GetPrivateProfileString(Section ?? EXE, Key, "", RetVal, 9999, Path);
-            return RetVal.ToString();
-        }
+            => _data[Section][Key];
 
-        public void Write(string Key, string Value, string Section = null)
-        {
-            WritePrivateProfileString(Section ?? EXE, Key, Value, Path);
-        }
+        public SectionDataCollection GetSections()
+            => _data.Sections;
 
-        public void DeleteKey(string Key, string Section = null)
-        {
-            Write(Key, null, Section ?? EXE);
-        }
-
-        public void DeleteSection(string Section = null)
-        {
-            Write(null, null, Section ?? EXE);
-        }
-
-        public bool KeyExists(string Key, string Section = null)
-        {
-            return Read(Key, Section).Length > 0;
-        }
     }
 }

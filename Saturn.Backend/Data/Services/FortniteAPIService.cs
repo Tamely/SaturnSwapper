@@ -9,6 +9,7 @@ using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Utils;
+using Saturn.Backend.Data.Utils.CloudStorage;
 using Serilog;
 using Type = Saturn.Backend.Data.Models.FortniteAPI.Type;
 
@@ -121,7 +122,48 @@ namespace Saturn.Backend.Data.Services
 
             _discordRPCService.UpdatePresence($"Looking at {Skins.Data.Count} different skins");
 
-            return await AreItemsConverted(await IsHatTypeDifferent(Skins.Data));
+            return await AreItemsConverted(await AddExtraItems(await RemoveItems(await IsHatTypeDifferent(Skins.Data))));
+        }
+        
+        private async Task<List<Cosmetic>> RemoveItems(List<Cosmetic> items)
+        {
+            Logger.Log("Removing items");
+            foreach (var section in _cloudStorageService.CloudChanges.GetSections())
+            {
+                foreach (var key in section.Keys)
+                {
+                    var changes = _cloudStorageService.DecodeChanges(key.Value);
+
+                    if (changes.removeItem == false)
+                        continue;
+
+                    items.RemoveAll(x => x.Id == changes.Item.ItemID);
+                }
+            }
+
+            return items;
+        }
+
+        private async Task<List<Cosmetic>> AddExtraItems(List<Cosmetic> items)
+        {
+            Logger.Log("Adding extra items");
+            items.AddRange(from section in _cloudStorageService.CloudChanges.GetSections()
+            from key in section.Keys
+            select _cloudStorageService.DecodeChanges(key.Value)
+            into changes
+            where changes.addItem != false
+            select new Cosmetic()
+            {
+                Images = new() { SmallIcon = changes.Item.ItemIcon },
+                Description = changes.Item.ItemDescription,
+                Id = changes.Item.ItemID,
+                Name = changes.Item.ItemName,
+                Series = changes.Item.Series,
+                Rarity = changes.Item.Rarity,
+                IsCloudAdded = true
+            });
+
+            return items;
         }
 
         private async Task<List<Cosmetic>> IsHatTypeDifferent(List<Cosmetic> skins)

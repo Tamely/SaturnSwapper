@@ -11,14 +11,15 @@ namespace Saturn.Backend.Data.Services
 {
     public interface ICloudStorageService
     {
-        public string GetChanges(string optionDef, string itemDef);
+        public string GetChanges(string optionName, string itemDef);
         public Changes DecodeChanges(string changes);
+        public IniUtil CloudChanges { get; set; }
     }
 
     public class CloudStorageService : ICloudStorageService
     {
         private readonly ISaturnAPIService _saturnAPIService;
-        private readonly IniUtil CloudChanges = new(Config.CloudStoragePath);
+        public IniUtil CloudChanges { get; set; } = new (Config.CloudStoragePath);
 
         public CloudStorageService(ISaturnAPIService saturnAPIService)
         {
@@ -31,8 +32,8 @@ namespace Saturn.Backend.Data.Services
 
         private string CloudStorage { get; }
 
-        public string GetChanges(string optionDef, string itemDef)
-            => CloudChanges.Read(optionDef, itemDef);
+        public string GetChanges(string optionName, string itemDef)
+            => CloudChanges.Read(optionName, itemDef);
 
         public Changes DecodeChanges(string changes)
             => JsonConvert.DeserializeObject<Changes>(changes) ?? new Changes();
