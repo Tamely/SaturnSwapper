@@ -130,7 +130,7 @@ namespace Saturn.Backend.Data.Services
             var DifferentHatsStr = _cloudStorageService.GetChanges("Skins", "HatTypes");
 
             Logger.Log("Decoding hat types");
-            var DifferentHats = _cloudStorageService.DecodeChanges(DifferentHatsStr);
+            var DifferentHats = _cloudStorageService.DecodeChanges(DifferentHatsStr).MiscData;
             
             foreach (var skin in skins)
             {
@@ -220,7 +220,7 @@ namespace Saturn.Backend.Data.Services
                     };
                 }
 
-                if (DifferentHats.HatSkins.IndexOf(skin.Id) != -1)
+                if (DifferentHats.IndexOf(skin.Id) != -1)
                 {
                     skin.HatTypes = HatTypes.HT_Hat;
                     skin.CosmeticOptions = new List<SaturnItem>()
