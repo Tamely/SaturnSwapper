@@ -14,6 +14,7 @@
 @using Saturn.Backend.Data.Models.Items
 @using Saturn.Backend.Data.Utils
 @using System.Diagnostics
+@using System.Text.RegularExpressions
 @inherits LayoutComponentBase
 
 <body>
@@ -76,9 +77,9 @@
             </div>
         </div>
             <div class="items">
-            @if (saturnState != SaturnState.S_Settings)
+            @if (saturnState != SaturnState.S_Settings || saturnState != SaturnState.S_Dash)
             {
-                <input type="text" placeholder="  Search" style="color:grey"/>
+                <input type="text" placeholder="  Search" style="color:grey" @oninput="@(async change => {await FilterItems(change.Value.ToString()); })"/>
             }
             
             @if (saturnState == SaturnState.S_Loading)
@@ -336,12 +337,13 @@
 
 @code
 {
-    public List<Cosmetic> Items;
+    private List<Cosmetic> Items;
+    private List<Cosmetic> BackupItems;
 
-    public string Avatar { get; set; }
-    public string Username { get; set; }
+    private string Avatar { get; set; }
+    private string Username { get; set; }
 
-    public ItemType currentType { get; set; }
+    private ItemType currentType { get; set; }
 
     private string RemoveDuped = "This will remove all duplicated files from Fortnite (resetting all swaps) and reset the config.";
     private Colors RemoveDupedColor = Colors.C_YELLOW;
@@ -352,7 +354,7 @@
     private string LaunchFortnite = "This will launch Fortnite and prevent it from verifying your game on close";
     private Colors LaunchFortniteColor = Colors.C_WHITE;
 
-    public SaturnState saturnState = SaturnState.S_Dash;
+    private SaturnState saturnState = SaturnState.S_Dash;
 
     private async Task SwitchItemStyleChoice(Cosmetic item)
         => item.IsPickingStyles = !item.IsPickingStyles;
@@ -378,6 +380,15 @@
 
         await base.OnInitializedAsync();
     }
+    
+    private async Task FilterItems(string Name)
+    {
+        Items = new List<Cosmetic>(BackupItems);
+        Items.RemoveAll(x => !FilterString(x.Name.ToLower()).Contains(FilterString(Name.ToLower())));
+    }
+
+    private string FilterString(string input)
+        => Regex.Replace(input, @"[^0-9a-zA-Z]+", "");
 
     private async Task Launch()
     {
@@ -487,6 +498,7 @@
     {
         saturnState = SaturnState.S_Loading;
         Items = await _fortniteAPIService.GetSaturnSkins();
+        BackupItems = new List<Cosmetic>(Items);
         currentType = ItemType.IT_Skin;
         saturnState = SaturnState.S_Items;
     }
@@ -495,6 +507,7 @@
     {
         saturnState = SaturnState.S_Loading;
         Items = await _fortniteAPIService.GetSaturnBackblings();
+        BackupItems = new List<Cosmetic>(Items);
         currentType = ItemType.IT_Backbling;
         saturnState = SaturnState.S_Items;
     }
@@ -519,6 +532,7 @@
                 }
             };
         }
+        BackupItems = new List<Cosmetic>(Items);
         currentType = ItemType.IT_Dance;
         saturnState = SaturnState.S_Items;
     }
@@ -543,6 +557,7 @@
                 }
             };
         }
+        BackupItems = new List<Cosmetic>(Items);
         currentType = ItemType.IT_Pickaxe;
         saturnState = SaturnState.S_Items;
     }
