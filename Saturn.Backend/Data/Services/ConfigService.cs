@@ -26,7 +26,7 @@ namespace Saturn.Backend.Data.Services
             if (!TryGetConfig())
                 Logger.Log("There was an error parsing the config. Generating new one!", LogLevel.Warning);
             if (!TrySetFortniteLocation().GetAwaiter().GetResult())
-                Logger.Log("There was an error settings Fortnite's install locaiton!", LogLevel.Error);
+                Logger.Log("There was an error settings Fortnite's install location!", LogLevel.Error);
         }
 
         public Configuration ConfigFile { get; set; }

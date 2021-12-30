@@ -170,6 +170,8 @@ namespace Saturn.Backend.Data.Services
         {
             Logger.Log("Getting hat types");
             var DifferentHatsStr = _cloudStorageService.GetChanges("Skins", "HatTypes");
+            
+            Logger.Log(DifferentHatsStr);
 
             Logger.Log("Decoding hat types");
             var DifferentHats = _cloudStorageService.DecodeChanges(DifferentHatsStr).MiscData;

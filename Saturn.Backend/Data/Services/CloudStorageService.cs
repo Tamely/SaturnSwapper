@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Saturn.Backend.Data.Models.CloudStorage;
 using Saturn.Backend.Data.Utils;
 using Saturn.Backend.Data.Utils.CloudStorage;
+using Serilog;
 
 namespace Saturn.Backend.Data.Services
 {
@@ -15,6 +16,7 @@ namespace Saturn.Backend.Data.Services
         public string GetChanges(string optionName, string itemDef);
         public Changes DecodeChanges(string changes);
         public SectionDataCollection GetSections();
+        public void SetChanges();
     }
 
     public class CloudStorageService : ICloudStorageService
@@ -41,5 +43,13 @@ namespace Saturn.Backend.Data.Services
 
         public SectionDataCollection GetSections()
             => CloudChanges.GetSections();
+
+        public void SetChanges()
+        {
+            Logger.Log("Changes: " + JsonConvert.SerializeObject(new Changes()
+            {
+                
+            }));
+        }
     }
 }
