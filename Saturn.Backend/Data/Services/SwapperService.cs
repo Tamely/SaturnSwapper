@@ -935,6 +935,108 @@ namespace Saturn.Backend.Data.Services
 
             return option.ItemDefinition switch
             {
+                "CID_936_Athena_Commando_F_RaiderSilver" => new SaturnOption()
+                {
+                    Name = item.Name,
+                    Icon = item.Images.SmallIcon,
+                    Rarity = item.Rarity.BackendValue,
+                    Assets = new()
+                    {
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/FaceAccessories/CP_F_MED_RaiderSilver",
+                            Swaps = new()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Meshes/Parts/F_MED_Raider_Pink_FaceAcc_AnimBP.F_MED_Raider_Pink_FaceAcc_AnimBP_C",
+                                    Replace = swapModel.FaceACCABP,
+                                    Type = SwapType.FaceAccessoryAnim
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Meshes/Parts/F_MED_Raider_Pink_FaceAcc.F_MED_Raider_Pink_FaceAcc",
+                                    Replace = swapModel.FaceACCMesh,
+                                    Type = SwapType.FaceAccessoryMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Skins/Silver/Materials/F_MED_Raider_Silver_Face_Acc.F_MED_Raider_Silver_Face_Acc",
+                                    Replace = swapModel.FaceACCMaterial,
+                                    Type = SwapType.FaceAccessoryMaterial
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Skins/Silver/Materials/F_MED_Raider_Silver_Hair.F_MED_Raider_Silver_Hair",
+                                    Replace = swapModel.FaceACCMaterial2,
+                                    Type = SwapType.FaceAccessoryMaterial
+                                }
+                            }
+                        },
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_RaiderSilver",
+                            Swaps = new()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_Ice_Queen_Head/Meshes/F_MED_IceQueen_Head_Child_AnimBP.F_MED_IceQueen_Head_Child_AnimBP_C",
+                                    Replace = swapModel.HeadABP,
+                                    Type = SwapType.HeadAnim
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_Ice_Queen_Head/Meshes/F_MED_Ice_Queen_Head.F_MED_Ice_Queen_Head",
+                                    Replace = swapModel.HeadMesh,
+                                    Type = SwapType.HeadMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_Ice_Queen_Head/Skins/Raider_Silver/Materials/F_MED_Raider_Silver_Head.F_MED_Raider_Silver_Head",
+                                    Replace = swapModel.HeadMaterial,
+                                    Type = SwapType.HeadMaterial
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/CharacterColorSwatches/Hair/HairColor_01.HairColor_01",
+                                    Replace = swapModel.HeadHairColor,
+                                    Type = SwapType.HairColor
+                                }
+                            }
+                        },
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_RaiderSilver",
+                            Swaps = new()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Meshes/F_MED_Raider_Pink_AnimBP.F_MED_Raider_Pink_AnimBP_C",
+                                    Replace = swapModel.BodyABP,
+                                    Type = SwapType.BodyAnim
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Meshes/F_MED_Raider_Pink.F_MED_Raider_Pink",
+                                    Replace = swapModel.BodyMesh,
+                                    Type = SwapType.BodyMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Base/SK_M_Female_Base_Skeleton.SK_M_Female_Base_Skeleton",
+                                    Replace = swapModel.BodySkeleton,
+                                    Type = SwapType.BodySkeleton
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Skins/Silver/Materials/F_MED_Raider_Silver_Body.F_MED_Raider_Silver_Body",
+                                    Replace = swapModel.BodyMaterial,
+                                    Type = SwapType.BodyMaterial
+                                }
+                            }
+                        }
+                    }
+                },
                 "CID_A_007_Athena_Commando_F_StreetFashionEclipse" => new SaturnOption()
                 {
                     Name = item.Name,
