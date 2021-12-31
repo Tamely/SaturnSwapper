@@ -453,7 +453,7 @@ namespace Saturn.Backend.Data.Services
         {
 
             if (FileUtil.SubstringFromLast(item.Id, '_').Length != 5)
-                return "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack_" +
+                return "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack" +
                        FileUtil.SubstringFromSecond(item.Id, '_');
             
             return "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack" + FileUtil.SubstringFromSecond(item.Id, '_').Replace('_' + FileUtil.SubstringFromLast(item.Id, '_'), "").Replace("__","_");
@@ -477,11 +477,11 @@ namespace Saturn.Backend.Data.Services
             {
                 if (str.Contains('.'))
                 {
-                    if (str.ToLower().Contains("mesh") && !(str.ToLower().Contains("anim") || str.ToLower().Contains("abp")))
+                    if ((str.ToLower().Contains("mesh") || str.ToLower().Contains("m_med_") || str.ToLower().Contains("f_med_")) && !str.ToLower().Contains("material") && !str.ToLower().Contains("/p_") && !(str.ToLower().Contains("anim") || str.ToLower().Contains("abp")))
                         Mesh = str;
                     if (str.ToLower().Contains("material"))
                         Material = str;
-                    if (str.ToLower().Contains("fx"))
+                    if (str.ToLower().Contains("fx") || str.ToLower().Contains("ns") || str.ToLower().Contains("/p_"))
                         FX = str;
                     if (str.ToLower().Contains("anim") || str.ToLower().Contains("abp"))
                         ABP = str;
@@ -935,6 +935,96 @@ namespace Saturn.Backend.Data.Services
 
             return option.ItemDefinition switch
             {
+                "CID_A_007_Athena_Commando_F_StreetFashionEclipse" => new SaturnOption()
+                {
+                    Name = item.Name,
+                    Icon = item.Images.SmallIcon,
+                    Rarity = item.Rarity.BackendValue,
+                    Assets = new()
+                    {
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_StreetFashionEclipse",
+                            Swaps = new()
+                            {
+                                new()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Meshes/F_MED_Street_Fashion_Red.F_MED_Street_Fashion_Red",
+                                    Replace = swapModel.BodyMesh,
+                                    Type = SwapType.BodyMesh
+                                },
+                                new()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Meshes/F_MED_Street_Fashion_Red_AnimBP.F_MED_Street_Fashion_Red_AnimBP_C",
+                                    Replace = swapModel.BodyABP,
+                                    Type = SwapType.BodyAnim
+                                },
+                                new()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Skins/Eclipse/Materials/F_MED_StreetFashionEclipse_Body.F_MED_StreetFashionEclipse_Body",
+                                    Replace = swapModel.BodyMaterial,
+                                    Type = SwapType.BodyMaterial
+                                },
+                                new()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Base/SK_M_Female_Base_Skeleton.SK_M_Female_Base_Skeleton",
+                                    Replace = swapModel.BodySkeleton,
+                                    Type = SwapType.BodySkeleton
+                                },
+                            }
+                        },
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_StreetFashionEclipse",
+                            Swaps = new()
+                            {
+                                new()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_Angel_Head_01/Meshes/F_MED_Angel_Head_AnimBP_Child.F_MED_Angel_Head_AnimBP_Child_C",
+                                    Replace = swapModel.HeadABP,
+                                    Type = SwapType.HeadAnim
+                                },
+                                new()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_Angel_Head_01/Meshes/F_MED_Angel_Head_01.F_MED_Angel_Head_01",
+                                    Replace = swapModel.HeadMesh,
+                                    Type = SwapType.HeadMesh
+                                },
+                                new()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Skins/Eclipse/Materials/F_MED_StreetFashionEclipse_Head.F_MED_StreetFashionEclipse_Head",
+                                    Replace = swapModel.HeadMaterial,
+                                    Type = SwapType.HeadMaterial
+                                },
+                            }
+                        },
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/FaceAccessories/CP_F_MED_FaceAcc_StreetFashionEclipse",
+                            Swaps = new()
+                            {
+                                new()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Meshes/Parts/F_MED_Street_Fashion_Red_FaceAcc_AnimBp.F_MED_Street_Fashion_Red_FaceAcc_AnimBp_C",
+                                    Replace = swapModel.FaceACCABP,
+                                    Type = SwapType.FaceAccessoryAnim
+                                },
+                                new()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Meshes/Parts/F_MED_Street_Fashion_Red_FaceAcc.F_MED_Street_Fashion_Red_FaceAcc",
+                                    Replace = swapModel.FaceACCMesh,
+                                    Type = SwapType.FaceAccessoryMesh
+                                },
+                                new()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Skins/Eclipse/Materials/F_MED_StreetFashionEclipse_Hair.F_MED_StreetFashionEclipse_Hair",
+                                    Replace = swapModel.FaceACCMaterial,
+                                    Type = SwapType.FaceAccessoryMaterial
+                                }
+                            }
+                        }
+                    }
+                },
                 "CID_A_311_Athena_Commando_F_ScholarFestiveWinter" => new SaturnOption()
                 {
                     Name = item.Name,
