@@ -815,7 +815,8 @@ namespace Saturn.Backend.Data.Services
                 FaceACCMesh = "/Game/Tamely",
                 FaceACCABP = "/Game/Tamely",
                 FaceACCFX = "/Game/Tamely",
-                FaceACCPartModifierBP = "/Game/Tamely"
+                FaceACCPartModifierBP = "/Game/Tamely",
+                HatType = ECustomHatType.ECustomHatType_None
             };
 
 
@@ -823,12 +824,10 @@ namespace Saturn.Backend.Data.Services
 
             foreach (var characterPart in characterParts)
             {
+                if (characterPart.Key == "/Game/Tamely") continue;
                 Logger.Log($"Getting strings in asset: {characterPart.Value}");
                 var assetStrings = await FileUtil.GetStringsFromAsset(characterPart.Value.Split('.')[0], _provider);
-                
-                foreach (var i in assetStrings)
-                    Logger.Log(i);
-                
+
                 switch (characterPart.Key)
                 {
                     case "Body":
@@ -876,6 +875,8 @@ namespace Saturn.Backend.Data.Services
                         break;
                     case "FaceACC":
                         Logger.Log("Character part is type: FaceACC");
+                        swapModel.HatType = await FileUtil.GetHatTypeFromAsset(characterPart.Value.Split('.')[0], _provider);
+                        Logger.Log("Hat type is: " + swapModel.HatType);
                         foreach (var assetString in assetStrings)
                         {
                             if ((assetString.ToLower().Contains("material") || assetString.ToLower().Contains("skins")) && assetString.Contains('.') && swapModel.FaceACCMaterial2 == "/Game/Tamely")
@@ -935,6 +936,126 @@ namespace Saturn.Backend.Data.Services
 
             return option.ItemDefinition switch
             {
+                "CID_784_Athena_Commando_F_RenegadeRaiderFire" => new SaturnOption()
+                {
+                    Name = item.Name,
+                    Icon = item.Images.SmallIcon,
+                    Rarity = item.Rarity.BackendValue,
+                    Assets = new()
+                    {
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_RenegadeRaiderFire",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/CharacterColorSwatches/Hair/HairColor_01.HairColor_01",
+                                    Replace = swapModel.HeadHairColor,
+                                    Type = SwapType.HairColor
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01_AnimBP_Child.F_MED_ASN_Sarah_Head_01_AnimBP_Child_C",
+                                    Replace = swapModel.HeadABP,
+                                    Type = SwapType.HeadAnim
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01.F_MED_ASN_Sarah_Head_01",
+                                    Replace = swapModel.HeadMesh,
+                                    Type = SwapType.HeadMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Fire/Materials/MI_F_MED_Renegade_Raider_Fire_Head.MI_F_MED_Renegade_Raider_Fire_Head",
+                                    Replace = swapModel.HeadMaterial,
+                                    Type = SwapType.HeadMaterial
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Fire/Materials/MI_F_MED_Renegade_Raider_Fire_Hair.MI_F_MED_Renegade_Raider_Fire_Hair",
+                                    Replace = swapModel.HairMaterial,
+                                    Type = SwapType.HairMaterial
+                                }
+                            }
+                        },
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Athena_Body_F_RenegadeRaiderFire",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
+                                    Replace = swapModel.BodyABP,
+                                    Type = SwapType.BodyAnim
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Athena/Cosmetics/Blueprints/Part_Modifiers/B_Athena_PartModifier_RenegadeRaider_Fire.B_Athena_PartModifier_RenegadeRaider_Fire_C",
+                                    Replace = swapModel.BodyPartModifierBP,
+                                    Type = SwapType.Modifier
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01.F_Med_Soldier_01",
+                                    Replace = swapModel.BodyMesh,
+                                    Type = SwapType.BodyMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Base/SK_M_Female_Base_Skeleton.SK_M_Female_Base_Skeleton",
+                                    Replace = swapModel.BodySkeleton,
+                                    Type = SwapType.BodySkeleton
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Fire/Materials/MI_F_MED_Renegade_Raider_Fire_Body.MI_F_MED_Renegade_Raider_Fire_Body",
+                                    Replace = swapModel.BodyMaterial,
+                                    Type = SwapType.BodyMaterial
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Effects/Fort_Effects/Effects/Characters/Athena_Parts/RenegadeRaider_Fire/NS_RenegadeRaider_Fire.NS_RenegadeRaider_Fire",
+                                    Replace = swapModel.BodyFX,
+                                    Type = SwapType.BodyFx
+                                }
+                            }
+                        },
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Hats/CP_Hat_F_Commando_RenegadeRaiderFire",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Holiday/Meshes/Parts/F_MED_Renegade_Raider_Holiday_AnimBP.F_MED_Renegade_Raider_Holiday_AnimBP_C",
+                                    Replace = swapModel.FaceACCABP,
+                                    Type = SwapType.FaceAccessoryAnim
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Holiday/Meshes/Parts/F_MED_Renegade_Raider_Holiday.F_MED_Renegade_Raider_Holiday",
+                                    Replace = swapModel.FaceACCMesh,
+                                    Type = SwapType.FaceAccessoryMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Fire/Materials/MI_F_MED_Renegade_Raider_Fire_FaceAcc.MI_F_MED_Renegade_Raider_Fire_FaceAcc",
+                                    Replace = swapModel.FaceACCMaterial,
+                                    Type = SwapType.FaceAccessoryMaterial
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {4,4,3,2,3}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {4,4,3,(byte)swapModel.HatType,3}),
+                                    Type = SwapType.Property
+                                }
+                            }
+                        }
+                    }
+                },
                 "CID_936_Athena_Commando_F_RaiderSilver" => new SaturnOption()
                 {
                     Name = item.Name,
