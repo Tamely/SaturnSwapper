@@ -8,6 +8,12 @@
         <IsPackable>false</IsPackable>
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
+        <ApplicationIcon>SaturnLogo_Circle.ico</ApplicationIcon>
+        <PackageIcon>Saturn.png</PackageIcon>
+        <Authors>Tamely</Authors>
+        <NeutralLanguage>en</NeutralLanguage>
+        <Product>Saturn</Product>
+        <AssemblyName>Saturn</AssemblyName>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -17,6 +23,17 @@
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
       <PlatformTarget>x64</PlatformTarget>
     </PropertyGroup>
+
+    <ItemGroup>
+      <Content Include="SaturnLogo_Circle.ico" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="..\Saturn.png">
+        <Pack>True</Pack>
+        <PackagePath>\</PackagePath>
+      </None>
+    </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="6.0.101-preview.10.2068" />
