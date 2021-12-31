@@ -134,10 +134,8 @@ namespace Saturn.Backend.Data.Services
                 {
                     var changes = _cloudStorageService.DecodeChanges(key.Value);
 
-                    if (changes.removeItem == false)
-                        continue;
-
-                    items.RemoveAll(x => x.Id == changes.Item.ItemID);
+                    if (changes.removeItem)
+                        items.RemoveAll(x => x.Id == changes.Item.ItemID);
                 }
             }
 
