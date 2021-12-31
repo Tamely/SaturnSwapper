@@ -3,6 +3,7 @@
 @inject IDiscordRPCService _discordRPCService
 @inject IConfigService _configService
 @inject IJSRuntime _jsRuntime
+@inject ISaturnAPIService _saturnAPIService
 
 @page "/"
 @using System.Net
@@ -18,6 +19,8 @@
 @using System.Runtime.ExceptionServices
 @using System.Text.RegularExpressions
 @using MudBlazor
+@using Newtonsoft.Json
+@using Saturn.Backend.Data.Models.SaturnAPI
 @using Colors = Saturn.Backend.Data.Enums.Colors
 @inherits LayoutComponentBase
 
@@ -26,9 +29,13 @@
 <MudThemeProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
-        @if (saturnState == SaturnState.S_Maintenence)
+        @if (saturnState == SaturnState.S_Maintenance)
         {
             <img src="img/Maintenance.png" alt="We are in maintenance right now! Check Discord for further updates!" style='background-position: center; width: 50%; height: 50%; border-radius: 5%; background-repeat: no-repeat;'/>
+        }
+        else if (saturnState == SaturnState.S_Update)
+        {
+            <img src @onerror=@(async() => await RunUpdate())>
         }
         else
         {
@@ -396,6 +403,10 @@
             Username = $"{currentUser.Username}#{currentUser.Discriminator}";
         }
 
+        await CheckUpdate();
+
+        await CheckMaintenance();
+
         await base.OnInitializedAsync();
     }
     
@@ -415,6 +426,30 @@
 
     }
 
+    private async Task CheckMaintenance()
+    {
+        if (_fortniteAPIService.GetAES().Build != await GetFortniteBuild())
+            saturnState = SaturnState.S_Maintenance;
+    }
+    
+    private async Task CheckUpdate()
+    {
+        if (Constants.UserVersion != await GetLastestVersion())
+            saturnState = SaturnState.S_Update;
+    }
+
+    private async Task<string> GetFortniteBuild()
+    {
+        var data = await _saturnAPIService.ReturnEndpointAsync("/");
+        return JsonConvert.DeserializeObject<IndexModel>(data).APIVersion;
+    }
+    
+    private async Task<string> GetLastestVersion()
+    {
+        var data = await _saturnAPIService.ReturnEndpointAsync("/");
+        return JsonConvert.DeserializeObject<IndexModel>(data).swapperVersion;
+    }
+
     private async Task RunError()
     {
         await _jsRuntime.InvokeVoidAsync("MessageBox", "There has been an error that we were not able to recover from!", "Please send your logs in Saturn Support so we are able to solve it for you!");
@@ -422,6 +457,11 @@
         await Task.Delay(1500);
         
         Process.Start("notepad.exe", Config.LogFile);
+    }
+    
+    private async Task RunUpdate()
+    {
+        await _jsRuntime.InvokeVoidAsync("MessageBox", "There is a swapper update ready to download!", "Please download it from Tamely's discord.", "error");
     }
     
     private async Task FilterItems(string Name)
@@ -525,12 +565,6 @@
 
         RemoveDuped = "This will remove all duplicated files from Fortnite (resetting all swaps) and reset the config.";
         RemoveDupedColor = Colors.C_YELLOW;
-    }
-
-    private async Task CheckForMaintenance()
-    {
-        if (_fortniteAPIService.GetAES().Build != FortniteUtil.GetFortniteVersion())
-            saturnState = SaturnState.S_Maintenence;
     }
 
     private async Task GoToSettings()

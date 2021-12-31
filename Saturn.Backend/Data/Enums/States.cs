@@ -13,7 +13,8 @@ namespace Saturn.Backend.Data.Enums
         S_Items,
         S_Loading,
         S_Settings,
-        S_Maintenence,
-        S_Error
+        S_Maintenance,
+        S_Error,
+        S_Update
     }
 }
