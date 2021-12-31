@@ -41,6 +41,9 @@
         <Content Update="Pages\Index.razor">
             <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
         </Content>
+        <Content Update="wwwroot\js\misc.js">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
         <Content Update="wwwroot\css\style.css">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
