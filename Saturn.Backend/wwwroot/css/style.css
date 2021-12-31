@@ -323,22 +323,18 @@ main {
     z-index: 3;
 }
 
-.error h2 {
+.maindash h2 {
     color: white;
     position: relative;
-    margin-top: -17%;
-    margin-left: 20%;
-    padding-right: 10px;
-    wrap-option: dont-wrap;
+    margin-top: -15%;
+    margin-left: -5%;
+    text-align: center;
 }
 
-.error p {
+.maindash p {
     color: white;
     position: relative;
-    margin-top: -17%;
-    margin-left: 20%;
-    padding-right: 10px;
-    wrap-option: dont-wrap;
+    text-align: center;
 }
 
 
