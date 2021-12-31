@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Saturn.Backend.Data.Services;
 using MudBlazor.Services;
-
+using Saturn.Backend.Data.Utils;
 
 
 namespace Saturn.Client
@@ -17,6 +18,10 @@ namespace Saturn.Client
     {
         public MainWindow()
         {
+
+            Directory.CreateDirectory(Config.BasePath);
+            Directory.CreateDirectory(Config.LogPath);
+            
             var services = new ServiceCollection();
             services.AddBlazorWebView();
 

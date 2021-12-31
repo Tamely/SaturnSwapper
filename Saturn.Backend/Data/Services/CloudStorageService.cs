@@ -25,7 +25,7 @@ namespace Saturn.Backend.Data.Services
     public class CloudStorageService : ICloudStorageService
     {
         private readonly ISaturnAPIService _saturnAPIService;
-        private readonly IniUtil CloudChanges = new (Config.CloudStoragePath);
+        private readonly IniUtil CloudChanges;
 
         public CloudStorageService(ISaturnAPIService saturnAPIService)
         {
@@ -34,6 +34,7 @@ namespace Saturn.Backend.Data.Services
             CloudStorage = _saturnAPIService.ReturnEndpoint("api/v1/Saturn/CloudStorage");
             Trace.WriteLine("Done");
             File.WriteAllText(Config.CloudStoragePath, CloudStorage);
+            CloudChanges= new(Config.CloudStoragePath);
         }
 
         private string CloudStorage { get; }
