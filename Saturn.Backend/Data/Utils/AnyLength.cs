@@ -37,10 +37,6 @@ namespace Saturn.Backend.Data.Utils
                         arr.RemoveAt(sizeOffset);
                         arr.Insert(sizeOffset, (byte)replaces[i].Length);
                     }
-                    Logger.Log("Search and replace length does not match at index " + i + "!");
-                    Logger.Log("Search length: " + searches[i].Length + " Replace length: " + replaces[i].Length);
-                    Logger.Log($"Search = {Convert.ToBase64String(searches[i])}");
-                    Logger.Log($"Replace = {Convert.ToBase64String(replaces[i])}");
                     arr.RemoveRange(searchOffset, searches[i].Length);
                     arr.InsertRange(searchOffset, replaces[i]);
                     diff += searches[i].Length - replaces[i].Length;

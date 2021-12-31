@@ -423,6 +423,9 @@ namespace Saturn.Backend.Data.Services
                     if (str.Contains('.') && str.ToLower().Contains("-l"))
                         lIcon = str;
             }
+
+            if (cmm == "")
+                cmm = strs.FirstOrDefault(x => x.StartsWith("/Game/Animation/Game/MainPlayer/"));
             
             data.Add("CMF", cmf);
             data.Add("CMM", cmm);
@@ -432,11 +435,15 @@ namespace Saturn.Backend.Data.Services
             data.Add("Name", item.Name);
             data.Add("Description", item.Description);
 
-            if (data["CMF"] == null)
+            if (data["CMF"] == "")
+            {
+                data.Remove("CMF");
                 data.Add("CMF", data["CMM"]);
+            }
 
-            if (data["LargeIcon"] == null)
-                data.Add("LargeIcon", data["SmallIcon"]);
+            if (data["LargeIcon"] != "") return data;
+            data.Remove("LargeIcon");
+            data.Add("LargeIcon", data["SmallIcon"]);
 
             return data;
         }
