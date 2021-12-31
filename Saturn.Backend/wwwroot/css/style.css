@@ -146,6 +146,10 @@ main {
     .maindash {
         color: black;
     }
+    
+    .card p {
+        filter: invert(1);
+    }
 
     .dashboard {
         background: linear-gradient(
