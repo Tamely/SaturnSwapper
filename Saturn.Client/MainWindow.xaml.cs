@@ -18,9 +18,6 @@ namespace Saturn.Client
     {
         public MainWindow()
         {
-
-            Directory.CreateDirectory(Config.BasePath);
-            Directory.CreateDirectory(Config.LogPath);
             
             var services = new ServiceCollection();
             services.AddBlazorWebView();
