@@ -27,6 +27,6 @@ namespace Saturn.Backend.Data.Models.CloudStorage
         [JsonProperty("itemID")] public string ItemID { get; set; }
         [JsonProperty("itemType")] public ItemType ItemType { get; set; }
         [JsonProperty("rarity")] public Rarity Rarity { get; set; }
-        [JsonProperty("series")] public Series Series { get; set; }
+        [JsonProperty("series")] public Series? Series { get; set; }
     }
 }

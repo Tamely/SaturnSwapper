@@ -56,7 +56,7 @@ namespace Saturn.Backend.Data.Services
             var data = await GetDataAsync(CosmeticsByType("AthenaDance"));
             var Emotes = JsonConvert.DeserializeObject<CosmeticList>(data);
             
-            Emotes.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd");
+            Emotes.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
 
             foreach (var item in Emotes.Data.Where(item => item.Name.ToLower() == "random"))
             {
@@ -66,7 +66,7 @@ namespace Saturn.Backend.Data.Services
             Trace.WriteLine($"Deserialized {Emotes.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Emotes.Data.Count} different emotes");
-            return await AddExtraItems(await RemoveItems(await AreItemsConverted(Emotes.Data)), ItemType.IT_Dance);
+            return await AreItemsConverted(await AddExtraItems(await RemoveItems(Emotes.Data), ItemType.IT_Dance));
         }
 
         public async Task<List<Cosmetic>> GetSaturnBackblings()
@@ -74,7 +74,7 @@ namespace Saturn.Backend.Data.Services
             var data = await GetDataAsync(CosmeticsByType("AthenaBackpack"));
             var Backs = JsonConvert.DeserializeObject<CosmeticList>(data);
             
-            Backs.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd");
+            Backs.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
 
             foreach (var item in Backs.Data.Where(item => item.Name.ToLower() == "random"))
             {
@@ -84,7 +84,7 @@ namespace Saturn.Backend.Data.Services
             Trace.WriteLine($"Deserialized {Backs.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Backs.Data.Count} different backpacks");
-            return await AddExtraItems(await RemoveItems(await AreItemsConverted(Backs.Data)), ItemType.IT_Backbling);
+            return await AreItemsConverted(await AddExtraItems(await RemoveItems(Backs.Data), ItemType.IT_Backbling));
         }
         
         public async Task<List<Cosmetic>> GetSaturnPickaxes()
@@ -92,7 +92,7 @@ namespace Saturn.Backend.Data.Services
             var data = await GetDataAsync(CosmeticsByType("AthenaPickaxe"));
             var Picks = JsonConvert.DeserializeObject<CosmeticList>(data);
             
-            Picks.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd");
+            Picks.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
 
             foreach (var item in Picks.Data.Where(item => item.Name.ToLower() == "random"))
             {
@@ -102,7 +102,7 @@ namespace Saturn.Backend.Data.Services
             Trace.WriteLine($"Deserialized {Picks.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Picks.Data.Count} different pickaxes");
-            return await AddExtraItems(await RemoveItems(await AreItemsConverted(Picks.Data)), ItemType.IT_Pickaxe);
+            return await AreItemsConverted(await AddExtraItems(await RemoveItems(Picks.Data), ItemType.IT_Pickaxe));
         }
 
         public async Task<List<Cosmetic>> GetSaturnSkins()
@@ -111,7 +111,7 @@ namespace Saturn.Backend.Data.Services
             var Skins = JsonConvert.DeserializeObject<CosmeticList>(data);
 
             
-            Skins.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd");
+            Skins.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
             
             foreach (var item in Skins.Data.Where(item => item.Name.ToLower() == "random"))
             {
@@ -312,6 +312,7 @@ namespace Saturn.Backend.Data.Services
             {
 
                 if (y.Id != x.ItemDefinition) return false;
+                if (y.Name != x.Name) return false;
                 y.IsConverted = true;
                 return true;
             }));

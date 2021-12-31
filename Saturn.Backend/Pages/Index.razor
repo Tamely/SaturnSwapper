@@ -124,7 +124,7 @@
                         if (!item.IsPickingStyles)
                         {
                             <div class="card" id="item-@item.Id" @onclick=@(async () => await SwitchItemStyleChoice(item))>
-                                @if (item.Series != null)
+                                @if (item.Series != null && item.Series != new Series() && !string.IsNullOrEmpty(item.Series.BackendValue))
                                 {
                                     <img class="base" src="img/Series/@(item.Series.BackendValue).png" alt=""/>
                                 }
@@ -165,7 +165,7 @@
                         else
                         {
                             <div class="card" style="height: @(70 * (item.CosmeticOptions.Count + 1))px" id="item-@item.Id" @onclick=@(async () => await SwitchItemStyleChoice(item))>
-                                @if (item.Series != null)
+                                @if (item.Series != null && item.Series != new Series() && !string.IsNullOrEmpty(item.Series.BackendValue))
                                 {
                                     <img class="base" src="img/Series/@(item.Series.BackendValue).png" alt=""/>
                                 }
@@ -367,7 +367,7 @@
     private string LaunchFortnite = "This will launch Fortnite and prevent it from verifying your game on close";
     private Colors LaunchFortniteColor = Colors.C_WHITE;
 
-    private SaturnState saturnState = SaturnState.S_Error;
+    private SaturnState saturnState = SaturnState.S_Dash;
 
     private async Task SwitchItemStyleChoice(Cosmetic item)
         => item.IsPickingStyles = !item.IsPickingStyles;

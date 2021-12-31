@@ -66,7 +66,7 @@ namespace Saturn.Backend.Data.Models.FortniteAPI
 
         [JsonProperty("rarity")] public Rarity Rarity { get; set; }
 
-        [JsonProperty("series")] public Series Series { get; set; }
+        [JsonProperty("series")] public Series? Series { get; set; }
 
         [JsonProperty("set")] public Set Set { get; set; }
 
