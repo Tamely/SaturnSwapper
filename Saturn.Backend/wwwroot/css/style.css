@@ -91,6 +91,10 @@ main {
         background: linear-gradient(to right top, #65dfc9, #6cdbeb);
         color: black;
     }
+    
+    .maindash {
+        color: white;
+    }
 
     .loading {
         color: white;
@@ -139,6 +143,10 @@ main {
         color: black;
     }
 
+    .maindash {
+        color: black;
+    }
+
     .dashboard {
         background: linear-gradient(
                 to right bottom,
@@ -184,6 +192,10 @@ main {
                 rgba(0, 0, 0, 0.7),
                 rgba(0, 0, 0, 0.3)
         );
+    }
+
+    .maindash {
+        color: white;
     }
 
     .loading {
@@ -324,7 +336,6 @@ main {
 }
 
 .maindash h2 {
-    color: white;
     position: relative;
     margin-top: -15%;
     margin-left: -5%;
@@ -332,7 +343,6 @@ main {
 }
 
 .maindash p {
-    color: white;
     position: relative;
     text-align: center;
 }
