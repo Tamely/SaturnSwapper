@@ -25,5 +25,6 @@ SaturnLogo_Circle.ico
 /Saturn.Backend/bin/
 /Saturn.Backend/obj/
 /Saturn.Backend/Data/Utils/FortniteUtils/CustomAssets.cs
+/Saturn.Backend/Data/Services/SaturnAPIService.cs
 /Saturn.Client/bin/
 /Saturn.Client/obj/
