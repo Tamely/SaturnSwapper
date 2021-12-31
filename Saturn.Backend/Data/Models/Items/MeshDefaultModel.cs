@@ -1,4 +1,6 @@
-﻿namespace Saturn.Backend.Data.Models.Items
+﻿using Saturn.Backend.Data.Enums;
+
+namespace Saturn.Backend.Data.Models.Items
 {
     public struct MeshDefaultModel
     {
@@ -25,5 +27,6 @@
         public string FaceACCMaterial { get; set; }
         public string FaceACCMaterial2 { get; set; }
         public string FaceACCMaterial3 { get; set; }
+        public ECustomHatType HatType { get; set; }
     }
 }

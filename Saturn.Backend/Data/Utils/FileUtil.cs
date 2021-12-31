@@ -112,6 +112,26 @@ namespace Saturn.Backend.Data.Utils
             return EFortRarity.Common;
 
         }
+        
+        public static async Task<ECustomHatType> GetHatTypeFromAsset(string assetPath, DefaultFileProvider _provider)
+        {
+            if (!_provider.TrySavePackage(assetPath, out var assets)) return ECustomHatType.ECustomHatType_None;
+
+            foreach (var (_, value) in assets)
+            {
+                var fileOffset = value.Length;
+                
+                while (value[fileOffset - 1] == 0 || value[fileOffset - 2] == 0)
+                    fileOffset--;
+                
+                if (value[fileOffset - 6] == 0 && value[fileOffset - 7] == 0)
+                    return (ECustomHatType)value[fileOffset - 2];
+                return ECustomHatType.ECustomHatType_None;
+            }
+
+            return ECustomHatType.ECustomHatType_None;
+
+        }
 
         // Export asset to memory then return all strings in asset
         public static async Task<List<string>> GetStringsFromAsset(string assetPath, DefaultFileProvider _provider)
