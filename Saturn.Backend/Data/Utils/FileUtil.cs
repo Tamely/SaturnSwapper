@@ -136,6 +136,8 @@ namespace Saturn.Backend.Data.Utils
                         output.Add("/Game/Animation" + item);
                     else
                         output.Add(item.Split('.')[0] + '.' + SubstringFromLast(item.Split('.')[0], '/'));
+                    
+                    Logger.Log(output.Last());
                 }
             }
 
@@ -170,6 +172,13 @@ namespace Saturn.Backend.Data.Utils
             return Encoding.UTF8.GetString(base64EncodedBytes);
         }
         
+        // Get second index of character in string
+        public static int GetSecondIndex(string input, char character)
+        {
+            var index = input.IndexOf(character);
+            return index == -1 ? -1 : input.IndexOf(character, index + 1);
+        }
+        
         // Get last index of character in string
         public static int LastIndexOf(string str, char ch)
         {
@@ -185,5 +194,12 @@ namespace Saturn.Backend.Data.Utils
             return index == -1 ? str : str[index..];
         }
         
+        // Get substring from second character in string to end
+        public static string SubstringFromSecond(string str, char ch)
+        {
+            var index = GetSecondIndex(str, ch);
+            return index == -1 ? str : str[index..];
+        }
+
     }
 }

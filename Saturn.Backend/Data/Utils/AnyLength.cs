@@ -12,7 +12,7 @@ namespace Saturn.Backend.Data.Utils
     {
         private static readonly byte[] End = { 248, 112 };
 
-        public static bool TrySwap(ref byte[] array, List<byte[]> searches, List<byte[]> replaces, bool isRarity = false)
+        public static bool TrySwap(ref byte[] array, List<byte[]> searches, List<byte[]> replaces, bool isPickaxe = false)
         {
             try
             {
@@ -27,10 +27,8 @@ namespace Saturn.Backend.Data.Utils
 
                 for (int i = 0; i < searches.Count; i++)
                 {
-                    if (searches[i].Length < replaces[i].Length)
-                        continue;
                     int searchOffset = IndexOfSequence(arr.ToArray(), searches[i]);
-                    if (!isRarity)
+                    if (searches[i].Length != replaces[i].Length)
                     {
                         int sizeOffset = NumFromTop(arr.ToArray(), startOffset, lastOffset, searchOffset, array[44]);
                         Logger.Log("Size offset is " + sizeOffset);
@@ -42,14 +40,21 @@ namespace Saturn.Backend.Data.Utils
                     arr.RemoveRange(searchOffset, searches[i].Length);
                     arr.InsertRange(searchOffset, replaces[i]);
                     diff += searches[i].Length - replaces[i].Length;
-
                 }
 
-                int end = lastOffset + 1;
-                
-                // foreach in range step 2
-                for (int i = startOffset; i <= lastOffset; i += 2)
-                    end += (int)arr[i];
+
+                int end = 0;
+                if (isPickaxe)
+                {
+                    end = lastOffset + 1;
+                    // foreach in range step 2
+                    for (int i = startOffset; i <= lastOffset; i += 2)
+                        end += arr[i];
+                }
+                else
+                {
+                    end = IndexOfSequence(arr.ToArray(), End) - 3;
+                }
 
                 int a = 0;
                 List<byte> append = new();

@@ -191,6 +191,7 @@ namespace Saturn.Backend.Data.Services
                         ItemType.IT_Skin => await GenerateMeshSkins(item, option),
                         ItemType.IT_Dance => await GenerateMeshEmote(item, option),
                         ItemType.IT_Pickaxe => await GenerateMeshPickaxe(item, option),
+                        ItemType.IT_Backbling => await GenerateMeshBackbling(item, option),
                         _ => new()
                     };
                     
@@ -437,12 +438,215 @@ namespace Saturn.Backend.Data.Services
             return data;
         }
 
+        // backbling character parts aren't soft objects
         public async Task<string> GetBackblingCharacterPart(Cosmetic item)
         {
-            var strs = await FileUtil.GetStringsFromAsset(Constants.BidPath + item.Id, _provider);
-            return strs.FirstOrDefault(x => x.ToLower().Contains("characterpart")).Split('.')[0]
-                   + '.' + Path.GetFileNameWithoutExtension(
-                       strs.FirstOrDefault(x => x.ToLower().Contains("characterpart")).Split('.')[0]);
+
+            if (FileUtil.SubstringFromLast(item.Id, '_').Length != 5)
+                return "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack_" +
+                       FileUtil.SubstringFromSecond(item.Id, '_');
+            
+            return "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack" + FileUtil.SubstringFromSecond(item.Id, '_').Replace('_' + FileUtil.SubstringFromLast(item.Id, '_'), "").Replace("__","_");
+        }
+
+        private async Task<Dictionary<string, string>> GetDataFromBackblingCharacterPart(string backblingCharacterPart)
+        {
+            var output = new Dictionary<string, string>();
+            
+            
+            var strs = await FileUtil.GetStringsFromAsset(backblingCharacterPart, _provider);
+
+            
+            string Mesh = "/";
+            string Material = "/";
+            string FX = "/";
+            string? ABP = null;
+            string? PartModifierBP = null;
+
+            foreach (var str in strs)
+            {
+                if (str.Contains('.'))
+                {
+                    if (str.ToLower().Contains("mesh") && !(str.ToLower().Contains("anim") || str.ToLower().Contains("abp")))
+                        Mesh = str;
+                    if (str.ToLower().Contains("material"))
+                        Material = str;
+                    if (str.ToLower().Contains("fx"))
+                        FX = str;
+                    if (str.ToLower().Contains("anim") || str.ToLower().Contains("abp"))
+                        ABP = str;
+                    if (str.ToLower().Contains("part") && str.ToLower().Contains("modifier"))
+                        PartModifierBP = str;
+                }
+            }
+            
+            Logger.Log("Mesh: " + Mesh);
+            Logger.Log("Material: " + Material);
+            Logger.Log("FX: " + FX);
+            Logger.Log("ABP: " + ABP);
+            Logger.Log("PartModifierBP: " + PartModifierBP);
+
+            output.Add("Mesh", Mesh);
+            output.Add("Material", Material);
+            output.Add("ABP", ABP);
+            output.Add("FX", FX);
+            output.Add("PartModifierBP", PartModifierBP);
+
+            return output;
+        }
+
+        private async Task<SaturnOption> GenerateMeshBackbling(Cosmetic item, SaturnItem option)
+        {
+            Logger.Log($"Getting cp for {item.Name}");
+            var characterPart = await GetBackblingCharacterPart(item);
+            
+            var data = await GetDataFromBackblingCharacterPart(characterPart);
+
+            Logger.Log("Generating swaps");
+
+            switch (option.ItemDefinition)
+            {
+                case "BID_430_GalileoSpeedBoat_9RXE3":
+                case "BID_469_Wings":  
+                    if (data["Material"] != "/")
+                        option.Status = "This item might not be perfect!";
+                    break;
+                case "BID_695_StreetFashionEclipse":
+                    if (data["FX"] != "/")
+                        option.Status = "This item might not be perfect!";
+                    break;
+            }
+
+
+            return option.ItemDefinition switch
+            {
+                "BID_695_StreetFashionEclipse" => new SaturnOption()
+                { 
+                    Name = item.Name,
+                    Icon = item.Images.SmallIcon,
+                    Rarity = item.Rarity.BackendValue,
+                    Assets = new List<SaturnAsset>()
+                    {
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack_StreetFashionEclipse",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Accessories/FORT_Backpacks/F_MED_Street_Fashion_Red/Meshes/F_MED_Street_Fashion_Red_Pack.F_MED_Street_Fashion_Red_Pack",
+                                    Replace = data["Mesh"],
+                                    Type = SwapType.BackblingMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Accessories/FORT_Backpacks/F_MED_Street_Fashion_Red/Skins/Eclipse/Materials/F_MED_StreetFashionEclipse_Backpack.F_MED_StreetFashionEclipse_Backpack",
+                                    Replace = data["Material"],
+                                    Type = SwapType.BackblingMaterial
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Accessories/FORT_Backpacks/F_MED_Street_Fashion_Red/Meshes/F_MED_Street_Fashion_Red_Pack_AnimBp.F_MED_Street_Fashion_Red_Pack_AnimBp_C",
+                                    Replace = data["ABP"] ?? "/Game/Accessories/FORT_Backpacks/F_MED_Street_Fashion_Red/Meshes/F_MED_Street_Fashion_Red_Pack_AnimBp.F_MED_Street_Fashion_Red_Pack_AnimBp_C",
+                                    Type = SwapType.BackblingAnim
+                                }
+                            }
+                        }
+                    }
+                },
+                "BID_469_Wings" => new SaturnOption()
+                { 
+                    Name = item.Name,
+                    Icon = item.Images.SmallIcon,
+                    Rarity = item.Rarity.BackendValue,
+                    Assets = new List<SaturnAsset>()
+                    {
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack_Wings",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Accessories/FORT_Backpacks/Backpack_M_MED_Wings/Meshes/M_MED_Wings.M_MED_Wings",
+                                    Replace = data["Mesh"],
+                                    Type = SwapType.BackblingMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Accessories/FORT_Backpacks/Backpack_M_MED_Cyclone_Wings/FX/NS_Backpack_Wings.NS_Backpack_Wings",
+                                    Replace = data["FX"],
+                                    Type = SwapType.BackblingFx
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Athena/Cosmetics/Blueprints/B_Athena_PartModifier_Generic.B_Athena_PartModifier_Generic_C",
+                                    Replace = data["PartModifierBP"] ?? "/Game/Athena/Cosmetics/Blueprints/B_Athena_PartModifier_Generic.B_Athena_PartModifier_Generic_C",
+                                    Type = SwapType.BackblingPartBP
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Accessories/FORT_Backpacks/Backpack_M_MED_Wings/Meshes/M_MED_Wings_AnimBP.M_MED_Wings_AnimBP_C",
+                                    Replace = data["ABP"] ?? "/Game/Accessories/FORT_Backpacks/Backpack_M_MED_Wings/Meshes/M_MED_Wings_AnimBP.M_MED_Wings_AnimBP_C",
+                                    Type = SwapType.BackblingAnim
+                                }
+                            }
+                        }
+                    }
+                },
+                "BID_430_GalileoSpeedBoat_9RXE3" => new SaturnOption()
+                { 
+                    Name = item.Name,
+                    Icon = item.Images.SmallIcon,
+                    Rarity = item.Rarity.BackendValue,
+                    Assets = new List<SaturnAsset>()
+                    {
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack_GalileoSpeedBoat",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Accessories/FORT_Backpacks/M_MED_Celestial_Backpack/M_MED_Celestial.M_MED_Celestial",
+                                    Replace = data["Mesh"],
+                                    Type = SwapType.BackblingMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Accessories/FORT_Backpacks/Backpack_Galileo_Holos/FX/P_Backpack_GalileoSpeedboat_Holo.P_Backpack_GalileoSpeedboat_Holo",
+                                    Replace = data["FX"],
+                                    Type = SwapType.BackblingFx
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Athena/Cosmetics/Blueprints/B_Athena_PartModifier_Generic.B_Athena_PartModifier_Generic_C",
+                                    Replace = data["PartModifierBP"] ?? "/Game/Athena/Cosmetics/Blueprints/B_Athena_PartModifier_Generic.B_Athena_PartModifier_Generic_C",
+                                    Type = SwapType.BackblingPartBP
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Accessories/FORT_Backpacks/Mesh/Male_Commando_Graffiti_Skeleton_AnimBP.Male_Commando_Graffiti_Skeleton_AnimBP_C",
+                                    Replace = data["ABP"] ?? "/Game/Accessories/FORT_Backpacks/Mesh/Male_Commando_Graffiti_Skeleton_AnimBP.Male_Commando_Graffiti_Skeleton_AnimBP_C",
+                                    Type = SwapType.BackblingAnim
+                                }
+                            }
+                        }
+                    }
+                },
+                _ => new SaturnOption()
+            };
         }
 
         public async Task<string> IsTypeConverted(ItemType itemType)
@@ -1329,7 +1533,7 @@ namespace Saturn.Backend.Data.Services
                             break;
                     }
                 
-                if (asset.ParentAsset.Contains("Rarity"))
+                if (asset.ParentAsset.Contains("WID"))
                     AnyLength.TrySwap(ref data, Searches, Replaces, true);
                 else
                     AnyLength.TrySwap(ref data, Searches, Replaces);

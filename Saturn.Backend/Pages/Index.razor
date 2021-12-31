@@ -77,9 +77,9 @@
             </div>
         </div>
             <div class="items">
-            @if (saturnState != SaturnState.S_Settings || saturnState != SaturnState.S_Dash)
+            @if (saturnState != SaturnState.S_Settings && saturnState != SaturnState.S_Dash)
             {
-                <input type="text" placeholder="  Search" style="color:grey" @oninput="@(async change => {await FilterItems(change.Value.ToString()); })"/>
+                <input type="text" placeholder="Search" style="text-indent: 10px; color:grey;" @oninput="@(async change => {await FilterItems(change.Value.ToString()); })"/>
             }
             
             @if (saturnState == SaturnState.S_Loading)
@@ -507,6 +507,43 @@
     {
         saturnState = SaturnState.S_Loading;
         Items = await _fortniteAPIService.GetSaturnBackblings();
+        
+        foreach (var item in Items)
+        {
+            item.CosmeticOptions = new()
+            {
+                new SaturnItem
+                {
+                    ItemDefinition = "BID_695_StreetFashionEclipse",
+                    Name = "Blackout Bag",
+                    Description = "They'll never know what's up.", 
+                    Icon = 
+                        "https://fortnite-api.com/images/cosmetics/br/bid_695_streetfashioneclipse/smallicon.png",
+                    Rarity = "Epic",
+                    Series = "ShadowSeries"
+                },
+                new SaturnItem
+                {
+                    ItemDefinition = "BID_469_Wings",
+                    Name = "Neon Wings",
+                    Description = "Glow above and beyond.", 
+                    Icon = 
+                        "https://fortnite-api.com/images/cosmetics/br/bid_469_wings/smallicon.png",
+                    Rarity = "Epic"
+                },
+                new SaturnItem
+                {
+                    ItemDefinition = "BID_430_GalileoSpeedBoat_9RXE3",
+                    Name = "The Sith",
+                    Description = "Force-wielders devoted to the dark side.", 
+                    Icon = 
+                        "https://fortnite-api.com/images/cosmetics/br/bid_430_galileospeedboat_9rxe3/smallicon.png",
+                    Rarity = "Epic",
+                    Series = "ColumbusSeries"
+                }
+            };
+        }
+        
         BackupItems = new List<Cosmetic>(Items);
         currentType = ItemType.IT_Backbling;
         saturnState = SaturnState.S_Items;
