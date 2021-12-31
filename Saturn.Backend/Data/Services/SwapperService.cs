@@ -207,6 +207,9 @@ namespace Saturn.Backend.Data.Services
                         Logger.Log("There was no hotfix found for this item!", LogLevel.Warning);
                     }
 
+                    if (item.IsCloudAdded)
+                        itemSwap = option.Options[0];
+
                     Logger.Log($"There are {itemSwap.Assets.Count} assets to swap...", LogLevel.Info);
                     foreach (var asset in itemSwap.Assets)
                     {
@@ -1511,7 +1514,7 @@ namespace Saturn.Backend.Data.Services
             
             try
             {
-                if (!asset.ParentAsset.Contains("WID") && !asset.ParentAsset.Contains("Rarity"))
+                if (!asset.ParentAsset.Contains("WID") && !asset.ParentAsset.Contains("Rarity") && !asset.ParentAsset.Contains("ID_"))
                 {
                     Searches.Add(Encoding.ASCII.GetBytes(asset.ParentAsset.Replace(".uasset", "").Replace("FortniteGame/Content/", "/Game/")));
                     Replaces.Add(Encoding.ASCII.GetBytes("/"));

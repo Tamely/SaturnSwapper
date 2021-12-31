@@ -66,7 +66,7 @@ namespace Saturn.Backend.Data.Services
             Trace.WriteLine($"Deserialized {Emotes.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Emotes.Data.Count} different emotes");
-            return await AreItemsConverted(Emotes.Data);
+            return await AddExtraItems(await RemoveItems(await AreItemsConverted(Emotes.Data)), ItemType.IT_Dance);
         }
 
         public async Task<List<Cosmetic>> GetSaturnBackblings()
@@ -84,7 +84,7 @@ namespace Saturn.Backend.Data.Services
             Trace.WriteLine($"Deserialized {Backs.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Backs.Data.Count} different backpacks");
-            return await AreItemsConverted(Backs.Data);
+            return await AddExtraItems(await RemoveItems(await AreItemsConverted(Backs.Data)), ItemType.IT_Backbling);
         }
         
         public async Task<List<Cosmetic>> GetSaturnPickaxes()
@@ -102,7 +102,7 @@ namespace Saturn.Backend.Data.Services
             Trace.WriteLine($"Deserialized {Picks.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Picks.Data.Count} different pickaxes");
-            return await AreItemsConverted(Picks.Data);
+            return await AddExtraItems(await RemoveItems(await AreItemsConverted(Picks.Data)), ItemType.IT_Pickaxe);
         }
 
         public async Task<List<Cosmetic>> GetSaturnSkins()
@@ -122,7 +122,8 @@ namespace Saturn.Backend.Data.Services
 
             _discordRPCService.UpdatePresence($"Looking at {Skins.Data.Count} different skins");
 
-            return await AreItemsConverted(await AddExtraItems(await RemoveItems(await IsHatTypeDifferent(Skins.Data))));
+            return await AreItemsConverted(await AddExtraItems(await RemoveItems(await IsHatTypeDifferent(Skins.Data)),
+                ItemType.IT_Skin));
         }
         
         private async Task<List<Cosmetic>> RemoveItems(List<Cosmetic> items)
@@ -135,31 +136,50 @@ namespace Saturn.Backend.Data.Services
                     var changes = _cloudStorageService.DecodeChanges(key.Value);
 
                     if (changes.removeItem)
-                        items.RemoveAll(x => x.Id == changes.Item.ItemID);
+                        items.RemoveAll(x => x.Id.ToLower() == changes.Item.ItemID.ToLower());
                 }
             }
 
             return items;
         }
 
-        private async Task<List<Cosmetic>> AddExtraItems(List<Cosmetic> items)
+        private async Task<List<Cosmetic>> AddExtraItems(List<Cosmetic> items, ItemType itemType)
         {
             Logger.Log("Adding extra items");
-            items.AddRange(from section in _cloudStorageService.GetSections()
-            from key in section.Keys
-            select _cloudStorageService.DecodeChanges(key.Value)
-            into changes
-            where changes.addItem != false
-            select new Cosmetic()
-            {
-                Images = new() { SmallIcon = changes.Item.ItemIcon },
-                Description = changes.Item.ItemDescription,
-                Id = changes.Item.ItemID,
-                Name = changes.Item.ItemName,
-                Series = changes.Item.Series,
-                Rarity = changes.Item.Rarity,
-                IsCloudAdded = true
-            });
+            items.AddRange(_cloudStorageService.GetSections()
+                .SelectMany(section => section.Keys, (section, key) => _cloudStorageService.DecodeChanges(key.Value))
+                .Where(changes => changes.addItem && changes.Item.ItemType == itemType)
+                .Select(changes => new Cosmetic()
+                {
+                    Images = new() { SmallIcon = changes.Item.ItemIcon },
+                    Description = changes.Item.ItemDescription,
+                    Id = changes.Item.ItemID,
+                    Name = changes.Item.ItemName,
+                    Series = changes.Item.Series ?? new Series(),
+                    Rarity = changes.Item.Rarity,
+                    IsCloudAdded = true,
+                    CosmeticOptions = new List<SaturnItem>
+                    {
+                        new()
+                        {
+                            Icon = changes.SwapOption.ItemIcon,
+                            Description = changes.SwapOption.ItemDescription,
+                            ItemDefinition = changes.SwapOption.ItemID,
+                            Name = changes.SwapOption.ItemName,
+                            Rarity = changes.SwapOption.Rarity.Value,
+                            Options = new List<SaturnOption>
+                            {
+                                new()
+                                {
+                                    Name = changes.SwapOption.ItemName,
+                                    Icon = changes.SwapOption.ItemIcon,
+                                    Rarity = changes.SwapOption.Rarity.Value,
+                                    Assets = changes.OverrideAssets
+                                }
+                            }
+                        }
+                    }
+                }));
 
             return items;
         }
