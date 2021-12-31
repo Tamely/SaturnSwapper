@@ -2,6 +2,7 @@
 @inject ISwapperService _swapperService
 @inject IDiscordRPCService _discordRPCService
 @inject IConfigService _configService
+@inject IJSRuntime _jsRuntime
 
 @page "/"
 @using System.Net
@@ -14,11 +15,17 @@
 @using Saturn.Backend.Data.Models.Items
 @using Saturn.Backend.Data.Utils
 @using System.Diagnostics
+@using System.Runtime.ExceptionServices
 @using System.Text.RegularExpressions
+@using MudBlazor
+@using Colors = Saturn.Backend.Data.Enums.Colors
 @inherits LayoutComponentBase
 
 <body>
 <main>
+<MudThemeProvider/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
         @if (saturnState == SaturnState.S_Maintenence)
         {
             <img src="img/Maintenance.png" alt="We are in maintenance right now! Check Discord for further updates!" style='background-position: center; width: 50%; height: 50%; border-radius: 5%; background-repeat: no-repeat;'/>
@@ -26,7 +33,7 @@
         else
         {
             <section class="glass">
-        <div class="dashboard">
+            <div class="dashboard">
             <div class="user">
                 @if (Username == null)
                 {
@@ -77,7 +84,7 @@
             </div>
         </div>
             <div class="items">
-            @if (saturnState != SaturnState.S_Settings && saturnState != SaturnState.S_Dash)
+            @if (saturnState != SaturnState.S_Settings && saturnState != SaturnState.S_Dash && saturnState != SaturnState.S_Error)
             {
                 <input type="text" placeholder="Search" style="text-indent: 10px; color:grey;" @oninput="@(async change => {await FilterItems(change.Value.ToString()); })"/>
             }
@@ -252,6 +259,10 @@
             {
 
             }
+            else if (saturnState == SaturnState.S_Error)
+            {
+                <img src @onerror=@(async() => await RunError())>
+            }
             else if (saturnState == SaturnState.S_Settings)
             {
                 <div class="container">
@@ -339,6 +350,8 @@
 {
     private List<Cosmetic> Items;
     private List<Cosmetic> BackupItems;
+    
+    private bool _halted;
 
     private string Avatar { get; set; }
     private string Username { get; set; }
@@ -354,7 +367,7 @@
     private string LaunchFortnite = "This will launch Fortnite and prevent it from verifying your game on close";
     private Colors LaunchFortniteColor = Colors.C_WHITE;
 
-    private SaturnState saturnState = SaturnState.S_Dash;
+    private SaturnState saturnState = SaturnState.S_Error;
 
     private async Task SwitchItemStyleChoice(Cosmetic item)
         => item.IsPickingStyles = !item.IsPickingStyles;
@@ -362,6 +375,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        AppDomain.CurrentDomain.FirstChanceException += FirstChanceException;
+        
         if (!CheckForInternetConnection())
             throw new WebException("No internet connection");
 
@@ -379,6 +394,31 @@
         }
 
         await base.OnInitializedAsync();
+    }
+    
+    private void FirstChanceException(object sender, FirstChanceExceptionEventArgs e)
+    {
+        if (_halted || e.Exception.StackTrace != null && !e.Exception.StackTrace.Contains("Saturn"))
+            return;
+
+        _halted = true;
+
+        var stackTrace = "\n" + e.Exception.StackTrace.Split("--- ")[0];
+
+        Logger.Log($"Unhandled exception occurred. {e.Exception.GetType().Name}: {e.Exception.Message} {stackTrace}", LogLevel.Fatal);
+
+        Items = new List<Cosmetic>();
+        saturnState = SaturnState.S_Error;
+
+    }
+
+    private async Task RunError()
+    {
+        await _jsRuntime.InvokeVoidAsync("MessageBox", "There has been an error that we were not able to recover from!", "Please send your logs in Saturn Support so we are able to solve it for you!");
+
+        await Task.Delay(1500);
+        
+        Process.Start("notepad.exe", Config.LogFile);
     }
     
     private async Task FilterItems(string Name)
@@ -508,7 +548,7 @@
         saturnState = SaturnState.S_Loading;
         Items = await _fortniteAPIService.GetSaturnBackblings();
         
-        foreach (var item in Items)
+        foreach (var item in Items.Where(item => !item.IsCloudAdded))
         {
             item.CosmeticOptions = new()
             {
@@ -554,7 +594,7 @@
         saturnState = SaturnState.S_Loading;
         Items = await _fortniteAPIService.GetSaturnDances();
 
-        foreach (var item in Items)
+        foreach (var item in Items.Where(item => !item.IsCloudAdded))
         {
             item.CosmeticOptions = new()
             {
@@ -579,7 +619,7 @@
         saturnState = SaturnState.S_Loading;
         Items = await _fortniteAPIService.GetSaturnPickaxes();
 
-        foreach (var item in Items)
+        foreach (var item in Items.Where(item => !item.IsCloudAdded))
         {
             item.CosmeticOptions = new()
             {

@@ -323,6 +323,24 @@ main {
     z-index: 3;
 }
 
+.error h2 {
+    color: white;
+    position: relative;
+    margin-top: -17%;
+    margin-left: 20%;
+    padding-right: 10px;
+    wrap-option: dont-wrap;
+}
+
+.error p {
+    color: white;
+    position: relative;
+    margin-top: -17%;
+    margin-left: 20%;
+    padding-right: 10px;
+    wrap-option: dont-wrap;
+}
+
 
 .card-info h2 {
     padding-left: 10px;

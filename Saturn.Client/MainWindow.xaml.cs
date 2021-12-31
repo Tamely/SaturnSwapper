@@ -1,6 +1,12 @@
-﻿using System.Windows;
+﻿using System;
+using System.Diagnostics;
+using System.Runtime.ExceptionServices;
+using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Saturn.Backend.Data.Services;
+using MudBlazor.Services;
+
+
 
 namespace Saturn.Client
 {
@@ -23,6 +29,8 @@ namespace Saturn.Client
             services.AddScoped<ICloudStorageService, CloudStorageService>();
 
             services.AddScoped<ISwapperService, SwapperService>();
+            
+            services.AddMudServices();
 
             Resources.Add("services", services.BuildServiceProvider());
 
