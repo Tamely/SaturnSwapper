@@ -94,6 +94,16 @@
             @if (saturnState != SaturnState.S_Settings && saturnState != SaturnState.S_Dash && saturnState != SaturnState.S_Error)
             {
                 <input type="text" placeholder="Search" style="text-indent: 10px; color:grey;" @oninput="@(async change => {await FilterItems(change.Value.ToString()); })"/>
+                
+                <select class="dropdown" name="searchType" id="searchType">
+                    <option @onselect=@(async() => await SetSearchType(SearchType.ST_Name)) value="name">Name</option>
+                    <option @onselect=@(async() => await SetSearchType(SearchType.ST_ID)) value="id">ID</option>
+                    <option @onselect=@(async() => await SetSearchType(SearchType.ST_Set)) value="set">Set</option>
+                    <option @onselect=@(async() => await SetSearchType(SearchType.ST_Season)) value="season">Season</option>
+                    <option @onselect=@(async() => await SetSearchType(SearchType.ST_Rarity)) value="rarity">Rarity</option>
+                    <option @onselect=@(async() => await SetSearchType(SearchType.ST_Series)) value="series">Series</option>
+                    <option @onselect=@(async() => await SetSearchType(SearchType.ST_Source)) value="source">Source</option>
+                </select>
             }
             
             @if (saturnState == SaturnState.S_Loading)
@@ -379,6 +389,8 @@
 
     private SaturnState saturnState = SaturnState.S_Dash;
 
+    private SearchType searchType = SearchType.ST_Name;
+
     private async Task SwitchItemStyleChoice(Cosmetic item)
         => item.IsPickingStyles = !item.IsPickingStyles;
 
@@ -405,7 +417,7 @@
 
         await CheckUpdate();
 
-        await CheckMaintenance();
+        await CheckMaintenance(); 
 
         await base.OnInitializedAsync();
     }
@@ -464,10 +476,65 @@
         await _jsRuntime.InvokeVoidAsync("MessageBox", "There is a swapper update ready to download!", "Please download it from Tamely's discord.", "error");
     }
     
-    private async Task FilterItems(string Name)
+    private async Task FilterItems(string input)
     {
         Items = new List<Cosmetic>(BackupItems);
-        Items.RemoveAll(x => !FilterString(x.Name.ToLower()).Contains(FilterString(Name.ToLower())));
+        
+        searchType = (SearchType) await _jsRuntime.InvokeAsync<int>("GetSelectedElement");
+        
+
+        switch (searchType)
+        {
+            case SearchType.ST_Name:
+                Items.RemoveAll(x => !FilterString(x.Name.ToLower()).Contains(FilterString(input.ToLower())));
+                break;
+            case SearchType.ST_ID:
+                Items.RemoveAll(x => !FilterString(x.Id.ToLower()).Contains(FilterString(input.ToLower())));
+                break;
+            case SearchType.ST_Rarity:
+                Items.RemoveAll(x => !FilterString(x.Rarity.BackendValue.ToLower()).StartsWith(FilterString(input.ToLower())));
+                break;
+            case SearchType.ST_Set:
+                Items.RemoveAll(x =>
+                {
+                    if (x.GameplayTags == null || x.GameplayTags.Count == 0 || x.GameplayTags == new List<string>())
+                        return true;
+                    
+                    return x.GameplayTags.Count(tag => FilterString(tag.ToLower()).Contains(FilterString(input.ToLower())) && tag.ToLower().Contains("set")) <= 0;
+                });
+                break;
+            case SearchType.ST_Season:
+                Items.RemoveAll(x =>
+                {
+                    if (x.GameplayTags == null || x.GameplayTags.Count == 0 || x.GameplayTags == new List<string>())
+                        return true;
+                    
+                    return x.GameplayTags.Count(tag => tag.ToLower().Equals($"cosmetics.filter.season.{input}")) <= 0;
+                });
+                break;
+            case SearchType.ST_Series:
+                Items.RemoveAll(x =>
+                {
+                    if (x.Series == null || x.Series == new Series() || x.Series.Value == null)
+                        return true;
+
+                    return !FilterString(x.Series.Value.ToLower()).Contains(FilterString(input.ToLower()));
+                });
+                break;
+            case SearchType.ST_Source:
+                Items.RemoveAll(x =>
+                {
+                    if (x.GameplayTags == null || x.GameplayTags.Count == 0 || x.GameplayTags == new List<string>())
+                        return true;
+                    
+                    return x.GameplayTags.Count(tag => FilterString(tag.ToLower()).Contains(FilterString(input.ToLower())) && tag.ToLower().Contains("source")) <= 0;
+                });
+                break;
+            default:
+                throw new ArgumentOutOfRangeException("How tf did you select a search type that doesn't exist?");
+        }
+        
+        
     }
 
     private string FilterString(string input)
@@ -570,6 +637,8 @@
     private async Task GoToSettings()
         => saturnState = SaturnState.S_Settings;
 
+    private async Task SetSearchType(SearchType searchType)
+        => this.searchType = searchType;
 
     private async Task GetSaturnSkins()
     {

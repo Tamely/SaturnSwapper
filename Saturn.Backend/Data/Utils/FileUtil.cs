@@ -141,29 +141,23 @@ namespace Saturn.Backend.Data.Utils
             if (!_provider.TrySavePackage(assetPath, out var assets)) return output;
             foreach (var (_, value) in assets)
             {
-                Vars.StopOffset = 0;
-                Vars.CurrentOffset = 0;
-                _stream = null;
-                Vars.HexOffset = 0;
+                int lastOffset = AnyLength.IndexOfSequence(value, Encoding.ASCII.GetBytes("/Game/")) - 1;
+                int startOffset = lastOffset - value[44] * 2 + 2;
 
-                while (Engine.Find(Vars.CurrentOffset, value, "/Game/"))
+                var pathOffset = lastOffset + 1;
+                for (var i = startOffset; i <= lastOffset; i += 2)
                 {
-                    Engine.FindStop(value);
-                    var item = Encoding.UTF8.GetString(ReadBytes(value, Vars.StopOffset - Vars.CurrentOffset, Vars.CurrentOffset));
-                    if (item.Split('.')[0].ToLower().Contains("bp") || item.Split('.')[0].ToLower().Contains("blueprint"))
-                        output.Add(item.Split('.')[0] + '.' + SubstringFromLast(item.Split('.')[0], '/') + "_C");
-                    else if (item.StartsWith("/Game/MainPlayer"))
-                        output.Add("/Game/Animation" + item);
-                    else
-                        output.Add(item.Split('.')[0] + '.' + SubstringFromLast(item.Split('.')[0], '/'));
-                    
+                    var path = ReadBytes(value, value[i], pathOffset);
+                    pathOffset += value[i];
+                    output.Add(Encoding.ASCII.GetString(path));
                     Logger.Log(output.Last());
                 }
             }
 
-            output.Remove(output.Last());
+            _stream = null;
             return output;
         }
+
 
         // Modified from https://gist.github.com/kyeondiscord/7d1a9088dbd95312f4cc4ac804606a66
         private static byte[] ReadBytes(byte[] Array, long numberOfBytes, long offset)

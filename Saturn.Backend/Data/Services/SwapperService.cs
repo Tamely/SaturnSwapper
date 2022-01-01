@@ -55,6 +55,8 @@ namespace Saturn.Backend.Data.Services
             _configService = configService;
             _cloudStorageService = cloudStorageService;
 
+            
+
             var _aes = _fortniteAPIService.GetAES();
 
             Trace.WriteLine("Got AES");
@@ -906,12 +908,19 @@ namespace Saturn.Backend.Data.Services
 
             }
             
+            if ((swapModel.HeadMesh.ToLower().Contains("ramirez") || swapModel.HeadMesh.ToLower().Contains("starfish")) && !swapModel.HeadMesh.ToLower().Contains("/parts/"))
+            {
+                (swapModel.HeadMaterial, swapModel.HairMaterial) = (swapModel.HairMaterial, swapModel.HeadMaterial);
+            }
+            
             Logger.Log($"Head hair color: {swapModel.HeadHairColor}");
             Logger.Log($"Head skin color: {swapModel.HeadSkinColor}");
             Logger.Log($"Head part modifier bp: {swapModel.HeadPartModifierBP}");
             Logger.Log($"Head FX: {swapModel.HeadFX}");
             Logger.Log($"Head mesh: {swapModel.HeadMesh}");
             Logger.Log($"Head ABP: {swapModel.HeadABP}");
+            Logger.Log($"Head Material: {swapModel.HeadMaterial}");
+            Logger.Log($"Hair Material: {swapModel.HairMaterial}");
             Logger.Log($"Body ABP: {swapModel.BodyABP}");
             Logger.Log($"Body mesh: {swapModel.BodyMesh}");
             Logger.Log($"Body material: {swapModel.BodyMaterial}");
@@ -928,11 +937,6 @@ namespace Saturn.Backend.Data.Services
             
 
             Logger.Log("Generating swaps");
-
-            if (swapModel.HeadMesh.ToLower().Contains("ramirez") || swapModel.HeadMesh.ToLower().Contains("starfish"))
-            {
-                (swapModel.HeadMaterial, swapModel.HairMaterial) = (swapModel.HairMaterial, swapModel.HeadMaterial);
-            }
 
             return option.ItemDefinition switch
             {

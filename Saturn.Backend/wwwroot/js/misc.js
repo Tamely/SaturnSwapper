@@ -4,3 +4,8 @@
 
     swal(title, message, successOrError);
 }
+
+function GetSelectedElement() {
+    var e = document.getElementById("searchType");
+    return e.selectedIndex;
+}

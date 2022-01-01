@@ -131,6 +131,14 @@ main {
                 rgba(255, 255, 255, 0.3)
         );
     }
+
+    .dropdown {
+        background: linear-gradient(
+                to right bottom,
+                rgba(255, 255, 255, 0.7),
+                rgba(255, 255, 255, 0.3)
+        );
+    }
 }
 
 @media (prefers-color-scheme: light) {
@@ -176,6 +184,14 @@ main {
     }
 
     .items input {
+        background: linear-gradient(
+                to right bottom,
+                rgba(255, 255, 255, 0.7),
+                rgba(255, 255, 255, 0.3)
+        );
+    }
+
+    .dropdown {
         background: linear-gradient(
                 to right bottom,
                 rgba(255, 255, 255, 0.7),
@@ -233,6 +249,14 @@ main {
                 rgba(0, 0, 0, 0.3)
         );
     }
+
+    .dropdown {
+        background: linear-gradient(
+                to right bottom,
+                rgba(0, 0, 0, 0.7),
+                rgba(0, 0, 0, 0.3)
+        );
+    }
 }
 
 .user img {
@@ -279,6 +303,14 @@ main {
     border-radius: 2vh;
     position: absolute;
     margin-top: -35%;
+}
+
+.dropdown {
+    border-radius: 2vh;
+    position: absolute;
+    margin-top: -35%;
+    margin-left: 47%;
+    color:grey;
 }
 
 .items {

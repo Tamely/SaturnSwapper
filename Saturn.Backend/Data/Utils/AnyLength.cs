@@ -89,7 +89,7 @@ namespace Saturn.Backend.Data.Utils
         }
 
         //Originally: https://stackoverflow.com/a/332667/12897035
-        private static int IndexOfSequence(byte[] buffer, byte[] pattern)
+        public static int IndexOfSequence(byte[] buffer, byte[] pattern)
         {
             int i = Array.IndexOf(buffer, pattern[0], 0);
             while (i >= 0 && i <= buffer.Length - pattern.Length)
