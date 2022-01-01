@@ -24,12 +24,13 @@ namespace Saturn.Client
             services.AddBlazorWebView();
 
             services.AddScoped<IConfigService, ConfigService>();
+            
+            // NEEDS TO BE BEFORE FORTNITEAPI
+            services.AddScoped<ICloudStorageService, CloudStorageService>();
 
             services.AddScoped<IDiscordRPCService, DiscordRPCService>();
             services.AddScoped<IFortniteAPIService, FortniteAPIService>();
             services.AddScoped<ISaturnAPIService, SaturnAPIService>();
-            
-            services.AddScoped<ICloudStorageService, CloudStorageService>();
 
             services.AddScoped<ISwapperService, SwapperService>();
             

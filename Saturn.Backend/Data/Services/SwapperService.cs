@@ -511,7 +511,19 @@ namespace Saturn.Backend.Data.Services
         {
             Logger.Log($"Getting cp for {item.Name}");
             var characterPart = await GetBackblingCharacterPart(item);
-            
+
+            try
+            {
+                var changes = _cloudStorageService.GetChanges(item.Id, "CharacterPartReplacements");
+                var cloudChanges = _cloudStorageService.DecodeChanges(changes);
+                
+                characterPart = cloudChanges.CharacterPartsReplace[0];
+            }
+            catch
+            {
+                // Ignored
+            }
+
             var data = await GetDataFromBackblingCharacterPart(characterPart);
 
             Logger.Log("Generating swaps");
@@ -790,6 +802,28 @@ namespace Saturn.Backend.Data.Services
         {
             Logger.Log($"Getting character parts for {item.Name}");
             var characterParts = await GetCharacterPartsById(item.Id);
+            
+            try
+            {
+                var changes = _cloudStorageService.GetChanges(item.Id, "CharacterPartReplacements");
+                var cloudChanges = _cloudStorageService.DecodeChanges(changes);
+
+
+                characterParts = new Dictionary<string, string>
+                {
+                    ["Body"] = cloudChanges.CharacterPartsReplace[0] ?? "/Game/Tamely",
+                    ["Head"] = cloudChanges.CharacterPartsReplace[1] ?? "/Game/Tamely",
+                    ["FaceACC"] = cloudChanges.CharacterPartsReplace[2] ?? "/Game/Tamely",
+                    ["MiscOrTail"] = cloudChanges.CharacterPartsReplace[3] ?? "/Game/Tamely",
+                    ["Other"] = cloudChanges.CharacterPartsReplace[4] ?? "/Game/Tamely"
+                };
+            }
+            catch(Exception ex)
+            {
+                Logger.Log("There was no hotfix found for this item! " + ex.ToString(), LogLevel.Warning);
+            }
+            
+            
             if (characterParts == new Dictionary<string, string>())
                 return null;
             

@@ -17,6 +17,7 @@ namespace Saturn.Backend.Data.Models.CloudStorage
         [JsonProperty("overrideAssets")] public List<SaturnAsset> OverrideAssets { get; set; }
         
         [JsonProperty("miscData")] public List<string> MiscData { get; set; }
+        [JsonProperty("characterPartsReplace")] public List<string> CharacterPartsReplace { get; set; }
     }
 
     public class ItemInfo
