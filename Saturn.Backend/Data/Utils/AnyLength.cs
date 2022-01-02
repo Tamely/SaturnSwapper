@@ -31,7 +31,6 @@ namespace Saturn.Backend.Data.Utils
                     if (searches[i].Length != replaces[i].Length)
                     {
                         int sizeOffset = NumFromTop(arr.ToArray(), startOffset, lastOffset, searchOffset, array[44]);
-                        Logger.Log("Size offset is " + sizeOffset);
                         if (sizeOffset < 0)
                             continue;
                         arr.RemoveAt(sizeOffset);

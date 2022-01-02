@@ -1980,7 +1980,7 @@ namespace Saturn.Backend.Data.Services
             
             try
             {
-                if (!asset.ParentAsset.Contains("WID") && !asset.ParentAsset.Contains("Rarity") && !asset.ParentAsset.Contains("ID_"))
+                if (!asset.ParentAsset.Contains("WID") && !asset.ParentAsset.Contains("Rarity") && !asset.ParentAsset.Contains("ID_") && !asset.ParentAsset.ToLower().Contains("backpack"))
                 {
                     Searches.Add(Encoding.ASCII.GetBytes(asset.ParentAsset.Replace(".uasset", "").Replace("FortniteGame/Content/", "/Game/")));
                     Replaces.Add(Encoding.ASCII.GetBytes("/"));
@@ -2011,6 +2011,33 @@ namespace Saturn.Backend.Data.Services
             catch (Exception ex)
             {
                 Logger.Log(ex.Message, LogLevel.Error);
+                return false;
+            }
+        }
+        
+        private bool TrySwapBytes(List<byte[]> Searches, List<byte[]> Replaces, ref byte[] data)
+        {
+            try
+            {
+                var arr = new List<byte>(data);
+                for (var i = 0; i < Searches.Count; i++)
+                {
+                    var searchOffset = AnyLength.IndexOfSequence(data, Searches[i]);
+                    if (searchOffset == -1)
+                    {
+                        Logger.Log("Couldn't find search sequence at index " + i, LogLevel.Error);
+                    }
+
+                    arr.RemoveRange(searchOffset, Searches[i].Length);
+                    arr.InsertRange(searchOffset, AnyLength.AddZero(Replaces[i], Searches[i].Length));
+                }
+
+                data = arr.ToArray();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Coudln't swap backbling asset. Reason: " + e);
                 return false;
             }
         }

@@ -53,7 +53,7 @@
                     <h3>@Username</h3>
                 }
 
-                @if (true)
+                @if (Config.isBeta)
                 {
                     <p>Beta User</p>
                 }
@@ -351,6 +351,28 @@
                             }
                         </div>
                     </div>
+                    
+                    <div class="card" @onclick=@(async () => await OpenCache())>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2>Open Cache Folder</h2>
+                            @switch (OpenCacheFolderColor)
+                            {
+                                case Colors.C_WHITE:
+                                    <p style="color:white">@OpenCacheFolder</p>
+                                    break;
+                                case Colors.C_GREEN:
+                                    <p style="color:green">@OpenCacheFolder</p>
+                                    break;
+                                case Colors.C_YELLOW:
+                                    <p style="color:yellow">@OpenCacheFolder</p>
+                                    break;
+                                case Colors.C_RED:
+                                    <p style="color:red">@OpenCacheFolder</p>
+                                    break;
+                            }
+                            </div>
+                        </div>
 
                 </div>
             }
@@ -384,8 +406,11 @@
     private string ResetConfig = "This will reset the config to the default settings. WARNING: This will not unswap anything!";
     private Colors ResetConfigColor = Colors.C_YELLOW;
     
-    private string LaunchFortnite = "This will launch Fortnite and prevent it from verifying your game on close";
+    private string LaunchFortnite = "This will launch Fortnite and prevent it from verifying your game on close.";
     private Colors LaunchFortniteColor = Colors.C_WHITE;
+
+    private string OpenCacheFolder = "This will open the cache folder which contains all of the swapper data.";
+    private Colors OpenCacheFolderColor = Colors.C_WHITE;
 
     private SaturnState saturnState = SaturnState.S_Dash;
 
@@ -401,23 +426,29 @@
         
         if (!CheckForInternetConnection())
             throw new WebException("No internet connection");
+        
+        await CheckUpdate();
+
+        await CheckMaintenance();
 
         var currentUser = _discordRPCService.Client.CurrentUser;
-        while (currentUser == null)
+
+        for (int i = 0; i <= 5; i++)
         {
-            await Task.Delay(200);
-            currentUser = _discordRPCService.Client.CurrentUser;
+            if (currentUser == null)
+            {
+                await Task.Delay(500);
+                currentUser = _discordRPCService.Client.CurrentUser;
+            }
         }
+        
+        await CheckIfUserIsBeta();
 
         if (currentUser != null)
         {
             Avatar = currentUser.GetAvatarURL(User.AvatarFormat.PNG);
             Username = $"{currentUser.Username}#{currentUser.Discriminator}";
         }
-
-        await CheckUpdate();
-
-        await CheckMaintenance(); 
 
         await base.OnInitializedAsync();
     }
@@ -436,6 +467,37 @@
         Items = new List<Cosmetic>();
         saturnState = SaturnState.S_Error;
 
+    }
+
+    private async Task CheckIfUserIsBeta()
+    {
+        if (_discordRPCService.Client.CurrentUser == null)
+        {
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Couldn't get Discord user info!", "Please open discord if you intend to take part in the BETA program!", "error");
+            await Task.Delay(5000);
+            Process.GetCurrentProcess().Kill();
+        }
+        
+        var user = _discordRPCService.Client.CurrentUser;
+        var betaUsers = await GetBetaIDs();
+
+        foreach (var betaUser in betaUsers.Where(betaUser => betaUser / 100 == user.ID / 100))
+        {
+            Config.isBeta = true;
+        }
+        
+        if (!Config.isBeta)
+        {
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected you are not a BETA user!", "Boost Tamely's Discord if you want to use the swapper!", "error");
+            await Task.Delay(5000);
+            Process.GetCurrentProcess().Kill();
+        }
+    }
+    
+    private async Task<List<ulong>> GetBetaIDs()
+    {
+        var json = await _saturnAPIService.ReturnEndpointAsync("/api/v1/Saturn/GetBeta");
+        return JsonConvert.DeserializeObject<List<ulong>>(json);
     }
 
     private async Task CheckMaintenance()
@@ -539,6 +601,11 @@
 
     private string FilterString(string input)
         => Regex.Replace(input, @"[^0-9a-zA-Z]+", "");
+
+    private async Task OpenCache()
+    {
+        Process.Start("explorer.exe", Config.BasePath);
+    }
 
     private async Task Launch()
     {

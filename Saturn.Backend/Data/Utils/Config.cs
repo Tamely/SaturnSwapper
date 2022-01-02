@@ -16,5 +16,7 @@ namespace Saturn.Backend.Data.Utils
         public static readonly string LogFile = LogPath + "Saturn.log";
 
         public static readonly string CloudStoragePath = BasePath + "CloudStorage.ini";
+        
+        public static bool isBeta = false;
     }
 }
