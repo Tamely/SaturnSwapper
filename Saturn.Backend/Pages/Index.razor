@@ -352,23 +352,23 @@
                         </div>
                     </div>
                     
-                    <div class="card" @onclick=@(async () => await OpenCache())>
+                    <div class="card" @onclick=@(async () => await OpenLog())>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2>Open Cache Folder</h2>
-                            @switch (OpenCacheFolderColor)
+                            <h2>Open Newest Log</h2>
+                            @switch (OpenLogColor)
                             {
                                 case Colors.C_WHITE:
-                                    <p style="color:white">@OpenCacheFolder</p>
+                                    <p style="color:white">@OpenLogFile</p>
                                     break;
                                 case Colors.C_GREEN:
-                                    <p style="color:green">@OpenCacheFolder</p>
+                                    <p style="color:green">@OpenLogFile</p>
                                     break;
                                 case Colors.C_YELLOW:
-                                    <p style="color:yellow">@OpenCacheFolder</p>
+                                    <p style="color:yellow">@OpenLogFile</p>
                                     break;
                                 case Colors.C_RED:
-                                    <p style="color:red">@OpenCacheFolder</p>
+                                    <p style="color:red">@OpenLogFile</p>
                                     break;
                             }
                             </div>
@@ -409,8 +409,8 @@
     private string LaunchFortnite = "This will launch Fortnite and prevent it from verifying your game on close.";
     private Colors LaunchFortniteColor = Colors.C_WHITE;
 
-    private string OpenCacheFolder = "This will open the cache folder which contains all of the swapper data.";
-    private Colors OpenCacheFolderColor = Colors.C_WHITE;
+    private string OpenLogFile = "This will open the cache folder which contains all of the swapper data.";
+    private Colors OpenLogColor = Colors.C_WHITE;
 
     private SaturnState saturnState = SaturnState.S_Dash;
 
@@ -602,9 +602,9 @@
     private string FilterString(string input)
         => Regex.Replace(input, @"[^0-9a-zA-Z]+", "");
 
-    private async Task OpenCache()
+    private async Task OpenLog()
     {
-        Process.Start("explorer.exe", Config.BasePath);
+        Process.Start("notepad.exe", Config.LogFile);
     }
 
     private async Task Launch()

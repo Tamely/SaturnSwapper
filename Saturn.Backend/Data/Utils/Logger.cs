@@ -31,6 +31,7 @@ namespace Saturn.Backend.Data.Utils
             _writer = File.CreateText(Config.LogFile);
             _writer.WriteLine("# Saturn Log");
             _writer.WriteLine($"# Started on {DateTime.Now}");
+            _writer.WriteLine($"# Saturn version {Constants.UserVersion}");
             _writer.WriteLine();
             _writer.Flush();
         }
