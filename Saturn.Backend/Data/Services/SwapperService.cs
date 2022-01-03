@@ -538,8 +538,11 @@ namespace Saturn.Backend.Data.Services
             switch (option.ItemDefinition)
             {
                 case "BID_430_GalileoSpeedBoat_9RXE3":
-                case "BID_469_Wings":  
                     if (data["Material"] != "/")
+                        option.Status = "This item might not be perfect!";
+                    break;
+                case "BID_678_CardboardCrewHolidayMale":  
+                    if (data["Material"] != "/" || data["FX"] != "/")
                         option.Status = "This item might not be perfect!";
                     break;
                 case "BID_695_StreetFashionEclipse":
@@ -588,7 +591,7 @@ namespace Saturn.Backend.Data.Services
                         }
                     }
                 },
-                "BID_469_Wings" => new SaturnOption()
+                "BID_678_CardboardCrewHolidayMale" => new SaturnOption()
                 { 
                     Name = item.Name,
                     Icon = item.Images.SmallIcon,
@@ -597,35 +600,21 @@ namespace Saturn.Backend.Data.Services
                     {
                         new SaturnAsset()
                         {
-                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack_Wings",
+                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack_CardboardCrewHolidayMale",
                             Swaps = new List<SaturnSwap>()
                             {
                                 new SaturnSwap()
                                 {
                                     Search =
-                                        "/Game/Accessories/FORT_Backpacks/Backpack_M_MED_Wings/Meshes/M_MED_Wings.M_MED_Wings",
+                                        "/Game/Accessories/FORT_Capes/M_MED_Cardboard_Crew_Holiday_Cape/Meshes/M_MED_Cardboard_Crew_Holiday_Cape.M_MED_Cardboard_Crew_Holiday_Cape",
                                     Replace = data["Mesh"],
                                     Type = SwapType.BackblingMesh
                                 },
                                 new SaturnSwap()
                                 {
                                     Search =
-                                        "/Game/Accessories/FORT_Backpacks/Backpack_M_MED_Cyclone_Wings/FX/NS_Backpack_Wings.NS_Backpack_Wings",
-                                    Replace = data["FX"],
-                                    Type = SwapType.BackblingFx
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Athena/Cosmetics/Blueprints/B_Athena_PartModifier_Generic.B_Athena_PartModifier_Generic_C",
-                                    Replace = data["PartModifierBP"] ?? "/Game/Athena/Cosmetics/Blueprints/B_Athena_PartModifier_Generic.B_Athena_PartModifier_Generic_C",
-                                    Type = SwapType.BackblingPartBP
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Accessories/FORT_Backpacks/Backpack_M_MED_Wings/Meshes/M_MED_Wings_AnimBP.M_MED_Wings_AnimBP_C",
-                                    Replace = data["ABP"] ?? "/Game/Accessories/FORT_Backpacks/Backpack_M_MED_Wings/Meshes/M_MED_Wings_AnimBP.M_MED_Wings_AnimBP_C",
+                                        "/Game/Accessories/FORT_Capes/M_MED_Cardboard_Crew_Holiday_Cape/Meshes/M_MED_Cardboard_Crew_Holiday_Cape_AnimBP.M_MED_Cardboard_Crew_Holiday_Cape_AnimBP_C",
+                                    Replace = data["ABP"] ?? "/Game/Accessories/FORT_Capes/M_MED_Cardboard_Crew_Holiday_Cape/Meshes/M_MED_Cardboard_Crew_Holiday_Cape_AnimBP.M_MED_Cardboard_Crew_Holiday_Cape_AnimBP_C",
                                     Type = SwapType.BackblingAnim
                                 }
                             }
