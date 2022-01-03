@@ -371,8 +371,16 @@
                                     <p style="color:red">@OpenLogFile</p>
                                     break;
                             }
-                            </div>
                         </div>
+                    </div>
+                    
+                    <div class="card" @onclick=@(async () => await FlipRarityOption())>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2>Change rarity</h2>
+                            <p style="color:white">@FlipRarity</p>
+                        </div>
+                    </div>
 
                 </div>
             }
@@ -409,8 +417,10 @@
     private string LaunchFortnite = "This will launch Fortnite and prevent it from verifying your game on close.";
     private Colors LaunchFortniteColor = Colors.C_WHITE;
 
-    private string OpenLogFile = "This will open the cache folder which contains all of the swapper data.";
+    private string OpenLogFile = "This will open the log file that correlates to the current swapper session.";
     private Colors OpenLogColor = Colors.C_WHITE;
+    
+    private string FlipRarity = "Currently set to 'pickaxes WILL swap rarity'";
 
     private SaturnState saturnState = SaturnState.S_Dash;
 
@@ -481,7 +491,7 @@
         var user = _discordRPCService.Client.CurrentUser;
         var betaUsers = await GetBetaIDs();
 
-        foreach (var betaUser in betaUsers.Where(betaUser => betaUser / 100 == user.ID / 100))
+        foreach (var _ in betaUsers.Where(betaUser => betaUser == user.ID))
         {
             Config.isBeta = true;
         }
@@ -601,6 +611,17 @@
 
     private string FilterString(string input)
         => Regex.Replace(input, @"[^0-9a-zA-Z]+", "");
+
+    private async Task FlipRarityOption()
+    {
+        await _configService.TrySetShouldRarityConvert(!await _configService.TryGetShouldRarityConvert());
+
+        FlipRarity = await _configService.TryGetShouldRarityConvert() switch
+        {
+            true => "Currently set to 'pickaxes WILL swap rarity'",
+            false => "Currently set to 'pickaxes WILL NOT swap rarity'"
+        };
+    }
 
     private async Task OpenLog()
     {

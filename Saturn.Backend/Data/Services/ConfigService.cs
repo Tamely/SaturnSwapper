@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,6 +17,9 @@ namespace Saturn.Backend.Data.Services
         public Task<List<ConvertedItem>> TryGetConvertedItems();
         public Task<bool> RemoveConvertedItem(string id);
         public Task<bool> AddConvertedItem(ConvertedItem item);
+        public Task<bool> TryGetShouldRarityConvert();
+        public Task<bool> TrySetShouldRarityConvert(bool shouldConvert);
+        public Task<int> GetConvertedFileCount();
         public void SaveConfig();
     }
 
@@ -111,6 +115,41 @@ namespace Saturn.Backend.Data.Services
             catch
             {
                 ConfigFile = new Configuration();
+                return false;
+            }
+        }
+
+        public async Task<int> GetConvertedFileCount()
+        {
+            List<string> convertedFiles = new List<string>();
+            foreach (var swap in from item in ConfigFile.ConvertedItems from swap in item.Swaps where convertedFiles.IndexOf(swap.File) == -1 select swap)
+                convertedFiles.Add(swap.File);
+            return convertedFiles.Count;
+        }
+
+        public async Task<bool> TryGetShouldRarityConvert()
+        {
+            try
+            {
+                return ConfigFile.ShouldPickaxeSwapRarity;
+            }
+            catch
+            {
+                ConfigFile.ShouldPickaxeSwapRarity = true;
+                return true;
+            }
+        }
+        
+        public async Task<bool> TrySetShouldRarityConvert(bool shouldConvert)
+        {
+            try
+            {
+                ConfigFile.ShouldPickaxeSwapRarity = shouldConvert;
+                SaveConfig();
+                return true;
+            }
+            catch
+            {
                 return false;
             }
         }

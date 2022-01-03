@@ -16,6 +16,7 @@ using CUE4Parse.UE4.Assets.Exports.Material.Parameters;
 using CUE4Parse.UE4.Objects.Core.Misc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.CloudStorage;
 using Saturn.Backend.Data.Models.FortniteAPI;
@@ -43,17 +44,20 @@ namespace Saturn.Backend.Data.Services
         private readonly ISaturnAPIService _saturnAPIService;
         private readonly ICloudStorageService _cloudStorageService;
 
+        private readonly IJSRuntime _jsRuntime;
+
         private bool _halted;
         private readonly DefaultFileProvider _provider;
 
 
         public SwapperService(IFortniteAPIService fortniteAPIService, ISaturnAPIService saturnAPIService,
-            IConfigService configService, ICloudStorageService cloudStorageService)
+            IConfigService configService, ICloudStorageService cloudStorageService, IJSRuntime jsRuntime)
         {
             _fortniteAPIService = fortniteAPIService;
             _saturnAPIService = saturnAPIService;
             _configService = configService;
             _cloudStorageService = cloudStorageService;
+            _jsRuntime = jsRuntime;
 
             
 
@@ -312,6 +316,9 @@ namespace Saturn.Backend.Data.Services
                                 $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
                     Trace.WriteLine($"Converted in {sw.Elapsed.Seconds} seconds!");
                     Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
+
+                    if (await _configService.GetConvertedFileCount() > 2)
+                        _jsRuntime.InvokeVoidAsync("MessageBox", "You might want to revert the last item you swapped!", "If you go ingame with your currently swapped items, you will be kicked from Fortnite.", "warning");
 
 
                     return true;
@@ -1650,7 +1657,7 @@ namespace Saturn.Backend.Data.Services
 
 
             var Rarity = await FileUtil.GetRarityFromAsset(item.DefinitionPath, _provider);
-            if (Rarity != EFortRarity.Common)
+            if (Rarity != EFortRarity.Common && await _configService.TryGetShouldRarityConvert())
             {
                 option.Status = $"All common items are going to be {Rarity.ToString()} and {option.Status}";
                 output.Assets.Add(
@@ -1986,6 +1993,7 @@ namespace Saturn.Backend.Data.Services
                     Replaces.Add(Encoding.ASCII.GetBytes("/"));
                 }
 
+                // My hardcoded fixes for assets that oodle doesnt like
                 if (asset.ParentAsset.ToLower().Contains("backpack") && asset.ParentAsset.ToLower().Contains("eclipse"))
                 {
                     Searches.Add(new byte[] {128,137,125,52,112,160,41,136,85,24,105,64,86,153,101,207,105,255,255,255,255,255,255,255,255,227,34,88,165,109,85});
@@ -1995,6 +2003,7 @@ namespace Saturn.Backend.Data.Services
                     Searches.Add(new byte[] {67,117,115,116,111,109,67,104,97,114,97,99,116,101,114,66,97,99,107,112,97,99,107,68,97,116,97});
                     Replaces.Add(new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0});
                 }
+
                 foreach (var swap in asset.Swaps)
                     switch (swap)
                     {
