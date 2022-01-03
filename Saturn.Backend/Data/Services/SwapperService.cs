@@ -1985,6 +1985,16 @@ namespace Saturn.Backend.Data.Services
                     Searches.Add(Encoding.ASCII.GetBytes(asset.ParentAsset.Replace(".uasset", "").Replace("FortniteGame/Content/", "/Game/")));
                     Replaces.Add(Encoding.ASCII.GetBytes("/"));
                 }
+
+                if (asset.ParentAsset.ToLower().Contains("backpack") && asset.ParentAsset.ToLower().Contains("eclipse"))
+                {
+                    Searches.Add(new byte[] {128,137,125,52,112,160,41,136,85,24,105,64,86,153,101,207,105,255,255,255,255,255,255,255,255,227,34,88,165,109,85});
+                    Replaces.Add(new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0});
+                    Searches.Add(new byte[] {23,4,128,155,5,152,34,65,79,78,195,37,32,110,183,112,126,162,66,99,16,131,122,115});
+                    Replaces.Add(new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0});
+                    Searches.Add(new byte[] {67,117,115,116,111,109,67,104,97,114,97,99,116,101,114,66,97,99,107,112,97,99,107,68,97,116,97});
+                    Replaces.Add(new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0});
+                }
                 foreach (var swap in asset.Swaps)
                     switch (swap)
                     {
@@ -2037,7 +2047,7 @@ namespace Saturn.Backend.Data.Services
             }
             catch (Exception e)
             {
-                Console.WriteLine("Coudln't swap backbling asset. Reason: " + e);
+                Console.WriteLine("Couldn't swap backbling asset. Reason: " + e);
                 return false;
             }
         }
