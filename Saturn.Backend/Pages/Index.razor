@@ -419,8 +419,8 @@
 
     private string OpenLogFile = "This will open the log file that correlates to the current swapper session.";
     private Colors OpenLogColor = Colors.C_WHITE;
-    
-    private string FlipRarity = "Currently set to 'pickaxes WILL swap rarity'";
+
+    private string FlipRarity = "";
 
     private SaturnState saturnState = SaturnState.S_Dash;
 
@@ -428,6 +428,9 @@
 
     private async Task SwitchItemStyleChoice(Cosmetic item)
         => item.IsPickingStyles = !item.IsPickingStyles;
+    
+    private async Task ShouldConvertRarity()
+        => FlipRarity = await _configService.TryGetShouldRarityConvert() ? "Currently set to 'pickaxes WILL swap rarity'" : "Currently set to 'pickaxes WILL NOT swap rarity'";
 
 
     protected override async Task OnInitializedAsync()
@@ -440,6 +443,8 @@
         await CheckUpdate();
 
         await CheckMaintenance();
+
+        await ShouldConvertRarity();
 
         var currentUser = _discordRPCService.Client.CurrentUser;
 
