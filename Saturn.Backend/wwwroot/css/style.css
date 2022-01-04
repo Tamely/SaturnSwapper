@@ -297,6 +297,22 @@ main {
     flex: 4;
 }
 
+.plugins input {
+    padding-left: 10px;
+    border: none;
+    width:70%;
+    border-radius: 25%;
+    color: grey;
+    background-color: #6cdbeb;
+}
+
+.plugins {
+    margin-top: 50%;
+    padding-top: 20px;
+    height: 10%;
+    position: relative;
+}
+
 .items input {
     border: none;
     width: 50%;

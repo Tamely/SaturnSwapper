@@ -18,6 +18,7 @@ namespace Saturn.Backend.Data.Services
     public interface IFortniteAPIService
     {
         public Task<List<Cosmetic>> GetSaturnSkins();
+        public Task<List<Cosmetic>> GetSaturnMisc();
         public Task<List<Cosmetic>> GetSaturnBackblings();
         public Task<List<Cosmetic>> GetSaturnPickaxes();
         public Task<List<Cosmetic>> GetSaturnDances();
@@ -124,6 +125,11 @@ namespace Saturn.Backend.Data.Services
 
             return await AreItemsConverted(await AddExtraItems(await RemoveItems(await IsHatTypeDifferent(Skins.Data)),
                 ItemType.IT_Skin));
+        }
+        
+        public async Task<List<Cosmetic>> GetSaturnMisc()
+        {
+            return await AreItemsConverted(await AddExtraItems(new List<Cosmetic>(), ItemType.IT_Misc));
         }
         
         private async Task<List<Cosmetic>> RemoveItems(List<Cosmetic> items)
