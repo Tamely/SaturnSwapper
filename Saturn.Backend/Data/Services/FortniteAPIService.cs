@@ -152,40 +152,56 @@ namespace Saturn.Backend.Data.Services
         private async Task<List<Cosmetic>> AddExtraItems(List<Cosmetic> items, ItemType itemType)
         {
             Logger.Log("Adding extra items");
-            items.AddRange(_cloudStorageService.GetSections()
-                .SelectMany(section => section.Keys, (section, key) => _cloudStorageService.DecodeChanges(key.Value))
-                .Where(changes => changes.addItem && changes.Item.ItemType == itemType)
-                .Select(changes => new Cosmetic()
+            
+            List<Cosmetic> extraItems = new List<Cosmetic>();
+
+            foreach (var section in _cloudStorageService.GetSections())
+            {
+                foreach (var key in section.Keys)
                 {
-                    Images = new() { SmallIcon = changes.Item.ItemIcon },
-                    Description = changes.Item.ItemDescription,
-                    Id = changes.Item.ItemID,
-                    Name = changes.Item.ItemName,
-                    Series = changes.Item.Series ?? new Series(),
-                    Rarity = changes.Item.Rarity,
-                    IsCloudAdded = true,
-                    CosmeticOptions = new List<SaturnItem>
+                    var changes = _cloudStorageService.DecodeChanges(key.Value);
+
+                    if (changes.addItem && changes.Item.ItemType == itemType)
                     {
-                        new()
+                        List<SaturnItem> itemOptions = new();
+                        for (int i = 0; i < changes.SwapOptions.Count; i++)
                         {
-                            Icon = changes.SwapOption.ItemIcon,
-                            Description = changes.SwapOption.ItemDescription,
-                            ItemDefinition = changes.SwapOption.ItemID,
-                            Name = changes.SwapOption.ItemName,
-                            Rarity = changes.SwapOption.Rarity.Value,
-                            Options = new List<SaturnOption>
+                            itemOptions.Add(new()
                             {
-                                new()
+                                Name = changes.SwapOptions[i].ItemName,
+                                Icon = changes.SwapOptions[i].ItemIcon,
+                                Rarity = changes.SwapOptions[i].Rarity.Value,
+                                Options = new List<SaturnOption>()
                                 {
-                                    Name = changes.SwapOption.ItemName,
-                                    Icon = changes.SwapOption.ItemIcon,
-                                    Rarity = changes.SwapOption.Rarity.Value,
-                                    Assets = changes.OverrideAssets
+                                    new SaturnOption()
+                                    {
+                                        Name = changes.SwapOptions[i].ItemName,
+                                        Icon = changes.SwapOptions[i].ItemIcon,
+                                        Rarity = changes.SwapOptions[i].Rarity.Value,
+                                        Assets = changes.SwapOptions[i].OverrideAssets
+                                    }
                                 }
-                            }
+                            });
                         }
+
+
+                        extraItems.Add(new Cosmetic()
+                        {
+                            Images = new() { SmallIcon = changes.Item.ItemIcon },
+                            Description = changes.Item.ItemDescription,
+                            Id = changes.Item.ItemID,
+                            Name = changes.Item.ItemName,
+                            Series = changes.Item.Series ?? new Series(),
+                            Rarity = changes.Item.Rarity,
+                            IsCloudAdded = true,
+                            CosmeticOptions = itemOptions
+                        });
                     }
-                }));
+                }
+            }
+
+            items.AddRange(extraItems);
+            return items;
 
             return items;
         }

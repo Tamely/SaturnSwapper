@@ -10,12 +10,8 @@ namespace Saturn.Backend.Data.Models.CloudStorage
     {
         [JsonProperty("addItem")] public bool addItem { get; set; }
         [JsonProperty("removeItem")] public bool removeItem { get; set; }
-        
-        [JsonProperty("swapOption")] public ItemInfo SwapOption { get; set; }
+        [JsonProperty("swapOption")] public List<ItemInfo> SwapOptions { get; set; }
         [JsonProperty("item")] public ItemInfo Item { get; set; }
-
-        [JsonProperty("overrideAssets")] public List<SaturnAsset> OverrideAssets { get; set; }
-        
         [JsonProperty("miscData")] public List<string> MiscData { get; set; }
         [JsonProperty("characterPartsReplace")] public List<string> CharacterPartsReplace { get; set; }
     }
@@ -29,5 +25,6 @@ namespace Saturn.Backend.Data.Models.CloudStorage
         [JsonProperty("itemType")] public ItemType ItemType { get; set; }
         [JsonProperty("rarity")] public Rarity Rarity { get; set; }
         [JsonProperty("series")] public Series? Series { get; set; }
+        [JsonProperty("overrideAssets")] public List<SaturnAsset> OverrideAssets { get; set; }
     }
 }

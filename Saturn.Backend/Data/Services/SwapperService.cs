@@ -206,7 +206,7 @@ namespace Saturn.Backend.Data.Services
                         var changes = _cloudStorageService.GetChanges(option.ItemDefinition, item.Id);
                         cloudChanges = _cloudStorageService.DecodeChanges(changes);
 
-                        itemSwap.Assets = cloudChanges.OverrideAssets;
+                        itemSwap.Assets = option.Options[0].Assets;
                     }
                     catch
                     {
