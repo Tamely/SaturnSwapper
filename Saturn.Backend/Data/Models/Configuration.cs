@@ -17,5 +17,6 @@ namespace Saturn.Backend.Data.Models
         [JsonProperty("convertedItems")] public List<ConvertedItem> ConvertedItems { get; set; }
         [JsonProperty("shouldDebugShow")] public bool ShouldDebugShow { get; set; } = true;
         [JsonProperty("shouldPickaxeSwapRarity")] public bool ShouldPickaxeSwapRarity { get; set; } = true;
+        [JsonProperty("isLobbyBackgroundConverted")] public bool IsLobbyBackgroundConverted { get; set; }
     }
 }

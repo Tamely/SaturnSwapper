@@ -271,6 +271,26 @@
             else if (saturnState == SaturnState.S_Misc)
             {
                 <div class="container">
+                    @if (_configService.ConfigFile.IsLobbyBackgroundConverted)
+                    {
+                        <div class="card" @onclick=@(async () => await RevertLobbyBG())>
+                            <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                            <div class="card-info">
+                                <h2 style="color: green;">Lobby BG</h2>
+                                <p style="color:green">Changes your Fortnite lobby background to specified picture.</p>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="card" @onclick=@(async () => await SwapLobbyBG())>
+                            <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                            <div class="card-info">
+                                <h2 style="color: white;">Lobby BG</h2>
+                                <p style="color:white">Changes your Fortnite lobby background to specified picture.</p>
+                            </div>
+                        </div>
+                    }
                     @foreach (var item in Items)
                     {
                         if (!item.IsPickingStyles)
@@ -986,6 +1006,16 @@
         BackupItems = new List<Cosmetic>(Items);
         currentType = ItemType.IT_Pickaxe;
         saturnState = SaturnState.S_Items;
+    }
+
+    private async Task SwapLobbyBG()
+    {
+        
+    }
+
+    private async Task RevertLobbyBG()
+    {
+        
     }
 
     // Taken from Darkblade on Twilight
