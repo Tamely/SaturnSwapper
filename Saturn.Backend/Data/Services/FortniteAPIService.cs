@@ -170,6 +170,7 @@ namespace Saturn.Backend.Data.Services
                             {
                                 Name = changes.SwapOptions[i].ItemName,
                                 Icon = changes.SwapOptions[i].ItemIcon,
+                                Description = changes.SwapOptions[i].ItemDescription,
                                 Rarity = changes.SwapOptions[i].Rarity.Value,
                                 Options = new List<SaturnOption>()
                                 {
