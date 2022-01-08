@@ -16,6 +16,7 @@ namespace Saturn.Backend.Data.Enums
         S_Maintenance,
         S_Error,
         S_Update,
-        S_Misc
+        S_Misc,
+        S_Key
     }
 }

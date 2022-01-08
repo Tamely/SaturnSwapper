@@ -16,6 +16,17 @@ namespace Saturn.Backend.Data.Utils
         {
             try
             {
+                if (!isPickaxe)
+                {
+                    var index = IndexOfSequence(array, End);
+                    if (index == -1)
+                    {
+                        Logger.Log("Moving on to fallback swapping!");
+                        if (!SwapNormally(searches, replaces, ref array))
+                            throw new Exception("Failed to swap normally!");
+                    }
+                }
+                
                 var arr = new List<byte>(array);
                 int diff = 0;
 
@@ -82,9 +93,51 @@ namespace Saturn.Backend.Data.Utils
             }
             catch (Exception e)
             {
-                Logger.Log(e.ToString(), LogLevel.Error);
-                throw new Exception("Failed to swap!");
+                Logger.Log("You might be able to ignore this!!!!     " + e.ToString(), LogLevel.Error);
+                Logger.Log("Moving on to fallback swapping!");
+                if (!SwapNormally(searches, replaces, ref array))
+                {
+                    throw new Exception("Failed to swap!");
+                    return false;
+                }
+                return true;
             }
+
+            return true;
+        }
+
+        public static bool SwapNormally(List<byte[]> Searches, List<byte[]> Replaces, ref byte[] array)
+        {
+            try
+            {
+                var arr = new List<byte>(array);
+                for (var i = 0; i < Searches.Count; i++)
+                {
+                    var search = Searches[i];
+                    var replace = Replaces[i];
+                    var index = IndexOfSequence(array, search);
+                    if (index == -1)
+                    {
+                        Logger.Log("Couldn't find search at index " + i + "!", LogLevel.Error);
+                        continue;
+                    }
+
+                    if (replace.Length < search.Length)
+                        Array.Resize(ref replace, search.Length);
+                    else if (replace.Length > search.Length)
+                        continue;
+
+                    arr.RemoveRange(index, search.Length);
+                    arr.InsertRange(index, replace);
+                }
+                array = arr.ToArray();
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
         }
 
         //Originally: https://stackoverflow.com/a/332667/12897035
