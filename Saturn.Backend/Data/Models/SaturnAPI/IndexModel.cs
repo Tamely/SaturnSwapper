@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Saturn.Backend.Data.Models.SaturnAPI;
 
@@ -9,4 +10,5 @@ public class IndexModel
     public long minsUp { get; set; }
     public string DiscordServer { get; set; }
     public string swapperVersion { get; set; }
+    [JsonProperty("keyLink")] public string KeyLink { get; set; }
 }

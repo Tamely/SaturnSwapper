@@ -37,6 +37,10 @@
         {
             <img src @onerror=@(async() => await RunUpdate())>
         }
+        else if (saturnState == SaturnState.S_Key)
+        {
+            <img src @onerror=@(async() => Process.Start(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).KeyLink))>
+        }
         else
         {
             <section class="glass">
