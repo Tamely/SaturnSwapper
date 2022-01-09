@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using CUE4Parse.FileProvider;
@@ -131,6 +133,27 @@ namespace Saturn.Backend.Data.Utils
 
             return ECustomHatType.ECustomHatType_None;
 
+        }
+        
+        public static async Task OpenBrowser(string url)
+        {
+            try
+            {
+                Process.Start(url);
+            }
+            catch
+            {
+                // different way because of this: https://github.com/dotnet/corefx/issues/10361
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    url = url.Replace("&", "^&");
+                    Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") {CreateNoWindow = true});
+                }
+                else
+                {
+                    throw; // you never know what bugs might happen
+                }
+            }
         }
 
         // Export asset to memory then return all strings in asset

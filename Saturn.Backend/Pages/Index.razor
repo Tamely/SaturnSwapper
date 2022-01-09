@@ -39,7 +39,7 @@
         }
         else if (saturnState == SaturnState.S_Key)
         {
-            <img src @onerror=@(async() => Process.Start(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).KeyLink))>
+            <input type="text" placeholder="Please enter the key here!" @oninput=@(async(e) => await CheckKey(e.Value.ToString()))>
         }
         else
         {
@@ -587,7 +587,7 @@
 
     private string FlipRarity = "";
 
-    private SaturnState saturnState = SaturnState.S_Dash;
+    private SaturnState saturnState = SaturnState.S_Key;
 
     private SearchType searchType = SearchType.ST_Name;
 
@@ -608,6 +608,8 @@
         await CheckUpdate();
 
         await CheckMaintenance();
+
+        await CheckKey();
 
         await ShouldConvertRarity();
 
@@ -647,6 +649,36 @@
         Items = new List<Cosmetic>();
         saturnState = SaturnState.S_Error;
 
+    }
+
+    bool once;
+    private async Task CheckKey(string? key = null)
+    {
+        var keys = await GetKeys();
+        var keyToUse = key ?? _configService.ConfigFile.Key;
+
+        if (keys.IndexOf(keyToUse) != -1)
+        {
+            _configService.ConfigFile.Key = keyToUse;
+            _configService.SaveConfig();
+            saturnState = SaturnState.S_Dash;
+        }
+        else if (Config.isBeta)
+        {
+            saturnState = SaturnState.S_Dash;
+        }
+        else if (!once)
+        {
+            FileUtil.OpenBrowser(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).KeyLink);
+            once = true;
+        }
+
+    }
+
+    private async Task<List<string>> GetKeys()
+    {
+        var rawJSON = await _saturnAPIService.ReturnEndpointAsync("/api/v1/Saturn/DisplayKeys");
+        return JsonConvert.DeserializeObject<List<string>>(rawJSON);
     }
 
     private async Task CheckIfUserIsBeta()
