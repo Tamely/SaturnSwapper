@@ -193,7 +193,7 @@ namespace Saturn.Backend.Data.Services
                 Logger.Log("Generating swaps...");
 
                 SaturnOption itemSwap = new();
-                if (false)
+                if (option.Options != null)
                     itemSwap = option.Options[0];
                 else
                     itemSwap = itemType switch
