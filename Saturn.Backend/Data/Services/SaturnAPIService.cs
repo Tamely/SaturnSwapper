@@ -10,7 +10,6 @@ namespace Saturn.Backend.Data.Services
 {
     public interface ISaturnAPIService
     {
-        public Task<Offsets> GetOffsets(string parentAsset);
         public Task<string> ReturnEndpointAsync(string url);
         public string ReturnEndpoint(string url);
     }
@@ -33,13 +32,6 @@ namespace Saturn.Backend.Data.Services
 
         private string ApiKey { get; }
         private Uri Base { get; }
-
-        public async Task<Offsets> GetOffsets(string parentAsset)
-        {
-            var json = JsonConvert.DeserializeObject<List<Offsets>>(
-                await ReturnEndpointAsync("/api/v1/ProjectPlatoV2/Offsets"));
-            return json.Find(x => x.ParentAsset.Contains(parentAsset));
-        }
 
         public async Task<string> ReturnEndpointAsync(string url)
         {
