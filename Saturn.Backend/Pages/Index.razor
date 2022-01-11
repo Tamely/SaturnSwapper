@@ -39,7 +39,7 @@
         }
         else if (saturnState == SaturnState.S_Key)
         {
-            <input type="text" placeholder="Please enter the key here!" @oninput=@(async(e) => await CheckKey(e.Value.ToString()))>
+            <input type="text" class="key" placeholder="Enter key here" @oninput=@(async(e) => await CheckKey(e.Value.ToString()))>
         }
         else
         {
@@ -651,7 +651,7 @@
 
     }
 
-    bool once;
+    bool _once;
     private async Task CheckKey(string? key = null)
     {
         var keys = await GetKeys();
@@ -662,15 +662,14 @@
             _configService.ConfigFile.Key = keyToUse;
             _configService.SaveConfig();
             saturnState = SaturnState.S_Dash;
+            await FileUtil.OpenBrowser(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).DiscordServer);
         }
         else if (Config.isBeta)
-        {
             saturnState = SaturnState.S_Dash;
-        }
-        else if (!once)
+        else if (!_once)
         {
             FileUtil.OpenBrowser(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).KeyLink);
-            once = true;
+            _once = true;
         }
 
     }
@@ -684,26 +683,16 @@
     private async Task CheckIfUserIsBeta()
     {
         if (_discordRPCService.Client.CurrentUser == null)
-        {
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Couldn't get Discord user info!", "Please open discord if you intend to take part in the BETA program!", "error");
-            await Task.Delay(5000);
-            Process.GetCurrentProcess().Kill();
-        }
-        
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Couldn't get Discord user info!", "Please open discord if you intend to use BETA features!", "error");
+
         var user = _discordRPCService.Client.CurrentUser;
         var betaUsers = await GetBetaIDs();
 
         foreach (var _ in betaUsers.Where(betaUser => betaUser == user.ID))
-        {
             Config.isBeta = true;
-        }
-        
+
         if (!Config.isBeta)
-        {
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected you are not a BETA user!", "Boost Tamely's Discord if you want to use the swapper!", "error");
-            await Task.Delay(5000);
-            Process.GetCurrentProcess().Kill();
-        }
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected you are not a BETA user!", "Boost Tamely's Discord if you want to use BETA features!", "error");
     }
     
     private async Task<List<ulong>> GetBetaIDs()
@@ -741,13 +730,14 @@
         await _jsRuntime.InvokeVoidAsync("MessageBox", "There has been an error that we were not able to recover from!", "Please send your logs in Saturn Support so we are able to solve it for you!");
 
         await Task.Delay(1500);
-        
+
         Process.Start("notepad.exe", Config.LogFile);
     }
     
     private async Task RunUpdate()
     {
-        await _jsRuntime.InvokeVoidAsync("MessageBox", "There is a swapper update ready to download!", "Please download it from Tamely's discord.", "error");
+        await _jsRuntime.InvokeVoidAsync("MessageBox", "There is a swapper update ready to download!", "Please download it from Tamely's Discord.", "error");
+        await FileUtil.OpenBrowser(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).DiscordServer);
     }
     
     private async Task FilterItems(string input)

@@ -131,6 +131,14 @@ main {
                 rgba(255, 255, 255, 0.3)
         );
     }
+    
+    .key {
+        background: linear-gradient(
+                to right bottom,
+                rgba(255, 255, 255, 0.7),
+                rgba(255, 255, 255, 0.3)
+        );
+    }
 
     .dropdown {
         background: linear-gradient(
@@ -184,6 +192,14 @@ main {
     }
 
     .items input {
+        background: linear-gradient(
+                to right bottom,
+                rgba(255, 255, 255, 0.7),
+                rgba(255, 255, 255, 0.3)
+        );
+    }
+
+    .key {
         background: linear-gradient(
                 to right bottom,
                 rgba(255, 255, 255, 0.7),
@@ -250,6 +266,14 @@ main {
         );
     }
 
+    .key {
+        background: linear-gradient(
+                to right bottom,
+                rgba(0, 0, 0, 0.7),
+                rgba(0, 0, 0, 0.3)
+        );
+    }
+
     .dropdown {
         background: linear-gradient(
                 to right bottom,
@@ -304,6 +328,14 @@ main {
     border-radius: 25%;
     color: grey;
     background-color: #6cdbeb;
+}
+
+.key {
+    padding-left: 10px;
+    width: 50%;
+    color: grey;
+    font-size: 16px;
+    border: none;
 }
 
 .plugins {
