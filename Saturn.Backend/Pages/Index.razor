@@ -756,7 +756,7 @@
                 Items.RemoveAll(x => !FilterString(x.Id.ToLower()).Contains(FilterString(input.ToLower())));
                 break;
             case SearchType.ST_Rarity:
-                Items.RemoveAll(x => !FilterString(x.Rarity.BackendValue.ToLower()).StartsWith(FilterString(input.ToLower())));
+                Items.RemoveAll(x => !FilterString(x.Rarity.BackendValue.ToLower().Replace("efortrarity::", "")).StartsWith(FilterString(input.ToLower())));
                 break;
             case SearchType.ST_Set:
                 Items.RemoveAll(x =>

@@ -193,7 +193,7 @@ namespace Saturn.Backend.Data.Services
                 Logger.Log("Generating swaps...");
 
                 SaturnOption itemSwap = new();
-                if (option.Options.Count > 0)
+                if (false)
                     itemSwap = option.Options[0];
                 else
                     itemSwap = itemType switch
@@ -1534,39 +1534,83 @@ namespace Saturn.Backend.Data.Services
             
             Logger.Log("CMM: " + swaps["CMM"]);
 
-            return new SaturnOption
+            return option.ItemDefinition switch
             {
-                Name = item.Name,
-                Icon = item.Images.SmallIcon,
-                Rarity = item.Rarity.BackendValue,
-                Assets = new List<SaturnAsset>
+                "EID_DanceMoves" => new SaturnOption()
                 {
-                    new SaturnAsset
+                    Name = item.Name,
+                    Icon = item.Images.SmallIcon,
+                    Rarity = item.Rarity.BackendValue,
+                    Assets = new List<SaturnAsset>
                     {
-                        ParentAsset = "FortniteGame/Content/Athena/Items/Cosmetics/Dances/EID_DanceMoves",
-                        Swaps = new List<SaturnSwap>
+                        new SaturnAsset
                         {
-                            new()
+                            ParentAsset = "FortniteGame/Content/Athena/Items/Cosmetics/Dances/EID_DanceMoves",
+                            Swaps = new List<SaturnSwap>
                             {
-                                Search = "/Game/Animation/Game/MainPlayer/Montages/Emotes/Emote_DanceMoves.Emote_DanceMoves",
-                                Replace = swaps["CMM"],
-                                Type = SwapType.BodyAnim
-                            },
-                            new()
-                            {
-                                Search = "/Game/UI/Foundation/Textures/Icons/Emotes/T-Icon-Emotes-E-Dance.T-Icon-Emotes-E-Dance",
-                                Replace = swaps["SmallIcon"],
-                                Type = SwapType.Modifier
-                            },
-                            new()
-                            {
-                                Search = "/Game/UI/Foundation/Textures/Icons/Emotes/T-Icon-Emotes-E-Dance-L.T-Icon-Emotes-E-Dance-L",
-                                Replace = "/",
-                                Type = SwapType.Modifier
+                                new()
+                                {
+                                    Search = "/Game/Animation/Game/MainPlayer/Montages/Emotes/Emote_DanceMoves.Emote_DanceMoves",
+                                    Replace = swaps["CMM"],
+                                    Type = SwapType.BodyAnim
+                                },
+                                new()
+                                {
+                                    Search = "/Game/UI/Foundation/Textures/Icons/Emotes/T-Icon-Emotes-E-Dance.T-Icon-Emotes-E-Dance",
+                                    Replace = swaps["SmallIcon"],
+                                    Type = SwapType.Modifier
+                                },
+                                new()
+                                {
+                                    Search = "/Game/UI/Foundation/Textures/Icons/Emotes/T-Icon-Emotes-E-Dance-L.T-Icon-Emotes-E-Dance-L",
+                                    Replace = "/",
+                                    Type = SwapType.Modifier
+                                }
                             }
                         }
                     }
-                }
+                },
+                "EID_BoogieDown" => new SaturnOption()
+                {
+                    Name = item.Name,
+                    Icon = item.Images.SmallIcon,
+                    Rarity = item.Rarity.BackendValue,
+                    Assets = new List<SaturnAsset>
+                    {
+                        new SaturnAsset
+                        {
+                            ParentAsset = "FortniteGame/Content/Athena/Items/Cosmetics/Dances/EID_BoogieDown",
+                            Swaps = new List<SaturnSwap>
+                            {
+                                new()
+                                {
+                                    Search = "/Game/Animation/Game/MainPlayer/Emotes/Boogie_Down/Emote_Boogie_Down_CMM.Emote_Boogie_Down_CMM",
+                                    Replace = swaps["CMM"],
+                                    Type = SwapType.BodyAnim
+                                },
+                                new()
+                                {
+                                    Search = "/Game/Animation/Game/MainPlayer/Emotes/Boogie_Down/Emote_Boogie_Down_CMF.Emote_Boogie_Down_CMF",
+                                    Replace = swaps["CMF"],
+                                    Type = SwapType.BodyAnim
+                                },
+                                new()
+                                {
+                                    Search = "/Game/UI/Foundation/Textures/Icons/Emotes/T-Icon-Emotes-E-BoogieDown.T-Icon-Emotes-E-BoogieDown",
+                                    Replace = swaps["SmallIcon"],
+                                    Type = SwapType.Modifier
+                                },
+                                new()
+                                {
+                                    Search = "/Game/UI/Foundation/Textures/Icons/Emotes/T-Icon-Emotes-E-BoogieDown-L.T-Icon-Emotes-E-BoogieDown-L",
+                                    Replace = "/",
+                                    Type = SwapType.Modifier
+                                }
+                            }
+                        }
+                    }
+                },
+                _ => new SaturnOption()
             };
         }
 
