@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Saturn.Backend.Data.Enums;
@@ -160,6 +161,36 @@ namespace Saturn.Backend.Data.Services
                 foreach (var key in section.Keys)
                 {
                     var changes = _cloudStorageService.DecodeChanges(key.Value);
+                    
+                    if (changes.addOptions && changes.Item.ItemType == itemType)
+                    {
+                        var itemInList = items.FirstOrDefault(x => x.Id.ToLower() == changes.Item.ItemID.ToLower());
+
+                        foreach (var option in changes.SwapOptions)
+                        {
+                            itemInList.CosmeticOptions.Add(new SaturnItem()
+                            {
+                                Name = option.ItemName,
+                                Description = option.ItemDescription,
+                                Icon = option.ItemIcon,
+                                ItemDefinition = option.ItemID,
+                                Rarity = option.Rarity.Value,
+                                Options = new List<SaturnOption>()
+                                {
+                                    new SaturnOption()
+                                    {
+                                        Name = option.ItemName,
+                                        Icon = option.ItemIcon,
+                                        Rarity = option.Rarity.Value,
+                                        Assets = option.OverrideAssets
+                                    }
+                                }
+                            });
+                        }
+
+                        items.RemoveAll(x => x.Id == itemInList.Id);
+                        items.Add(itemInList);
+                    }
 
                     if (changes.addItem && changes.Item.ItemType == itemType)
                     {
