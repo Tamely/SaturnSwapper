@@ -59,7 +59,7 @@ namespace Saturn.Backend.Data.Services
             _cloudStorageService = cloudStorageService;
             _jsRuntime = jsRuntime;
 
-            
+
 
             var _aes = _fortniteAPIService.GetAES();
 
@@ -98,7 +98,7 @@ namespace Saturn.Backend.Data.Services
                         Colors.C_RED);
                         Logger.Log($"There was an error reverting {item.Name}!", LogLevel.Error);
                     }
-                        
+
                 }
                 else
                 {
@@ -114,14 +114,14 @@ namespace Saturn.Backend.Data.Services
                                 option.Name == "Redline") || (Items[randomNumber].HatTypes == HatTypes.HT_Hat &&
                                                               option.Name != "Redline"))
                             randomNumber = random.Next(0, Items.Count - 1);
-                        
+
                         if (!await Convert(Items[randomNumber], option, itemType, isAuto, true, item))
                         {
                             await ItemUtil.UpdateStatus(item, option,
                                 $"There was an error converting {Items[randomNumber].Name}!",
                                 Colors.C_RED);
                             Logger.Log($"There was an error converting {Items[randomNumber].Name}!", LogLevel.Error);
-                        }   
+                        }
                     }
                     else if (!await Convert(item, option, itemType, isAuto))
                     {
@@ -129,8 +129,8 @@ namespace Saturn.Backend.Data.Services
                         $"There was an error converting {item.Name}!",
                         Colors.C_RED);
                         Logger.Log($"There was an error converting {item.Name}!", LogLevel.Error);
-                    }    
-                        
+                    }
+
                 }
 
                 _halted = false;
@@ -179,15 +179,15 @@ namespace Saturn.Backend.Data.Services
                         Swaps = new List<ActiveSwap>()
                     };
                 }
-                
+
                 if (isRandom)
                     await ItemUtil.UpdateStatus(random, option, "Checking item type");
                 else
                     await ItemUtil.UpdateStatus(item, option, "Checking item type");
                 Changes cloudChanges = new();
-                
+
                 if (isRandom)
-                        await ItemUtil.UpdateStatus(random, option, "Generating swaps", Colors.C_YELLOW);
+                    await ItemUtil.UpdateStatus(random, option, "Generating swaps", Colors.C_YELLOW);
                 else
                     await ItemUtil.UpdateStatus(item, option, "Generating swaps", Colors.C_YELLOW);
                 Logger.Log("Generating swaps...");
@@ -205,8 +205,34 @@ namespace Saturn.Backend.Data.Services
                         _ => new()
                     };
 
-                
-                    
+                if (itemSwap.Assets[0].ParentAsset.Contains("CP_Backpack_StreetFashionEclipse"))
+                {
+                    Logger.Log("Detected scaling issue!");
+                    bool shouldFix = await _configService.TryGetShouldFixScalingBug();
+                    if (shouldFix)
+                    {
+                        Logger.Log("User has scaling fix enabled.");
+                        Logger.Log("Implenting fix.");
+                        itemSwap.Assets.Add(new()
+                        {
+                            ParentAsset = "FortniteGame/Content/Characters/Player/Common/BackpackScaleSettings/FemaleSource.uasset",
+                            Swaps = new()
+                            {
+                                new()
+                                {
+                                    Search = "AAAAAgEFzcyMP83MjD/NzIw/",
+                                    Replace = "AAAAAgEFZmZmP2ZmZj9mZmY/",
+                                    Type = SwapType.Base64
+                                }
+                            }
+                        });
+                    }
+                    else
+                    {
+                        Logger.Log("User has not requested to fix scaling bug.");
+                    }
+                }
+
                 try
                 {
                     var changes = _cloudStorageService.GetChanges(option.ItemDefinition, item.Id);
@@ -252,7 +278,7 @@ namespace Saturn.Backend.Data.Services
                     if (!TryIsB64(ref data, asset))
                         Logger.Log($"Cannot swap/determine if '{asset.ParentAsset}' is Base64 or not!",
                             LogLevel.Fatal);
-                                
+
                     var compressed = SaturnData.isCompressed ? Oodle.Compress(data) : data;
 
                     Directory.CreateDirectory(Config.DecompressedDataPath);
@@ -266,14 +292,14 @@ namespace Saturn.Backend.Data.Services
 
                     if (isRandom)
                         await ItemUtil.UpdateStatus(random, option, "Adding asset to UCAS", Colors.C_YELLOW);
-                    else 
+                    else
                         await ItemUtil.UpdateStatus(item, option, "Adding asset to UCAS", Colors.C_YELLOW);
 
                     await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, file), SaturnData.Offset,
                         compressed);
 
                     file = file.Replace("ucas", "utoc");
-                                
+
                     Dictionary<long, byte[]> lengths = new();
                     if (!await CustomAssets.TryHandleOffsets(asset, compressed.Length, data.Length, lengths, file, _saturnAPIService))
                         Logger.Log(
@@ -292,7 +318,7 @@ namespace Saturn.Backend.Data.Services
                         Lengths = lengths
                     });
                 }
-                    
+
                 if (isRandom)
                     random.IsConverted = true;
                 else
@@ -350,40 +376,40 @@ namespace Saturn.Backend.Data.Services
                 var sw = Stopwatch.StartNew();
 
                 await ItemUtil.UpdateStatus(item, option, "Checking config file for item", Colors.C_YELLOW);
-                        _configService.ConfigFile.ConvertedItems.Any(x =>
-                        {
-                            if (x.ItemDefinition != id) return false;
-                            foreach (var asset in x.Swaps)
-                            {
-                                ItemUtil.UpdateStatus(item, option, "Reading compressed data", Colors.C_YELLOW).GetAwaiter()
-                                    .GetResult();
-                                var data = File.ReadAllBytes(Path.Combine(Config.CompressedDataPath,
-                                    Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset"));
+                _configService.ConfigFile.ConvertedItems.Any(x =>
+                {
+                    if (x.ItemDefinition != id) return false;
+                    foreach (var asset in x.Swaps)
+                    {
+                        ItemUtil.UpdateStatus(item, option, "Reading compressed data", Colors.C_YELLOW).GetAwaiter()
+                            .GetResult();
+                        var data = File.ReadAllBytes(Path.Combine(Config.CompressedDataPath,
+                            Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset"));
 
-                                ItemUtil.UpdateStatus(item, option, "Writing compressed data back to UCAS", Colors.C_YELLOW)
-                                    .GetAwaiter().GetResult();
-                                TrySwapAsset(Path.Combine(FortniteUtil.PakPath, asset.File), asset.Offset, data)
-                                    .GetAwaiter()
-                                    .GetResult();
+                        ItemUtil.UpdateStatus(item, option, "Writing compressed data back to UCAS", Colors.C_YELLOW)
+                            .GetAwaiter().GetResult();
+                        TrySwapAsset(Path.Combine(FortniteUtil.PakPath, asset.File), asset.Offset, data)
+                            .GetAwaiter()
+                            .GetResult();
 
-                                ItemUtil.UpdateStatus(item, option, "Checking for customs", Colors.C_YELLOW).GetAwaiter()
-                                    .GetResult();
-                                if (asset.Lengths != new Dictionary<long, byte[]>())
-                                    foreach (var (key, value) in asset.Lengths)
-                                        TrySwapAsset(
-                                            Path.Combine(FortniteUtil.PakPath, asset.File.Replace("ucas", "utoc")),
-                                            key, value).GetAwaiter().GetResult();
+                        ItemUtil.UpdateStatus(item, option, "Checking for customs", Colors.C_YELLOW).GetAwaiter()
+                            .GetResult();
+                        if (asset.Lengths != new Dictionary<long, byte[]>())
+                            foreach (var (key, value) in asset.Lengths)
+                                TrySwapAsset(
+                                    Path.Combine(FortniteUtil.PakPath, asset.File.Replace("ucas", "utoc")),
+                                    key, value).GetAwaiter().GetResult();
 
-                                ItemUtil.UpdateStatus(item, option, "Deleting compressed data", Colors.C_YELLOW).GetAwaiter()
-                                    .GetResult();
-                                File.Delete(Path.Combine(Config.CompressedDataPath,
-                                    Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset"));
-                                File.Delete(Path.Combine(Config.DecompressedDataPath,
-                                    Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset"));
-                            }
+                        ItemUtil.UpdateStatus(item, option, "Deleting compressed data", Colors.C_YELLOW).GetAwaiter()
+                            .GetResult();
+                        File.Delete(Path.Combine(Config.CompressedDataPath,
+                            Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset"));
+                        File.Delete(Path.Combine(Config.DecompressedDataPath,
+                            Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset"));
+                    }
 
-                            return true;
-                        });
+                    return true;
+                });
 
 
                 if (!await _configService.RemoveConvertedItem(id))
@@ -442,7 +468,7 @@ namespace Saturn.Backend.Data.Services
 
             if (cmm == "")
                 cmm = strs.FirstOrDefault(x => x.StartsWith("/Game/Animation/Game/MainPlayer/"));
-            
+
             data.Add("CMF", cmf);
             data.Add("CMM", cmm);
             data.Add("SmallIcon", sIcon);
@@ -471,18 +497,18 @@ namespace Saturn.Backend.Data.Services
             if (FileUtil.SubstringFromLast(item.Id, '_').Length != 5)
                 return "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack" +
                        FileUtil.SubstringFromSecond(item.Id, '_');
-            
-            return "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack" + FileUtil.SubstringFromSecond(item.Id, '_').Replace('_' + FileUtil.SubstringFromLast(item.Id, '_'), "").Replace("__","_");
+
+            return "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack" + FileUtil.SubstringFromSecond(item.Id, '_').Replace('_' + FileUtil.SubstringFromLast(item.Id, '_'), "").Replace("__", "_");
         }
 
         private async Task<Dictionary<string, string>> GetDataFromBackblingCharacterPart(string backblingCharacterPart)
         {
             var output = new Dictionary<string, string>();
-            
-            
+
+
             var strs = await FileUtil.GetStringsFromAsset(backblingCharacterPart, _provider);
 
-            
+
             string Mesh = "/";
             string Material = "/";
             string FX = "/";
@@ -505,7 +531,7 @@ namespace Saturn.Backend.Data.Services
                         PartModifierBP = str;
                 }
             }
-            
+
             Logger.Log("Mesh: " + Mesh);
             Logger.Log("Material: " + Material);
             Logger.Log("FX: " + FX);
@@ -530,7 +556,7 @@ namespace Saturn.Backend.Data.Services
             {
                 var changes = _cloudStorageService.GetChanges(item.Id, "CharacterPartReplacements");
                 var cloudChanges = _cloudStorageService.DecodeChanges(changes);
-                
+
                 characterPart = cloudChanges.CharacterPartsReplace[0];
             }
             catch
@@ -548,7 +574,7 @@ namespace Saturn.Backend.Data.Services
                     if (data["Material"] != "/")
                         option.Status = "This item might not be perfect!";
                     break;
-                case "BID_678_CardboardCrewHolidayMale":  
+                case "BID_678_CardboardCrewHolidayMale":
                     if (data["Material"] != "/" || data["FX"] != "/")
                         option.Status = "This item might not be perfect!";
                     break;
@@ -562,7 +588,7 @@ namespace Saturn.Backend.Data.Services
             return option.ItemDefinition switch
             {
                 "BID_695_StreetFashionEclipse" => new SaturnOption()
-                { 
+                {
                     Name = item.Name,
                     Icon = item.Images.SmallIcon,
                     Rarity = item.Rarity.BackendValue,
@@ -599,7 +625,7 @@ namespace Saturn.Backend.Data.Services
                     }
                 },
                 "BID_678_CardboardCrewHolidayMale" => new SaturnOption()
-                { 
+                {
                     Name = item.Name,
                     Icon = item.Images.SmallIcon,
                     Rarity = item.Rarity.BackendValue,
@@ -629,7 +655,7 @@ namespace Saturn.Backend.Data.Services
                     }
                 },
                 "BID_430_GalileoSpeedBoat_9RXE3" => new SaturnOption()
-                { 
+                {
                     Name = item.Name,
                     Icon = item.Images.SmallIcon,
                     Rarity = item.Rarity.BackendValue,
@@ -687,11 +713,11 @@ namespace Saturn.Backend.Data.Services
         public async Task<Dictionary<string, string>> GetAssetsFromWID(string wid)
         {
             var output = new Dictionary<string, string>();
-            
-            
+
+
             var strs = await FileUtil.GetStringsFromAsset(wid, _provider);
 
-            
+
             string Mesh = "/";
             string Material = "/";
             string SmallIcon = "/";
@@ -702,7 +728,7 @@ namespace Saturn.Backend.Data.Services
             string ImpactCue = "/";
             string ActorClass = "/";
             string Trail = "/";
-            
+
             foreach (var str in strs)
             {
                 if (str.Contains('.'))
@@ -731,7 +757,7 @@ namespace Saturn.Backend.Data.Services
                         Trail = str;
                 }
             }
-            
+
             output.Add("Mesh", Mesh);
             output.Add("Material", Material);
             output.Add("SmallIcon", SmallIcon);
@@ -797,7 +823,7 @@ namespace Saturn.Backend.Data.Services
 
             return cps;
         }
-        
+
         #region GenerateMeshDefaults
 
 
@@ -805,7 +831,7 @@ namespace Saturn.Backend.Data.Services
         {
             Logger.Log($"Getting character parts for {item.Name}");
             var characterParts = await GetCharacterPartsById(item.Id);
-            
+
             try
             {
                 var changes = _cloudStorageService.GetChanges(item.Id, "CharacterPartReplacements");
@@ -821,17 +847,17 @@ namespace Saturn.Backend.Data.Services
                     ["Other"] = cloudChanges.CharacterPartsReplace[4] ?? "/Game/Tamely"
                 };
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Logger.Log("There was no hotfix found for this item! " + ex.ToString(), LogLevel.Warning);
             }
-            
-            
+
+
             if (characterParts == new Dictionary<string, string>())
                 return null;
-            
+
             Logger.Log("Creating swap model");
-            
+
             MeshDefaultModel swapModel = new()
             {
                 HairMaterial = "/Game/Tamely",
@@ -886,7 +912,7 @@ namespace Saturn.Backend.Data.Services
                             if (assetString.ToLower().Contains("/effect") && assetString.Contains('.'))
                                 swapModel.BodyFX = assetString;
                         }
-                        
+
                         break;
                     case "Head":
                         Logger.Log("Character part is type: Head");
@@ -910,7 +936,7 @@ namespace Saturn.Backend.Data.Services
                             if (assetString.ToLower().Contains("/effect") && assetString.Contains('.'))
                                 swapModel.HeadFX = assetString;
                         }
-                        
+
                         break;
                     case "FaceACC":
                         Logger.Log("Character part is type: FaceACC");
@@ -933,7 +959,7 @@ namespace Saturn.Backend.Data.Services
                             if (assetString.ToLower().Contains("/effect") && assetString.Contains('.'))
                                 swapModel.FaceACCFX = assetString;
                         }
-                        
+
                         break;
                     case "MiscOrTail":
                         Logger.Log("Character part is type: MiscOrTail");
@@ -944,12 +970,12 @@ namespace Saturn.Backend.Data.Services
                 }
 
             }
-            
+
             if ((swapModel.HeadMesh.ToLower().Contains("ramirez") || swapModel.HeadMesh.ToLower().Contains("starfish")) && !swapModel.HeadMesh.ToLower().Contains("/parts/"))
             {
                 (swapModel.HeadMaterial, swapModel.HairMaterial) = (swapModel.HairMaterial, swapModel.HeadMaterial);
             }
-            
+
             Logger.Log($"Head hair color: {swapModel.HeadHairColor}");
             Logger.Log($"Head skin color: {swapModel.HeadSkinColor}");
             Logger.Log($"Head part modifier bp: {swapModel.HeadPartModifierBP}");
@@ -971,7 +997,7 @@ namespace Saturn.Backend.Data.Services
             Logger.Log($"Face ACC material 3: {swapModel.FaceACCMaterial3}");
             Logger.Log($"Face ACC part modifier BP: {swapModel.FaceACCPartModifierBP}");
             Logger.Log($"Face ACC FX: {swapModel.FaceACCFX}");
-            
+
 
             Logger.Log("Generating swaps");
 
@@ -1077,8 +1103,8 @@ namespace Saturn.Backend.Data.Services
                                 },
                                 new SaturnSwap()
                                 {
-                                    Search = System.Convert.ToBase64String(new byte[] {4,4,3,2,3}),
-                                    Replace = System.Convert.ToBase64String(new byte[] {4,4,3,(byte)swapModel.HatType,3}),
+                                    Search = System.Convert.ToBase64String(new byte[] { 4, 4, 3, 2, 3 }),
+                                    Replace = System.Convert.ToBase64String(new byte[] { 4, 4, 3, (byte)swapModel.HatType, 3 }),
                                     Type = SwapType.Property
                                 }
                             }
@@ -1518,7 +1544,7 @@ namespace Saturn.Backend.Data.Services
             };
         }
         #endregion
-        
+
         #region GenerateEmoteSwaps
 
         private async Task<SaturnOption> GenerateMeshEmote(Cosmetic item, SaturnItem option)
@@ -1531,7 +1557,7 @@ namespace Saturn.Backend.Data.Services
                 Logger.Log($"Failed to find data for \"{item.Id}\"!", LogLevel.Error);
                 return new SaturnOption();
             }
-            
+
             Logger.Log("CMM: " + swaps["CMM"]);
 
             return option.ItemDefinition switch
@@ -1615,17 +1641,17 @@ namespace Saturn.Backend.Data.Services
         }
 
         #endregion
-        
+
         #region GeneratePickaxeSwaps
-        
+
         private async Task<SaturnOption> GenerateMeshPickaxe(Cosmetic item, SaturnItem option)
         {
             Logger.Log($"Getting wid for {item.Name}");
             var swaps = await GetAssetsFromWID(item.DefinitionPath);
-            
+
             if (swaps["FX"] != "/" || swaps["Material"] != "/" || swaps["ActorClass"] == "/")
                 option.Status = "This item might not be perfect!";
-            
+
 
             Logger.Log("Generating swaps");
 
@@ -1962,16 +1988,16 @@ namespace Saturn.Backend.Data.Services
                                 }
                             }
                         },
-                        
+
                         _ => throw new Exception("Rarity not found")
                     });
             }
 
             return output;
         }
-        
+
         #endregion
-        
+
 
         private async Task<Dictionary<string, long>> GetFileNameAndOffsetFromConvertedItems(SaturnOption item)
         {
@@ -2024,7 +2050,7 @@ namespace Saturn.Backend.Data.Services
         {
             List<byte[]> Searches = new();
             List<byte[]> Replaces = new();
-            
+
             try
             {
                 if (!asset.ParentAsset.Contains("WID") && !asset.ParentAsset.Contains("Rarity") && !asset.ParentAsset.Contains("ID_") && !asset.ParentAsset.ToLower().Contains("backpack") && !asset.ParentAsset.ToLower().Contains("gameplay"))
@@ -2036,12 +2062,12 @@ namespace Saturn.Backend.Data.Services
                 // My hardcoded fixes for assets that oodle doesnt like
                 if (asset.ParentAsset.ToLower().Contains("backpack") && asset.ParentAsset.ToLower().Contains("eclipse"))
                 {
-                    Searches.Add(new byte[] {128,137,125,52,112,160,41,136,85,24,105,64,86,153,101,207,105,255,255,255,255,255,255,255,255,227,34,88,165,109,85});
-                    Replaces.Add(new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0});
-                    Searches.Add(new byte[] {23,4,128,155,5,152,34,65,79,78,195,37,32,110,183,112,126,162,66,99,16,131,122,115});
-                    Replaces.Add(new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0});
-                    Searches.Add(new byte[] {67,117,115,116,111,109,67,104,97,114,97,99,116,101,114,66,97,99,107,112,97,99,107,68,97,116,97});
-                    Replaces.Add(new byte[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0});
+                    Searches.Add(new byte[] { 128, 137, 125, 52, 112, 160, 41, 136, 85, 24, 105, 64, 86, 153, 101, 207, 105, 255, 255, 255, 255, 255, 255, 255, 255, 227, 34, 88, 165, 109, 85 });
+                    Replaces.Add(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+                    Searches.Add(new byte[] { 23, 4, 128, 155, 5, 152, 34, 65, 79, 78, 195, 37, 32, 110, 183, 112, 126, 162, 66, 99, 16, 131, 122, 115 });
+                    Replaces.Add(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+                    Searches.Add(new byte[] { 67, 117, 115, 116, 111, 109, 67, 104, 97, 114, 97, 99, 116, 101, 114, 66, 97, 99, 107, 112, 97, 99, 107, 68, 97, 116, 97 });
+                    Replaces.Add(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
                 }
 
                 foreach (var swap in asset.Swaps)
@@ -2060,7 +2086,7 @@ namespace Saturn.Backend.Data.Services
                             Replaces.Add(Encoding.ASCII.GetBytes(swap.Replace));
                             break;
                     }
-                
+
                 if (asset.ParentAsset.Contains("WID"))
                     AnyLength.TrySwap(ref data, Searches, Replaces, true);
                 else
@@ -2073,7 +2099,7 @@ namespace Saturn.Backend.Data.Services
                 return false;
             }
         }
-        
+
         private bool TrySwapBytes(List<byte[]> Searches, List<byte[]> Replaces, ref byte[] data)
         {
             try

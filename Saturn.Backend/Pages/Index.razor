@@ -547,6 +547,13 @@
                         </div>
                     </div>
 
+                    <div class="card" @onclick=@(async () => await FlipRarityOption())>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2>Enable Scaling Fix</h2>
+                            <p style="color:white">@FlipRarity</p>
+                        </div>
+                    </div>
                 </div>
             }
             else
@@ -586,6 +593,7 @@
     private Colors OpenLogColor = Colors.C_WHITE;
 
     private string FlipRarity = "";
+    private string ScalingFix = "";
 
     private SaturnState saturnState = SaturnState.S_Key;
 
@@ -654,9 +662,10 @@
     bool _once;
     private async Task CheckKey(string? key = null)
     {
+        var keys = await GetKeys();
         var keyToUse = key ?? _configService.ConfigFile.Key;
 
-        if (JsonConvert.DeserializeObject<bool>(await _saturnAPIService.ReturnEndpointAsync($"/api/v1/Saturn/ReturnKeyExists?key={keyToUse}")))
+        if (keys.IndexOf(keyToUse) != -1)
         {
             _configService.ConfigFile.Key = keyToUse;
             _configService.SaveConfig();
@@ -671,6 +680,12 @@
             _once = true;
         }
 
+    }
+
+    private async Task<List<string>> GetKeys()
+    {
+        var rawJSON = await _saturnAPIService.ReturnEndpointAsync("/api/v1/Saturn/DisplayKeys");
+        return JsonConvert.DeserializeObject<List<string>>(rawJSON);
     }
 
     private async Task CheckIfUserIsBeta()
@@ -749,7 +764,7 @@
                 Items.RemoveAll(x => !FilterString(x.Id.ToLower()).Contains(FilterString(input.ToLower())));
                 break;
             case SearchType.ST_Rarity:
-                Items.RemoveAll(x => !FilterString(x.Rarity.BackendValue.ToLower().Replace("efortrarity::", "")).StartsWith(FilterString(input.ToLower())));
+                Items.RemoveAll(x => !FilterString(x.Rarity.BackendValue.ToLower()).StartsWith(FilterString(input.ToLower())));
                 break;
             case SearchType.ST_Set:
                 Items.RemoveAll(x =>
@@ -805,6 +820,17 @@
         {
             true => "Currently set to 'pickaxes WILL swap rarity'",
             false => "Currently set to 'pickaxes WILL NOT swap rarity'"
+        };
+    }
+
+    private async Task ToggleScalingFix()
+    {
+        await _configService.TrySetShouldFixScalingBug(!await _configService.TryGetShouldFixScalingBug());
+
+        ScalingFix = await _configService.TryGetShouldFixScalingBug() switch
+        {
+            true => "Currently set to 'WILL Fix Scaling Issue'",
+            false => "Currently set to 'WILL NOT Fix Scaling Issue'"
         };
     }
 
