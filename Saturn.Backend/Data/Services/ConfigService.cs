@@ -19,6 +19,8 @@ namespace Saturn.Backend.Data.Services
         public Task<bool> AddConvertedItem(ConvertedItem item);
         public Task<bool> TryGetShouldRarityConvert();
         public Task<bool> TrySetShouldRarityConvert(bool shouldConvert);
+        public Task<bool> TryGetShouldFixScalingBug();
+        public Task<bool> TrySetShouldFixScalingBug(bool shouldFix);
         public Task<int> GetConvertedFileCount();
         public void SaveConfig();
     }
@@ -145,6 +147,33 @@ namespace Saturn.Backend.Data.Services
             try
             {
                 ConfigFile.ShouldPickaxeSwapRarity = shouldConvert;
+                SaveConfig();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> TryGetShouldFixScalingBug()
+        {
+            try
+            {
+                return ConfigFile.ShouldFixScalingBug;
+            }
+            catch
+            {
+                ConfigFile.ShouldFixScalingBug = true;
+                return true;
+            }
+        }
+
+        public async Task<bool> TrySetShouldFixScalingBug(bool shouldFix)
+        {
+            try
+            {
+                ConfigFile.ShouldFixScalingBug = shouldFix;
                 SaveConfig();
                 return true;
             }
