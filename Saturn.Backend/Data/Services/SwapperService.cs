@@ -222,7 +222,7 @@ namespace Saturn.Backend.Data.Services
                                 {
                                     Search = "AAAAAgEFzcyMP83MjD/NzIw/",
                                     Replace = "AAAAAgEFZmZmP2ZmZj9mZmY/",
-                                    Type = SwapType.Base64
+                                    Type = SwapType.Property
                                 }
                             }
                         });
