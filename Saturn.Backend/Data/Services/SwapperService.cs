@@ -705,7 +705,7 @@ namespace Saturn.Backend.Data.Services
             {
                 if (str.Contains('.'))
                 {
-                    if (str.ToLower().Contains("meshes"))
+                    if (str.ToLower().Contains("meshes") && !str.ToLower().Contains("bp"))
                         Mesh = str;
                     if (str.ToLower().Contains("material"))
                         Material = str;
