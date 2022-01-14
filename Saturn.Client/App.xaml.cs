@@ -24,9 +24,25 @@ namespace Saturn.Client
             AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
             {
                 Logger.Log("There was an error in the application.\n" + error.ExceptionObject);
-                MessageBox.Show(
-                    "There was an error in the application, please report this log to Support when you make a ticket!",
-                    "Make a ticket in the Discord Server!");
+
+                if (error.ExceptionObject.ToString().ToLower().Contains("webview"))
+                {
+                    MessageBox.Show(
+                        "There was an error in the application, please report this log to Support! This is most likely caused by you not installed WebView2!",
+                        "Ask for Support in Tamely's Discord Server!");
+                }
+                else if (error.ExceptionObject.ToString().ToLower().Contains("checkifuserisbeta"))
+                {
+                    MessageBox.Show(
+                        "There was an error in the application, please report this log to Support! This is most likely caused by you not being on Discord Desktop!",
+                        "Ask for Support in Tamely's Discord Server!");
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "There was an error in the application, please report this log to Support!",
+                        "Ask for Support in Tamely's Discord Server!");
+                }
                 Process.Start("notepad.exe", Config.LogFile);
             };
         }
