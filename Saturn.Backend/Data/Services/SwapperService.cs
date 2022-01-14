@@ -709,12 +709,12 @@ namespace Saturn.Backend.Data.Services
                         Mesh = str;
                     if (str.ToLower().Contains("material"))
                         Material = str;
-                    if (str.ToLower().Contains("impact") && !str.ToLower().Contains("fx"))
+                    if (str.ToLower().Contains("impact") && !str.ToLower().Contains("fx") && str.ToLower().Contains("cue"))
                         ImpactCue = str;
-                    if (str.ToLower().Contains("swing") && !str.ToLower().Contains("fx"))
+                    if (str.ToLower().Contains("swing") && !str.ToLower().Contains("fx") && str.ToLower().Contains("cue"))
                         SwingCue = str;
                     if ((str.ToLower().Contains("ready") || str.ToLower().Contains("equip")) &&
-                        !str.ToLower().Contains("fx"))
+                        !str.ToLower().Contains("fx") && str.ToLower().Contains("cue"))
                         EquipCue = str;
                     if (str.ToLower().Contains("icon") && str.ToLower().Contains("-l"))
                         LargeIcon = str;
