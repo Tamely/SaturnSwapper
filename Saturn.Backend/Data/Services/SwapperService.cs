@@ -1632,7 +1632,7 @@ namespace Saturn.Backend.Data.Services
             Logger.Log("Generating swaps");
 
             var Rarity = await FileUtil.GetRarityFromAsset(item.DefinitionPath, _provider);
-            if (option.ItemDefinition == "")
+            if (option.ItemDefinition == "Pickaxe_ID_541_StreetFashionEclipseFemale")
             {
                 return new SaturnOption()
                 {
@@ -1788,7 +1788,10 @@ namespace Saturn.Backend.Data.Services
             
             if (Rarity != EFortRarity.Common && await _configService.TryGetShouldRarityConvert())
             {
-                option.Status = $"All common items are going to be {Rarity.ToString()} and {option.Status}";
+                if (!string.IsNullOrEmpty(option.Status))
+                    option.Status = $"All common items are going to be {Rarity.ToString()} and {option.Status}";
+                else
+                    option.Status = $"All common items are going to be {Rarity.ToString()}";
                 output.Assets.Add(
                     Rarity switch
                     {
