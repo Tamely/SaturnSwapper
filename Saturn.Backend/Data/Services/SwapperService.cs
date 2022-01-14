@@ -1530,6 +1530,10 @@ namespace Saturn.Backend.Data.Services
                 return new SaturnOption();
             }
 
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Don't put this emote in your selected emotes!",
+                "If you are going to use it in-game, favorite the emote and select it from your favorites! Fortnite will kick you if it's in your 6 selections!",
+                "warning");
+
             Logger.Log("CMM: " + swaps["CMM"]);
 
             return option.ItemDefinition switch
@@ -1627,6 +1631,95 @@ namespace Saturn.Backend.Data.Services
 
             Logger.Log("Generating swaps");
 
+            var Rarity = await FileUtil.GetRarityFromAsset(item.DefinitionPath, _provider);
+            if (option.ItemDefinition == "")
+            {
+                return new SaturnOption()
+                {
+                    Name = item.Name,
+                    Icon = item.Images.SmallIcon,
+                    Rarity = item.Rarity.BackendValue,
+                    Assets = new List<SaturnAsset>()
+                    {
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Athena/Items/Weapons/WID_Harvest_Pickaxe_StreetFashionEclipseFemale",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {252,255,255,255}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {0,0,0,0}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {255,255,255,3}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {255,255,255,(byte)Rarity}),
+                                    Type = SwapType.Property
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/UI/Foundation/Textures/Icons/Weapons/Items/T-Icon-Pickaxes-StreetFashionEclipsePickaxe.T-Icon-Pickaxes-StreetFashionEclipsePickaxe",
+                                    Replace = swaps["SmallIcon"],
+                                    Type = SwapType.SmallIcon
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/UI/Foundation/Textures/Icons/Weapons/Items/T-Icon-Pickaxes-StreetFashionEclipsePickaxe-L.T-Icon-Pickaxes-StreetFashionEclipsePickaxe-L",
+                                    Replace = "/",
+                                    Type = SwapType.LargeIcon
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Weapons/FORT_Melee/Pickaxe_StreetFashionRed/Meshes/Demo/SK_Pickaxe_StreetFashionRed_DEMO.SK_Pickaxe_StreetFashionRed_DEMO",
+                                    Replace = swaps["Mesh"],
+                                    Type = SwapType.WeaponMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Weapons/FORT_Melee/Pickaxe_Street_Fashion_Eclipse_Female/Materials/MI_Pickaxe_StreetFashionEclipseFemale.MI_Pickaxe_StreetFashionEclipseFemale",
+                                    Replace = swaps["Material"],
+                                    Type = SwapType.WeaponMaterial
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Athena/Sounds/Weapons/PickAxes/Street_Fashion_Red/PA_StreetFashionRed_Swing_Cue.PA_StreetFashionRed_Swing_Cue",
+                                    Replace = swaps["SwingCue"],
+                                    Type = SwapType.WeaponSound
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Athena/Sounds/Weapons/PickAxes/Street_Fashion_Red/PA_StreetFashionRed_Ready_Cue.PA_StreetFashionRed_Ready_Cue",
+                                    Replace = swaps["EquipCue"],
+                                    Type = SwapType.WeaponSound
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Athena/Sounds/Weapons/PickAxes/Street_Fashion_Red/PA_StreetFashionRed_Impact_Cue.PA_StreetFashionRed_Impact_Cue",
+                                    Replace = swaps["ImpactCue"],
+                                    Type = SwapType.WeaponSound
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Effects/Fort_Effects/Effects/Melee/P_Melee_Trail_Default.P_Melee_Trail_Default",
+                                    Replace = swaps["Trail"],
+                                    Type = SwapType.WeaponTrail
+                                }
+                            }
+                        }
+                    }
+                };
+            }
+
             var output = new SaturnOption()
             {
                 Name = item.Name,
@@ -1692,9 +1785,7 @@ namespace Saturn.Backend.Data.Services
                     }
                 }
             };
-
-
-            var Rarity = await FileUtil.GetRarityFromAsset(item.DefinitionPath, _provider);
+            
             if (Rarity != EFortRarity.Common && await _configService.TryGetShouldRarityConvert())
             {
                 option.Status = $"All common items are going to be {Rarity.ToString()} and {option.Status}";
