@@ -205,34 +205,6 @@ namespace Saturn.Backend.Data.Services
                         _ => new()
                     };
 
-                if (itemSwap.Assets[0].ParentAsset.Contains("CP_Backpack_StreetFashionEclipse"))
-                {
-                    Logger.Log("Detected scaling issue!");
-                    bool shouldFix = await _configService.TryGetShouldFixScalingBug();
-                    if (shouldFix)
-                    {
-                        Logger.Log("User has scaling fix enabled.");
-                        Logger.Log("Implenting fix.");
-                        itemSwap.Assets.Add(new()
-                        {
-                            ParentAsset = "FortniteGame/Content/Characters/Player/Common/BackpackScaleSettings/FemaleSource.uasset",
-                            Swaps = new()
-                            {
-                                new()
-                                {
-                                    Search = "AAAAAgEFzcyMP83MjD/NzIw/",
-                                    Replace = "AAAAAgEFZmZmP2ZmZj9mZmY/",
-                                    Type = SwapType.Property
-                                }
-                            }
-                        });
-                    }
-                    else
-                    {
-                        Logger.Log("User has not requested to fix scaling bug.");
-                    }
-                }
-
                 try
                 {
                     var changes = _cloudStorageService.GetChanges(option.ItemDefinition, item.Id);
@@ -2068,6 +2040,23 @@ namespace Saturn.Backend.Data.Services
                     Replaces.Add(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
                     Searches.Add(new byte[] { 67, 117, 115, 116, 111, 109, 67, 104, 97, 114, 97, 99, 116, 101, 114, 66, 97, 99, 107, 112, 97, 99, 107, 68, 97, 116, 97 });
                     Replaces.Add(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+                }
+                
+                if (asset.ParentAsset.Contains("CP_Backpack_StreetFashionEclipse"))
+                {
+                    Logger.Log("Detected scaling issue!");
+                    bool shouldFix = _configService.TryGetShouldFixScalingBug().GetAwaiter().GetResult();
+                    if (shouldFix)
+                    {
+                        Logger.Log("User has scaling fix enabled.");
+                        Logger.Log("Implementing fix.");
+                        Searches.Add(new byte[] { 253, 255, 255, 255, 1 });
+                        Replaces.Add(new byte[] { 0, 0, 0, 0, 0 });
+                    }
+                    else
+                    {
+                        Logger.Log("User has not requested to fix scaling bug.");
+                    }
                 }
 
                 foreach (var swap in asset.Swaps)
