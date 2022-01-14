@@ -107,7 +107,7 @@ namespace Saturn.Backend.Data.Utils
 
                 if (!Engine.FindHex(0, value, "3E FF FF FF FF")) continue;
                 if ((uint)value[Vars.HexOffset + 5] > 9)
-                    return EFortRarity.Common;
+                    return EFortRarity.Uncommon;
                 return (EFortRarity)value[Vars.HexOffset + 5];
             }
 
