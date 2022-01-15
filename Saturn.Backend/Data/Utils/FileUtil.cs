@@ -172,6 +172,11 @@ namespace Saturn.Backend.Data.Utils
                 {
                     var path = ReadBytes(value, value[i], pathOffset);
                     pathOffset += value[i];
+
+
+                    if (Encoding.ASCII.GetString(path).ToLower().Contains("elastic") &&
+                        Encoding.ASCII.GetString(path).ToLower().Contains("parts") && !Encoding.ASCII.GetString(path).ToLower().Contains("anim"))
+                        path = Encoding.ASCII.GetBytes(Encoding.ASCII.GetString(path).Split('.')[0] + '.' + SubstringFromLast(Encoding.ASCII.GetString(path).Split('.')[0], '/'));
                     output.Add(Encoding.ASCII.GetString(path));
                     Logger.Log(output.Last());
                 }
