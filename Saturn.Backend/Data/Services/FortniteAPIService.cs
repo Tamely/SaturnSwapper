@@ -270,6 +270,15 @@ namespace Saturn.Backend.Data.Services
                     },
                     new SaturnItem
                     {
+                        ItemDefinition = "CID_A_322_Athena_Commando_F_RenegadeRaiderIce",
+                        Name = "Permafrost Raider",
+                        Description = "What could freeze a heart that burns?",
+                        Icon = "https://fortnite-api.com/images/cosmetics/br/cid_a_322_athena_commando_f_renegaderaiderice/smallicon.png",
+                        Rarity = "Epic",
+                        Series = "FrozenSeries"
+                    },
+                    new SaturnItem
+                    {
                         ItemDefinition = "CID_A_311_Athena_Commando_F_ScholarFestiveWinter",
                         Name = "Blizzabelle",
                         Description = "Voted Teen Queen of Winterfest by a jury of her witchy peers.",
