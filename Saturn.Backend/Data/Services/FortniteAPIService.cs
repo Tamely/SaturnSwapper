@@ -140,14 +140,21 @@ namespace Saturn.Backend.Data.Services
             {
                 foreach (var key in section.Keys)
                 {
-                    var changes = _cloudStorageService.DecodeChanges(key.Value);
+                    try
+                    {
+                        var changes = _cloudStorageService.DecodeChanges(key.Value);
 
-                    if (changes.removeItem)
-                        items.RemoveAll(x => x.Id.ToLower() == changes.Item.ItemID.ToLower());
+                        if (changes.removeItem)
+                            items.RemoveAll(x => x.Id.ToLower() == changes.Item.ItemID.ToLower());
 
-                    if (changes.RemoveOption)
-                        items.Find(x => x.Id == changes.Item.ItemID).CosmeticOptions
-                            .RemoveAll(x => changes.RemoveOptions.Contains(x.ItemDefinition));
+                        if (changes.RemoveOption)
+                            items.Find(x => x.Id == changes.Item.ItemID).CosmeticOptions
+                                .RemoveAll(x => changes.RemoveOptions.Contains(x.ItemDefinition));
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Log(e.ToString());
+                    }
                 }
             }
 
