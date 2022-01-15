@@ -589,6 +589,43 @@ namespace Saturn.Backend.Data.Services
                         }
                     }
                 },
+                "BID_600_HightowerTapas" => new SaturnOption()
+                {
+                    Name = item.Name,
+                    Icon = item.Images.SmallIcon,
+                    Rarity = item.Rarity.BackendValue,
+                    Assets = new List<SaturnAsset>()
+                    {
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack_HightowerTapas",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Accessories/FORT_Backpacks/Backpack_M_MED_Tapas/Meshes/M_MED_Tapas_Pack.M_MED_Tapas_Pack",
+                                    Replace = data["Mesh"],
+                                    Type = SwapType.BackblingMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Accessories/FORT_Backpacks/Backpack_M_MED_Tapas/Meshes/M_MED_Tapas_Pack_AnimBP.M_MED_Tapas_Pack_AnimBP_C",
+                                    Replace = data["ABP"] ?? "/Game/Accessories/FORT_Backpacks/Backpack_M_MED_Tapas/Meshes/M_MED_Tapas_Pack_AnimBP.M_MED_Tapas_Pack_AnimBP_C",
+                                    Type = SwapType.BackblingAnim
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search =
+                                        "/Game/Athena/Cosmetics/Blueprints/Part_Modifiers/B_Athena_PartModifier_Backpack_Hightower_Tapas.B_Athena_PartModifier_Backpack_Hightower_Tapas_C",
+                                    Replace = "/",
+                                    Type = SwapType.Modifier
+                                },
+                            }
+                        }
+                    }
+                },
                 "BID_678_CardboardCrewHolidayMale" => new SaturnOption()
                 {
                     Name = item.Name,
