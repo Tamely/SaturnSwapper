@@ -238,7 +238,9 @@ namespace Saturn.Backend.Data.Services
                 }
             }
 
+            items.Reverse();
             items.AddRange(extraItems);
+            items.Reverse();
             return items;
 
             return items;

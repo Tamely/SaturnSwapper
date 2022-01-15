@@ -614,9 +614,7 @@
         
         if (!CheckForInternetConnection())
             throw new WebException("No internet connection");
-        
-        await CheckUpdate();
-
+      
         await CheckMaintenance();
 
         await ShouldConvertRarity();
@@ -643,6 +641,8 @@
         }
         
         await CheckKey();
+
+        await CheckUpdate();
 
         await base.OnInitializedAsync();
     }
