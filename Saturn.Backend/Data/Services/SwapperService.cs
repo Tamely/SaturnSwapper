@@ -936,9 +936,10 @@ namespace Saturn.Backend.Data.Services
 
             }
 
-            if ((swapModel.HeadMesh.ToLower().Contains("ramirez") || swapModel.HeadMesh.ToLower().Contains("starfish")) && !swapModel.HeadMesh.ToLower().Contains("/parts/"))
+            if ((swapModel.HeadMesh.ToLower().Contains("ramirez") || swapModel.HeadMesh.ToLower().Contains("starfish"))  && !swapModel.HeadMesh.ToLower().Contains("/parts/"))
             {
-                (swapModel.HeadMaterial, swapModel.HairMaterial) = (swapModel.HairMaterial, swapModel.HeadMaterial);
+                if (!swapModel.HeadMaterial.ToLower().Contains("hide") && !swapModel.HairMaterial.ToLower().Contains("hide"))
+                    (swapModel.HeadMaterial, swapModel.HairMaterial) = (swapModel.HairMaterial, swapModel.HeadMaterial);
             }
 
             Logger.Log($"Head hair color: {swapModel.HeadHairColor}");
