@@ -725,7 +725,7 @@ namespace Saturn.Backend.Data.Services
                         ActorClass = str;
                     if (str.ToLower().Contains("fx") && !str.ToLower().Contains("trail"))
                         FX = str;
-                    if (str.ToLower().Contains("fx") && str.ToLower().Contains("trail"))
+                    if (str.ToLower().Contains("trail"))
                         Trail = str;
                 }
             }
