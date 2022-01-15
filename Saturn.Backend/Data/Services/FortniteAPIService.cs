@@ -254,6 +254,22 @@ namespace Saturn.Backend.Data.Services
                 {
                     new SaturnItem
                     {
+                        ItemDefinition = "CID_970_Athena_Commando_F_RenegadeRaiderHoliday",
+                        Name = "Gingerbread Raider",
+                        Description = "Let the festivities begin.",
+                        Icon = "https://fortnite-api.com/images/cosmetics/br/cid_970_athena_commando_f_renegaderaiderholiday/smallicon.png",
+                        Rarity = "Rare"
+                    },
+                    new SaturnItem
+                    {
+                        ItemDefinition = "CID_784_Athena_Commando_F_RenegadeRaiderFire",
+                        Name = "Blaze",
+                        Description = "Fill the world with flames.",
+                        Icon = "https://fortnite-api.com/images/cosmetics/br/cid_784_athena_commando_f_renegaderaiderfire/smallicon.png",
+                        Rarity = "Legendary"
+                    },
+                    new SaturnItem
+                    {
                         ItemDefinition = "CID_A_311_Athena_Commando_F_ScholarFestiveWinter",
                         Name = "Blizzabelle",
                         Description = "Voted Teen Queen of Winterfest by a jury of her witchy peers.",
@@ -276,14 +292,6 @@ namespace Saturn.Backend.Data.Services
                         Description = "Synthetic diamonds need not apply.",
                         Icon = "https://fortnite-api.com/images/cosmetics/br/cid_936_athena_commando_f_raidersilver/smallicon.png",
                         Rarity = "Rare"
-                    },
-                    new SaturnItem
-                    {
-                        ItemDefinition = "CID_784_Athena_Commando_F_RenegadeRaiderFire",
-                        Name = "Blaze",
-                        Description = "Fill the world with flames.",
-                        Icon = "https://fortnite-api.com/images/cosmetics/br/cid_784_athena_commando_f_renegaderaiderfire/smallicon.png",
-                        Rarity = "Legendary"
                     }
                 };
                 

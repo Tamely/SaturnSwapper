@@ -52,7 +52,7 @@ namespace Saturn.Backend.Data.Utils
 
         [DllImport("oo2core_5_win64.dll")]
         private static extern int OodleLZ_Decompress(byte[] src, long srcSize, byte[] dst, long dstSize, uint fuzz,
-            uint crc, ulong verbosity, uint context, uint unused, uint callback, uint callback_ctx, uint scratch,
+            uint crc, ulong verbosity, uint context, uint unused, uint callback, uint callbackCtx, uint scratch,
             uint scratchSize, uint threadModule);
 
         public static void Decompress(byte[] compressedBuffer, ref byte[] destinationBuffer)
