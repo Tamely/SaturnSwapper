@@ -693,8 +693,16 @@
         var user = _discordRPCService.Client.CurrentUser;
         var betaUsers = await GetBetaIDs();
 
-        foreach (var _ in betaUsers.Where(betaUser => betaUser == user.ID))
-            Config.isBeta = true;
+        try
+        {
+            foreach (var _ in betaUsers.Where(betaUser => betaUser == user.ID))
+                Config.isBeta = true;
+        }
+        catch
+        {
+            Logger.Log("Couldn't get beta users or current user ID! Is user using Discord Desktop?", LogLevel.Error);
+        }
+
 
         if (!Config.isBeta)
             await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected you are not a BETA user!", "Boost Tamely's Discord if you want to use BETA features!", "error");
