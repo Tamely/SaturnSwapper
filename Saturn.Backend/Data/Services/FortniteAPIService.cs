@@ -193,7 +193,9 @@ namespace Saturn.Backend.Data.Services
                         }
 
                         items.RemoveAll(x => x.Id == itemInList.Id);
+                        items.Reverse();
                         items.Add(itemInList);
+                        items.Reverse();
                     }
 
                     if (changes.addItem && changes.Item.ItemType == itemType)
