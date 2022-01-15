@@ -29,13 +29,9 @@ public class DotSaturn
 
         Buffer.BlockCopy(data, index, pluginData, 0, compLength);
 
-        File.WriteAllBytes("PluginData.uasset", pluginData);
-
         byte[] decompPluginData = new byte[decompLength];
 
         Oodle.Decompress(pluginData, ref decompPluginData);
-        
-        File.WriteAllBytes("DecompPluginData.uasset", decompPluginData);
 
         using (var md5 = MD5.Create())
         {

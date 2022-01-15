@@ -61,18 +61,6 @@ namespace Saturn.Backend.Data.Services
             _cloudStorageService = cloudStorageService;
             _jsRuntime = jsRuntime;
 
-
-            DotSaturn.Write("Plugin.saturn", JsonConvert.SerializeObject(new PluginModel()
-            {
-                Name = "test",
-                Assets = new List<Asset>(),
-                Icon = "",
-                Message = "false",
-                SwapIcon = ""
-            }));
-            
-            Logger.Log(DotSaturn.Read("Plugin.saturn"));
-
             var _aes = _fortniteAPIService.GetAES();
 
             Trace.WriteLine("Got AES");
