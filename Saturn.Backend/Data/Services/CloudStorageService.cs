@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -44,7 +45,17 @@ namespace Saturn.Backend.Data.Services
             => CloudChanges.Read(optionName, itemDef);
 
         public Changes DecodeChanges(string changes)
-            => JsonConvert.DeserializeObject<Changes>(changes) ?? new Changes();
+        {
+            try
+            {
+                return JsonConvert.DeserializeObject<Changes>(changes) ?? new Changes();
+            }
+            catch (Exception e)
+            {
+                Logger.Log("THE ERROR WAS: " + e + "       " + changes);
+                return new Changes();
+            }
+        }
 
         public SectionDataCollection GetSections()
             => CloudChanges.GetSections();
