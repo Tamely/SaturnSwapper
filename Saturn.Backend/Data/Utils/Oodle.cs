@@ -9,6 +9,10 @@ namespace Saturn.Backend.Data.Utils
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern bool SetDllDirectory(string lpPathName);
 
+        public static void Decompress(byte[] compressedData, ref byte[] decompressedData)
+        {
+            OodleStream.Decompress(compressedData, ref decompressedData);
+        }
         public static byte[] Compress(byte[] decompressed)
         {
             // Needed so it works when launched from start menu
@@ -45,6 +49,17 @@ namespace Saturn.Backend.Data.Utils
             byte[] compressedBuffer,
             CompressionLevel compressionLevel,
             uint a, uint b, uint c, uint threadModule);
+
+        [DllImport("oo2core_5_win64.dll")]
+        private static extern int OodleLZ_Decompress(byte[] src, long srcSize, byte[] dst, long dstSize, uint fuzz,
+            uint crc, ulong verbosity, uint context, uint unused, uint callback, uint callback_ctx, uint scratch,
+            uint scratchSize, uint threadModule);
+
+        public static void Decompress(byte[] compressedBuffer, ref byte[] destinationBuffer)
+        {
+            OodleLZ_Decompress(compressedBuffer, compressedBuffer.Length, destinationBuffer, destinationBuffer.Length,
+                0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u);
+        }
 
         public static byte[] Compress(byte[]? buffer, int size, CompressionFormat format, CompressionLevel level,
             uint a)

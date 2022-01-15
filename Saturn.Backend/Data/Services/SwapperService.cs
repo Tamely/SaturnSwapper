@@ -17,6 +17,7 @@ using CUE4Parse.UE4.Objects.Core.Misc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
+using Newtonsoft.Json;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.CloudStorage;
 using Saturn.Backend.Data.Models.FortniteAPI;
@@ -24,6 +25,7 @@ using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Models.SaturnAPI;
 using Saturn.Backend.Data.Utils;
 using Saturn.Backend.Data.Utils.FortniteUtils;
+using Saturn.Backend.Data.Utils.ReadPlugins;
 using Serilog;
 using Index = Saturn.Backend.Pages.Index;
 
@@ -60,6 +62,16 @@ namespace Saturn.Backend.Data.Services
             _jsRuntime = jsRuntime;
 
 
+            DotSaturn.Write("Plugin.saturn", JsonConvert.SerializeObject(new PluginModel()
+            {
+                Name = "test",
+                Assets = new List<Asset>(),
+                Icon = "",
+                Message = "false",
+                SwapIcon = ""
+            }));
+            
+            Logger.Log(DotSaturn.Read("Plugin.saturn"));
 
             var _aes = _fortniteAPIService.GetAES();
 
