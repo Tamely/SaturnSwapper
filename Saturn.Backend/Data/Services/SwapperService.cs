@@ -903,7 +903,7 @@ namespace Saturn.Backend.Data.Services
                         {
                             if ((assetString.ToLower().Contains("material") || assetString.ToLower().Contains("skins")) && assetString.Contains('.'))
                                 swapModel.BodyMaterial = assetString;
-                            if ((assetString.ToLower().Contains("mesh") && !assetString.ToLower().Contains("anim") && !assetString.ToLower().Contains("abp")) && assetString.Contains('.'))
+                            if ((assetString.ToLower().Contains("mesh") && !assetString.ToLower().Contains("anim") && !assetString.ToLower().Contains("abp") && !assetString.ToLower().Contains("/skeleton")) && assetString.Contains('.'))
                                 swapModel.BodyMesh = assetString;
                             if (assetString.ToLower().Contains("skeleton") && !assetString.ToLower().Contains("anim") && !assetString.ToLower().Contains("abp") && assetString.Contains('.'))
                                 swapModel.BodySkeleton = assetString;
