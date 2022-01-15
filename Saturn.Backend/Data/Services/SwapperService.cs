@@ -142,13 +142,6 @@ namespace Saturn.Backend.Data.Services
             try
             {
                 option.Status = null;
-                var itemCheck = await IsTypeConverted(itemType);
-                if (itemCheck != null)
-                {
-                    option.Status =
-                            $"Revert {itemCheck} before converting another item of the same type.";
-                    return false;
-                }
 
                 var sw = Stopwatch.StartNew();
 
