@@ -10,11 +10,13 @@ namespace Saturn.Backend.Data.Models.CloudStorage
     {
         [JsonProperty("addItem")] public bool addItem { get; set; }
         [JsonProperty("removeItem")] public bool removeItem { get; set; }
+        [JsonProperty("removeOption")] public bool RemoveOption { get; set; }
         [JsonProperty("addOptions")] public bool addOptions { get; set; }
         [JsonProperty("swapOption")] public List<ItemInfo>? SwapOptions { get; set; }
         [JsonProperty("item")] public ItemInfo Item { get; set; }
         [JsonProperty("miscData")] public List<string> MiscData { get; set; }
         [JsonProperty("characterPartsReplace")] public List<string> CharacterPartsReplace { get; set; }
+        [JsonProperty("removeOptions")] public List<string> RemoveOptions { get; set; }
     }
 
     public class ItemInfo
