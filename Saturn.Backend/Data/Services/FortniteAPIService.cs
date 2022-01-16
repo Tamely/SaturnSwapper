@@ -294,6 +294,15 @@ namespace Saturn.Backend.Data.Services
                     },
                     new SaturnItem
                     {
+                        ItemDefinition = "CID_653_Athena_Commando_F_UglySweaterFrozen",
+                        Name = "Frozen Nog Ops",
+                        Description = "Bring some chill to the skirmish.",
+                        Icon = "https://fortnite-api.com/images/cosmetics/br/cid_653_athena_commando_f_uglysweaterfrozen/smallicon.png",
+                        Rarity = "Epic",
+                        Series = "FrozenSeries"
+                    },
+                    new SaturnItem
+                    {
                         ItemDefinition = "CID_A_311_Athena_Commando_F_ScholarFestiveWinter",
                         Name = "Blizzabelle",
                         Description = "Voted Teen Queen of Winterfest by a jury of her witchy peers.",

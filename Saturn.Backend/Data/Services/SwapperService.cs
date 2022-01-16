@@ -1114,6 +1114,120 @@ namespace Saturn.Backend.Data.Services
                         }
                     }
                 },
+                "CID_653_Athena_Commando_F_UglySweaterFrozen" => new SaturnOption()
+                {
+                    Name = item.Name,
+                    Icon = item.Images.SmallIcon,
+                    Rarity = item.Rarity.BackendValue,
+                    Assets = new()
+                    {
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_UglySweaterFrozen",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/CharacterColorSwatches/Hair/HairColor_01.HairColor_01",
+                                    Replace = swapModel.HeadHairColor,
+                                    Type = SwapType.HairColor
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01_AnimBP_Child.F_MED_ASN_Sarah_Head_01_AnimBP_Child_C",
+                                    Replace = swapModel.HeadABP,
+                                    Type = SwapType.HeadAnim
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01.F_MED_ASN_Sarah_Head_01",
+                                    Replace = swapModel.HeadMesh,
+                                    Type = SwapType.HeadMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Skins/UglySweater_Frozen/Materials/F_M_UglySweater_Frozen_Head.F_M_UglySweater_Frozen_Head",
+                                    Replace = swapModel.HeadMaterial,
+                                    Type = SwapType.HeadMaterial
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Materials/F_MED_ASN_Sarah_Hair_Hide.F_MED_ASN_Sarah_Hair_Hide",
+                                    Replace = swapModel.HairMaterial,
+                                    Type = SwapType.HairMaterial
+                                }
+                            }
+                        },
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_UglySweater",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
+                                    Replace = swapModel.BodyABP,
+                                    Type = SwapType.BodyAnim
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01.F_Med_Soldier_01",
+                                    Replace = swapModel.BodyMesh,
+                                    Type = SwapType.BodyMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Base/SK_M_Female_Base_Skeleton.SK_M_Female_Base_Skeleton",
+                                    Replace = swapModel.BodySkeleton,
+                                    Type = SwapType.BodySkeleton
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Skins/UglySweater_Frozen/Materials/F_M_UglySweater_Frozen_Body.F_M_UglySweater_Frozen_Body",
+                                    Replace = swapModel.BodyMaterial,
+                                    Type = SwapType.BodyMaterial
+                                }
+                            }
+                        },
+                        new SaturnAsset()
+                        {
+                            ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Hats/CP_Hat_F_Commando_UglySweaterFrozen",
+                            Swaps = new List<SaturnSwap>()
+                            {
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Accessories/Hats/F_MED_HolidayPJs_FaceAcc/Meshes/F_MED_Holiday_PJs_1_FaceAcc_AnimBP.F_MED_Holiday_PJs_1_FaceAcc_AnimBP_C",
+                                    Replace = swapModel.FaceACCABP,
+                                    Type = SwapType.FaceAccessoryAnim
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Accessories/Hats/F_MED_HolidayPJs_FaceAcc/Meshes/F_MED_Holiday_PJs_1_FaceAcc.F_MED_Holiday_PJs_1_FaceAcc",
+                                    Replace = swapModel.FaceACCMesh,
+                                    Type = SwapType.FaceAccessoryMesh
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Accessories/Hats/F_MED_HolidayPJs_FaceAcc/Skins/UglySweater_Frozen/Materials/MI_F_MED_UglySweater_Frozen_FaceAcc.MI_F_MED_UglySweater_Frozen_FaceAcc",
+                                    Replace = swapModel.FaceACCMaterial,
+                                    Type = SwapType.FaceAccessoryMaterial
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Skins/UglySweater_Frozen/Materials/F_M_UglySweater_Frozen_Hair.F_M_UglySweater_Frozen_Hair",
+                                    Replace = swapModel.FaceACCMaterial2,
+                                    Type = SwapType.FaceAccessoryMaterial
+                                },
+                                new SaturnSwap()
+                                {
+                                    Search = System.Convert.ToBase64String(new byte[] {4, 4, 3, 2, 4}),
+                                    Replace = System.Convert.ToBase64String(new byte[] {4,4,3,(byte)swapModel.HatType,4}),
+                                    Type = SwapType.Property
+                                }
+                            }
+                        }
+                    }
+                },
                 "CID_784_Athena_Commando_F_RenegadeRaiderFire" => new SaturnOption()
                 {
                     Name = item.Name,
