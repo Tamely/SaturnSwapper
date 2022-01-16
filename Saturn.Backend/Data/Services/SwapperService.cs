@@ -12,17 +12,24 @@ using CUE4Parse;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Exports.Material;
 using CUE4Parse.UE4.Assets.Exports.Material.Parameters;
+using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
+using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.Misc;
+using CUE4Parse.UE4.Objects.UObject;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.CloudStorage;
 using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Models.SaturnAPI;
+using Saturn.Backend.Data.Structures;
 using Saturn.Backend.Data.Utils;
 using Saturn.Backend.Data.Utils.FortniteUtils;
 using Saturn.Backend.Data.Utils.ReadPlugins;
@@ -70,7 +77,7 @@ namespace Saturn.Backend.Data.Services
             
             Trace.WriteLine("Initialized provider");
 
-            new Mappings(_provider, benBotApiService).Init().GetAwaiter();
+            new Mappings(_provider, benBotApiService).Init();
             
             Trace.WriteLine("Loaded mappings");
 
@@ -783,50 +790,26 @@ namespace Saturn.Backend.Data.Services
         public async Task<Dictionary<string, string>> GetCharacterPartsById(string id)
         {
             Dictionary<string, string> cps = new();
-            List<string> bodies = new();
-            List<string> heads = new();
-            List<string> faceAccs = new();
-            List<string> miscOrTail = new();
-            List<string> other = new();
-            var strs = await FileUtil.GetStringsFromAsset(Constants.CidPath + id, _provider);
+            
+            if (_provider.TryLoadObject(Constants.CidPath + id, out var CharacterItemDefinition))
+            {
+                var CharacterParts = CharacterItemDefinition.Get<UObject[]>("BaseCharacterParts");
 
-            foreach (var str in strs.Where(str => str.Contains("/Game/Athena/Heroes/Meshes/Bodies/") ||
-                                                  str.Contains("/Game/Athena/Heroes/Meshes/Heads/") ||
-                                                  str.Contains("CharacterParts")))
-                if (str.ToLower().Contains("bod"))
+                foreach (var characterPart in CharacterParts)
                 {
-                    if (str.Contains('.')) bodies.Add(str);
+                    characterPart.TryGetValue(out EFortCustomPartType CustomPartType, "CharacterPartType");
+                    cps.Add(CustomPartType.ToString(), characterPart.GetPathName());
                 }
-                else if (str.ToLower().Contains("/heads/") && !str.ToLower().Contains("hat") &&
-                         !str.ToLower().Contains("faceacc"))
-                {
-                    if (str.Contains('.')) heads.Add(str);
-                }
-                else if (str.ToLower().Contains("face") || str.ToLower().Contains("hat"))
-                {
-                    if (str.Contains('.')) faceAccs.Add(str);
-                }
-                else if (str.ToLower().Contains("charm"))
-                {
-                    if (str.Contains('.')) miscOrTail.Add(str);
-                }
-                else
-                {
-                    if (str.Contains('.')) other.Add(str);
-                }
+            }
+            else
+            {
+                Logger.Log("Failed to Load Character...", LogLevel.Fatal);
+            }
 
-
-            /* Trying to counteract CP-Type Variants */
-            cps.Add("Body", bodies.Count > 0 ? FileUtil.GetShortest(bodies) : "/Game/Tamely");
-            cps.Add("Head", heads.Count > 0 ? FileUtil.GetShortest(heads) : "/Game/Tamely");
-            cps.Add("FaceACC", faceAccs.Count > 0 ? FileUtil.GetShortest(faceAccs) : "/Game/Tamely");
-            cps.Add("MiscOrTail", miscOrTail.Count > 0 ? FileUtil.GetShortest(miscOrTail) : "/Game/Tamely");
-            cps.Add("Other", other.Count > 0 ? FileUtil.GetShortest(other) : "/Game/Tamely");
-
-
-            foreach (var characterPart in cps)
-                Logger.Log(characterPart.Key + " : " + characterPart.Value);
-
+            foreach (var cp in cps)
+            {
+                Logger.Log(cp.Key + ": " + cp.Value, LogLevel.Debug);
+            }
 
             return cps;
         }
@@ -837,7 +820,9 @@ namespace Saturn.Backend.Data.Services
         private async Task<SaturnOption> GenerateMeshSkins(Cosmetic item, SaturnItem option)
         {
             Logger.Log($"Getting character parts for {item.Name}");
-            var characterParts = await GetCharacterPartsById(item.Id);
+            Logger.Log(Constants.CidPath + item.Id);
+
+            var characterParts = Task.Run(() => GetCharacterPartsById(item.Id)).GetAwaiter().GetResult();
 
             try
             {
@@ -896,83 +881,75 @@ namespace Saturn.Backend.Data.Services
 
             foreach (var characterPart in characterParts)
             {
-                if (characterPart.Key == "/Game/Tamely") continue;
                 Logger.Log($"Getting strings in asset: {characterPart.Value}");
-                var assetStrings = await FileUtil.GetStringsFromAsset(characterPart.Value.Split('.')[0], _provider);
 
                 switch (characterPart.Key)
                 {
                     case "Body":
                         Logger.Log("Character part is type: Body");
-                        foreach (var assetString in assetStrings)
+
+                        await Task.Run(() =>
                         {
-                            if ((assetString.ToLower().Contains("material") || assetString.ToLower().Contains("skins")) && assetString.Contains('.'))
-                                swapModel.BodyMaterial = assetString;
-                            if ((assetString.ToLower().Contains("mesh") && !assetString.ToLower().Contains("anim") && !assetString.ToLower().Contains("abp") && !assetString.ToLower().Contains("/skeleton") && !assetString.ToLower().Contains("_skeleton")) && assetString.Contains('.'))
-                                swapModel.BodyMesh = assetString;
-                            if (assetString.ToLower().Contains("skeleton") && !assetString.ToLower().Contains("anim") && !assetString.ToLower().Contains("abp") && assetString.Contains('.'))
-                                swapModel.BodySkeleton = assetString;
-                            if ((assetString.ToLower().Contains("anim") || assetString.ToLower().Contains("abp")) && assetString.Contains('.'))
-                                swapModel.BodyABP = assetString;
-                            if (assetString.ToLower().Contains("/blueprint") && assetString.Contains('.'))
-                                swapModel.BodyPartModifierBP = assetString;
-                            if (assetString.ToLower().Contains("/effect") && assetString.Contains('.'))
-                                swapModel.BodyFX = assetString;
-                        }
+                            if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
+                            {
+                                swapModel.BodyMesh = part.Get<USkeletalMesh>("SkeletalMesh").GetPathName();
+                                swapModel.BodySkeleton =
+                                    part.Get<USkeletalMesh[]>("MasterSkeletalMeshes")[0].GetPathName();
+
+                                if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
+                                {
+                                    UObject AnimClass = AdditionalData.GetOrDefault("AnimClass", new UObject(), StringComparison.OrdinalIgnoreCase);
+                                    swapModel.BodyABP = AnimClass.GetPathName();
+                                }
+
+                                if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
+                                {
+                                    var materialOverride = MaterialOverride[0];
+                                    swapModel.BodyMaterial = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
+                                }
+
+                                if (part.TryGetValue(out UObject IdleEffect, "IdleEffect"))
+                                    swapModel.BodyFX = IdleEffect.GetPathName();
+                                
+                                if (part.TryGetValue(out UObject BodyPartModifierBP, "PartModifierBlueprint"))
+                                    swapModel.BodyPartModifierBP = BodyPartModifierBP.GetPathName();
+                            }
+                        });
 
                         break;
+                    
                     case "Head":
                         Logger.Log("Character part is type: Head");
-                        foreach (var assetString in assetStrings)
-                        {
-                            if ((assetString.ToLower().Contains("material") || assetString.ToLower().Contains("skins")) && !assetString.ToLower().Contains("hair") && assetString.Contains('.'))
-                                swapModel.HeadMaterial = assetString;
-                            if ((assetString.ToLower().Contains("material") || assetString.ToLower().Contains("skins")) && assetString.ToLower().Contains("hair") && assetString.Contains('.'))
-                                swapModel.HairMaterial = assetString;
-                            if ((assetString.ToLower().Contains("hair") && assetString.ToLower().Contains("color")) && assetString.Contains('.'))
-                                swapModel.HeadHairColor = assetString;
-                            if ((assetString.ToLower().Contains("swatch") && assetString.ToLower().Contains("color")) &&
-                                assetString.Contains('.'))
-                                swapModel.HeadSkinColor = assetString;
-                            if ((assetString.ToLower().Contains("mesh") && !assetString.ToLower().Contains("anim") && !assetString.ToLower().Contains("abp")) && assetString.Contains('.'))
-                                swapModel.HeadMesh = assetString;
-                            if ((assetString.ToLower().Contains("anim") || assetString.ToLower().Contains("abp")) && assetString.Contains('.'))
-                                swapModel.HeadABP = assetString;
-                            if (assetString.ToLower().Contains("/blueprint") && assetString.Contains('.'))
-                                swapModel.HeadPartModifierBP = assetString;
-                            if (assetString.ToLower().Contains("/effect") && assetString.Contains('.'))
-                                swapModel.HeadFX = assetString;
-                        }
 
-                        break;
-                    case "FaceACC":
-                        Logger.Log("Character part is type: FaceACC");
-                        swapModel.HatType = await FileUtil.GetHatTypeFromAsset(characterPart.Value.Split('.')[0], _provider);
-                        Logger.Log("Hat type is: " + swapModel.HatType);
-                        foreach (var assetString in assetStrings)
+                        await Task.Run(() =>
                         {
-                            if ((assetString.ToLower().Contains("material") || assetString.ToLower().Contains("skins")) && assetString.Contains('.') && swapModel.FaceACCMaterial2 == "/Game/Tamely")
-                                swapModel.FaceACCMaterial = assetString;
-                            else if ((assetString.ToLower().Contains("material") || assetString.ToLower().Contains("skins")) && assetString.Contains('.') && swapModel.FaceACCMaterial3 == "/Game/Tamely")
-                                swapModel.FaceACCMaterial2 = assetString;
-                            else if ((assetString.ToLower().Contains("material") || assetString.ToLower().Contains("skins")) && assetString.Contains('.'))
-                                swapModel.FaceACCMaterial3 = assetString;
-                            if ((assetString.ToLower().Contains("mesh") && !assetString.ToLower().Contains("anim") && !assetString.ToLower().Contains("abp")) && assetString.Contains('.'))
-                                swapModel.FaceACCMesh = assetString;
-                            if ((assetString.ToLower().Contains("anim") || assetString.ToLower().Contains("abp")) && assetString.Contains('.'))
-                                swapModel.FaceACCABP = assetString;
-                            if (assetString.ToLower().Contains("/blueprint") && assetString.Contains('.'))
-                                swapModel.FaceACCPartModifierBP = assetString;
-                            if (assetString.ToLower().Contains("/effect") && assetString.Contains('.'))
-                                swapModel.FaceACCFX = assetString;
-                        }
+                            if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
+                            {
+                                swapModel.HeadMesh = part.Get<USkeletalMesh>("SkeletalMesh").GetPathName();
 
-                        break;
-                    case "MiscOrTail":
-                        Logger.Log("Character part is type: MiscOrTail");
-                        break;
-                    case "Other":
-                        Logger.Log("Character part is type: Other");
+                                if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
+                                {
+                                    swapModel.HeadABP = AdditionalData.GetOrDefault("AnimClass", new UObject(),
+                                        StringComparison.OrdinalIgnoreCase).GetPathName();
+                                    
+                                    swapModel.HeadHairColor = AdditionalData.GetOrDefault("HairColorSwatch", new UObject(),
+                                        StringComparison.OrdinalIgnoreCase).GetPathName();
+                                    
+                                    swapModel.HeadSkinColor = AdditionalData.GetOrDefault("SkinColorSwatch", new UObject(),
+                                        StringComparison.OrdinalIgnoreCase).GetPathName();
+                                }
+                                
+                                if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
+                                    swapModel.HeadMaterial = MaterialOverride[0].Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
+
+                                if (part.TryGetValue(out UObject IdleEffect, "IdleEffect"))
+                                    swapModel.HeadFX = IdleEffect.GetPathName();
+                                
+                                if (part.TryGetValue(out UObject BodyPartModifierBP, "PartModifierBlueprint"))
+                                    swapModel.HeadPartModifierBP = BodyPartModifierBP.GetPathName();
+                            }
+                        });
+
                         break;
                 }
 
