@@ -30,8 +30,9 @@ namespace Saturn.Client
 
             services.AddScoped<IDiscordRPCService, DiscordRPCService>();
             services.AddScoped<IFortniteAPIService, FortniteAPIService>();
-            services.AddScoped<ISaturnAPIService, SaturnAPIService>();
-
+            services.AddScoped<ISaturnAPIService, SaturnAPIService>(); 
+            services.AddScoped<IBenBotAPIService, BenBotAPIService>();
+            
             services.AddScoped<ISwapperService, SwapperService>();
             
             services.AddMudServices();

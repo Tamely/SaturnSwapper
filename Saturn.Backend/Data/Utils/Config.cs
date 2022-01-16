@@ -10,6 +10,7 @@ namespace Saturn.Backend.Data.Utils
         public static readonly string LogPath = BasePath + "Logs/";
         public static readonly string OodlePath = BasePath + "oo2core_5_win64.dll";
         public static readonly string ConfigPath = BasePath + "Config.dat";
+        public static readonly string MappingsFolder = BasePath + "/Mappings/";
         public static readonly string CompressedDataPath = BasePath + "/CompressedData/";
         public static readonly string DecompressedDataPath = BasePath + "/DecompressedData/";
 

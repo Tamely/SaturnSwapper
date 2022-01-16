@@ -53,7 +53,7 @@ namespace Saturn.Backend.Data.Services
 
 
         public SwapperService(IFortniteAPIService fortniteAPIService, ISaturnAPIService saturnAPIService,
-            IConfigService configService, ICloudStorageService cloudStorageService, IJSRuntime jsRuntime)
+            IConfigService configService, ICloudStorageService cloudStorageService, IJSRuntime jsRuntime, IBenBotAPIService benBotApiService)
         {
             _fortniteAPIService = fortniteAPIService;
             _saturnAPIService = saturnAPIService;
@@ -67,7 +67,12 @@ namespace Saturn.Backend.Data.Services
 
             _provider = new DefaultFileProvider(FortniteUtil.PakPath, SearchOption.TopDirectoryOnly, false, new CUE4Parse.UE4.Versions.VersionContainer(CUE4Parse.UE4.Versions.EGame.GAME_UE5_LATEST));
             _provider.Initialize();
+            
             Trace.WriteLine("Initialized provider");
+
+            new Mappings(_provider, benBotApiService).Init();
+            
+            Trace.WriteLine("Loaded mappings");
 
 
             var keys = new List<KeyValuePair<FGuid, FAesKey>>();

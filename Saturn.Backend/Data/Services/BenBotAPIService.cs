@@ -12,7 +12,7 @@ namespace Saturn.Backend.Data.Services
     public interface IBenBotAPIService
     {
         public Task<string> ReturnEndpointAsync(string url);
-        public Task<byte[]> ReturnBytesAsync(string url);
+        public Task<byte[]> ReturnBytesAsync(string? url);
     }
 
     public class BenBotAPIService : IBenBotAPIService
@@ -31,7 +31,7 @@ namespace Saturn.Backend.Data.Services
             return await wc.DownloadStringTaskAsync(new Uri(Base, url));
         }
 
-        public async Task<byte[]> ReturnBytesAsync(string url)
+        public async Task<byte[]> ReturnBytesAsync(string? url)
         {
             using var wc = new WebClient();
             return await wc.DownloadDataTaskAsync(new Uri(Base, url));
