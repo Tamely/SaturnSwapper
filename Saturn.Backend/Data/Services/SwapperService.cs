@@ -70,7 +70,7 @@ namespace Saturn.Backend.Data.Services
             
             Trace.WriteLine("Initialized provider");
 
-            new Mappings(_provider, benBotApiService).Init();
+            new Mappings(_provider, benBotApiService).Init().GetAwaiter();
             
             Trace.WriteLine("Loaded mappings");
 
