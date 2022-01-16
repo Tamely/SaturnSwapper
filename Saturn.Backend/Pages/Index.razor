@@ -610,7 +610,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        AppDomain.CurrentDomain.FirstChanceException += FirstChanceException;
+        AppDomain.CurrentDomain.UnhandledException += UnhandledException;
         
         if (!CheckForInternetConnection())
             throw new WebException("No internet connection");
@@ -647,16 +647,16 @@
         await base.OnInitializedAsync();
     }
     
-    private void FirstChanceException(object sender, FirstChanceExceptionEventArgs e)
+    private void UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        if (_halted || e.Exception.StackTrace != null && !e.Exception.StackTrace.Contains("Saturn"))
+        if (_halted || e != null && !e.ToString().Contains("Saturn"))
             return;
 
         _halted = true;
 
-        var stackTrace = "\n" + e.Exception.StackTrace.Split("--- ")[0];
+        var stackTrace = "\n" + e.ToString().Split("--- ")[0];
 
-        Logger.Log($"Unhandled exception occurred. {e.Exception.GetType().Name}: {e.Exception.Message} {stackTrace}", LogLevel.Fatal);
+        Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal);
 
         Items = new List<Cosmetic>();
         saturnState = SaturnState.S_Error;

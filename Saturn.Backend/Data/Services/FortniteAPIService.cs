@@ -148,8 +148,13 @@ namespace Saturn.Backend.Data.Services
                             items.RemoveAll(x => x.Id.ToLower() == changes.Item.ItemID.ToLower());
 
                         if (changes.RemoveOption)
-                            items.Find(x => x.Id == changes.Item.ItemID).CosmeticOptions
-                                .RemoveAll(x => changes.RemoveOptions.Contains(x.ItemDefinition));
+                        {
+                            var item = items.Find(x => x.Id == changes.Item.ItemID);
+                            if (item == null || item == new Cosmetic()) continue;
+                            
+                            item.CosmeticOptions.RemoveAll(x => changes.RemoveOptions.Contains(x.ItemDefinition));
+                        }
+                            
                     }
                     catch (Exception e)
                     {

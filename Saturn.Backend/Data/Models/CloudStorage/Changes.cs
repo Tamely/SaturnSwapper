@@ -22,7 +22,7 @@ namespace Saturn.Backend.Data.Models.CloudStorage
     public class ItemInfo
     {
         [JsonProperty("itemName")] public string ItemName { get; set; }
-        [JsonProperty("itemDesc")] public string ItemDescription { get; set; }
+        [JsonProperty("itemDesc")] public string? ItemDescription { get; set; }
         [JsonProperty("itemIcon")] public string ItemIcon { get; set; }
         [JsonProperty("itemID")] public string ItemID { get; set; }
         [JsonProperty("itemType")] public ItemType ItemType { get; set; }

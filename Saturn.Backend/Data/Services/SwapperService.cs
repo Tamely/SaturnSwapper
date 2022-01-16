@@ -824,6 +824,7 @@ namespace Saturn.Backend.Data.Services
 
             var characterParts = Task.Run(() => GetCharacterPartsById(item.Id)).GetAwaiter().GetResult();
 
+            
             try
             {
                 var changes = _cloudStorageService.GetChanges(item.Id, "CharacterPartReplacements");
@@ -843,7 +844,6 @@ namespace Saturn.Backend.Data.Services
             {
                 Logger.Log("There was no hotfix found for this item! " + ex.ToString(), LogLevel.Warning);
             }
-
 
             if (characterParts == new Dictionary<string, string>())
                 return null;
@@ -947,6 +947,39 @@ namespace Saturn.Backend.Data.Services
                                 
                                 if (part.TryGetValue(out UObject BodyPartModifierBP, "PartModifierBlueprint"))
                                     swapModel.HeadPartModifierBP = BodyPartModifierBP.GetPathName();
+                            }
+                        });
+
+                        break;
+                    
+                    case "Face":
+                    case "Hat":
+                        Logger.Log("Character part is type: Head");
+
+                        await Task.Run(() =>
+                        {
+                            if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
+                            {
+                                swapModel.FaceACCMesh = part.Get<USkeletalMesh>("SkeletalMesh").GetPathName();
+
+                                if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
+                                {
+                                    swapModel.FaceACCABP = AdditionalData.GetOrDefault("AnimClass", new UObject(),
+                                        StringComparison.OrdinalIgnoreCase).GetPathName();
+                                }
+
+                                if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
+                                {
+                                    swapModel.FaceACCMaterial = MaterialOverride[0].Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
+                                    swapModel.FaceACCMaterial2 = MaterialOverride[1].Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
+                                    swapModel.FaceACCMaterial3 = MaterialOverride[2].Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
+                                }
+
+                                if (part.TryGetValue(out UObject IdleEffect, "IdleEffect"))
+                                    swapModel.FaceACCFX = IdleEffect.GetPathName();
+                                
+                                if (part.TryGetValue(out UObject BodyPartModifierBP, "PartModifierBlueprint"))
+                                    swapModel.FaceACCPartModifierBP = BodyPartModifierBP.GetPathName();
                             }
                         });
 
