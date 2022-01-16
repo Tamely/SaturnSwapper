@@ -688,21 +688,28 @@
     private async Task CheckIfUserIsBeta()
     {
         if (_discordRPCService.Client.CurrentUser == null)
+        {
             await _jsRuntime.InvokeVoidAsync("MessageBox", "Couldn't get Discord user info!", "Please open discord if you intend to use BETA features!", "error");
-
+            return;
+        }
+        
         var user = _discordRPCService.Client.CurrentUser;
-        var betaUsers = await GetBetaIDs();
 
+        ulong userID = 0u;
         try
         {
-            foreach (var _ in betaUsers.Where(betaUser => betaUser == user.ID))
-                Config.isBeta = true;
+            userID = user.ID;
         }
         catch
         {
-            Logger.Log("Couldn't get beta users or current user ID! Is user using Discord Desktop?", LogLevel.Error);
+            Logger.Log("Could not get user ID. Is user using Discord web?", LogLevel.Error);
         }
-
+        
+        var betaUsers = await GetBetaIDs();
+        
+        foreach (var _ in betaUsers.Where(betaUser => betaUser == userID))
+            Config.isBeta = true;
+        
 
         if (!Config.isBeta)
             await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected you are not a BETA user!", "Boost Tamely's Discord if you want to use BETA features!", "error");
