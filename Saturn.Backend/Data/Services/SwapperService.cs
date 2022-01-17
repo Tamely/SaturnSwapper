@@ -2091,8 +2091,19 @@ public class SwapperService : ISwapperService
 
         if (swaps["FX"] == "None")
             swaps["FX"] = "/";
-        if (swaps["FX"] != "/" || swaps["Material"] != "/" || swaps["ActorClass"] == "/")
-            option.Status = "This item might not be perfect!";
+
+        switch (option.ItemDefinition)
+        {
+            case "DefaultPickaxe":
+                if (swaps["FX"] != "/" || swaps["Material"] != "/" || swaps["ActorClass"] != "/Game/Weapons/FORT_Melee/Blueprints/B_Athena_Pickaxe_Generic.B_Athena_Pickaxe_Generic_C")
+                    option.Status = "This item might not be perfect!";
+                break;
+            case "Pickaxe_ID_541_StreetFashionEclipseFemale":
+                if (swaps["FX"] != "/" || swaps["ActorClass"] != "/Game/Weapons/FORT_Melee/Blueprints/B_Athena_Pickaxe_Generic.B_Athena_Pickaxe_Generic_C")
+                    option.Status = "This item might not be perfect!";
+                break;
+        }
+
 
 
         Logger.Log("Generating swaps");
