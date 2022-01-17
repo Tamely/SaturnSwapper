@@ -748,60 +748,44 @@ public class SwapperService : ISwapperService
     {
         var output = new Dictionary<string, string>();
 
+        UObject? export = await _provider.TryLoadObjectAsync(wid);
 
-        var strs = await FileUtil.GetStringsFromAsset(wid, _provider);
+        export.TryGetValue(out FSoftObjectPath Mesh, "WeaponMeshOverride");
+        export.TryGetValue(out FSoftObjectPath[] Material, "WeaponMaterialOverrides");
+        export.TryGetValue(out FSoftObjectPath SmallIcon, "SmallPreviewImage");
+        export.TryGetValue(out FSoftObjectPath LargeIcon, "LargePreviewImage");
+        export.TryGetValue(out FSoftObjectPath FX, "IdleEffect");
+        export.TryGetValue(out UScriptMap ImpactPhysicalSurfaceSoundsMap, "ImpactPhysicalSurfaceSoundsMap");
+        ImpactPhysicalSurfaceSoundsMap.Properties.TryGetValue(ImpactPhysicalSurfaceSoundsMap.Properties.Keys.First(), out var ImpactCue);
+        export.TryGetValue(out UScriptMap ReloadSoundsMap, "ReloadSoundsMap");
+        ReloadSoundsMap.Properties.TryGetValue(ReloadSoundsMap.Properties.Keys.First(), out var EquipCue);
+        export.TryGetValue(out UScriptMap PrimaryFireSoundMap, "PrimaryFireSoundMap");
+        PrimaryFireSoundMap.Properties.TryGetValue(PrimaryFireSoundMap.Properties.Keys.First(), out var SwingCue);
+        export.TryGetValue(out FSoftObjectPath ActorClass, "WeaponActorClass");
+        export.TryGetValue(out FSoftObjectPath Trail, "AnimTrails");
 
+        output.Add("Mesh", Mesh.AssetPathName.Text);
+        if (Material != null)
+            output.Add("Material", Material[0].AssetPathName.Text);
+        output.Add("SmallIcon", SmallIcon.AssetPathName.Text);
+        output.Add("LargeIcon", LargeIcon.AssetPathName.Text);
+        output.Add("FX", FX.AssetPathName.Text);
+        if (SwingCue.GenericValue != null)
+            output.Add("SwingCue", ((FSoftObjectPath)SwingCue.GenericValue).AssetPathName.Text);
+        if (EquipCue.GenericValue != null)
+            output.Add("EquipCue", ((FSoftObjectPath)EquipCue.GenericValue).AssetPathName.Text);
+        if (ImpactCue.GenericValue != null)
+            output.Add("ImpactCue", ((FSoftObjectPath)ImpactCue.GenericValue).AssetPathName.Text);
+        output.Add("ActorClass", ActorClass.AssetPathName.Text);
+        output.Add("Trail", Trail.AssetPathName.Text);
 
-        string Mesh = "/";
-        string Material = "/";
-        string SmallIcon = "/";
-        string LargeIcon = "/";
-        string FX = "/";
-        string SwingCue = "/";
-        string EquipCue = "/";
-        string ImpactCue = "/";
-        string ActorClass = "/";
-        string Trail = "/";
-
-        foreach (var str in strs)
+        foreach (var str in output)
         {
-            if (str.Contains('.'))
-            {
-                if (str.ToLower().Contains("meshes") && !str.ToLower().Contains("bp"))
-                    Mesh = str;
-                if (str.ToLower().Contains("material"))
-                    Material = str;
-                if (str.ToLower().Contains("impact") && !str.ToLower().Contains("fx") && str.ToLower().Contains("cue"))
-                    ImpactCue = str;
-                if (str.ToLower().Contains("swing") && !str.ToLower().Contains("fx") && str.ToLower().Contains("cue"))
-                    SwingCue = str;
-                if ((str.ToLower().Contains("ready") || str.ToLower().Contains("equip")) &&
-                    !str.ToLower().Contains("fx") && str.ToLower().Contains("cue"))
-                    EquipCue = str;
-                if (str.ToLower().Contains("icon") && str.ToLower().Contains("-l"))
-                    LargeIcon = str;
-                if (str.ToLower().Contains("icon") && !str.ToLower().Contains("-l"))
-                    SmallIcon = str;
-                if (str ==
-                    "/Game/Weapons/FORT_Melee/Blueprints/B_Athena_Pickaxe_Generic.B_Athena_Pickaxe_Generic_C")
-                    ActorClass = str;
-                if (str.ToLower().Contains("fx") && !str.ToLower().Contains("trail"))
-                    FX = str;
-                if (str.ToLower().Contains("trail"))
-                    Trail = str;
-            }
+            if (String.IsNullOrEmpty(str.Value))
+                output[str.Key] = null;
+            
+            Logger.Log(str.Key + ": " + str.Value);
         }
-
-        output.Add("Mesh", Mesh);
-        output.Add("Material", Material);
-        output.Add("SmallIcon", SmallIcon);
-        output.Add("LargeIcon", LargeIcon);
-        output.Add("FX", FX);
-        output.Add("SwingCue", SwingCue);
-        output.Add("EquipCue", EquipCue);
-        output.Add("ImpactCue", ImpactCue);
-        output.Add("ActorClass", ActorClass);
-        output.Add("Trail", Trail);
 
         return output;
     }
