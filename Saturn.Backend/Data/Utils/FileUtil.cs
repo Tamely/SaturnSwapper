@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using CUE4Parse.FileProvider;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
 using Saturn.Backend.Data.Enums;
 
 namespace Saturn.Backend.Data.Utils
@@ -117,6 +119,23 @@ namespace Saturn.Backend.Data.Utils
                 }
             }
         }
+
+        /*
+        public static async Task<List<byte[]>> GetColorsFromSeries(string seriesPath, DefaultFileProvider _provider)
+        {
+            List<byte[]> colors = new();
+            await Task.Run(() =>
+            {
+                if (_provider.TryLoadObject(seriesPath, out UObject series))
+                {
+                    if (series.TryGetValue(out UScriptMap Colors, "Colors"))
+                    {
+                        Colors.Properties.TryGetValue(Colors.Properties.Keys.First(), out FPropertyTagType? colorArray);
+                    }
+                }
+            });
+
+        }*/
 
         // Export asset to memory then return all strings in asset
         public static async Task<List<string>> GetStringsFromAsset(string assetPath, DefaultFileProvider _provider)

@@ -778,6 +778,11 @@ public class SwapperService : ISwapperService
             ? ((int)Rarity).ToString() 
             : "1");
 
+        Logger.Log("Getting Series");
+        string Series = "/";
+        if (export.TryGetValue(out UObject SeriesObject, "Series"))
+            Series = SeriesObject.GetPathName();
+
         output.Add("Mesh", Mesh.AssetPathName.Text);
         output.Add("Material", Material != null ? Material[0].AssetPathName.Text : "/");
         output.Add("SmallIcon", SmallIcon.AssetPathName.Text);
@@ -788,6 +793,7 @@ public class SwapperService : ISwapperService
         output.Add("ImpactCue", ImpactCue != null ? ((FSoftObjectPath)ImpactCue.GenericValue).AssetPathName.Text : "/");
         output.Add("ActorClass", ActorClass.AssetPathName.Text);
         output.Add("Trail", Trail.AssetPathName.Text);
+        output.Add("Series", Series);
 
         
         foreach (var str in output)
@@ -2088,6 +2094,9 @@ public class SwapperService : ISwapperService
     {
         Logger.Log($"Getting wid for {item.Name}");
         var swaps = await GetAssetsFromWID(item.DefinitionPath);
+        
+        Logger.Log("Generating swaps");
+        EFortRarity Rarity = (EFortRarity)int.Parse(swaps["Rarity"]);
 
         if (swaps["FX"] == "None")
             swaps["FX"] = "/";
@@ -2101,18 +2110,14 @@ public class SwapperService : ISwapperService
             case "Pickaxe_ID_541_StreetFashionEclipseFemale":
                 if (swaps["FX"] != "/" || swaps["ActorClass"] != "/Game/Weapons/FORT_Melee/Blueprints/B_Athena_Pickaxe_Generic.B_Athena_Pickaxe_Generic_C")
                     option.Status = "This item might not be perfect!";
+                //if (swaps["Series"] != "/")
+                    //Rarity = EFortRarity.Transcendent;
                 break;
         }
 
-
-
-        Logger.Log("Generating swaps");
-        EFortRarity Rarity = (EFortRarity)int.Parse(swaps["Rarity"] ?? "1");
-        //EFortRarity Rarity = EFortRarity.Uncommon;
-        
         if (option.ItemDefinition == "Pickaxe_ID_541_StreetFashionEclipseFemale")
         {
-            return new SaturnOption()
+            var returnPickaxe = new SaturnOption()
             {
                 Name = item.Name,
                 Icon = item.Images.SmallIcon,
@@ -2196,6 +2201,8 @@ public class SwapperService : ISwapperService
                     }
                 }
             };
+
+            return returnPickaxe;
         }
 
         var output = new SaturnOption()
