@@ -468,61 +468,78 @@ public class SwapperService : ISwapperService
 
         return data;
     }
-
-    // backbling character parts aren't soft objects
+    
     public async Task<string> GetBackblingCharacterPart(Cosmetic item)
     {
+        string characterPart = "";
+        await Task.Run(() =>
+        {
+            if (_provider.TryLoadObject(Constants.BidPath + item.Id, out var BID))
+            {
+                BID.TryGetValue(out UObject[] BackblingCharacterPart, "CharacterParts");
+                if (BackblingCharacterPart.Length > 0)
+                    characterPart = BackblingCharacterPart[0].GetPathName();
+                
+            }
+            else
+            {
+                Logger.Log("There was no backbling character part found!", LogLevel.Error);
+                characterPart = "No character part found!";
+            }
+        });
 
-        if (FileUtil.SubstringFromLast(item.Id, '_').Length != 5)
-            return "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack" +
-                   FileUtil.SubstringFromSecond(item.Id, '_');
-
-        return "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack" + FileUtil.SubstringFromSecond(item.Id, '_').Replace('_' + FileUtil.SubstringFromLast(item.Id, '_'), "").Replace("__", "_");
+        return characterPart;
     }
 
     private async Task<Dictionary<string, string>> GetDataFromBackblingCharacterPart(string backblingCharacterPart)
     {
         var output = new Dictionary<string, string>();
 
-
-        var strs = await FileUtil.GetStringsFromAsset(backblingCharacterPart, _provider);
-
-
-        string Mesh = "/";
-        string Material = "/";
-        string FX = "/";
-        string? ABP = null;
-        string? PartModifierBP = null;
-
-        foreach (var str in strs)
+        await Task.Run(() =>
         {
-            if (str.Contains('.'))
+            if (_provider.TryLoadObject(backblingCharacterPart.Split('.')[0], out var bCP))
             {
-                if ((str.ToLower().Contains("mesh") || str.ToLower().Contains("m_med_") || str.ToLower().Contains("f_med_")) && !str.ToLower().Contains("material") && !str.ToLower().Contains("/p_") && !(str.ToLower().Contains("anim") || str.ToLower().Contains("abp")))
-                    Mesh = str;
-                if (str.ToLower().Contains("material"))
-                    Material = str;
-                if (str.ToLower().Contains("fx") || str.ToLower().Contains("ns") || str.ToLower().Contains("/p_"))
-                    FX = str;
-                if (str.ToLower().Contains("anim") || str.ToLower().Contains("abp"))
-                    ABP = str;
-                if (str.ToLower().Contains("part") && str.ToLower().Contains("modifier"))
-                    PartModifierBP = str;
+                output.Add("Mesh",
+                    bCP.TryGetValue(out USkeletalMesh SkeletalMesh, "SkeletalMesh") 
+                        ? SkeletalMesh.GetPathName() 
+                        : "/");
+
+                output.Add("FX",
+                    bCP.TryGetValue(out UObject IdleEffectNiagara, "IdleEffectNiagara")
+                        ? IdleEffectNiagara.GetPathName()
+                        : "/");
+
+                output.Add("PartModifierBP",
+                    bCP.TryGetValue(out UObject PartModifierBlueprint, "PartModifierBlueprint")
+                        ? PartModifierBlueprint.GetPathName()
+                        : "/");
+
+                if (bCP.TryGetValue(out FStructFallback[] MaterialOverrides, "MaterialOverrides"))
+                {
+                    foreach (var materialOverride in MaterialOverrides)
+                    {
+                        if (materialOverride.Get<int>("MaterialOverrideIndex") != 0)
+                            continue;
+                        output.Add("Material", materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.Text);
+                    }
+                }
+                else
+                    output.Add("Material", "/");
+
+                if (bCP.TryGetValue(out UObject AdditonalData, "AdditionalData"))
+                    output.Add("ABP",
+                        AdditonalData.TryGetValue(out UObject AnimClass, "AnimClass") 
+                            ? AnimClass.GetPathName() 
+                            : null);
             }
-        }
+            else
+                Logger.Log($"Couldn't process backbling character part! {backblingCharacterPart.Split('.')[0]}", LogLevel.Error);
+        });
 
-        Logger.Log("Mesh: " + Mesh);
-        Logger.Log("Material: " + Material);
-        Logger.Log("FX: " + FX);
-        Logger.Log("ABP: " + ABP);
-        Logger.Log("PartModifierBP: " + PartModifierBP);
 
-        output.Add("Mesh", Mesh);
-        output.Add("Material", Material);
-        output.Add("ABP", ABP);
-        output.Add("FX", FX);
-        output.Add("PartModifierBP", PartModifierBP);
-
+        foreach (var input in output)
+            Logger.Log($"{input.Key}: {input.Value}", LogLevel.Debug);
+        
         return output;
     }
 
@@ -530,6 +547,7 @@ public class SwapperService : ISwapperService
     {
         Logger.Log($"Getting cp for {item.Name}");
         var characterPart = await GetBackblingCharacterPart(item);
+        Logger.Log("Backbling character part: " + characterPart);
 
         try
         {
@@ -633,7 +651,7 @@ public class SwapperService : ISwapperService
                             {
                                 Search =
                                     "/Game/Athena/Cosmetics/Blueprints/Part_Modifiers/B_Athena_PartModifier_Backpack_Hightower_Tapas.B_Athena_PartModifier_Backpack_Hightower_Tapas_C",
-                                Replace = "/",
+                                Replace = data["PartModifierBP"],
                                 Type = SwapType.Modifier
                             },
                         }
@@ -700,7 +718,7 @@ public class SwapperService : ISwapperService
                             {
                                 Search =
                                     "/Game/Athena/Cosmetics/Blueprints/B_Athena_PartModifier_Generic.B_Athena_PartModifier_Generic_C",
-                                Replace = data["PartModifierBP"] ?? "/Game/Athena/Cosmetics/Blueprints/B_Athena_PartModifier_Generic.B_Athena_PartModifier_Generic_C",
+                                Replace = data["PartModifierBP"],
                                 Type = SwapType.BackblingPartBP
                             },
                             new SaturnSwap()
