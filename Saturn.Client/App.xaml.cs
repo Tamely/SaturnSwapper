@@ -27,7 +27,7 @@ namespace Saturn.Client
 
                 MessageBox.Show(
                     error.ExceptionObject.ToString().ToLower().Contains("webview")
-                        ? "There was an error in the application, please report this log to Support! This is most likely caused by you not installed WebView2!"
+                        ? "There was an error in the application, please report this log to Support! This is most likely caused by you not having WebView2 installed!"
                         : "There was an error in the application, please report this log to Support!",
                     "Ask for Support in Tamely's Discord Server!");
                 Process.Start("notepad.exe", Config.LogFile);
