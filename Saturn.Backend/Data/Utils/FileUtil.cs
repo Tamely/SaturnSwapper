@@ -97,44 +97,6 @@ namespace Saturn.Backend.Data.Utils
             return list.OrderBy(x => x.Length).First();
         }
 
-        public static async Task<EFortRarity> GetRarityFromAsset(string assetPath, DefaultFileProvider _provider)
-        {
-            if (!_provider.TrySavePackage(assetPath, out var assets)) return EFortRarity.Common;
-
-            foreach (var (_, value) in assets)
-            {
-                Vars.HexOffset = 0;
-
-                if (!Engine.FindHex(0, value, "3E FF FF FF FF")) continue;
-                if ((uint)value[Vars.HexOffset + 5] > 9)
-                    return EFortRarity.Uncommon;
-                return (EFortRarity)value[Vars.HexOffset + 5];
-            }
-
-            return EFortRarity.Common;
-
-        }
-        
-        public static async Task<ECustomHatType> GetHatTypeFromAsset(string assetPath, DefaultFileProvider _provider)
-        {
-            if (!_provider.TrySavePackage(assetPath, out var assets)) return ECustomHatType.ECustomHatType_None;
-
-            foreach (var (_, value) in assets)
-            {
-                var fileOffset = value.Length;
-                
-                while (value[fileOffset - 1] == 0 || value[fileOffset - 2] == 0)
-                    fileOffset--;
-                
-                if (value[fileOffset - 6] == 0 && value[fileOffset - 7] == 0)
-                    return (ECustomHatType)value[fileOffset - 2];
-                return ECustomHatType.ECustomHatType_None;
-            }
-
-            return ECustomHatType.ECustomHatType_None;
-
-        }
-        
         public static async Task OpenBrowser(string url)
         {
             try

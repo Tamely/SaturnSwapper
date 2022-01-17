@@ -750,41 +750,52 @@ public class SwapperService : ISwapperService
 
         UObject? export = await _provider.TryLoadObjectAsync(wid);
 
+        Logger.Log("Getting WeaponMeshOverride");
         export.TryGetValue(out FSoftObjectPath Mesh, "WeaponMeshOverride");
+        Logger.Log("Getting WeaponMaterialOverrides");
         export.TryGetValue(out FSoftObjectPath[] Material, "WeaponMaterialOverrides");
+        Logger.Log("Getting SmallPreviewImage");
         export.TryGetValue(out FSoftObjectPath SmallIcon, "SmallPreviewImage");
+        Logger.Log("Getting LargePreviewImage");
         export.TryGetValue(out FSoftObjectPath LargeIcon, "LargePreviewImage");
+        Logger.Log("Getting IdleEffect");
         export.TryGetValue(out FSoftObjectPath FX, "IdleEffect");
-        export.TryGetValue(out UScriptMap ImpactPhysicalSurfaceSoundsMap, "ImpactPhysicalSurfaceSoundsMap");
-        ImpactPhysicalSurfaceSoundsMap.Properties.TryGetValue(ImpactPhysicalSurfaceSoundsMap.Properties.Keys.First(), out var ImpactCue);
-        export.TryGetValue(out UScriptMap ReloadSoundsMap, "ReloadSoundsMap");
-        ReloadSoundsMap.Properties.TryGetValue(ReloadSoundsMap.Properties.Keys.First(), out var EquipCue);
-        export.TryGetValue(out UScriptMap PrimaryFireSoundMap, "PrimaryFireSoundMap");
-        PrimaryFireSoundMap.Properties.TryGetValue(PrimaryFireSoundMap.Properties.Keys.First(), out var SwingCue);
+        FPropertyTagType? ImpactCue = null;
+        if (export.TryGetValue(out UScriptMap ImpactPhysicalSurfaceSoundsMap, "ImpactPhysicalSurfaceSoundsMap"))
+            ImpactPhysicalSurfaceSoundsMap.Properties.TryGetValue(ImpactPhysicalSurfaceSoundsMap.Properties.Keys.First(), out ImpactCue);
+        FPropertyTagType? EquipCue = null;
+        if (export.TryGetValue(out UScriptMap ReloadSoundsMap, "ReloadSoundsMap"))
+            ReloadSoundsMap.Properties.TryGetValue(ReloadSoundsMap.Properties.Keys.First(), out EquipCue);
+        FPropertyTagType? SwingCue = null;
+        if (export.TryGetValue(out UScriptMap PrimaryFireSoundMap, "PrimaryFireSoundMap"))
+            PrimaryFireSoundMap.Properties.TryGetValue(PrimaryFireSoundMap.Properties.Keys.First(), out SwingCue);
+        Logger.Log("Getting WeaponActorClass");
         export.TryGetValue(out FSoftObjectPath ActorClass, "WeaponActorClass");
+        Logger.Log("Getting AnimTrails");
         export.TryGetValue(out FSoftObjectPath Trail, "AnimTrails");
+        Logger.Log("Getting Rarity");
+        output.Add("Rarity", export.TryGetValue(out EFortRarity Rarity, "Rarity") 
+            ? ((int)Rarity).ToString() 
+            : "1");
 
         output.Add("Mesh", Mesh.AssetPathName.Text);
-        if (Material != null)
-            output.Add("Material", Material[0].AssetPathName.Text);
+        output.Add("Material", Material != null ? Material[0].AssetPathName.Text : "/");
         output.Add("SmallIcon", SmallIcon.AssetPathName.Text);
         output.Add("LargeIcon", LargeIcon.AssetPathName.Text);
         output.Add("FX", FX.AssetPathName.Text);
-        if (SwingCue.GenericValue != null)
-            output.Add("SwingCue", ((FSoftObjectPath)SwingCue.GenericValue).AssetPathName.Text);
-        if (EquipCue.GenericValue != null)
-            output.Add("EquipCue", ((FSoftObjectPath)EquipCue.GenericValue).AssetPathName.Text);
-        if (ImpactCue.GenericValue != null)
-            output.Add("ImpactCue", ((FSoftObjectPath)ImpactCue.GenericValue).AssetPathName.Text);
+        output.Add("SwingCue", SwingCue != null ? ((FSoftObjectPath)SwingCue.GenericValue).AssetPathName.Text : "/");
+        output.Add("EquipCue", EquipCue != null ? ((FSoftObjectPath)EquipCue.GenericValue).AssetPathName.Text : "/");
+        output.Add("ImpactCue", ImpactCue != null ? ((FSoftObjectPath)ImpactCue.GenericValue).AssetPathName.Text : "/");
         output.Add("ActorClass", ActorClass.AssetPathName.Text);
         output.Add("Trail", Trail.AssetPathName.Text);
 
+        
         foreach (var str in output)
         {
             if (String.IsNullOrEmpty(str.Value))
                 output[str.Key] = null;
             
-            Logger.Log(str.Key + ": " + str.Value);
+            Logger.Log(str.Key + ": " + str.Value ?? "Null");
         }
 
         return output;
@@ -2078,13 +2089,16 @@ public class SwapperService : ISwapperService
         Logger.Log($"Getting wid for {item.Name}");
         var swaps = await GetAssetsFromWID(item.DefinitionPath);
 
+        if (swaps["FX"] == "None")
+            swaps["FX"] = "/";
         if (swaps["FX"] != "/" || swaps["Material"] != "/" || swaps["ActorClass"] == "/")
             option.Status = "This item might not be perfect!";
 
 
         Logger.Log("Generating swaps");
-
-        var Rarity = await FileUtil.GetRarityFromAsset(item.DefinitionPath, _provider);
+        EFortRarity Rarity = (EFortRarity)int.Parse(swaps["Rarity"] ?? "1");
+        //EFortRarity Rarity = EFortRarity.Uncommon;
+        
         if (option.ItemDefinition == "Pickaxe_ID_541_StreetFashionEclipseFemale")
         {
             return new SaturnOption()
