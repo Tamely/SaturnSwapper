@@ -1023,6 +1023,9 @@ public class SwapperService : ISwapperService
                             {
                                 swapModel.FaceACCABP = AdditionalData.GetOrDefault("AnimClass", new UObject(),
                                     StringComparison.OrdinalIgnoreCase).GetPathName();
+
+                                swapModel.HatType = AdditionalData.GetOrDefault("HatType",
+                                    ECustomHatType.ECustomHatType_None, StringComparison.OrdinalIgnoreCase);
                             }
 
                             if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
