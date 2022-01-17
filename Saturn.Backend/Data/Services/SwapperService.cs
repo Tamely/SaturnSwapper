@@ -22,6 +22,7 @@ using CUE4Parse.UE4.Objects.UObject;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
+using MudBlazor;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Saturn.Backend.Data.Enums;
@@ -34,6 +35,7 @@ using Saturn.Backend.Data.Utils;
 using Saturn.Backend.Data.Utils.FortniteUtils;
 using Saturn.Backend.Data.Utils.ReadPlugins;
 using Serilog;
+using Colors = Saturn.Backend.Data.Enums.Colors;
 using Index = Saturn.Backend.Pages.Index;
 
 namespace Saturn.Backend.Data.Services
@@ -852,8 +854,7 @@ namespace Saturn.Backend.Data.Services
 
             MeshDefaultModel swapModel = new()
             {
-                HairMaterial = "/Game/Tamely",
-                HeadMaterial = "/Game/Tamely",
+                HeadMaterials = new Dictionary<int, string>(),
                 HeadHairColor = "/Game/Tamely",
                 HeadFX = "/Game/Tamely",
                 HeadSkinColor = "/Game/Tamely",
@@ -864,17 +865,36 @@ namespace Saturn.Backend.Data.Services
                 BodyPartModifierBP = "/Game/Tamely",
                 BodyABP = "/Game/Tamely",
                 BodyMesh = "/Game/Tamely",
-                BodyMaterial = "/Game/Tamely",
+                BodyMaterials = new Dictionary<int, string>(),
                 BodySkeleton = "/Game/Tamely",
-                FaceACCMaterial = "/Game/Tamely",
-                FaceACCMaterial2 = "/Game/Tamely",
-                FaceACCMaterial3 = "/Game/Tamely",
+                FaceACCMaterials = new Dictionary<int, string>(),
                 FaceACCMesh = "/Game/Tamely",
                 FaceACCABP = "/Game/Tamely",
                 FaceACCFX = "/Game/Tamely",
                 FaceACCPartModifierBP = "/Game/Tamely",
                 HatType = ECustomHatType.ECustomHatType_None
             };
+            
+            Dictionary<int, string> OGHeadMaterials = new();
+            var optionsParts = Task.Run(() => GetCharacterPartsById(option.ItemDefinition)).GetAwaiter()
+                .GetResult();
+
+            await Task.Run(() =>
+            {
+                if (_provider.TryLoadObject(optionsParts["Head"].Split('.')[0], out var part))
+                {
+                    if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
+                    {
+                        foreach (var materialOverride in MaterialOverride)
+                        {
+                            var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName
+                                .ToString();
+                            var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
+                            OGHeadMaterials.Add(matIndex, material);
+                        }
+                    }
+                }
+            });
 
 
             Logger.Log("Looping through character parts");
@@ -904,8 +924,12 @@ namespace Saturn.Backend.Data.Services
 
                                 if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
                                 {
-                                    var materialOverride = MaterialOverride[0];
-                                    swapModel.BodyMaterial = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
+                                    foreach (var materialOverride in MaterialOverride)
+                                    {
+                                        var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
+                                        var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
+                                        swapModel.BodyMaterials.Add(matIndex, material);
+                                    }
                                 }
 
                                 if (part.TryGetValue(out UObject IdleEffect, "IdleEffect"))
@@ -929,18 +953,26 @@ namespace Saturn.Backend.Data.Services
 
                                 if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
                                 {
-                                    swapModel.HeadABP = AdditionalData.GetOrDefault("AnimClass", new UObject(),
-                                        StringComparison.OrdinalIgnoreCase).GetPathName();
+                                    if (AdditionalData.TryGetValue(out UObject AnimClass, "AnimClass"))
+                                        swapModel.HeadABP = AnimClass.GetPathName();
+
+                                    if (AdditionalData.TryGetValue(out UObject HairColorSwatch, "HairColorSwatch"))
+                                        swapModel.HeadHairColor = HairColorSwatch.GetPathName();
                                     
-                                    swapModel.HeadHairColor = AdditionalData.GetOrDefault("HairColorSwatch", new UObject(),
-                                        StringComparison.OrdinalIgnoreCase).GetPathName();
-                                    
-                                    swapModel.HeadSkinColor = AdditionalData.GetOrDefault("SkinColorSwatch", new UObject(),
-                                        StringComparison.OrdinalIgnoreCase).GetPathName();
+                                    if (AdditionalData.TryGetValue(out UObject SkinColorSwatch, "SkinColorSwatch"))
+                                        swapModel.HeadSkinColor = SkinColorSwatch.GetPathName();
                                 }
                                 
+                                
                                 if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
-                                    swapModel.HeadMaterial = MaterialOverride[0].Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
+                                {
+                                    foreach (var materialOverride in MaterialOverride)
+                                    {
+                                        var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.Text;
+                                        var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
+                                        swapModel.HeadMaterials.Add(matIndex, material);
+                                    }
+                                }
 
                                 if (part.TryGetValue(out UObject IdleEffect, "IdleEffect"))
                                     swapModel.HeadFX = IdleEffect.GetPathName();
@@ -954,7 +986,7 @@ namespace Saturn.Backend.Data.Services
                     
                     case "Face":
                     case "Hat":
-                        Logger.Log("Character part is type: Head");
+                        Logger.Log("Character part is type: Hat or FaceACC");
 
                         await Task.Run(() =>
                         {
@@ -970,9 +1002,12 @@ namespace Saturn.Backend.Data.Services
 
                                 if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
                                 {
-                                    swapModel.FaceACCMaterial = MaterialOverride[0].Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
-                                    swapModel.FaceACCMaterial2 = MaterialOverride[1].Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
-                                    swapModel.FaceACCMaterial3 = MaterialOverride[2].Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
+                                    foreach (var materialOverride in MaterialOverride)
+                                    {
+                                        var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
+                                        var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
+                                        swapModel.FaceACCMaterials.Add(matIndex, material);
+                                    }
                                 }
 
                                 if (part.TryGetValue(out UObject IdleEffect, "IdleEffect"))
@@ -990,9 +1025,31 @@ namespace Saturn.Backend.Data.Services
 
             if ((swapModel.HeadMesh.ToLower().Contains("ramirez") || swapModel.HeadMesh.ToLower().Contains("starfish"))  && !swapModel.HeadMesh.ToLower().Contains("/parts/"))
             {
-                if (!swapModel.HeadMaterial.ToLower().Contains("hide") && !swapModel.HairMaterial.ToLower().Contains("hide"))
-                    (swapModel.HeadMaterial, swapModel.HairMaterial) = (swapModel.HairMaterial, swapModel.HeadMaterial);
+                foreach (var material in swapModel.HeadMaterials)
+                {
+                    if (material.Value.ToLower().Contains("hair") && !OGHeadMaterials[material.Key].ToLower().Contains("hair"))
+                    {
+                        foreach (var ogMaterial in OGHeadMaterials)
+                        {
+                            if (ogMaterial.Value.ToLower().Contains("hair"))
+                                (swapModel.HeadMaterials[material.Key], swapModel.HeadMaterials[ogMaterial.Key]) = (
+                                    swapModel.HeadMaterials[ogMaterial.Key], swapModel.HeadMaterials[material.Key]);
+                        }
+                    }
+                }
             }
+            
+            if (swapModel.BodyMaterials == new Dictionary<int, string>() || swapModel.BodyMaterials.Count < 5)
+                for (int i = swapModel.BodyMaterials.Count; i < 5; i++)
+                    swapModel.BodyMaterials.Add(i, "/");
+            
+            if (swapModel.HeadMaterials == new Dictionary<int, string>() || swapModel.HeadMaterials.Count < 5)
+                for (int i = swapModel.HeadMaterials.Count; i < 5; i++)
+                    swapModel.HeadMaterials.Add(i, "/");
+            
+            if (swapModel.FaceACCMaterials == new Dictionary<int, string>() || swapModel.FaceACCMaterials.Count < 5)
+                for (int i = swapModel.FaceACCMaterials.Count; i < 5; i++)
+                    swapModel.FaceACCMaterials.Add(i, "/");
 
             Logger.Log($"Head hair color: {swapModel.HeadHairColor}");
             Logger.Log($"Head skin color: {swapModel.HeadSkinColor}");
@@ -1000,21 +1057,25 @@ namespace Saturn.Backend.Data.Services
             Logger.Log($"Head FX: {swapModel.HeadFX}");
             Logger.Log($"Head mesh: {swapModel.HeadMesh}");
             Logger.Log($"Head ABP: {swapModel.HeadABP}");
-            Logger.Log($"Head Material: {swapModel.HeadMaterial}");
-            Logger.Log($"Hair Material: {swapModel.HairMaterial}");
+            Logger.Log($"Head Materials:");
+            foreach (var material in swapModel.HeadMaterials)
+                Logger.Log($"\t{material.Key}: {material.Value}");
             Logger.Log($"Body ABP: {swapModel.BodyABP}");
             Logger.Log($"Body mesh: {swapModel.BodyMesh}");
-            Logger.Log($"Body material: {swapModel.BodyMaterial}");
+            Logger.Log($"Body materials:");
+            foreach (var material in swapModel.BodyMaterials)
+                Logger.Log($"\t{material.Key}: {material.Value}");
             Logger.Log($"Body skeleton: {swapModel.BodySkeleton}");
             Logger.Log($"Body part modifier BP: {swapModel.BodyPartModifierBP}");
             Logger.Log($"Body FX: {swapModel.BodyFX}");
-            Logger.Log($"Face ACC material: {swapModel.FaceACCMaterial}");
+            Logger.Log($"Face ACC materials:");
+            foreach (var material in swapModel.FaceACCMaterials)
+                Logger.Log($"\t{material.Key}: {material.Value}");
             Logger.Log($"Face ACC mesh: {swapModel.FaceACCMesh}");
             Logger.Log($"Face ACC ABP: {swapModel.FaceACCABP}");
-            Logger.Log($"Face ACC material 2: {swapModel.FaceACCMaterial2}");
-            Logger.Log($"Face ACC material 3: {swapModel.FaceACCMaterial3}");
             Logger.Log($"Face ACC part modifier BP: {swapModel.FaceACCPartModifierBP}");
             Logger.Log($"Face ACC FX: {swapModel.FaceACCFX}");
+
 
 
             Logger.Log("Generating swaps");
@@ -1054,7 +1115,7 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Skins/Female_Commando_StreetRacerBlack/Materials/F_MED___StreetRacerBlack.F_MED___StreetRacerBlack",
-                                    Replace = swapModel.BodyMaterial,
+                                    Replace = swapModel.BodyMaterials[0],
                                     Type = SwapType.BodyMaterial
                                 }
                             }
@@ -1091,7 +1152,7 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Skins/Female_Commando_StreetRacerBlack/Materials/F_MED_StreetRacerBlack_Head_01.F_MED_StreetRacerBlack_Head_01",
-                                    Replace = swapModel.HairMaterial,
+                                    Replace = swapModel.HeadMaterials[0],
                                     Type = SwapType.HeadMaterial
                                 }
                             }
@@ -1116,7 +1177,7 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Accessories/Hats/Materials/Hat_F_StreetRacerBlack.Hat_F_StreetRacerBlack",
-                                    Replace = swapModel.FaceACCMaterial,
+                                    Replace = swapModel.FaceACCMaterials[0],
                                     Type = SwapType.FaceAccessoryMaterial
                                 },
                                 new SaturnSwap()
@@ -1162,13 +1223,13 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Skins/UglySweater_Frozen/Materials/F_M_UglySweater_Frozen_Head.F_M_UglySweater_Frozen_Head",
-                                    Replace = swapModel.HeadMaterial,
+                                    Replace = swapModel.HeadMaterials[0],
                                     Type = SwapType.HeadMaterial
                                 },
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Materials/F_MED_ASN_Sarah_Hair_Hide.F_MED_ASN_Sarah_Hair_Hide",
-                                    Replace = swapModel.HairMaterial,
+                                    Replace = swapModel.HeadMaterials[1],
                                     Type = SwapType.HairMaterial
                                 }
                             }
@@ -1199,7 +1260,7 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Skins/UglySweater_Frozen/Materials/F_M_UglySweater_Frozen_Body.F_M_UglySweater_Frozen_Body",
-                                    Replace = swapModel.BodyMaterial,
+                                    Replace = swapModel.BodyMaterials[0],
                                     Type = SwapType.BodyMaterial
                                 }
                             }
@@ -1224,13 +1285,13 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Accessories/Hats/F_MED_HolidayPJs_FaceAcc/Skins/UglySweater_Frozen/Materials/MI_F_MED_UglySweater_Frozen_FaceAcc.MI_F_MED_UglySweater_Frozen_FaceAcc",
-                                    Replace = swapModel.FaceACCMaterial,
+                                    Replace = swapModel.FaceACCMaterials[0],
                                     Type = SwapType.FaceAccessoryMaterial
                                 },
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Skins/UglySweater_Frozen/Materials/F_M_UglySweater_Frozen_Hair.F_M_UglySweater_Frozen_Hair",
-                                    Replace = swapModel.FaceACCMaterial2,
+                                    Replace = swapModel.FaceACCMaterials[1],
                                     Type = SwapType.FaceAccessoryMaterial
                                 },
                                 new SaturnSwap()
@@ -1276,13 +1337,13 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Fire/Materials/MI_F_MED_Renegade_Raider_Fire_Head.MI_F_MED_Renegade_Raider_Fire_Head",
-                                    Replace = swapModel.HeadMaterial,
+                                    Replace = swapModel.HeadMaterials[0],
                                     Type = SwapType.HeadMaterial
                                 },
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Fire/Materials/MI_F_MED_Renegade_Raider_Fire_Hair.MI_F_MED_Renegade_Raider_Fire_Hair",
-                                    Replace = swapModel.HairMaterial,
+                                    Replace = swapModel.HeadMaterials[1],
                                     Type = SwapType.HairMaterial
                                 }
                             }
@@ -1319,7 +1380,7 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Fire/Materials/MI_F_MED_Renegade_Raider_Fire_Body.MI_F_MED_Renegade_Raider_Fire_Body",
-                                    Replace = swapModel.BodyMaterial,
+                                    Replace = swapModel.BodyMaterials[0],
                                     Type = SwapType.BodyMaterial
                                 },
                                 new SaturnSwap()
@@ -1350,7 +1411,7 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Fire/Materials/MI_F_MED_Renegade_Raider_Fire_FaceAcc.MI_F_MED_Renegade_Raider_Fire_FaceAcc",
-                                    Replace = swapModel.FaceACCMaterial,
+                                    Replace = swapModel.FaceACCMaterials[0],
                                     Type = SwapType.FaceAccessoryMaterial
                                 },
                                 new SaturnSwap()
@@ -1396,13 +1457,13 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Materials/F_MED_ASN_Sarah_Head_02.F_MED_ASN_Sarah_Head_02",
-                                    Replace = swapModel.HeadMaterial,
+                                    Replace = swapModel.HeadMaterials[0],
                                     Type = SwapType.HeadMaterial
                                 },
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Fire/Materials/MI_F_MED_Renegade_Raider_Fire_Hair.MI_F_MED_Renegade_Raider_Fire_Hair",
-                                    Replace = swapModel.HairMaterial,
+                                    Replace = swapModel.HeadMaterials[1],
                                     Type = SwapType.HairMaterial
                                 }
                             }
@@ -1433,7 +1494,7 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Holiday/Materials/M_F_Renegade_Raider_Holiday_Body.M_F_Renegade_Raider_Holiday_Body",
-                                    Replace = swapModel.BodyMaterial,
+                                    Replace = swapModel.BodyMaterials[0],
                                     Type = SwapType.BodyMaterial
                                 }
                             }
@@ -1458,7 +1519,7 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Holiday/Materials/M_F_Renegade_Raider_Holiday_FaceAcc.M_F_Renegade_Raider_Holiday_FaceAcc",
-                                    Replace = swapModel.FaceACCMaterial,
+                                    Replace = swapModel.FaceACCMaterials[0],
                                     Type = SwapType.FaceAccessoryMaterial
                                 },
                                 new SaturnSwap()
@@ -1504,13 +1565,13 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Fire/Skins/Ice/Materials/F_MED_Renegade_Raider_Ice_Head.F_MED_Renegade_Raider_Ice_Head",
-                                    Replace = swapModel.HeadMaterial,
+                                    Replace = swapModel.HeadMaterials[0],
                                     Type = SwapType.HeadMaterial
                                 },
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Fire/Skins/Ice/Materials/F_MED_Renegade_Raider_Ice_Hair.F_MED_Renegade_Raider_Ice_Hair",
-                                    Replace = swapModel.HairMaterial,
+                                    Replace = swapModel.HeadMaterials[1],
                                     Type = SwapType.HairMaterial
                                 }
                             }
@@ -1541,7 +1602,7 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Fire/Skins/Ice/Materials/F_MED_Renegade_Raider_Ice_Body.F_MED_Renegade_Raider_Ice_Body",
-                                    Replace = swapModel.BodyMaterial,
+                                    Replace = swapModel.BodyMaterials[0],
                                     Type = SwapType.BodyMaterial
                                 }
                             }
@@ -1566,7 +1627,7 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Fire/Skins/Ice/Materials/F_MED_Renegade_Raider_Ice_FaceAcc.F_MED_Renegade_Raider_Ice_FaceAcc",
-                                    Replace = swapModel.FaceACCMaterial,
+                                    Replace = swapModel.FaceACCMaterials[0],
                                     Type = SwapType.FaceAccessoryMaterial
                                 },
                                 new SaturnSwap()
@@ -1606,13 +1667,13 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Skins/Silver/Materials/F_MED_Raider_Silver_Face_Acc.F_MED_Raider_Silver_Face_Acc",
-                                    Replace = swapModel.FaceACCMaterial,
+                                    Replace = swapModel.FaceACCMaterials[0],
                                     Type = SwapType.FaceAccessoryMaterial
                                 },
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Skins/Silver/Materials/F_MED_Raider_Silver_Hair.F_MED_Raider_Silver_Hair",
-                                    Replace = swapModel.FaceACCMaterial2,
+                                    Replace = swapModel.FaceACCMaterials[1],
                                     Type = SwapType.FaceAccessoryMaterial
                                 }
                             }
@@ -1637,7 +1698,7 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_Ice_Queen_Head/Skins/Raider_Silver/Materials/F_MED_Raider_Silver_Head.F_MED_Raider_Silver_Head",
-                                    Replace = swapModel.HeadMaterial,
+                                    Replace = swapModel.HeadMaterials[0],
                                     Type = SwapType.HeadMaterial
                                 },
                                 new SaturnSwap()
@@ -1674,7 +1735,7 @@ namespace Saturn.Backend.Data.Services
                                 new SaturnSwap()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Skins/Silver/Materials/F_MED_Raider_Silver_Body.F_MED_Raider_Silver_Body",
-                                    Replace = swapModel.BodyMaterial,
+                                    Replace = swapModel.BodyMaterials[0],
                                     Type = SwapType.BodyMaterial
                                 }
                             }
@@ -1708,7 +1769,7 @@ namespace Saturn.Backend.Data.Services
                                 new()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Skins/Eclipse/Materials/F_MED_StreetFashionEclipse_Body.F_MED_StreetFashionEclipse_Body",
-                                    Replace = swapModel.BodyMaterial,
+                                    Replace = swapModel.BodyMaterials[0],
                                     Type = SwapType.BodyMaterial
                                 },
                                 new()
@@ -1739,7 +1800,7 @@ namespace Saturn.Backend.Data.Services
                                 new()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Skins/Eclipse/Materials/F_MED_StreetFashionEclipse_Head.F_MED_StreetFashionEclipse_Head",
-                                    Replace = swapModel.HeadMaterial,
+                                    Replace = swapModel.HeadMaterials[0],
                                     Type = SwapType.HeadMaterial
                                 },
                             }
@@ -1764,7 +1825,7 @@ namespace Saturn.Backend.Data.Services
                                 new()
                                 {
                                     Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Skins/Eclipse/Materials/F_MED_StreetFashionEclipse_Hair.F_MED_StreetFashionEclipse_Hair",
-                                    Replace = swapModel.FaceACCMaterial,
+                                    Replace = swapModel.FaceACCMaterials[0],
                                     Type = SwapType.FaceAccessoryMaterial
                                 }
                             }
@@ -1788,7 +1849,7 @@ namespace Saturn.Backend.Data.Services
                                 {
                                     Search =
                                         "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Scholar/Skins/Winter/Materials/F_MED_Scholar_FestiveWinter_Body.F_MED_Scholar_FestiveWinter_Body",
-                                    Replace = swapModel.BodyMaterial,
+                                    Replace = swapModel.BodyMaterials[0],
                                     Type = SwapType.BodyMaterial
                                 },
                                 new()
@@ -1824,7 +1885,7 @@ namespace Saturn.Backend.Data.Services
                                 {
                                     Search =
                                         "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Scholar/Skins/Winter/Materials/F_MED_Scholar_FestiveWinter_Head.F_MED_Scholar_FestiveWinter_Head",
-                                    Replace = swapModel.HeadMaterial,
+                                    Replace = swapModel.HeadMaterials[0],
                                     Type = SwapType.HeadMaterial
                                 },
                                 new()
@@ -1853,21 +1914,21 @@ namespace Saturn.Backend.Data.Services
                                 {
                                     Search =
                                         "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Scholar/Skins/Winter/Materials/F_MED_Scholar_FestiveWinter_Hair.F_MED_Scholar_FestiveWinter_Hair",
-                                    Replace = swapModel.FaceACCMaterial,
+                                    Replace = swapModel.FaceACCMaterials[0],
                                     Type = SwapType.FaceAccessoryMaterial
                                 },
                                 new()
                                 {
                                     Search =
                                         "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Scholar/Skins/Ghoul/Materials/F_MED_Scholar_Glass_Ghoul_FaceAcc.F_MED_Scholar_Glass_Ghoul_FaceAcc",
-                                    Replace = swapModel.FaceACCMaterial2,
+                                    Replace = swapModel.FaceACCMaterials[1],
                                     Type = SwapType.FaceAccessoryMaterial
                                 },
                                 new()
                                 {
                                     Search =
                                         "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Scholar/Skins/Winter/Materials/F_MED_Scholar_FestiveWinter_FaceAcc.F_MED_Scholar_FestiveWinter_FaceAcc",
-                                    Replace = swapModel.FaceACCMaterial3,
+                                    Replace = swapModel.FaceACCMaterials[2],
                                     Type = SwapType.FaceAccessoryMaterial
                                 },
                                 new()
