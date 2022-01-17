@@ -878,16 +878,16 @@ public class SwapperService : ISwapperService
             HeadSkinColor = "/Game/Tamely",
             HeadPartModifierBP = "/Game/Tamely",
             HeadMesh = "/Game/Tamely",
-            HeadABP = "/Game/Tamely",
+            HeadABP = null,
             BodyFX = "/Game/Tamely",
             BodyPartModifierBP = "/Game/Tamely",
-            BodyABP = "/Game/Tamely",
+            BodyABP = null,
             BodyMesh = "/Game/Tamely",
             BodyMaterials = new Dictionary<int, string>(),
             BodySkeleton = "/Game/Tamely",
             FaceACCMaterials = new Dictionary<int, string>(),
             FaceACCMesh = "/Game/Tamely",
-            FaceACCABP = "/Game/Tamely",
+            FaceACCABP = null,
             FaceACCFX = "/Game/Tamely",
             FaceACCPartModifierBP = "/Game/Tamely",
             HatType = ECustomHatType.ECustomHatType_None
@@ -974,11 +974,13 @@ public class SwapperService : ISwapperService
                                 if (AdditionalData.TryGetValue(out UObject AnimClass, "AnimClass"))
                                     swapModel.HeadABP = AnimClass.GetPathName();
 
-                                if (AdditionalData.TryGetValue(out UObject HairColorSwatch, "HairColorSwatch"))
-                                    swapModel.HeadHairColor = HairColorSwatch.GetPathName();
+                                swapModel.HeadHairColor = AdditionalData.TryGetValue(out UObject HairColorSwatch, "HairColorSwatch") 
+                                    ? HairColorSwatch.GetPathName() 
+                                    : "/";
                                     
-                                if (AdditionalData.TryGetValue(out UObject SkinColorSwatch, "SkinColorSwatch"))
-                                    swapModel.HeadSkinColor = SkinColorSwatch.GetPathName();
+                                swapModel.HeadSkinColor = AdditionalData.TryGetValue(out UObject SkinColorSwatch, "SkinColorSwatch") 
+                                    ? SkinColorSwatch.GetPathName() 
+                                    : "/";
                             }
                                 
                                 
@@ -1011,6 +1013,10 @@ public class SwapperService : ISwapperService
                         if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
                         {
                             swapModel.FaceACCMesh = part.Get<USkeletalMesh>("SkeletalMesh").GetPathName();
+
+                            // This is for skins like ghoul trooper and maven
+                            if (swapModel.FaceACCMesh.ToLower().Contains("glasses"))
+                                swapModel.FaceACCMesh = "/";
 
                             if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
                             {
@@ -1047,7 +1053,8 @@ public class SwapperService : ISwapperService
             foreach (var material in swapModel.HeadMaterials)
             {
                 if (!material.Value.ToLower().Contains("hair") ||
-                    OGHeadMaterials[material.Key].ToLower().Contains("hair")) continue;
+                    !OGHeadMaterials[material.Key].ToLower().Contains("hair")) continue;
+                if (material.Value.ToLower().Contains("hide")) continue;
                 foreach (var ogMaterial in OGHeadMaterials.Where(ogMaterial 
                              => ogMaterial.Value.ToLower().Contains("hair")))
                 {
@@ -1069,16 +1076,23 @@ public class SwapperService : ISwapperService
             for (int i = swapModel.FaceACCMaterials.Count; i < 5; i++)
                 swapModel.FaceACCMaterials.Add(i, "/");
 
+        if (string.IsNullOrEmpty(swapModel.BodyABP))
+            swapModel.BodyABP = null;
+        if (string.IsNullOrEmpty(swapModel.HeadABP))
+            swapModel.HeadABP = null;
+        if (string.IsNullOrEmpty(swapModel.FaceACCABP))
+            swapModel.FaceACCABP = null;
+
         Logger.Log($"Head hair color: {swapModel.HeadHairColor}");
         Logger.Log($"Head skin color: {swapModel.HeadSkinColor}");
         Logger.Log($"Head part modifier bp: {swapModel.HeadPartModifierBP}");
         Logger.Log($"Head FX: {swapModel.HeadFX}");
         Logger.Log($"Head mesh: {swapModel.HeadMesh}");
-        Logger.Log($"Head ABP: {swapModel.HeadABP}");
+        Logger.Log($"Head ABP: {swapModel.HeadABP ?? "Null"}");
         Logger.Log($"Head Materials:");
         foreach (var material in swapModel.HeadMaterials)
             Logger.Log($"\t{material.Key}: {material.Value}");
-        Logger.Log($"Body ABP: {swapModel.BodyABP}");
+        Logger.Log($"Body ABP: {swapModel.BodyABP ?? "Null"}");
         Logger.Log($"Body mesh: {swapModel.BodyMesh}");
         Logger.Log($"Body materials:");
         foreach (var material in swapModel.BodyMaterials)
@@ -1090,7 +1104,7 @@ public class SwapperService : ISwapperService
         foreach (var material in swapModel.FaceACCMaterials)
             Logger.Log($"\t{material.Key}: {material.Value}");
         Logger.Log($"Face ACC mesh: {swapModel.FaceACCMesh}");
-        Logger.Log($"Face ACC ABP: {swapModel.FaceACCABP}");
+        Logger.Log($"Face ACC ABP: {swapModel.FaceACCABP ?? "Null"}");
         Logger.Log($"Face ACC part modifier BP: {swapModel.FaceACCPartModifierBP}");
         Logger.Log($"Face ACC FX: {swapModel.FaceACCFX}");
 
@@ -1115,7 +1129,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
-                                Replace = swapModel.BodyABP,
+                                Replace = swapModel.BodyABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
                                 Type = SwapType.BodyAnim
                             },
                             new SaturnSwap()
@@ -1158,7 +1172,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_HIS_Ramirez_Head_01/Mesh/F_MED_HIS_Ramirez_Head_01_AnimBP_Child.F_MED_HIS_Ramirez_Head_01_AnimBP_Child_C",
-                                Replace = swapModel.HeadABP,
+                                Replace = swapModel.HeadABP ?? "/Game/Characters/Player/Female/Medium/Heads/F_MED_HIS_Ramirez_Head_01/Mesh/F_MED_HIS_Ramirez_Head_01_AnimBP_Child.F_MED_HIS_Ramirez_Head_01_AnimBP_Child_C",
                                 Type = SwapType.HeadAnim
                             },
                             new SaturnSwap()
@@ -1183,7 +1197,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_HIS_Ramirez_Head_01/Mesh/F_MED_HIS_Ramirez_Head_01_AnimBP_Child.F_MED_HIS_Ramirez_Head_01_AnimBP_Child_C",
-                                Replace = swapModel.FaceACCABP,
+                                Replace = swapModel.FaceACCABP ?? "/Game/Characters/Player/Female/Medium/Heads/F_MED_HIS_Ramirez_Head_01/Mesh/F_MED_HIS_Ramirez_Head_01_AnimBP_Child.F_MED_HIS_Ramirez_Head_01_AnimBP_Child_C",
                                 Type = SwapType.FaceAccessoryAnim
                             },
                             new SaturnSwap()
@@ -1229,7 +1243,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01_AnimBP_Child.F_MED_ASN_Sarah_Head_01_AnimBP_Child_C",
-                                Replace = swapModel.HeadABP,
+                                Replace = swapModel.HeadABP ?? "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01_AnimBP_Child.F_MED_ASN_Sarah_Head_01_AnimBP_Child_C",
                                 Type = SwapType.HeadAnim
                             },
                             new SaturnSwap()
@@ -1260,7 +1274,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
-                                Replace = swapModel.BodyABP,
+                                Replace = swapModel.BodyABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
                                 Type = SwapType.BodyAnim
                             },
                             new SaturnSwap()
@@ -1291,7 +1305,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Accessories/Hats/F_MED_HolidayPJs_FaceAcc/Meshes/F_MED_Holiday_PJs_1_FaceAcc_AnimBP.F_MED_Holiday_PJs_1_FaceAcc_AnimBP_C",
-                                Replace = swapModel.FaceACCABP,
+                                Replace = swapModel.FaceACCABP ?? "/Game/Accessories/Hats/F_MED_HolidayPJs_FaceAcc/Meshes/F_MED_Holiday_PJs_1_FaceAcc_AnimBP.F_MED_Holiday_PJs_1_FaceAcc_AnimBP_C",
                                 Type = SwapType.FaceAccessoryAnim
                             },
                             new SaturnSwap()
@@ -1343,7 +1357,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01_AnimBP_Child.F_MED_ASN_Sarah_Head_01_AnimBP_Child_C",
-                                Replace = swapModel.HeadABP,
+                                Replace = swapModel.HeadABP ?? "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01_AnimBP_Child.F_MED_ASN_Sarah_Head_01_AnimBP_Child_C",
                                 Type = SwapType.HeadAnim
                             },
                             new SaturnSwap()
@@ -1374,7 +1388,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
-                                Replace = swapModel.BodyABP,
+                                Replace = swapModel.BodyABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
                                 Type = SwapType.BodyAnim
                             },
                             new SaturnSwap()
@@ -1417,7 +1431,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Holiday/Meshes/Parts/F_MED_Renegade_Raider_Holiday_AnimBP.F_MED_Renegade_Raider_Holiday_AnimBP_C",
-                                Replace = swapModel.FaceACCABP,
+                                Replace = swapModel.FaceACCABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Holiday/Meshes/Parts/F_MED_Renegade_Raider_Holiday_AnimBP.F_MED_Renegade_Raider_Holiday_AnimBP_C",
                                 Type = SwapType.FaceAccessoryAnim
                             },
                             new SaturnSwap()
@@ -1463,7 +1477,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01_AnimBP_Child.F_MED_ASN_Sarah_Head_01_AnimBP_Child_C",
-                                Replace = swapModel.HeadABP,
+                                Replace = swapModel.HeadABP ?? "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01_AnimBP_Child.F_MED_ASN_Sarah_Head_01_AnimBP_Child_C",
                                 Type = SwapType.HeadAnim
                             },
                             new SaturnSwap()
@@ -1494,7 +1508,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
-                                Replace = swapModel.BodyABP,
+                                Replace = swapModel.BodyABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
                                 Type = SwapType.BodyAnim
                             },
                             new SaturnSwap()
@@ -1525,7 +1539,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Holiday/Meshes/Parts/F_MED_Renegade_Raider_Holiday_AnimBP.F_MED_Renegade_Raider_Holiday_AnimBP_C",
-                                Replace = swapModel.FaceACCABP,
+                                Replace = swapModel.FaceACCABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Holiday/Meshes/Parts/F_MED_Renegade_Raider_Holiday_AnimBP.F_MED_Renegade_Raider_Holiday_AnimBP_C",
                                 Type = SwapType.FaceAccessoryAnim
                             },
                             new SaturnSwap()
@@ -1571,7 +1585,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01_AnimBP_Child.F_MED_ASN_Sarah_Head_01_AnimBP_Child_C",
-                                Replace = swapModel.HeadABP,
+                                Replace = swapModel.HeadABP ?? "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01_AnimBP_Child.F_MED_ASN_Sarah_Head_01_AnimBP_Child_C",
                                 Type = SwapType.HeadAnim
                             },
                             new SaturnSwap()
@@ -1602,7 +1616,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
-                                Replace = swapModel.BodyABP,
+                                Replace = swapModel.BodyABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
                                 Type = SwapType.BodyAnim
                             },
                             new SaturnSwap()
@@ -1633,7 +1647,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Holiday/Meshes/Parts/F_MED_Renegade_Raider_Holiday_AnimBP.F_MED_Renegade_Raider_Holiday_AnimBP_C",
-                                Replace = swapModel.FaceACCABP,
+                                Replace = swapModel.FaceACCABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Renegade_Raider_Holiday/Meshes/Parts/F_MED_Renegade_Raider_Holiday_AnimBP.F_MED_Renegade_Raider_Holiday_AnimBP_C",
                                 Type = SwapType.FaceAccessoryAnim
                             },
                             new SaturnSwap()
@@ -1673,7 +1687,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Meshes/Parts/F_MED_Raider_Pink_FaceAcc_AnimBP.F_MED_Raider_Pink_FaceAcc_AnimBP_C",
-                                Replace = swapModel.FaceACCABP,
+                                Replace = swapModel.FaceACCABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Meshes/Parts/F_MED_Raider_Pink_FaceAcc_AnimBP.F_MED_Raider_Pink_FaceAcc_AnimBP_C",
                                 Type = SwapType.FaceAccessoryAnim
                             },
                             new SaturnSwap()
@@ -1704,7 +1718,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_Ice_Queen_Head/Meshes/F_MED_IceQueen_Head_Child_AnimBP.F_MED_IceQueen_Head_Child_AnimBP_C",
-                                Replace = swapModel.HeadABP,
+                                Replace = swapModel.HeadABP ?? "/Game/Characters/Player/Female/Medium/Heads/F_MED_Ice_Queen_Head/Meshes/F_MED_IceQueen_Head_Child_AnimBP.F_MED_IceQueen_Head_Child_AnimBP_C",
                                 Type = SwapType.HeadAnim
                             },
                             new SaturnSwap()
@@ -1735,7 +1749,7 @@ public class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Meshes/F_MED_Raider_Pink_AnimBP.F_MED_Raider_Pink_AnimBP_C",
-                                Replace = swapModel.BodyABP,
+                                Replace = swapModel.BodyABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Raider_Pink/Meshes/F_MED_Raider_Pink_AnimBP.F_MED_Raider_Pink_AnimBP_C",
                                 Type = SwapType.BodyAnim
                             },
                             new SaturnSwap()
@@ -1781,7 +1795,7 @@ public class SwapperService : ISwapperService
                             new()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Meshes/F_MED_Street_Fashion_Red_AnimBP.F_MED_Street_Fashion_Red_AnimBP_C",
-                                Replace = swapModel.BodyABP,
+                                Replace = swapModel.BodyABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Meshes/F_MED_Street_Fashion_Red_AnimBP.F_MED_Street_Fashion_Red_AnimBP_C",
                                 Type = SwapType.BodyAnim
                             },
                             new()
@@ -1806,7 +1820,7 @@ public class SwapperService : ISwapperService
                             new()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_Angel_Head_01/Meshes/F_MED_Angel_Head_AnimBP_Child.F_MED_Angel_Head_AnimBP_Child_C",
-                                Replace = swapModel.HeadABP,
+                                Replace = swapModel.HeadABP ?? "/Game/Characters/Player/Female/Medium/Heads/F_MED_Angel_Head_01/Meshes/F_MED_Angel_Head_AnimBP_Child.F_MED_Angel_Head_AnimBP_Child_C",
                                 Type = SwapType.HeadAnim
                             },
                             new()
@@ -1831,7 +1845,7 @@ public class SwapperService : ISwapperService
                             new()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Meshes/Parts/F_MED_Street_Fashion_Red_FaceAcc_AnimBp.F_MED_Street_Fashion_Red_FaceAcc_AnimBp_C",
-                                Replace = swapModel.FaceACCABP,
+                                Replace = swapModel.FaceACCABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Street_Fashion_Red/Meshes/Parts/F_MED_Street_Fashion_Red_FaceAcc_AnimBp.F_MED_Street_Fashion_Red_FaceAcc_AnimBp_C",
                                 Type = SwapType.FaceAccessoryAnim
                             },
                             new()
@@ -1888,7 +1902,7 @@ public class SwapperService : ISwapperService
                             {
                                 Search =
                                     "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Scholar/Meshes/F_MED_Scholar_AnimBP.F_MED_Scholar_AnimBP_C",
-                                Replace = swapModel.BodyABP,
+                                Replace = swapModel.BodyABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Scholar/Meshes/F_MED_Scholar_AnimBP.F_MED_Scholar_AnimBP_C",
                                 Type = SwapType.BodyAnim
                             }
                         }
@@ -1917,7 +1931,7 @@ public class SwapperService : ISwapperService
                             {
                                 Search =
                                     "/Game/Characters/Player/Female/Medium/Heads/F_MED_CAU_Jane_Head_01/Meshes/F_MED_CAU_Jane_Head_01_AnimBP_Child.F_MED_CAU_Jane_Head_01_AnimBP_Child_C",
-                                Replace = swapModel.HeadABP,
+                                Replace = swapModel.HeadABP ?? "/Game/Characters/Player/Female/Medium/Heads/F_MED_CAU_Jane_Head_01/Meshes/F_MED_CAU_Jane_Head_01_AnimBP_Child.F_MED_CAU_Jane_Head_01_AnimBP_Child_C",
                                 Type = SwapType.HeadAnim
                             }
                         }
@@ -1960,7 +1974,7 @@ public class SwapperService : ISwapperService
                             {
                                 Search =
                                     "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Scholar/Meshes/Parts/F_MED_Scholar_AnimBP.F_MED_Scholar_AnimBP_C",
-                                Replace = swapModel.FaceACCABP,
+                                Replace = swapModel.FaceACCABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Scholar/Meshes/Parts/F_MED_Scholar_AnimBP.F_MED_Scholar_AnimBP_C",
                                 Type = SwapType.FaceAccessoryAnim
                             }
                         }
