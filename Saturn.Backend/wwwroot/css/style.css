@@ -395,8 +395,8 @@ main {
 }
 
 .card:hover, .card:focus, .card:active {
-    -webkit-transform: scale(1.05) rotate(1.5deg);
-    transform: scale(1.05) rotate(1.5deg);
+    -webkit-transform: scale(1.05);
+    transform: scale(1.05);
 }
 
 .base {
