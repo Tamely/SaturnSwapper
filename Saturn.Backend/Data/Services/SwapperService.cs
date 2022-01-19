@@ -59,6 +59,8 @@ public class SwapperService : ISwapperService
 
     private bool _halted;
     private readonly DefaultFileProvider _provider;
+    
+    public bool isMappingsLoaded = false;
 
 
     public SwapperService(IFortniteAPIService fortniteAPIService, ISaturnAPIService saturnAPIService,
@@ -80,6 +82,11 @@ public class SwapperService : ISwapperService
         Trace.WriteLine("Initialized provider");
 
         new Mappings(_provider, benBotApiService).Init();
+        if (_provider.MappingsContainer == null)
+        {
+            Logger.Log("Mappings didn't load for some reason... trying to get them thru the official method!", LogLevel.Error);
+            Task.Run(() => _provider.LoadMappings()).Wait();
+        }
             
         Trace.WriteLine("Loaded mappings");
 
@@ -844,27 +851,6 @@ public class SwapperService : ISwapperService
         Logger.Log(Constants.CidPath + item.Id);
 
         var characterParts = Task.Run(() => GetCharacterPartsById(item.Id)).GetAwaiter().GetResult();
-
-            
-        try
-        {
-            var changes = _cloudStorageService.GetChanges(item.Id, "CharacterPartReplacements");
-            var cloudChanges = _cloudStorageService.DecodeChanges(changes);
-
-
-            characterParts = new Dictionary<string, string>
-            {
-                ["Body"] = cloudChanges.CharacterPartsReplace[0] ?? "/Game/Tamely",
-                ["Head"] = cloudChanges.CharacterPartsReplace[1] ?? "/Game/Tamely",
-                ["FaceACC"] = cloudChanges.CharacterPartsReplace[2] ?? "/Game/Tamely",
-                ["MiscOrTail"] = cloudChanges.CharacterPartsReplace[3] ?? "/Game/Tamely",
-                ["Other"] = cloudChanges.CharacterPartsReplace[4] ?? "/Game/Tamely"
-            };
-        }
-        catch (Exception ex)
-        {
-            Logger.Log("There was no hotfix found for this item! " + ex.ToString(), LogLevel.Warning);
-        }
 
         if (characterParts == new Dictionary<string, string>())
             return null;

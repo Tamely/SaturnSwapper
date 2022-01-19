@@ -31,27 +31,37 @@ namespace Saturn.Backend.Data
                 Logger.Log("Grabbed mappings, preparing to parse.");
                 JArray parsed = JArray.Parse(json);
 
-                foreach (var token in parsed)
+                if (parsed.Count == 0)
                 {
-                    if (token["meta"]["compressionMethod"].ToString() != "Oodle") continue;
+                    Logger.Log("No mappings found, BenBot is probably down. Trying to load old mappings...");
                     
-                    Logger.Log("Downloading mappings...");
-                    
-                    Directory.CreateDirectory(Config.MappingsFolder);
-                    if (!File.Exists(Config.MappingsFolder + token["fileName"]))
-                        await File.WriteAllBytesAsync(Config.MappingsFolder + token["fileName"],
-                            await _benBotAPIService.ReturnBytesAsync(token["url"].ToString()));
-
-                    provider.MappingsContainer =
-                        new FileUsmapTypeMappingsProvider(Config.MappingsFolder + token["fileName"]);
-                    
-                    Logger.Log("Mappings downloaded. Cleaning up the folder...");
-
-                    foreach (var file in new DirectoryInfo(Config.MappingsFolder).GetFiles()
-                                 .OrderByDescending(x => x.LastWriteTime).Skip(5))
-                        file.Delete();
+                    string newestFile = Directory.GetFiles(Config.MappingsFolder).OrderByDescending(f => new FileInfo(f).LastWriteTime).First();
+                    provider.MappingsContainer = new FileUsmapTypeMappingsProvider(newestFile);
                 }
-                Logger.Log("Loaded mappings!");
+                else
+                {
+                    foreach (var token in parsed)
+                    {
+                        if (token["meta"]["compressionMethod"].ToString() != "Oodle") continue;
+                    
+                        Logger.Log("Downloading mappings...");
+                    
+                        Directory.CreateDirectory(Config.MappingsFolder);
+                        if (!File.Exists(Config.MappingsFolder + token["fileName"]))
+                            await File.WriteAllBytesAsync(Config.MappingsFolder + token["fileName"],
+                                await _benBotAPIService.ReturnBytesAsync(token["url"].ToString()));
+
+                        provider.MappingsContainer =
+                            new FileUsmapTypeMappingsProvider(Config.MappingsFolder + token["fileName"]);
+                    
+                        Logger.Log("Mappings downloaded. Cleaning up the folder...");
+
+                        foreach (var file in new DirectoryInfo(Config.MappingsFolder).GetFiles()
+                                     .OrderByDescending(x => x.LastWriteTime).Skip(5))
+                            file.Delete();
+                    }
+                    Logger.Log("Loaded mappings!");
+                }
             }
             catch (Exception ex)
             {
