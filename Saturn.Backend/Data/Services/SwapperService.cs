@@ -1,42 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
-using CUE4Parse;
+﻿using CUE4Parse;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
-using CUE4Parse.MappingsProvider;
 using CUE4Parse.UE4.Assets.Exports;
-using CUE4Parse.UE4.Assets.Exports.Material;
-using CUE4Parse.UE4.Assets.Exports.Material.Parameters;
 using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.Misc;
 using CUE4Parse.UE4.Objects.UObject;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
-using MudBlazor;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.CloudStorage;
 using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
-using Saturn.Backend.Data.Models.SaturnAPI;
-using Saturn.Backend.Data.Structures;
 using Saturn.Backend.Data.Utils;
 using Saturn.Backend.Data.Utils.FortniteUtils;
-using Saturn.Backend.Data.Utils.ReadPlugins;
-using Serilog;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Colors = Saturn.Backend.Data.Enums.Colors;
-using Index = Saturn.Backend.Pages.Index;
 
 namespace Saturn.Backend.Data.Services;
 
@@ -47,7 +31,7 @@ public interface ISwapperService
     public Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = true);
 }
 
-public class SwapperService : ISwapperService
+public sealed class SwapperService : ISwapperService
 {
     private readonly IConfigService _configService;
     private readonly IFortniteAPIService _fortniteAPIService;
@@ -59,9 +43,6 @@ public class SwapperService : ISwapperService
 
     private bool _halted;
     private readonly DefaultFileProvider _provider;
-    
-    public bool isMappingsLoaded = false;
-
 
     public SwapperService(IFortniteAPIService fortniteAPIService, ISaturnAPIService saturnAPIService,
         IConfigService configService, ICloudStorageService cloudStorageService, IJSRuntime jsRuntime, IBenBotAPIService benBotApiService)
@@ -78,7 +59,7 @@ public class SwapperService : ISwapperService
 
         _provider = new DefaultFileProvider(FortniteUtil.PakPath, SearchOption.TopDirectoryOnly, false, new CUE4Parse.UE4.Versions.VersionContainer(CUE4Parse.UE4.Versions.EGame.GAME_UE5_LATEST));
         _provider.Initialize();
-            
+
         Trace.WriteLine("Initialized provider");
 
         new Mappings(_provider, benBotApiService, fortniteAPIService, jsRuntime).Init();
@@ -114,7 +95,6 @@ public class SwapperService : ISwapperService
                         Colors.C_RED);
                     Logger.Log($"There was an error reverting {item.Name}!", LogLevel.Error);
                 }
-
             }
             else
             {
@@ -286,6 +266,7 @@ public class SwapperService : ISwapperService
                     Logger.Log(
                         $"Unable to apply custom offsets to '{asset.ParentAsset}.' Asset might not have custom assets at all!",
                         LogLevel.Error);
+
                 if (isRandom)
                     await ItemUtil.UpdateStatus(random, option, "Adding swap to item's config", Colors.C_YELLOW);
                 else
@@ -738,14 +719,6 @@ public class SwapperService : ISwapperService
         };
     }
 
-    public async Task<string> IsTypeConverted(ItemType itemType)
-    {
-        foreach (var convItem in (await _configService.TryGetConvertedItems()).Where(x =>
-                     x.Type == itemType.ToString()))
-            return convItem.Name;
-        return null;
-    }
-
     public async Task<Dictionary<string, string>> GetAssetsFromWID(string wid)
     {
         var output = new Dictionary<string, string>();
@@ -809,7 +782,6 @@ public class SwapperService : ISwapperService
         return output;
     }
 
-
     public async Task<Dictionary<string, string>> GetCharacterPartsById(string id)
     {
         Dictionary<string, string> cps = new();
@@ -838,7 +810,6 @@ public class SwapperService : ISwapperService
     }
 
     #region GenerateMeshDefaults
-
 
     private async Task<SaturnOption> GenerateMeshSkins(Cosmetic item, SaturnItem option)
     {
@@ -881,17 +852,15 @@ public class SwapperService : ISwapperService
 
         await Task.Run(() =>
         {
-            if (_provider.TryLoadObject(optionsParts["Head"].Split('.')[0], out var part))
+            if (_provider.TryLoadObject(optionsParts["Head"].Split('.')[0], out var part) &&
+                part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
             {
-                if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
+                foreach (var (material, matIndex) in from materialOverride in MaterialOverride
+                                                     let material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString()
+                                                     let matIndex = materialOverride.Get<int>("MaterialOverrideIndex")
+                                                     select (material, matIndex))
                 {
-                    foreach (var materialOverride in MaterialOverride)
-                    {
-                        var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName
-                            .ToString();
-                        var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
-                        OGHeadMaterials.Add(matIndex, material);
-                    }
+                    OGHeadMaterials.Add(matIndex, material);
                 }
             }
         });
@@ -939,7 +908,6 @@ public class SwapperService : ISwapperService
                                 swapModel.BodyPartModifierBP = BodyPartModifierBP.GetPathName();
                         }
                     });
-
                     break;
                     
                 case "Head":
@@ -983,7 +951,6 @@ public class SwapperService : ISwapperService
                                 swapModel.HeadPartModifierBP = BodyPartModifierBP.GetPathName();
                         }
                     });
-
                     break;
                     
                 case "Face":
@@ -1026,20 +993,19 @@ public class SwapperService : ISwapperService
                                 swapModel.FaceACCPartModifierBP = BodyPartModifierBP.GetPathName();
                         }
                     });
-
                     break;
             }
 
         }
 
-        if ((swapModel.HeadMesh.ToLower().Contains("ramirez") || swapModel.HeadMesh.ToLower().Contains("starfish")) 
-            && !swapModel.HeadMesh.ToLower().Contains("/parts/"))
+        if ((swapModel.HeadMesh.ToLower().Contains("ramirez") || swapModel.HeadMesh.ToLower().Contains("starfish")) &&
+            !swapModel.HeadMesh.ToLower().Contains("/parts/"))
         {
             foreach (var material in swapModel.HeadMaterials)
             {
                 if (!material.Value.ToLower().Contains("hair") ||
-                    !OGHeadMaterials[material.Key].ToLower().Contains("hair")) continue;
-                if (material.Value.ToLower().Contains("hide")) continue;
+                    !OGHeadMaterials[material.Key].ToLower().Contains("hair") ||
+                    material.Value.ToLower().Contains("hide")) continue;
                 foreach (var ogMaterial in OGHeadMaterials.Where(ogMaterial 
                              => ogMaterial.Value.ToLower().Contains("hair")))
                 {
@@ -1969,6 +1935,7 @@ public class SwapperService : ISwapperService
             _ => new SaturnOption()
         };
     }
+
     #endregion
 
     #region GenerateEmoteSwaps
@@ -2581,18 +2548,6 @@ public class SwapperService : ISwapperService
 
     #endregion
 
-
-    private async Task<Dictionary<string, long>> GetFileNameAndOffsetFromConvertedItems(SaturnOption item)
-    {
-        var ret = new Dictionary<string, long>();
-        foreach (var convertedItem in await _configService.TryGetConvertedItems())
-            if (convertedItem.Type == ItemType.IT_Skin.ToString())
-                foreach (var swap in convertedItem.Swaps)
-                    if (swap.ParentAsset == item.Assets[0].ParentAsset)
-                        ret.Add(swap.File, swap.Offset);
-        return ret;
-    }
-
     private async Task BackupFile(string sourceFile, Cosmetic item, SaturnItem option)
     {
         await ItemUtil.UpdateStatus(item, option, "Backing up files", Colors.C_YELLOW);
@@ -2605,9 +2560,10 @@ public class SwapperService : ISwapperService
             ".ucas"
         };
 
-        foreach (var fileExt in fileExts)
+        foreach (var (fileExt, path) in from fileExt in fileExts
+                                        let path = Path.Combine(FortniteUtil.PakPath, fileName + fileExt)
+                                        select (fileExt, path))
         {
-            var path = Path.Combine(FortniteUtil.PakPath, fileName + fileExt);
             if (!File.Exists(path))
             {
                 Logger.Log($"File \"{fileName + fileExt}\" doesn't exist!", LogLevel.Warning);
@@ -2624,7 +2580,6 @@ public class SwapperService : ISwapperService
             using var source = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             using var destination = File.Create(newPath);
             await source.CopyToAsync(destination);
-
             Logger.Log($"Duplicated file \"{fileName + fileExt}\"");
         }
     }
@@ -2696,33 +2651,6 @@ public class SwapperService : ISwapperService
         catch (Exception ex)
         {
             Logger.Log(ex.Message, LogLevel.Error);
-            return false;
-        }
-    }
-
-    private bool TrySwapBytes(List<byte[]> Searches, List<byte[]> Replaces, ref byte[] data)
-    {
-        try
-        {
-            var arr = new List<byte>(data);
-            for (var i = 0; i < Searches.Count; i++)
-            {
-                var searchOffset = AnyLength.IndexOfSequence(data, Searches[i]);
-                if (searchOffset == -1)
-                {
-                    Logger.Log("Couldn't find search sequence at index " + i, LogLevel.Error);
-                }
-
-                arr.RemoveRange(searchOffset, Searches[i].Length);
-                arr.InsertRange(searchOffset, AnyLength.AddZero(Replaces[i], Searches[i].Length));
-            }
-
-            data = arr.ToArray();
-            return true;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("Couldn't swap backbling asset. Reason: " + e);
             return false;
         }
     }

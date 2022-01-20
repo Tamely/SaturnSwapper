@@ -1,18 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Utils;
-using Saturn.Backend.Data.Utils.CloudStorage;
-using Serilog;
-using Type = Saturn.Backend.Data.Models.FortniteAPI.Type;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace Saturn.Backend.Data.Services
 {

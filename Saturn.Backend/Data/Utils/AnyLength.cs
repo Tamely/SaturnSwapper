@@ -1,10 +1,8 @@
-﻿using System;
+﻿using Saturn.Backend.Data.Enums;
+using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
-using Saturn.Backend.Data.Enums;
 
 namespace Saturn.Backend.Data.Utils
 {
@@ -98,12 +96,9 @@ namespace Saturn.Backend.Data.Utils
                 if (!SwapNormally(searches, replaces, ref array))
                 {
                     throw new Exception("Failed to swap!");
-                    return false;
                 }
                 return true;
             }
-
-            return true;
         }
 
         public static bool SwapNormally(List<byte[]> Searches, List<byte[]> Replaces, ref byte[] array)
@@ -171,14 +166,6 @@ namespace Saturn.Backend.Data.Utils
             }
 
             return -1;
-        }
-        
-        // Add 0 to the end of a byte[] to make it the same size as another array
-        public static byte[] AddZero(byte[] array, int size)
-        {
-            var newArray = new byte[size];
-            Array.Copy(array, newArray, array.Length);
-            return newArray;
         }
     }
 }

@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Utils;
+using System.Collections.Generic;
 
 namespace Saturn.Backend.Data.Models
 {

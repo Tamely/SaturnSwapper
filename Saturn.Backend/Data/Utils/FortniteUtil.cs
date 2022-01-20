@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Saturn.Backend.Data.Models.Epic_Games;
+using System;
 using System.IO;
 using System.Linq;
-using Newtonsoft.Json;
-using Saturn.Backend.Data.Models.Epic_Games;
 
 namespace Saturn.Backend.Data.Utils
 {
@@ -17,9 +17,9 @@ namespace Saturn.Backend.Data.Utils
                 "Epic\\UnrealEngineLauncher\\LauncherInstalled.dat");
 
             return !File.Exists(path)
-                ? null
-                : JsonConvert.DeserializeObject<InstalledApps>(File.ReadAllText(path)).InstallationList
-                    .FirstOrDefault(x => x.AppName == "Fortnite").InstallLocation;
+                   ? null
+                   : JsonConvert.DeserializeObject<InstalledApps>(File.ReadAllText(path)).InstallationList
+                                .FirstOrDefault(x => x.AppName == "Fortnite").InstallLocation;
         }
 
         public static string GetFortniteVersion()
@@ -28,8 +28,7 @@ namespace Saturn.Backend.Data.Utils
                 "Epic\\UnrealEngineLauncher\\LauncherInstalled.dat");
 
             return JsonConvert.DeserializeObject<InstalledApps>(File.ReadAllText(path)).InstallationList
-                    .FirstOrDefault(x => x.AppName == "Fortnite").AppVersion;
+                              .FirstOrDefault(x => x.AppName == "Fortnite").AppVersion;
         }
-
     }
 }
