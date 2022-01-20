@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Saturn.Backend.Data.Models.SaturnAPI;
 
 namespace Saturn.Backend.Data.Services
 {
@@ -31,6 +27,7 @@ namespace Saturn.Backend.Data.Services
         }
 
         private string ApiKey { get; }
+
         private Uri Base { get; }
 
         public async Task<string> ReturnEndpointAsync(string url)

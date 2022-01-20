@@ -6,13 +6,14 @@ namespace Saturn.Backend.Data.Utils
 {
     public class Oodle
     {
-        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool SetDllDirectory(string lpPathName);
 
         public static void Decompress(byte[] compressedData, ref byte[] decompressedData)
         {
             OodleStream.Decompress(compressedData, ref decompressedData);
         }
+
         public static byte[] Compress(byte[] decompressed)
         {
             // Needed so it works when launched from start menu
@@ -57,7 +58,7 @@ namespace Saturn.Backend.Data.Utils
 
         public static void Decompress(byte[] compressedBuffer, ref byte[] destinationBuffer)
         {
-            OodleLZ_Decompress(compressedBuffer, compressedBuffer.Length, destinationBuffer, destinationBuffer.Length,
+            _ = OodleLZ_Decompress(compressedBuffer, compressedBuffer.Length, destinationBuffer, destinationBuffer.Length,
                 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u);
         }
 

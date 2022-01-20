@@ -7,7 +7,6 @@ using Saturn.Backend.Data.Utils;
 using System;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using Microsoft.JSInterop;
 
@@ -16,14 +15,14 @@ namespace Saturn.Backend.Data
     public class Mappings
     {
         private readonly IBenBotAPIService _benBotAPIService; 
-        private readonly DefaultFileProvider provider; 
+        private readonly DefaultFileProvider _provider; 
         private readonly IFortniteAPIService _fortniteAPIService;
         private readonly IJSRuntime _jsRuntime;
 
-        public Mappings(DefaultFileProvider _provider, IBenBotAPIService benbotAPIService, IFortniteAPIService fortniteApiService, IJSRuntime jsRuntime)
+        public Mappings(DefaultFileProvider provider, IBenBotAPIService benbotAPIService, IFortniteAPIService fortniteApiService, IJSRuntime jsRuntime)
         {
             _benBotAPIService = benbotAPIService;
-            provider = _provider;
+            _provider = provider;
             _fortniteAPIService = fortniteApiService;
             _jsRuntime = jsRuntime;
         }
@@ -42,7 +41,7 @@ namespace Saturn.Backend.Data
 
                     Directory.CreateDirectory(Config.MappingsFolder);
                     string newestFile = Directory.GetFiles(Config.MappingsFolder).OrderByDescending(f => new FileInfo(f).LastWriteTime).First();
-                    provider.MappingsContainer = new FileUsmapTypeMappingsProvider(newestFile);
+                    _provider.MappingsContainer = new FileUsmapTypeMappingsProvider(newestFile);
                 }
                 else
                 {
@@ -57,7 +56,7 @@ namespace Saturn.Backend.Data
                             await File.WriteAllBytesAsync(Config.MappingsFolder + token["fileName"],
                                 await _benBotAPIService.ReturnBytesAsync(token["url"].ToString()));
 
-                        provider.MappingsContainer =
+                        _provider.MappingsContainer =
                             new FileUsmapTypeMappingsProvider(Config.MappingsFolder + token["fileName"]);
                     
                         Logger.Log("Mappings downloaded. Cleaning up the folder...");

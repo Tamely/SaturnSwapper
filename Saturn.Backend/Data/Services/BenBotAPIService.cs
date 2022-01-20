@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Saturn.Backend.Data.Models.SaturnAPI;
 using Saturn.Backend.Data.Utils;
 
 namespace Saturn.Backend.Data.Services
