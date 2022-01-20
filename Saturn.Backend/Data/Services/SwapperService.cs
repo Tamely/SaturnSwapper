@@ -2081,6 +2081,8 @@ public class SwapperService : ISwapperService
         
         Logger.Log("Generating swaps");
         EFortRarity Rarity = (EFortRarity)int.Parse(swaps["Rarity"]);
+        
+        List<byte[]> SeriesBytes = new List<byte[]>();
 
         if (swaps["FX"] == "None")
             swaps["FX"] = "/";
@@ -2094,8 +2096,11 @@ public class SwapperService : ISwapperService
             case "Pickaxe_ID_541_StreetFashionEclipseFemale":
                 if (swaps["FX"] != "/" || swaps["ActorClass"] != "/Game/Weapons/FORT_Melee/Blueprints/B_Athena_Pickaxe_Generic.B_Athena_Pickaxe_Generic_C")
                     option.Status = "This item might not be perfect!";
-                //if (swaps["Series"] != "/")
-                    //Rarity = EFortRarity.Transcendent;
+                if (swaps["Series"] != "/")
+                {
+                    Rarity = EFortRarity.Transcendent;
+                    SeriesBytes = await FileUtil.GetColorsFromSeries(swaps["Series"], _provider);
+                }
                 break;
         }
 
@@ -2185,6 +2190,49 @@ public class SwapperService : ISwapperService
                     }
                 }
             };
+
+            if (SeriesBytes != new List<byte[]>())
+            {
+                returnPickaxe.Assets.Add(
+                    new SaturnAsset()
+                    {
+                        ParentAsset =
+                            "FortniteGame/Content/Balance/RarityData",
+                        Swaps = new List<SaturnSwap>()
+                        {
+                            new SaturnSwap()
+                            {
+                                Search = System.Convert.ToBase64String(new byte[] { 0,0,0,0,34,84,53,63,186,245,118,63,0,0,128,63 }),
+                                Replace = System.Convert.ToBase64String(SeriesBytes[0]),
+                                Type = SwapType.Property
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = System.Convert.ToBase64String(new byte[] { 0,0,0,0,0,0,128,63,251,121,211,62,0,0,128,63 }),
+                                Replace = System.Convert.ToBase64String(SeriesBytes[1]),
+                                Type = SwapType.Property
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = System.Convert.ToBase64String(new byte[] { 19,129,58,62,254,95,5,63,0,0,128,63,0,0,128,63 }),
+                                Replace = System.Convert.ToBase64String(SeriesBytes[2]),
+                                Type = SwapType.Property
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = System.Convert.ToBase64String(new byte[] { 143,170,22,62,18,192,77,61,54,32,130,62,0,0,128,63 }),
+                                Replace = System.Convert.ToBase64String(SeriesBytes[3]),
+                                Type = SwapType.Property
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = System.Convert.ToBase64String(new byte[] { 20,151,35,61,35,75,102,60,10,215,35,61,0,0,128,63 }),
+                                Replace = System.Convert.ToBase64String(SeriesBytes[4]),
+                                Type = SwapType.Property
+                            },
+                        }
+                    });
+            }
 
             return returnPickaxe;
         }
