@@ -82,12 +82,7 @@ public class SwapperService : ISwapperService
         Trace.WriteLine("Initialized provider");
 
         new Mappings(_provider, benBotApiService).Init();
-        if (_provider.MappingsContainer == null)
-        {
-            Logger.Log("Mappings didn't load for some reason... trying to get them thru the official method!", LogLevel.Error);
-            Task.Run(() => _provider.LoadMappings()).Wait();
-        }
-            
+
         Trace.WriteLine("Loaded mappings");
 
 

@@ -34,7 +34,8 @@ namespace Saturn.Backend.Data
                 if (parsed.Count == 0)
                 {
                     Logger.Log("No mappings found, BenBot is probably down. Trying to load old mappings...");
-                    
+
+                    Directory.CreateDirectory(Config.MappingsFolder);
                     string newestFile = Directory.GetFiles(Config.MappingsFolder).OrderByDescending(f => new FileInfo(f).LastWriteTime).First();
                     provider.MappingsContainer = new FileUsmapTypeMappingsProvider(newestFile);
                 }

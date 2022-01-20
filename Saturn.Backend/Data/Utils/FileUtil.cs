@@ -10,7 +10,11 @@ using System.Threading.Tasks;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
+using CUE4Parse.UE4.Objects.Core.Math;
+using CUE4Parse.UE4.Objects.UObject;
+using MudBlazor;
 using Saturn.Backend.Data.Enums;
+using Serilog;
 
 namespace Saturn.Backend.Data.Utils
 {
@@ -120,22 +124,73 @@ namespace Saturn.Backend.Data.Utils
             }
         }
 
-        /*
+        
         public static async Task<List<byte[]>> GetColorsFromSeries(string seriesPath, DefaultFileProvider _provider)
         {
             List<byte[]> colors = new();
+            Dictionary<string, List<float>> colorValues = new();
             await Task.Run(() =>
             {
                 if (_provider.TryLoadObject(seriesPath, out UObject series))
                 {
-                    if (series.TryGetValue(out UScriptMap Colors, "Colors"))
+                    if (series.TryGetValue(out FStructFallback Colors, "Colors"))
                     {
-                        Colors.Properties.TryGetValue(Colors.Properties.Keys.First(), out FPropertyTagType? colorArray);
+                        foreach (var colors in Colors.Properties)
+                        {
+                            List<float> floatValues = new List<float>
+                            {
+                                Colors.Get<FLinearColor>(colors.Name.Text).R,
+                                Colors.Get<FLinearColor>(colors.Name.Text).G,
+                                Colors.Get<FLinearColor>(colors.Name.Text).B,
+                                Colors.Get<FLinearColor>(colors.Name.Text).A
+                            };
+                            colorValues.Add(colors.Name.Text, floatValues);
+                        }
                     }
+                    else
+                    {
+                        Logger.Log("No Colors found in " + seriesPath);
+                    }
+                }
+                else
+                {
+                    Logger.Log("Could not find series " + seriesPath);
                 }
             });
 
-        }*/
+            foreach (var color in colorValues)
+            {
+                Logger.Log(color.Key);
+                byte[] colorBytes = new byte[] {};
+                foreach (var colorValue in color.Value)
+                {
+                    colorBytes = Combine(colorBytes, FloatToBytes(colorValue));
+                    Logger.Log(" - " + colorValue);
+                    
+                }
+                colors.Add(colorBytes);
+            }
+
+            while (colors.Count < 5)
+                colors.Add(new byte[] {0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255});
+            
+            return colors;
+
+        }
+        
+        // Convert float to byte[]
+        public static byte[] FloatToBytes(float value)
+        {
+            return BitConverter.GetBytes(value);
+        }
+        
+        public static byte[] Combine(byte[] first, byte[] second)
+        {
+            byte[] bytes = new byte[first.Length + second.Length];
+            Buffer.BlockCopy(first, 0, bytes, 0, first.Length);
+            Buffer.BlockCopy(second, 0, bytes, first.Length, second.Length);
+            return bytes;
+        }
 
         // Export asset to memory then return all strings in asset
         public static async Task<List<string>> GetStringsFromAsset(string assetPath, DefaultFileProvider _provider)
