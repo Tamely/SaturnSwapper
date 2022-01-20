@@ -546,6 +546,14 @@
                             <p style="color:white">@FlipRarity</p>
                         </div>
                     </div>
+                    
+                    <div class="card" @onclick=@(async () => await FlipSeriesOption())>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2>Change series</h2>
+                            <p style="color:white">@FlipSeries</p>
+                        </div>
+                    </div>
 
                     <div class="card" @onclick=@(async () => await ToggleScalingFix())>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
@@ -594,6 +602,7 @@
 
     private string FlipRarity = "";
     private string ScalingFix = "";
+    private string FlipSeries = "";
 
     private SaturnState saturnState = SaturnState.S_Key;
 
@@ -601,6 +610,9 @@
 
     private async Task SwitchItemStyleChoice(Cosmetic item)
         => item.IsPickingStyles = !item.IsPickingStyles;
+    
+    private async Task ShouldConvertSeries()
+        => FlipSeries = await _configService.TryGetShouldSeriesConvert() ? "Currently set to 'pickaxes WILL swap series'" : "Currently set to 'pickaxes WILL NOT swap series'";
     
     private async Task ShouldConvertRarity()
         => FlipRarity = await _configService.TryGetShouldRarityConvert() ? "Currently set to 'pickaxes WILL swap rarity'" : "Currently set to 'pickaxes WILL NOT swap rarity'";
@@ -618,6 +630,8 @@
         await CheckMaintenance();
 
         await ShouldConvertRarity();
+
+        await ShouldConvertSeries();
 
         await ShouldFixScaling();
 
@@ -832,6 +846,17 @@
         {
             true => "Currently set to 'pickaxes WILL swap rarity'",
             false => "Currently set to 'pickaxes WILL NOT swap rarity'"
+        };
+    }
+
+    private async Task FlipSeriesOption()
+    {
+        await _configService.TrySetShouldSeriesConvert(!await _configService.TryGetShouldSeriesConvert());
+
+        FlipSeries = await _configService.TryGetShouldSeriesConvert() switch
+        {
+            true => "Currently set to 'pickaxes WILL swap series'",
+            false => "Currently set to 'pickaxes WILL NOT swap series'"
         };
     }
 

@@ -81,7 +81,7 @@ public class SwapperService : ISwapperService
             
         Trace.WriteLine("Initialized provider");
 
-        new Mappings(_provider, benBotApiService, fortniteAPIService).Init();
+        new Mappings(_provider, benBotApiService, fortniteAPIService, jsRuntime).Init();
 
         Trace.WriteLine("Loaded mappings");
 
@@ -2096,7 +2096,7 @@ public class SwapperService : ISwapperService
             case "Pickaxe_ID_541_StreetFashionEclipseFemale":
                 if (swaps["FX"] != "/" || swaps["ActorClass"] != "/Game/Weapons/FORT_Melee/Blueprints/B_Athena_Pickaxe_Generic.B_Athena_Pickaxe_Generic_C")
                     option.Status = "This item might not be perfect!";
-                if (swaps["Series"] != "/")
+                if (swaps["Series"] != "/" && await _configService.TryGetShouldSeriesConvert())
                 {
                     Rarity = EFortRarity.Transcendent;
                     SeriesBytes = await FileUtil.GetColorsFromSeries(swaps["Series"], _provider);

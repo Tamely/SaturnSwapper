@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.JSInterop;
 
 namespace Saturn.Backend.Data
 {
@@ -17,12 +18,14 @@ namespace Saturn.Backend.Data
         private readonly IBenBotAPIService _benBotAPIService; 
         private readonly DefaultFileProvider provider; 
         private readonly IFortniteAPIService _fortniteAPIService;
+        private readonly IJSRuntime _jsRuntime;
 
-        public Mappings(DefaultFileProvider _provider, IBenBotAPIService benbotAPIService, IFortniteAPIService fortniteApiService)
+        public Mappings(DefaultFileProvider _provider, IBenBotAPIService benbotAPIService, IFortniteAPIService fortniteApiService, IJSRuntime jsRuntime)
         {
             _benBotAPIService = benbotAPIService;
             provider = _provider;
             _fortniteAPIService = fortniteApiService;
+            _jsRuntime = jsRuntime;
         }
 
         public async Task Init()
@@ -68,6 +71,7 @@ namespace Saturn.Backend.Data
             }
             catch (Exception ex)
             {
+                await _jsRuntime.InvokeVoidAsync("MessageBox", "There was an error while loading mappings. Please try again or contact support in Tamely's Discord.", "error");
                 Logger.Log("Unable to parse/load mappings, please contact support! " + ex, LogLevel.Fatal);
             }
         }
