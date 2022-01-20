@@ -16,18 +16,20 @@ namespace Saturn.Backend.Data
     {
         private readonly IBenBotAPIService _benBotAPIService; 
         private readonly DefaultFileProvider provider; 
+        private readonly IFortniteAPIService _fortniteAPIService;
 
-        public Mappings(DefaultFileProvider _provider, IBenBotAPIService _benbotAPIService)
+        public Mappings(DefaultFileProvider _provider, IBenBotAPIService benbotAPIService, IFortniteAPIService fortniteApiService)
         {
-            _benBotAPIService = _benbotAPIService;
+            _benBotAPIService = benbotAPIService;
             provider = _provider;
+            _fortniteAPIService = fortniteApiService;
         }
 
         public async Task Init()
         {
             try
             {
-                string json = await _benBotAPIService.ReturnEndpointAsync("mappings");
+                string json = await _benBotAPIService.ReturnEndpointAsync("mappings?version=" + _fortniteAPIService.GetAES().Build);
                 Logger.Log("Grabbed mappings, preparing to parse.");
                 JArray parsed = JArray.Parse(json);
 

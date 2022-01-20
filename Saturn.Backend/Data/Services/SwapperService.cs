@@ -81,7 +81,7 @@ public class SwapperService : ISwapperService
             
         Trace.WriteLine("Initialized provider");
 
-        new Mappings(_provider, benBotApiService).Init();
+        new Mappings(_provider, benBotApiService, fortniteAPIService).Init();
 
         Trace.WriteLine("Loaded mappings");
 
