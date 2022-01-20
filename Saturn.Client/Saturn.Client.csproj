@@ -37,7 +37,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="6.0.101-preview.10.2068" />
-        <PackageReference Include="MudBlazor" Version="6.0.2" />
+        <PackageReference Include="MudBlazor" Version="6.0.5" />
     </ItemGroup>
 
     <ItemGroup>
