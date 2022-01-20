@@ -12,6 +12,7 @@ using Saturn.Backend.Data.Models.CloudStorage;
 using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Utils;
+using Saturn.Backend.Data.Utils.FortniteUtils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,6 +36,7 @@ public sealed class SwapperService : ISwapperService
     private readonly IConfigService _configService;
     private readonly IFortniteAPIService _fortniteAPIService;
 
+    private readonly ISaturnAPIService _saturnAPIService;
     private readonly ICloudStorageService _cloudStorageService;
 
     private readonly IJSRuntime _jsRuntime;
@@ -42,35 +44,33 @@ public sealed class SwapperService : ISwapperService
     private bool _halted;
     private readonly DefaultFileProvider _provider;
 
-    public SwapperService(IFortniteAPIService fortniteAPIService, 
-                          IConfigService configService, 
-                          ICloudStorageService cloudStorageService, 
-                          IJSRuntime jsRuntime, 
-                          IBenBotAPIService benBotApiService)
+    public SwapperService(IFortniteAPIService fortniteAPIService, ISaturnAPIService saturnAPIService,
+        IConfigService configService, ICloudStorageService cloudStorageService, IJSRuntime jsRuntime, IBenBotAPIService benBotApiService)
     {
         _fortniteAPIService = fortniteAPIService;
+        _saturnAPIService = saturnAPIService;
         _configService = configService;
         _cloudStorageService = cloudStorageService;
         _jsRuntime = jsRuntime;
 
-        var aes = _fortniteAPIService.GetAES();
+        var _aes = _fortniteAPIService.GetAES();
 
         Trace.WriteLine("Got AES");
 
         _provider = new DefaultFileProvider(FortniteUtil.PakPath, SearchOption.TopDirectoryOnly, false, new CUE4Parse.UE4.Versions.VersionContainer(CUE4Parse.UE4.Versions.EGame.GAME_UE5_LATEST));
         _provider.Initialize();
-            
+
         Trace.WriteLine("Initialized provider");
 
-        _ = new Mappings(_provider, benBotApiService, fortniteAPIService, jsRuntime).Init();
+        new Mappings(_provider, benBotApiService, fortniteAPIService, jsRuntime).Init();
 
         Trace.WriteLine("Loaded mappings");
 
 
         var keys = new List<KeyValuePair<FGuid, FAesKey>>();
-        if (aes.MainKey != null)
-            keys.Add(new(new FGuid(), new FAesKey(aes.MainKey)));
-        keys.AddRange(aes.DynamicKeys.Select(x =>
+        if (_aes.MainKey != null)
+            keys.Add(new(new FGuid(), new FAesKey(_aes.MainKey)));
+        keys.AddRange(_aes.DynamicKeys.Select(x =>
             new KeyValuePair<FGuid, FAesKey>(new FGuid(x.PakGuid), new FAesKey(x.Key))));
 
         Trace.WriteLine("Set Keys");
@@ -262,6 +262,10 @@ public sealed class SwapperService : ISwapperService
                 file = file.Replace("ucas", "utoc");
 
                 Dictionary<long, byte[]> lengths = new();
+                if (!await CustomAssets.TryHandleOffsets(asset, compressed.Length, data.Length, lengths, file, _saturnAPIService))
+                    Logger.Log(
+                        $"Unable to apply custom offsets to '{asset.ParentAsset}.' Asset might not have custom assets at all!",
+                        LogLevel.Error);
 
                 if (isRandom)
                     await ItemUtil.UpdateStatus(random, option, "Adding swap to item's config", Colors.C_YELLOW);
