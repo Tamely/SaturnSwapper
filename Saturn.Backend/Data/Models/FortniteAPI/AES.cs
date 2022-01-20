@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using CUE4Parse.UE4.Objects.Core.Misc;
+﻿using CUE4Parse.UE4.Objects.Core.Misc;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 
 namespace Saturn.Backend.Data.Models.FortniteAPI
 {

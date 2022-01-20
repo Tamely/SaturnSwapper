@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Saturn.Backend.Data.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Saturn.Backend.Data.Enums;
 
 namespace Saturn.Backend.Data.Utils
 {

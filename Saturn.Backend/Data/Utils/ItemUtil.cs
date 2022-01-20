@@ -1,7 +1,7 @@
-﻿using System.Threading.Tasks;
-using Saturn.Backend.Data.Enums;
+﻿using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
+using System.Threading.Tasks;
 
 namespace Saturn.Backend.Data.Utils
 {

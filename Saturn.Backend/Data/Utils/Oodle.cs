@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Saturn.Backend.Data.Enums;
+using System;
 using System.Runtime.InteropServices;
-using Saturn.Backend.Data.Enums;
 
 namespace Saturn.Backend.Data.Utils
 {

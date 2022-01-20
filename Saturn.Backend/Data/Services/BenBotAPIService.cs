@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Saturn.Backend.Data.Utils;
+using System;
 using System.Net;
 using System.Threading.Tasks;
-using Saturn.Backend.Data.Utils;
 
 namespace Saturn.Backend.Data.Services
 {

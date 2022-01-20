@@ -1,9 +1,9 @@
-﻿using System;
-using DiscordRPC;
+﻿using DiscordRPC;
 using DiscordRPC.Message;
 using Newtonsoft.Json;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Utils;
+using System;
 
 namespace Saturn.Backend.Data.Services
 {

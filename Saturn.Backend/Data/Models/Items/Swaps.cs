@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using Saturn.Backend.Data.Enums;
+﻿using Saturn.Backend.Data.Enums;
+using System.Collections.Generic;
 
 namespace Saturn.Backend.Data.Models.Items
 {

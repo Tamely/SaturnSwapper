@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Models.SaturnAPI;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Saturn.Backend.Data.Services;
 
@@ -61,14 +61,15 @@ public class PluginService : IPluginService
     public async Task<PluginModel> ConvertGalaxyToSaturn(string galaxyPlugin)
     {
         dynamic plugin = JObject.Parse(galaxyPlugin);
-        var pluginModel = new PluginModel();
+        var pluginModel = new PluginModel
+        {
+            Name = plugin.Name,
+            Icon = plugin.Icon,
+            SwapIcon = plugin.Swapicon,
+            Message = plugin.Message
+        };
 
-        pluginModel.Name = plugin.Name;
-        pluginModel.Icon = plugin.Icon;
-        pluginModel.SwapIcon = plugin.Swapicon;
-        pluginModel.Message = plugin.Message;
-        
-        
+
         List<Asset> assets = new List<Asset>();
 
         foreach (var asset in plugin.Assets)

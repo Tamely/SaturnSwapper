@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Saturn.Backend.Data.Models.Epic_Games;
+using System;
 using System.IO;
 using System.Linq;
-using Newtonsoft.Json;
-using Saturn.Backend.Data.Models.Epic_Games;
 
 namespace Saturn.Backend.Data.Utils
 {

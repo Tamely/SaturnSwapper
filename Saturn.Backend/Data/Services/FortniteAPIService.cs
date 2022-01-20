@@ -1,14 +1,14 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Saturn.Backend.Data.Enums;
+using Saturn.Backend.Data.Models.FortniteAPI;
+using Saturn.Backend.Data.Models.Items;
+using Saturn.Backend.Data.Utils;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Saturn.Backend.Data.Enums;
-using Saturn.Backend.Data.Models.FortniteAPI;
-using Saturn.Backend.Data.Models.Items;
-using Saturn.Backend.Data.Utils;
 
 namespace Saturn.Backend.Data.Services
 {

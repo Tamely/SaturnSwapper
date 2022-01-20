@@ -1,5 +1,6 @@
 ﻿using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
+using Microsoft.JSInterop;
 using Newtonsoft.Json.Linq;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Services;
@@ -8,7 +9,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.JSInterop;
 
 namespace Saturn.Backend.Data
 {
