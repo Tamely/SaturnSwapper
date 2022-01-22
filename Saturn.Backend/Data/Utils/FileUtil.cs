@@ -38,6 +38,71 @@ namespace Saturn.Backend.Data.Utils
             }
         }
         
+        // Return byte[] in offset and range from byte[]
+        public static byte[] GetBytes(byte[] bytes, long offset, int length)
+        {
+            var result = new byte[length];
+            Array.Copy(bytes, offset, result, 0, length);
+            return result;
+        }
+
+        // Writes an integer to a file
+        public static bool WriteIntToFile(string filePath, long offset, int value)
+        {
+            try
+            {
+                using var stream = File.Open(filePath, FileMode.Open);
+                stream.Position = offset;
+                stream.Write(HexToBytes(ReverseHex(IntToHex(value))), 0, ReverseHex(IntToHex(value)).Length / 2);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        // Writes hex string to file
+        public static bool WriteHexToFile(string filePath, long offset, string hex)
+        {
+            try
+            {
+                using var stream = File.Open(filePath, FileMode.Open);
+                stream.Position = offset;
+                stream.Write(HexToBytes(hex), 0, hex.Length / 2);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        // Hex to byte[]
+        public static byte[] HexToBytes(string hex)
+        {
+            var bytes = new byte[hex.Length / 2];
+            for (var i = 0; i < bytes.Length; i++) bytes[i] = Convert.ToByte(hex.Substring(i * 2, 2), 16);
+            return bytes;
+        }
+
+        // Converts integer to a hex string
+        public static string IntToHex(int value)
+        {
+            return ReverseHex(BitConverter.ToString(BitConverter.GetBytes(value)).Replace("-", ""));
+        }
+
+        // Reverses a hex string for utoc processing
+        private static string ReverseHex(string hex)
+        {
+            StringBuilder sb = new();
+            sb.Append(hex[2]);
+            sb.Append(hex[3]);
+            sb.Append(hex[0]);
+            sb.Append(hex[1]);
+            return sb.ToString();
+        }
+
         public static async Task<List<byte[]>> GetColorsFromSeries(string seriesPath, DefaultFileProvider _provider)
         {
             List<byte[]> colors = new();
