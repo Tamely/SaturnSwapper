@@ -30,7 +30,7 @@ namespace Saturn.Backend.Data.Services
             CloudStorage = _saturnAPIService.ReturnEndpoint("api/v1/Saturn/CloudStorage");
             Trace.WriteLine("Done");
             File.WriteAllText(Config.CloudStoragePath, CloudStorage);
-            CloudChanges= new(Config.CloudStoragePath);
+            CloudChanges = new(Config.CloudStoragePath);
         }
 
         private string CloudStorage { get; }

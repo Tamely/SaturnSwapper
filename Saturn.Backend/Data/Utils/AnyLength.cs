@@ -24,22 +24,22 @@ namespace Saturn.Backend.Data.Utils
                             throw new Exception("Failed to swap normally!");
                     }
                 }
-                
+
                 var arr = new List<byte>(array);
-                int diff = 0;
+                var diff = 0;
 
                 if (searches.Count != replaces.Count)
                     throw new ArgumentException("Searches' size does not equal replaces' size!");
 
-                int lastOffset = IndexOfSequence(array, Encoding.ASCII.GetBytes("/Game/")) - 1;
-                int startOffset = lastOffset - array[44] * 2 + 2;
+                var lastOffset = IndexOfSequence(array, Encoding.ASCII.GetBytes("/Game/")) - 1;
+                var startOffset = lastOffset - array[44] * 2 + 2;
 
-                for (int i = 0; i < searches.Count; i++)
+                for (var i = 0; i < searches.Count; i++)
                 {
-                    int searchOffset = IndexOfSequence(arr.ToArray(), searches[i]);
+                    var searchOffset = IndexOfSequence(arr.ToArray(), searches[i]);
                     if (searches[i].Length != replaces[i].Length)
                     {
-                        int sizeOffset = NumFromTop(arr.ToArray(), startOffset, lastOffset, searchOffset, array[44]);
+                        var sizeOffset = NumFromTop(arr.ToArray(), startOffset, lastOffset, searchOffset, array[44]);
                         if (sizeOffset < 0)
                             continue;
                         arr.RemoveAt(sizeOffset);
@@ -51,12 +51,12 @@ namespace Saturn.Backend.Data.Utils
                 }
 
 
-                int end = 0;
+                var end = 0;
                 if (isPickaxe)
                 {
                     end = lastOffset + 1;
                     // foreach in range step 2
-                    for (int i = startOffset; i <= lastOffset; i += 2)
+                    for (var i = startOffset; i <= lastOffset; i += 2)
                         end += arr[i];
                 }
                 else
@@ -64,7 +64,7 @@ namespace Saturn.Backend.Data.Utils
                     end = IndexOfSequence(arr.ToArray(), End) - 3;
                 }
 
-                int a = 0;
+                var a = 0;
                 List<byte> append = new();
                 if (diff > -1)
                 {
@@ -81,7 +81,7 @@ namespace Saturn.Backend.Data.Utils
                     while (array.Length != arr.Count)
                     {
                         Logger.Log($"Changing end from {end} to {end + diff}");
-                        int newEnd = end + diff;
+                        var newEnd = end + diff;
                         arr.RemoveRange(newEnd, Math.Abs(diff));
                     }
                 }
@@ -138,10 +138,10 @@ namespace Saturn.Backend.Data.Utils
         //Originally: https://stackoverflow.com/a/332667/12897035
         public static int IndexOfSequence(byte[] buffer, byte[] pattern)
         {
-            int i = Array.IndexOf(buffer, pattern[0], 0);
+            var i = Array.IndexOf(buffer, pattern[0], 0);
             while (i >= 0 && i <= buffer.Length - pattern.Length)
             {
-                byte[] segment = new byte[pattern.Length];
+                var segment = new byte[pattern.Length];
                 Buffer.BlockCopy(buffer, i, segment, 0, pattern.Length);
                 if (segment.SequenceEqual(pattern))
                     return i;
@@ -153,7 +153,7 @@ namespace Saturn.Backend.Data.Utils
 
         private static int NumFromTop(byte[] arr, int first, int last, int currentOffset, int numExports)
         {
-            for (int i = 0; i < numExports; i++)
+            for (var i = 0; i < numExports; i++)
             {
                 if (last + 1 != currentOffset)
                 {

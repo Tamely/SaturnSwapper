@@ -6,7 +6,7 @@ namespace Saturn.Backend.Data.Utils.CloudStorage
 {
     public class IniUtil
     {
-        
+
         private readonly string EXE = Assembly.GetExecutingAssembly().GetName().Name;
         private readonly IniData _data;
 

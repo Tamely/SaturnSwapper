@@ -407,10 +407,10 @@ public sealed class SwapperService : ISwapperService
 
         var strs = await FileUtil.GetStringsFromAsset(Constants.EidPath + item.Id, _provider);
 
-        string cmf = "";
-        string cmm = "";
-        string sIcon = "";
-        string lIcon = "";
+        var cmf = "";
+        var cmm = "";
+        var sIcon = "";
+        var lIcon = "";
 
         foreach (var str in strs)
         {
@@ -451,10 +451,10 @@ public sealed class SwapperService : ISwapperService
 
         return data;
     }
-    
+
     public async Task<string> GetBackblingCharacterPart(Cosmetic item)
     {
-        string characterPart = "";
+        var characterPart = "";
         await Task.Run(() =>
         {
             if (_provider.TryLoadObject(Constants.BidPath + item.Id, out var BID))
@@ -462,7 +462,7 @@ public sealed class SwapperService : ISwapperService
                 BID.TryGetValue(out UObject[] BackblingCharacterPart, "CharacterParts");
                 if (BackblingCharacterPart.Length > 0)
                     characterPart = BackblingCharacterPart[0].GetPathName();
-                
+
             }
             else
             {
@@ -483,8 +483,8 @@ public sealed class SwapperService : ISwapperService
             if (_provider.TryLoadObject(backblingCharacterPart.Split('.')[0], out var bCP))
             {
                 output.Add("Mesh",
-                    bCP.TryGetValue(out USkeletalMesh SkeletalMesh, "SkeletalMesh") 
-                        ? SkeletalMesh.GetPathName() 
+                    bCP.TryGetValue(out USkeletalMesh SkeletalMesh, "SkeletalMesh")
+                        ? SkeletalMesh.GetPathName()
                         : "/");
 
                 output.Add("FX",
@@ -511,8 +511,8 @@ public sealed class SwapperService : ISwapperService
 
                 if (bCP.TryGetValue(out UObject AdditonalData, "AdditionalData"))
                     output.Add("ABP",
-                        AdditonalData.TryGetValue(out UObject AnimClass, "AnimClass") 
-                            ? AnimClass.GetPathName() 
+                        AdditonalData.TryGetValue(out UObject AnimClass, "AnimClass")
+                            ? AnimClass.GetPathName()
                             : null);
             }
             else
@@ -522,7 +522,7 @@ public sealed class SwapperService : ISwapperService
 
         foreach (var input in output)
             Logger.Log($"{input.Key}: {input.Value}", LogLevel.Debug);
-        
+
         return output;
     }
 
@@ -723,7 +723,7 @@ public sealed class SwapperService : ISwapperService
     {
         var output = new Dictionary<string, string>();
 
-        UObject? export = await _provider.TryLoadObjectAsync(wid);
+        var export = await _provider.TryLoadObjectAsync(wid);
 
         Logger.Log("Getting WeaponMeshOverride");
         export.TryGetValue(out FSoftObjectPath Mesh, "WeaponMeshOverride");
@@ -749,12 +749,12 @@ public sealed class SwapperService : ISwapperService
         Logger.Log("Getting AnimTrails");
         export.TryGetValue(out FSoftObjectPath Trail, "AnimTrails");
         Logger.Log("Getting Rarity");
-        output.Add("Rarity", export.TryGetValue(out EFortRarity Rarity, "Rarity") 
-            ? ((int)Rarity).ToString() 
+        output.Add("Rarity", export.TryGetValue(out EFortRarity Rarity, "Rarity")
+            ? ((int)Rarity).ToString()
             : "1");
 
         Logger.Log("Getting Series");
-        string Series = "/";
+        var Series = "/";
         if (export.TryGetValue(out UObject SeriesObject, "Series"))
             Series = SeriesObject.GetPathName();
 
@@ -770,12 +770,12 @@ public sealed class SwapperService : ISwapperService
         output.Add("Trail", Trail.AssetPathName.Text);
         output.Add("Series", Series);
 
-        
+
         foreach (var str in output)
         {
             if (String.IsNullOrEmpty(str.Value))
                 output[str.Key] = null;
-            
+
             Logger.Log(str.Key + ": " + str.Value ?? "Null");
         }
 
@@ -785,7 +785,7 @@ public sealed class SwapperService : ISwapperService
     public async Task<Dictionary<string, string>> GetCharacterPartsById(string id)
     {
         Dictionary<string, string> cps = new();
-            
+
         if (_provider.TryLoadObject(Constants.CidPath + id, out var CharacterItemDefinition))
         {
             var CharacterParts = CharacterItemDefinition.Get<UObject[]>("BaseCharacterParts");
@@ -845,7 +845,7 @@ public sealed class SwapperService : ISwapperService
             FaceACCPartModifierBP = "/Game/Tamely",
             HatType = ECustomHatType.ECustomHatType_None
         };
-            
+
         Dictionary<int, string> OGHeadMaterials = new();
         var optionsParts = Task.Run(() => GetCharacterPartsById(option.ItemDefinition)).GetAwaiter()
             .GetResult();
@@ -887,7 +887,7 @@ public sealed class SwapperService : ISwapperService
 
                             if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
                             {
-                                UObject AnimClass = AdditionalData.GetOrDefault("AnimClass", new UObject(), StringComparison.OrdinalIgnoreCase);
+                                var AnimClass = AdditionalData.GetOrDefault("AnimClass", new UObject(), StringComparison.OrdinalIgnoreCase);
                                 swapModel.BodyABP = AnimClass.GetPathName();
                             }
 
@@ -903,13 +903,13 @@ public sealed class SwapperService : ISwapperService
 
                             if (part.TryGetValue(out UObject IdleEffect, "IdleEffect"))
                                 swapModel.BodyFX = IdleEffect.GetPathName();
-                                
+
                             if (part.TryGetValue(out UObject BodyPartModifierBP, "PartModifierBlueprint"))
                                 swapModel.BodyPartModifierBP = BodyPartModifierBP.GetPathName();
                         }
                     });
                     break;
-                    
+
                 case "Head":
                     Logger.Log("Character part is type: Head");
 
@@ -924,16 +924,16 @@ public sealed class SwapperService : ISwapperService
                                 if (AdditionalData.TryGetValue(out UObject AnimClass, "AnimClass"))
                                     swapModel.HeadABP = AnimClass.GetPathName();
 
-                                swapModel.HeadHairColor = AdditionalData.TryGetValue(out UObject HairColorSwatch, "HairColorSwatch") 
-                                    ? HairColorSwatch.GetPathName() 
+                                swapModel.HeadHairColor = AdditionalData.TryGetValue(out UObject HairColorSwatch, "HairColorSwatch")
+                                    ? HairColorSwatch.GetPathName()
                                     : "/";
-                                    
-                                swapModel.HeadSkinColor = AdditionalData.TryGetValue(out UObject SkinColorSwatch, "SkinColorSwatch") 
-                                    ? SkinColorSwatch.GetPathName() 
+
+                                swapModel.HeadSkinColor = AdditionalData.TryGetValue(out UObject SkinColorSwatch, "SkinColorSwatch")
+                                    ? SkinColorSwatch.GetPathName()
                                     : "/";
                             }
-                                
-                                
+
+
                             if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
                             {
                                 foreach (var materialOverride in MaterialOverride)
@@ -946,13 +946,13 @@ public sealed class SwapperService : ISwapperService
 
                             if (part.TryGetValue(out UObject IdleEffect, "IdleEffect"))
                                 swapModel.HeadFX = IdleEffect.GetPathName();
-                                
+
                             if (part.TryGetValue(out UObject BodyPartModifierBP, "PartModifierBlueprint"))
                                 swapModel.HeadPartModifierBP = BodyPartModifierBP.GetPathName();
                         }
                     });
                     break;
-                    
+
                 case "Face":
                 case "Hat":
                     Logger.Log("Character part is type: Hat or FaceACC");
@@ -988,7 +988,7 @@ public sealed class SwapperService : ISwapperService
 
                             if (part.TryGetValue(out UObject IdleEffect, "IdleEffect"))
                                 swapModel.FaceACCFX = IdleEffect.GetPathName();
-                                
+
                             if (part.TryGetValue(out UObject BodyPartModifierBP, "PartModifierBlueprint"))
                                 swapModel.FaceACCPartModifierBP = BodyPartModifierBP.GetPathName();
                         }
@@ -1006,7 +1006,7 @@ public sealed class SwapperService : ISwapperService
                 if (!material.Value.ToLower().Contains("hair") ||
                     !OGHeadMaterials[material.Key].ToLower().Contains("hair") ||
                     material.Value.ToLower().Contains("hide")) continue;
-                foreach (var ogMaterial in OGHeadMaterials.Where(ogMaterial 
+                foreach (var ogMaterial in OGHeadMaterials.Where(ogMaterial
                              => ogMaterial.Value.ToLower().Contains("hair")))
                 {
                     (swapModel.HeadMaterials[material.Key], swapModel.HeadMaterials[ogMaterial.Key]) = (
@@ -1014,17 +1014,17 @@ public sealed class SwapperService : ISwapperService
                 }
             }
         }
-            
+
         if (swapModel.BodyMaterials == new Dictionary<int, string>() || swapModel.BodyMaterials.Count < 5)
-            for (int i = swapModel.BodyMaterials.Count; i < 5; i++)
+            for (var i = swapModel.BodyMaterials.Count; i < 5; i++)
                 swapModel.BodyMaterials.Add(i, "/");
-            
+
         if (swapModel.HeadMaterials == new Dictionary<int, string>() || swapModel.HeadMaterials.Count < 5)
-            for (int i = swapModel.HeadMaterials.Count; i < 5; i++)
+            for (var i = swapModel.HeadMaterials.Count; i < 5; i++)
                 swapModel.HeadMaterials.Add(i, "/");
-            
+
         if (swapModel.FaceACCMaterials == new Dictionary<int, string>() || swapModel.FaceACCMaterials.Count < 5)
-            for (int i = swapModel.FaceACCMaterials.Count; i < 5; i++)
+            for (var i = swapModel.FaceACCMaterials.Count; i < 5; i++)
                 swapModel.FaceACCMaterials.Add(i, "/");
 
         if (string.IsNullOrEmpty(swapModel.BodyABP))
@@ -2045,11 +2045,11 @@ public sealed class SwapperService : ISwapperService
     {
         Logger.Log($"Getting wid for {item.Name}");
         var swaps = await GetAssetsFromWID(item.DefinitionPath);
-        
+
         Logger.Log("Generating swaps");
-        EFortRarity Rarity = (EFortRarity)int.Parse(swaps["Rarity"]);
-        
-        List<byte[]> SeriesBytes = new List<byte[]>();
+        var Rarity = (EFortRarity)int.Parse(swaps["Rarity"]);
+
+        var SeriesBytes = new List<byte[]>();
 
         if (swaps["FX"] == "None")
             swaps["FX"] = "/";
@@ -2269,7 +2269,7 @@ public sealed class SwapperService : ISwapperService
                 }
             }
         };
-            
+
         if (Rarity != EFortRarity.Common && await _configService.TryGetShouldRarityConvert())
         {
             if (!string.IsNullOrEmpty(option.Status))
@@ -2607,11 +2607,11 @@ public sealed class SwapperService : ISwapperService
                 Searches.Add(new byte[] { 67, 117, 115, 116, 111, 109, 67, 104, 97, 114, 97, 99, 116, 101, 114, 66, 97, 99, 107, 112, 97, 99, 107, 68, 97, 116, 97 });
                 Replaces.Add(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
             }
-                
+
             if (asset.ParentAsset.Contains("CP_Backpack_StreetFashionEclipse"))
             {
                 Logger.Log("Detected scaling issue!");
-                bool shouldFix = _configService.TryGetShouldFixScalingBug().GetAwaiter().GetResult();
+                var shouldFix = _configService.TryGetShouldFixScalingBug().GetAwaiter().GetResult();
                 if (shouldFix)
                 {
                     Logger.Log("User has scaling fix enabled.");

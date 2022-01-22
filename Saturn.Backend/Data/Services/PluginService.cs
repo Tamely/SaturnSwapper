@@ -20,7 +20,7 @@ public class PluginService : IPluginService
 {
     public async Task<SaturnItem> ConvertPluginToItem(PluginModel plugin)
     {
-        SaturnItem item = new SaturnItem
+        var item = new SaturnItem
         {
             Name = plugin.Name.Split(" to ")[0],
             Description = "Plugin",
@@ -40,7 +40,7 @@ public class PluginService : IPluginService
 
         foreach (var swap in plugin.Assets)
         {
-            List<SaturnSwap> swaps = swap.Swaps.Select(itemSwap => new SaturnSwap() { Search = itemSwap.Search, Replace = itemSwap.Replace }).ToList();
+            var swaps = swap.Swaps.Select(itemSwap => new SaturnSwap() { Search = itemSwap.Search, Replace = itemSwap.Replace }).ToList();
 
             item.Options[0].Assets.Add(new SaturnAsset()
             {
@@ -51,13 +51,13 @@ public class PluginService : IPluginService
 
         return item;
     }
-    
-    
+
+
     public async Task<PluginModel> LoadPlugin(string saturnPlugin)
     {
         return JsonConvert.DeserializeObject<PluginModel>(saturnPlugin) ?? new PluginModel();
     }
-    
+
     public async Task<PluginModel> ConvertGalaxyToSaturn(string galaxyPlugin)
     {
         dynamic plugin = JObject.Parse(galaxyPlugin);
@@ -70,11 +70,11 @@ public class PluginService : IPluginService
         };
 
 
-        List<Asset> assets = new List<Asset>();
+        var assets = new List<Asset>();
 
         foreach (var asset in plugin.Assets)
         {
-            List<Swap> swaps = new List<Swap>();
+            var swaps = new List<Swap>();
             foreach (var swap in asset.Swaps)
             {
                 if (swap.type.ToLower().ToString() == "string")
@@ -94,15 +94,15 @@ public class PluginService : IPluginService
                     });
                 }
             }
-            
-            
+
+
             assets.Add(new Asset()
             {
                 AssetPath = asset.AssetPath,
                 Swaps = swaps
             });
         }
-        
+
         pluginModel.Assets = assets;
 
         return pluginModel;

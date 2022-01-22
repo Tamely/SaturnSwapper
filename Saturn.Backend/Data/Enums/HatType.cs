@@ -1,6 +1,7 @@
 ﻿namespace Saturn.Backend.Data.Enums;
 
-public enum ECustomHatType : uint {
+public enum ECustomHatType : uint
+{
     ECustomHatType_None = 0,
     ECustomHatType_Cap = 1,
     ECustomHatType_Helmet = 2,

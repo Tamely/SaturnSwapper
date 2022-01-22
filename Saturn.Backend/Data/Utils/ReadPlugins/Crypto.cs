@@ -92,7 +92,7 @@ public class Crypto
 
             // constant time checking to prevent timing attacks
             var signatureVerificationResult = 0;
-            for (int i = 0; i < signatureTag.Length; i++)
+            for (var i = 0; i < signatureTag.Length; i++)
             {
                 signatureVerificationResult |= signatureTag[i] ^ signatureTagExpected[i];
             }
@@ -128,7 +128,7 @@ public class Crypto
         var keyBytes = StringEncoding.GetBytes(password);
 
         using (var derivator = new Rfc2898DeriveBytes(
-            keyBytes, passwordSalt, 
+            keyBytes, passwordSalt,
             PasswordIterationCount, HashAlgorithmName.SHA256))
         {
             return derivator.GetBytes(PasswordByteSize);
@@ -146,7 +146,7 @@ public class Crypto
     {
         var merged = new byte[arrays.Sum(a => a.Length) + additionalCapacity];
         var mergeIndex = 0;
-        for (int i = 0; i < arrays.GetLength(0); i++)
+        for (var i = 0; i < arrays.GetLength(0); i++)
         {
             arrays[i].CopyTo(merged, mergeIndex);
             mergeIndex += arrays[i].Length;

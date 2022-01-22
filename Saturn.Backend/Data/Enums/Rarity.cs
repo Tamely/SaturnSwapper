@@ -1,6 +1,7 @@
 ﻿namespace Saturn.Backend.Data.Enums;
 
-public enum EFortRarity : uint {
+public enum EFortRarity : uint
+{
     Common = 0,
     Uncommon = 1,
     Rare = 2,

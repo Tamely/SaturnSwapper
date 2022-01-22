@@ -14,8 +14,8 @@ namespace Saturn.Backend.Data
 {
     public class Mappings
     {
-        private readonly IBenBotAPIService _benBotAPIService; 
-        private readonly DefaultFileProvider _provider; 
+        private readonly IBenBotAPIService _benBotAPIService;
+        private readonly DefaultFileProvider _provider;
         private readonly IFortniteAPIService _fortniteAPIService;
         private readonly IJSRuntime _jsRuntime;
 
@@ -31,16 +31,16 @@ namespace Saturn.Backend.Data
         {
             try
             {
-                string json = await _benBotAPIService.ReturnEndpointAsync("mappings?version=" + _fortniteAPIService.GetAES().Build);
+                var json = await _benBotAPIService.ReturnEndpointAsync("mappings?version=" + _fortniteAPIService.GetAES().Build);
                 Logger.Log("Grabbed mappings, preparing to parse.");
-                JArray parsed = JArray.Parse(json);
+                var parsed = JArray.Parse(json);
 
                 if (parsed.Count == 0)
                 {
                     Logger.Log("No mappings found, BenBot is probably down. Trying to load old mappings...");
 
                     Directory.CreateDirectory(Config.MappingsFolder);
-                    string newestFile = Directory.GetFiles(Config.MappingsFolder).OrderByDescending(f => new FileInfo(f).LastWriteTime).First();
+                    var newestFile = Directory.GetFiles(Config.MappingsFolder).OrderByDescending(f => new FileInfo(f).LastWriteTime).First();
                     _provider.MappingsContainer = new FileUsmapTypeMappingsProvider(newestFile);
                 }
                 else
@@ -48,9 +48,9 @@ namespace Saturn.Backend.Data
                     foreach (var token in parsed)
                     {
                         if (token["meta"]["compressionMethod"].ToString() != "Oodle") continue;
-                    
+
                         Logger.Log("Downloading mappings...");
-                    
+
                         Directory.CreateDirectory(Config.MappingsFolder);
                         if (!File.Exists(Config.MappingsFolder + token["fileName"]))
                             await File.WriteAllBytesAsync(Config.MappingsFolder + token["fileName"],
@@ -58,7 +58,7 @@ namespace Saturn.Backend.Data
 
                         _provider.MappingsContainer =
                             new FileUsmapTypeMappingsProvider(Config.MappingsFolder + token["fileName"]);
-                    
+
                         Logger.Log("Mappings downloaded. Cleaning up the folder...");
 
                         foreach (var file in new DirectoryInfo(Config.MappingsFolder).GetFiles()

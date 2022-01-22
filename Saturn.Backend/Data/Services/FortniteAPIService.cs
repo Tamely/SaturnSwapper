@@ -53,14 +53,14 @@ namespace Saturn.Backend.Data.Services
         {
             var data = await GetDataAsync(CosmeticsByType("AthenaDance"));
             var Emotes = JsonConvert.DeserializeObject<CosmeticList>(data);
-            
+
             Emotes.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
 
             foreach (var item in Emotes.Data.Where(item => item.Name.ToLower() == "random"))
             {
                 item.IsRandom = true;
             }
-            
+
             Trace.WriteLine($"Deserialized {Emotes.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Emotes.Data.Count} different emotes");
@@ -71,32 +71,32 @@ namespace Saturn.Backend.Data.Services
         {
             var data = await GetDataAsync(CosmeticsByType("AthenaBackpack"));
             var Backs = JsonConvert.DeserializeObject<CosmeticList>(data);
-            
+
             Backs.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
 
             foreach (var item in Backs.Data.Where(item => item.Name.ToLower() == "random"))
             {
                 item.IsRandom = true;
             }
-            
+
             Trace.WriteLine($"Deserialized {Backs.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Backs.Data.Count} different backpacks");
             return await AreItemsConverted(await AddExtraItems(await RemoveItems(Backs.Data), ItemType.IT_Backbling));
         }
-        
+
         public async Task<List<Cosmetic>> GetSaturnPickaxes()
         {
             var data = await GetDataAsync(CosmeticsByType("AthenaPickaxe"));
             var Picks = JsonConvert.DeserializeObject<CosmeticList>(data);
-            
+
             Picks.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
 
             foreach (var item in Picks.Data.Where(item => item.Name.ToLower() == "random"))
             {
                 item.IsRandom = true;
             }
-            
+
             Trace.WriteLine($"Deserialized {Picks.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Picks.Data.Count} different pickaxes");
@@ -108,14 +108,14 @@ namespace Saturn.Backend.Data.Services
             var data = await GetDataAsync(CosmeticsByType("AthenaCharacter"));
             var Skins = JsonConvert.DeserializeObject<CosmeticList>(data);
 
-            
+
             Skins.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
-            
+
             foreach (var item in Skins.Data.Where(item => item.Name.ToLower() == "random"))
             {
                 item.IsRandom = true;
             }
-            
+
             Trace.WriteLine($"Deserialized {Skins.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Skins.Data.Count} different skins");
@@ -123,12 +123,12 @@ namespace Saturn.Backend.Data.Services
             return await AreItemsConverted(await AddExtraItems(await RemoveItems(await IsHatTypeDifferent(Skins.Data)),
                 ItemType.IT_Skin));
         }
-        
+
         public async Task<List<Cosmetic>> GetSaturnMisc()
         {
             return await AreItemsConverted(await AddExtraItems(new List<Cosmetic>(), ItemType.IT_Misc));
         }
-        
+
         private async Task<List<Cosmetic>> RemoveItems(List<Cosmetic> items)
         {
             Logger.Log("Removing items");
@@ -147,10 +147,10 @@ namespace Saturn.Backend.Data.Services
                         {
                             var item = items.Find(x => x.Id == changes.Item.ItemID);
                             if (item == null || item == new Cosmetic()) continue;
-                            
+
                             item.CosmeticOptions.RemoveAll(x => changes.RemoveOptions.Contains(x.ItemDefinition));
                         }
-                            
+
                     }
                     catch (Exception e)
                     {
@@ -165,15 +165,15 @@ namespace Saturn.Backend.Data.Services
         private async Task<List<Cosmetic>> AddExtraItems(List<Cosmetic> items, ItemType itemType)
         {
             Logger.Log("Adding extra items");
-            
-            List<Cosmetic> extraItems = new List<Cosmetic>();
+
+            var extraItems = new List<Cosmetic>();
 
             foreach (var section in _cloudStorageService.GetSections())
             {
                 foreach (var key in section.Keys)
                 {
                     var changes = _cloudStorageService.DecodeChanges(key.Value);
-                    
+
                     if (changes.addOptions && changes.Item.ItemType == itemType)
                     {
                         var itemInList = items.FirstOrDefault(x => x.Id.ToLower() == changes.Item.ItemID.ToLower());
@@ -209,7 +209,7 @@ namespace Saturn.Backend.Data.Services
                     if (changes.addItem && changes.Item.ItemType == itemType)
                     {
                         List<SaturnItem> itemOptions = new();
-                        for (int i = 0; i < changes.SwapOptions.Count; i++)
+                        for (var i = 0; i < changes.SwapOptions.Count; i++)
                         {
                             itemOptions.Add(new()
                             {
@@ -258,15 +258,15 @@ namespace Saturn.Backend.Data.Services
         {
             Logger.Log("Getting hat types");
             var DifferentHatsStr = _cloudStorageService.GetChanges("Skins", "HatTypes");
-            
+
             Logger.Log(DifferentHatsStr);
 
             Logger.Log("Decoding hat types");
             var DifferentHats = _cloudStorageService.DecodeChanges(DifferentHatsStr).MiscData;
-            
+
             foreach (var skin in skins)
             {
-                skin.CosmeticOptions= new()
+                skin.CosmeticOptions = new()
                 {
                     new SaturnItem
                     {
@@ -328,10 +328,10 @@ namespace Saturn.Backend.Data.Services
                         Rarity = "Rare"
                     }
                 };
-                
+
                 if (skin.IsRandom)
                 {
-                    skin.CosmeticOptions= new()
+                    skin.CosmeticOptions = new()
                     {
                         new SaturnItem
                         {
@@ -395,7 +395,7 @@ namespace Saturn.Backend.Data.Services
                     };
                 }
             }
-            
+
             return skins;
         }
 

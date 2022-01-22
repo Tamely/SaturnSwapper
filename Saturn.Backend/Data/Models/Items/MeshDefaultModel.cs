@@ -12,7 +12,7 @@ namespace Saturn.Backend.Data.Models.Items
         public string HeadHairColor { get; set; }
         public string HeadMesh { get; set; }
         public string HeadABP { get; set; }
-        
+
         public string BodyABP { get; set; }
         public string BodyFX { get; set; }
         public string BodyPartModifierBP { get; set; }

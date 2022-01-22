@@ -1,5 +1,4 @@
 ﻿using CUE4Parse.FileProvider;
-using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.Math;
 using System;
@@ -29,7 +28,7 @@ namespace Saturn.Backend.Data.Utils
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     url = url.Replace("&", "^&");
-                    Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") {CreateNoWindow = true});
+                    Process.Start(new ProcessStartInfo("cmd", $"/c start {url}") { CreateNoWindow = true });
                 }
                 else
                 {
@@ -37,20 +36,20 @@ namespace Saturn.Backend.Data.Utils
                 }
             }
         }
-        
+
         public static async Task<List<byte[]>> GetColorsFromSeries(string seriesPath, DefaultFileProvider _provider)
         {
             List<byte[]> colors = new();
             Dictionary<string, List<float>> colorValues = new();
             await Task.Run(() =>
             {
-                if (_provider.TryLoadObject(seriesPath, out UObject series))
+                if (_provider.TryLoadObject(seriesPath, out var series))
                 {
                     if (series.TryGetValue(out FStructFallback Colors, "Colors"))
                     {
                         foreach (var colors in Colors.Properties)
                         {
-                            List<float> floatValues = new List<float>
+                            var floatValues = new List<float>
                             {
                                 Colors.Get<FLinearColor>(colors.Name.Text).R,
                                 Colors.Get<FLinearColor>(colors.Name.Text).G,
@@ -74,32 +73,28 @@ namespace Saturn.Backend.Data.Utils
             foreach (var color in colorValues)
             {
                 Logger.Log(color.Key);
-                byte[] colorBytes = new byte[] {};
+                // Use 'Array.Empty<byte>()' to avoid unnecessary zero-length array allocations 
+                var colorBytes = Array.Empty<byte>();
                 foreach (var colorValue in color.Value)
                 {
-                    colorBytes = Combine(colorBytes, FloatToBytes(colorValue));
+                    // Inline method 'FloatToBytes' as it is only used here
+                    colorBytes = Combine(colorBytes, BitConverter.GetBytes(colorValue));
                     Logger.Log(" - " + colorValue);
-                    
+
                 }
                 colors.Add(colorBytes);
             }
 
             while (colors.Count < 5)
-                colors.Add(new byte[] {0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255});
-            
+                colors.Add(new byte[] { 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255 });
+
             return colors;
 
         }
-        
-        // Convert float to byte[]
-        public static byte[] FloatToBytes(float value)
-        {
-            return BitConverter.GetBytes(value);
-        }
-        
+
         public static byte[] Combine(byte[] first, byte[] second)
         {
-            byte[] bytes = new byte[first.Length + second.Length];
+            var bytes = new byte[first.Length + second.Length];
             Buffer.BlockCopy(first, 0, bytes, 0, first.Length);
             Buffer.BlockCopy(second, 0, bytes, first.Length, second.Length);
             return bytes;
@@ -113,8 +108,8 @@ namespace Saturn.Backend.Data.Utils
             if (!_provider.TrySavePackage(assetPath, out var assets)) return output;
             foreach (var (_, value) in assets)
             {
-                int lastOffset = AnyLength.IndexOfSequence(value, Encoding.ASCII.GetBytes("/Game/")) - 1;
-                int startOffset = lastOffset - value[44] * 2 + 2;
+                var lastOffset = AnyLength.IndexOfSequence(value, Encoding.ASCII.GetBytes("/Game/")) - 1;
+                var startOffset = lastOffset - value[44] * 2 + 2;
 
                 var pathOffset = lastOffset + 1;
                 for (var i = startOffset; i <= lastOffset; i += 2)
@@ -160,7 +155,7 @@ namespace Saturn.Backend.Data.Utils
             var index = input.IndexOf(character);
             return index == -1 ? -1 : input.IndexOf(character, index + 1);
         }
-        
+
         // Get last index of character in string
         public static int LastIndexOf(string str, char ch)
         {
@@ -168,7 +163,7 @@ namespace Saturn.Backend.Data.Utils
             if (index == -1) return -1;
             return index + 1;
         }
-        
+
         // Get substring from last character in string to end
         public static string SubstringFromLast(string str, char ch)
         {

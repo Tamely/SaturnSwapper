@@ -124,7 +124,7 @@ namespace Saturn.Backend.Data.Services
 
         public async Task<int> GetConvertedFileCount()
         {
-            List<string> convertedFiles = new List<string>();
+            var convertedFiles = new List<string>();
             foreach (var swap in from item in ConfigFile.ConvertedItems from swap in item.Swaps where convertedFiles.IndexOf(swap.File) == -1 select swap)
                 convertedFiles.Add(swap.File);
             return convertedFiles.Count;
@@ -142,7 +142,7 @@ namespace Saturn.Backend.Data.Services
                 return true;
             }
         }
-        
+
         public async Task<bool> TrySetShouldRarityConvert(bool shouldConvert)
         {
             try
@@ -169,7 +169,7 @@ namespace Saturn.Backend.Data.Services
                 return true;
             }
         }
-        
+
         public async Task<bool> TrySetShouldSeriesConvert(bool shouldConvert)
         {
             try
