@@ -52,6 +52,30 @@ namespace Saturn.Backend.Data.Models.FortniteAPI
 
         [JsonProperty("other")] public object Other { get; set; }
     }
+    
+    public class Option
+    {
+        [JsonProperty("tag")]
+        public string Tag { get; set; }
+
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("image")]
+        public string Image { get; set; }
+    }
+
+    public class Variants
+    {
+        [JsonProperty("channel")]
+        public string Channel { get; set; }
+
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        [JsonProperty("options")]
+        public List<Option> Options { get; set; }
+    }
 
     public class Cosmetic
     {
@@ -73,7 +97,7 @@ namespace Saturn.Backend.Data.Models.FortniteAPI
 
         [JsonProperty("images")] public Images Images { get; set; }
 
-        [JsonProperty("variants")] public object Variants { get; set; }
+        [JsonProperty("variants")] public List<Variants>? Variants { get; set; }
 
         [JsonProperty("searchTags")] public object SearchTags { get; set; }
 
@@ -103,6 +127,8 @@ namespace Saturn.Backend.Data.Models.FortniteAPI
         [JsonProperty("cosmeticOptions")] public List<SaturnItem> CosmeticOptions { get; set; }
         [JsonProperty("isRandom")] public bool IsRandom { get; set; }
         [JsonProperty("isCloudAdded")] public bool IsCloudAdded { get; set; }
+        [JsonProperty("variantChannel")] public string VariantChannel { get; set; }
+        [JsonProperty("variantTag")] public string VariantTag { get; set; }
     }
 
     public class CosmeticList

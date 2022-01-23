@@ -9,6 +9,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using MudBlazor;
+using Serilog;
 
 namespace Saturn.Backend.Data.Services
 {
@@ -105,23 +107,66 @@ namespace Saturn.Backend.Data.Services
 
         public async Task<List<Cosmetic>> GetSaturnSkins()
         {
+            
             var data = await GetDataAsync(CosmeticsByType("AthenaCharacter"));
             var Skins = JsonConvert.DeserializeObject<CosmeticList>(data);
-
             
             Skins.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
-            
-            foreach (var item in Skins.Data.Where(item => item.Name.ToLower() == "random"))
+
+            Dictionary<string, Cosmetic> CosmeticsToInsert = new();
+
+            foreach (var item in Skins.Data)
             {
-                item.IsRandom = true;
+                if (item.Name.ToLower() == "random")
+                    item.IsRandom = true;
+                    
+                int i = 0;
+
+                if (item.Variants != null)
+                    foreach (var variants in item.Variants)
+                    {
+                        if (variants.Channel.ToLower() != "parts" && variants.Channel.ToLower() != "material")
+                            continue;
+
+                        foreach (var style in variants.Options)
+                        {
+                            if (style.Name == "DEFAULT")
+                                continue;
+                                
+                            Logger.Log(Skins.Data.IndexOf(item) + " + " + i + " " + item.Name + $" ({style.Name})");
+                            CosmeticsToInsert.Add(Skins.Data.IndexOf(item) + " + " + i, new Cosmetic()
+                            {
+                                Name = item.Name + $" ({style.Name})",
+                                Description = item.Description,
+                                Id = item.Id,
+                                Rarity = item.Rarity,
+                                Series = item.Series,
+                                Images = new Images()
+                                {
+                                    SmallIcon = style.Image
+                                }
+                            });
+
+                            i++;
+                        }
+                    }
             }
-            
+
+            int Offseter = 0;
+            foreach (var cosmetic in CosmeticsToInsert)
+            {
+                Skins.Data.Insert(int.Parse(cosmetic.Key.Split(" + ")[0]) + Offseter, cosmetic.Value);
+                Offseter++;
+            }
+                
+                
             Trace.WriteLine($"Deserialized {Skins.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Skins.Data.Count} different skins");
 
             return await AreItemsConverted(await AddExtraItems(await RemoveItems(await IsHatTypeDifferent(Skins.Data)),
                 ItemType.IT_Skin));
+
         }
         
         public async Task<List<Cosmetic>> GetSaturnMisc()
@@ -403,15 +448,20 @@ namespace Saturn.Backend.Data.Services
         {
             var ret = items;
 
+            Logger.Log("Checking if items are converted...");
             var convertedItems = await _configService.TryGetConvertedItems();
-            convertedItems.Any(x => ret.Any(y =>
-            {
-
-                if (y.Id != x.ItemDefinition) return false;
-                if (y.Name != x.Name) return false;
-                y.IsConverted = true;
-                return true;
-            }));
+            Logger.Log("Cross checking a converted items list of " + convertedItems.Count + " items...");
+            
+            if (convertedItems.Count > 0)
+                convertedItems.Any(x => ret.Any(y =>
+                {
+                    Logger.Log($"Checking if {y.Id} is converted...");
+                    if (y.Id != x.ItemDefinition && y.Name != x.Name) return false;
+                    y.IsConverted = true;
+                    return true;
+                }));
+            else
+                Logger.Log("No converted items found.");
 
             return ret;
         }
