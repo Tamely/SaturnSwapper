@@ -136,7 +136,7 @@ namespace Saturn.Backend.Data.Services
                             
                             CosmeticsToInsert.Add(Skins.Data.IndexOf(item) + " + " + i, new Cosmetic()
                             {
-                                Name = item.Name + $" ({style.Name.Replace(item.Name, "").Replace("(", "").Replace(")", "")})",
+                                Name = style.Name,
                                 Description = item.Description,
                                 Id = item.Id,
                                 Rarity = item.Rarity,
@@ -144,7 +144,9 @@ namespace Saturn.Backend.Data.Services
                                 Images = new Images()
                                 {
                                     SmallIcon = style.Image
-                                }
+                                },
+                                VariantChannel = variants.Channel,
+                                VariantTag = style.Tag
                             });
 
                             i++;
@@ -153,9 +155,9 @@ namespace Saturn.Backend.Data.Services
             }
 
             int Offseter = 0;
-            foreach (var cosmetic in CosmeticsToInsert)
+            foreach (var (key, value) in CosmeticsToInsert)
             {
-                Skins.Data.Insert(int.Parse(cosmetic.Key.Split(" + ")[0]) + Offseter, cosmetic.Value);
+                Skins.Data.Insert(int.Parse(key.Split(" + ")[0]) + Offseter, value);
                 Offseter++;
             }
                 
@@ -455,7 +457,6 @@ namespace Saturn.Backend.Data.Services
             if (convertedItems.Count > 0)
                 convertedItems.Any(x => ret.Any(y =>
                 {
-                    Logger.Log($"Checking if {y.Id} is converted...");
                     if (y.Id != x.ItemDefinition && y.Name != x.Name) return false;
                     y.IsConverted = true;
                     return true;

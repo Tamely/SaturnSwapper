@@ -20,6 +20,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CUE4Parse.UE4.Objects.Core.i18N;
+using CUE4Parse.UE4.Objects.GameplayTags;
+using MudBlazor;
 using Newtonsoft.Json;
 using Saturn.Backend.Data.Utils.ReadPlugins;
 using Colors = Saturn.Backend.Data.Enums.Colors;
@@ -796,7 +799,7 @@ public sealed class SwapperService : ISwapperService
         return output;
     }
 
-    public async Task<Dictionary<string, string>> GetCharacterPartsById(string id)
+    public async Task<Dictionary<string, string>> GetCharacterPartsById(string id, Cosmetic? item = null)
     {
         Dictionary<string, string> cps = new();
             
@@ -804,9 +807,49 @@ public sealed class SwapperService : ISwapperService
         {
             var CharacterParts = CharacterItemDefinition.Get<UObject[]>("BaseCharacterParts");
 
+            if (item != null)
+                if (item.VariantChannel.ToLower().Contains("parts"))
+                {
+                    if (CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants"))
+                    {
+                        foreach (var style in ItemVariants)
+                        {
+                            foreach (var PartOption in style.Get<FStructFallback[]>("PartOptions"))
+                            {
+                                if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
+                                {
+                                    if (VariantName.Text != item.Name)
+                                    {
+                                        Logger.Log("Skipping " + VariantName.Text);
+                                        continue;
+                                    }
+
+                                    Logger.Log("Found Item: " + VariantName.Text);
+                                }
+                                else
+                                {
+                                    Logger.Log("No VariantName found");
+                                    continue;
+                                }
+                                
+                                if (PartOption.TryGetValue(out UObject[] Parts, "VariantParts"))
+                                {
+                                    CharacterParts = CharacterParts.Concat(Parts).ToArray();
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                    Logger.Log("Item style doesn't contain parts");
+
             foreach (var characterPart in CharacterParts)
             {
                 characterPart.TryGetValue(out EFortCustomPartType CustomPartType, "CharacterPartType");
+
+                if (cps.ContainsKey(CustomPartType.ToString()))
+                    cps.Remove(CustomPartType.ToString());
+                
                 cps.Add(CustomPartType.ToString(), characterPart.GetPathName());
             }
         }
@@ -830,7 +873,7 @@ public sealed class SwapperService : ISwapperService
         Logger.Log($"Getting character parts for {item.Name}");
         Logger.Log(Constants.CidPath + item.Id);
 
-        var characterParts = Task.Run(() => GetCharacterPartsById(item.Id)).GetAwaiter().GetResult();
+        var characterParts = Task.Run(() => GetCharacterPartsById(item.Id, item)).GetAwaiter().GetResult();
 
         if (characterParts == new Dictionary<string, string>())
             return null;
