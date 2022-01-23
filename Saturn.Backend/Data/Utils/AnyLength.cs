@@ -157,7 +157,7 @@ namespace Saturn.Backend.Data.Utils
             {
                 if (last + 1 != currentOffset)
                 {
-                    last = last + arr[first + i * 2];
+                    last += arr[first + i * 2];
                 }
                 else
                 {

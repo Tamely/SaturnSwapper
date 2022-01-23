@@ -48,7 +48,7 @@ namespace Saturn.Backend.Data.Utils
             if (typeName.Contains("Service"))
                 typeName = typeName.Replace("Service", "");
 
-            if (typeName.Contains("<"))
+            if (typeName.Contains('<'))
                 typeName = typeName.Split("<")[1].Split(">")[0];
 
 
