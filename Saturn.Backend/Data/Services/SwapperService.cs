@@ -20,6 +20,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Saturn.Backend.Data.Utils.ReadPlugins;
 using Colors = Saturn.Backend.Data.Enums.Colors;
 
 namespace Saturn.Backend.Data.Services;
@@ -482,19 +484,31 @@ public sealed class SwapperService : ISwapperService
         {
             if (_provider.TryLoadObject(backblingCharacterPart.Split('.')[0], out var bCP))
             {
+                Logger.Log(JsonConvert.SerializeObject(_provider.LoadObjectExports(backblingCharacterPart.Split('.')[0]), Formatting.Indented));
+                
+                
                 output.Add("Mesh",
-                    bCP.TryGetValue(out USkeletalMesh SkeletalMesh, "SkeletalMesh") 
-                        ? SkeletalMesh.GetPathName() 
+                    bCP.TryGetValue(out FSoftObjectPath SkeletalMesh, "SkeletalMesh") 
+                        ? SkeletalMesh.AssetPathName.Text 
                         : "/");
 
                 output.Add("FX",
-                    bCP.TryGetValue(out UObject IdleEffectNiagara, "IdleEffectNiagara")
-                        ? IdleEffectNiagara.GetPathName()
+                    bCP.TryGetValue(out FSoftObjectPath IdleEffectNiagara, "IdleEffectNiagara")
+                        ? IdleEffectNiagara.AssetPathName.Text 
                         : "/");
+                
+                if (output["FX"] == "/")
+                {
+                    output.Remove("FX");
+                    output.Add("FX",
+                        bCP.TryGetValue(out FSoftObjectPath IdleEffect, "IdleEffect")
+                            ? IdleEffect.AssetPathName.Text 
+                            : "/");
+                }
 
                 output.Add("PartModifierBP",
-                    bCP.TryGetValue(out UObject PartModifierBlueprint, "PartModifierBlueprint")
-                        ? PartModifierBlueprint.GetPathName()
+                    bCP.TryGetValue(out FSoftObjectPath PartModifierBlueprint, "PartModifierBlueprint")
+                        ? PartModifierBlueprint.AssetPathName.Text 
                         : "/");
 
                 if (bCP.TryGetValue(out FStructFallback[] MaterialOverrides, "MaterialOverrides"))
@@ -511,8 +525,8 @@ public sealed class SwapperService : ISwapperService
 
                 if (bCP.TryGetValue(out UObject AdditonalData, "AdditionalData"))
                     output.Add("ABP",
-                        AdditonalData.TryGetValue(out UObject AnimClass, "AnimClass") 
-                            ? AnimClass.GetPathName() 
+                        AdditonalData.TryGetValue(out FSoftObjectPath AnimClass, "AnimClass") 
+                            ? AnimClass.AssetPathName.Text 
                             : null);
             }
             else
@@ -881,14 +895,14 @@ public sealed class SwapperService : ISwapperService
                     {
                         if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
                         {
-                            swapModel.BodyMesh = part.Get<USkeletalMesh>("SkeletalMesh").GetPathName();
+                            swapModel.BodyMesh = part.Get<FSoftObjectPath>("SkeletalMesh").AssetPathName.ToString();
                             swapModel.BodySkeleton =
-                                part.Get<USkeletalMesh[]>("MasterSkeletalMeshes")[0].GetPathName();
+                                part.Get<FSoftObjectPath[]>("MasterSkeletalMeshes")[0].AssetPathName.ToString();
 
                             if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
                             {
-                                UObject AnimClass = AdditionalData.GetOrDefault("AnimClass", new UObject(), StringComparison.OrdinalIgnoreCase);
-                                swapModel.BodyABP = AnimClass.GetPathName();
+                                FSoftObjectPath AnimClass = AdditionalData.GetOrDefault("AnimClass", new FSoftObjectPath(), StringComparison.OrdinalIgnoreCase);
+                                swapModel.BodyABP = AnimClass.AssetPathName.ToString();
                             }
 
                             if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
@@ -901,11 +915,17 @@ public sealed class SwapperService : ISwapperService
                                 }
                             }
 
-                            if (part.TryGetValue(out UObject IdleEffect, "IdleEffect"))
-                                swapModel.BodyFX = IdleEffect.GetPathName();
+
+                            swapModel.BodyFX =
+                                part.TryGetValue(out FSoftObjectPath IdleEffectNiagara, "IdleEffectNiagara")
+                                    ? IdleEffectNiagara.AssetPathName.ToString()
+                                    : "/";
+                            
+                            if (part.TryGetValue(out FSoftObjectPath IdleEffect, "IdleEffect") && swapModel.BodyFX == "/")
+                                swapModel.BodyFX = IdleEffect.AssetPathName.ToString();
                                 
-                            if (part.TryGetValue(out UObject BodyPartModifierBP, "PartModifierBlueprint"))
-                                swapModel.BodyPartModifierBP = BodyPartModifierBP.GetPathName();
+                            if (part.TryGetValue(out FSoftObjectPath BodyPartModifierBP, "PartModifierBlueprint"))
+                                swapModel.BodyPartModifierBP = BodyPartModifierBP.AssetPathName.ToString();
                         }
                     });
                     break;
@@ -917,19 +937,19 @@ public sealed class SwapperService : ISwapperService
                     {
                         if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
                         {
-                            swapModel.HeadMesh = part.Get<USkeletalMesh>("SkeletalMesh").GetPathName();
+                            swapModel.HeadMesh = part.Get<FSoftObjectPath>("SkeletalMesh").AssetPathName.Text;
 
                             if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
                             {
-                                if (AdditionalData.TryGetValue(out UObject AnimClass, "AnimClass"))
-                                    swapModel.HeadABP = AnimClass.GetPathName();
+                                if (AdditionalData.TryGetValue(out FSoftObjectPath AnimClass, "AnimClass"))
+                                    swapModel.HeadABP = AnimClass.AssetPathName.Text;
 
-                                swapModel.HeadHairColor = AdditionalData.TryGetValue(out UObject HairColorSwatch, "HairColorSwatch") 
-                                    ? HairColorSwatch.GetPathName() 
+                                swapModel.HeadHairColor = AdditionalData.TryGetValue(out FSoftObjectPath HairColorSwatch, "HairColorSwatch") 
+                                    ? HairColorSwatch.AssetPathName.Text 
                                     : "/";
                                     
-                                swapModel.HeadSkinColor = AdditionalData.TryGetValue(out UObject SkinColorSwatch, "SkinColorSwatch") 
-                                    ? SkinColorSwatch.GetPathName() 
+                                swapModel.HeadSkinColor = AdditionalData.TryGetValue(out FSoftObjectPath SkinColorSwatch, "SkinColorSwatch") 
+                                    ? SkinColorSwatch.AssetPathName.Text
                                     : "/";
                             }
                                 
@@ -944,11 +964,16 @@ public sealed class SwapperService : ISwapperService
                                 }
                             }
 
-                            if (part.TryGetValue(out UObject IdleEffect, "IdleEffect"))
-                                swapModel.HeadFX = IdleEffect.GetPathName();
+                            swapModel.HeadFX =
+                                part.TryGetValue(out FSoftObjectPath IdleEffectNiagara, "IdleEffectNiagara")
+                                    ? IdleEffectNiagara.AssetPathName.ToString()
+                                    : "/";
+
+                            if (part.TryGetValue(out FSoftObjectPath IdleEffect, "IdleEffect") && swapModel.HeadFX == "/")
+                                swapModel.HeadFX = IdleEffect.AssetPathName.Text;
                                 
-                            if (part.TryGetValue(out UObject BodyPartModifierBP, "PartModifierBlueprint"))
-                                swapModel.HeadPartModifierBP = BodyPartModifierBP.GetPathName();
+                            if (part.TryGetValue(out FSoftObjectPath BodyPartModifierBP, "PartModifierBlueprint"))
+                                swapModel.HeadPartModifierBP = BodyPartModifierBP.AssetPathName.Text;
                         }
                     });
                     break;
@@ -961,7 +986,7 @@ public sealed class SwapperService : ISwapperService
                     {
                         if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
                         {
-                            swapModel.FaceACCMesh = part.Get<USkeletalMesh>("SkeletalMesh").GetPathName();
+                            swapModel.FaceACCMesh = part.Get<FSoftObjectPath>("SkeletalMesh").AssetPathName.Text;
 
                             // This is for skins like ghoul trooper and maven
                             if (swapModel.FaceACCMesh.ToLower().Contains("glasses"))
@@ -969,8 +994,8 @@ public sealed class SwapperService : ISwapperService
 
                             if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
                             {
-                                swapModel.FaceACCABP = AdditionalData.GetOrDefault("AnimClass", new UObject(),
-                                    StringComparison.OrdinalIgnoreCase).GetPathName();
+                                swapModel.FaceACCABP = AdditionalData.GetOrDefault("AnimClass", new FSoftObjectPath(),
+                                    StringComparison.OrdinalIgnoreCase).AssetPathName.Text;
 
                                 swapModel.HatType = AdditionalData.GetOrDefault("HatType",
                                     ECustomHatType.ECustomHatType_None, StringComparison.OrdinalIgnoreCase);
@@ -986,11 +1011,16 @@ public sealed class SwapperService : ISwapperService
                                 }
                             }
 
-                            if (part.TryGetValue(out UObject IdleEffect, "IdleEffect"))
-                                swapModel.FaceACCFX = IdleEffect.GetPathName();
+                            swapModel.FaceACCFX =
+                                part.TryGetValue(out FSoftObjectPath IdleEffectNiagara, "IdleEffectNiagara")
+                                    ? IdleEffectNiagara.AssetPathName.ToString()
+                                    : "/";
+                            
+                            if (part.TryGetValue(out FSoftObjectPath IdleEffect, "IdleEffect") && swapModel.FaceACCFX == "/")
+                                swapModel.FaceACCFX = IdleEffect.AssetPathName.Text;
                                 
-                            if (part.TryGetValue(out UObject BodyPartModifierBP, "PartModifierBlueprint"))
-                                swapModel.FaceACCPartModifierBP = BodyPartModifierBP.GetPathName();
+                            if (part.TryGetValue(out FSoftObjectPath FaceACCPartModifierBP, "PartModifierBlueprint"))
+                                swapModel.FaceACCPartModifierBP = FaceACCPartModifierBP.AssetPathName.Text;
                         }
                     });
                     break;
