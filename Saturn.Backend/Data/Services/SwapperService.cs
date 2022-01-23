@@ -1086,7 +1086,11 @@ public sealed class SwapperService : ISwapperService
 
                             // This is for skins like ghoul trooper and maven
                             if (swapModel.FaceACCMesh.ToLower().Contains("glasses"))
+                            {
                                 swapModel.FaceACCMesh = "/";
+                                swapModel.HatType = ECustomHatType.ECustomHatType_None;
+                                return;
+                            }
 
                             if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
                             {
@@ -1128,6 +1132,15 @@ public sealed class SwapperService : ISwapperService
 
         }
 
+        if (swapModel.FaceACCMesh == "/" && swapModel.HeadMaterials.ContainsValue(
+                "/Game/Characters/Player/Female/Medium/Heads/F_Med_Head_01/Materials/F_MED_Commando_Hair_Ponytail.F_MED_Commando_Hair_Ponytail"))
+        {
+            swapModel.HeadMaterials.Remove(swapModel.HeadMaterials.First(headMat =>
+                    headMat.Value ==
+                    "/Game/Characters/Player/Female/Medium/Heads/F_Med_Head_01/Materials/F_MED_Commando_Hair_Ponytail.F_MED_Commando_Hair_Ponytail")
+                .Key);
+        }
+
         if ((swapModel.HeadMesh.ToLower().Contains("ramirez") || swapModel.HeadMesh.ToLower().Contains("starfish")) &&
             !swapModel.HeadMesh.ToLower().Contains("/parts/"))
         {
@@ -1151,7 +1164,10 @@ public sealed class SwapperService : ISwapperService
             
         if (swapModel.HeadMaterials == new Dictionary<int, string>() || swapModel.HeadMaterials.Count < 5)
             for (int i = swapModel.HeadMaterials.Count; i < 5; i++)
-                swapModel.HeadMaterials.Add(i, "/");
+                if (swapModel.HeadMaterials.ContainsKey(i))
+                    swapModel.HeadMaterials.Add(i - 1, "/");
+                else
+                 swapModel.HeadMaterials.Add(i, "/");
             
         if (swapModel.FaceACCMaterials == new Dictionary<int, string>() || swapModel.FaceACCMaterials.Count < 5)
             for (int i = swapModel.FaceACCMaterials.Count; i < 5; i++)
