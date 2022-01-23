@@ -130,13 +130,13 @@ namespace Saturn.Backend.Data.Services
 
                         foreach (var style in variants.Options)
                         {
-                            if (style.Name == "DEFAULT")
+                            if (string.IsNullOrEmpty(style.Name)) continue;
+                            if (style.Name.ToLower().Contains("default") || style.Name.Replace(item.Name, "") == "")
                                 continue;
-                                
-                            Logger.Log(Skins.Data.IndexOf(item) + " + " + i + " " + item.Name + $" ({style.Name})");
+                            
                             CosmeticsToInsert.Add(Skins.Data.IndexOf(item) + " + " + i, new Cosmetic()
                             {
-                                Name = item.Name + $" ({style.Name})",
+                                Name = item.Name + $" ({style.Name.Replace(item.Name, "").Replace("(", "").Replace(")", "")})",
                                 Description = item.Description,
                                 Id = item.Id,
                                 Rarity = item.Rarity,
