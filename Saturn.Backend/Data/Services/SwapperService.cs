@@ -902,7 +902,52 @@ public sealed class SwapperService : ISwapperService
             FaceACCPartModifierBP = "/Game/Tamely",
             HatType = ECustomHatType.ECustomHatType_None
         };
-            
+
+        Dictionary<string, string> MaterialReplacements = new Dictionary<string, string>();
+        await Task.Run(() =>
+        {
+            if (item.VariantChannel.ToLower() != "material") return;
+            if (!_provider.TryLoadObject(Constants.CidPath + item.Id, out var CharacterItemDefinition)) return;
+            if (!CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants")) return;
+            foreach (var style in ItemVariants)
+            {
+                foreach (var PartOption in style.Get<FStructFallback[]>("PartOptions"))
+                {
+                    if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
+                    {
+                        if (VariantName.Text != item.Name)
+                        {
+                            Logger.Log("Skipping " + VariantName.Text);
+                            continue;
+                        }
+
+                        Logger.Log("Found Item: " + VariantName.Text);
+                    }
+                    else
+                    {
+                        Logger.Log("No VariantName found");
+                        continue;
+                    }
+
+
+                    if (!PartOption.TryGetValue(out FStructFallback[] VariantMaterials, "VariantMaterials"))
+                        continue;
+                    foreach (var variantMaterial in VariantMaterials)
+                    {
+                        if (!variantMaterial.TryGetValue(out FSoftObjectPath MaterialToSwap,
+                                "MaterialToSwap")) continue;
+                        if (variantMaterial.TryGetValue(out FSoftObjectPath OverrideMaterial,
+                                "OverrideMaterial"))
+                        {
+                            MaterialReplacements.Add(MaterialToSwap.AssetPathName.Text,
+                                OverrideMaterial.AssetPathName.Text);
+                        }
+                    }
+                }
+            }
+        });
+
+
         Dictionary<int, string> OGHeadMaterials = new();
         var optionsParts = Task.Run(() => GetCharacterPartsById(option.ItemDefinition)).GetAwaiter()
             .GetResult();
@@ -953,6 +998,10 @@ public sealed class SwapperService : ISwapperService
                                 foreach (var materialOverride in MaterialOverride)
                                 {
                                     var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
+
+                                    if (MaterialReplacements.ContainsKey(material))
+                                        material = MaterialReplacements[material];
+                                    
                                     var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
                                     swapModel.BodyMaterials.Add(matIndex, material);
                                 }
@@ -1002,6 +1051,10 @@ public sealed class SwapperService : ISwapperService
                                 foreach (var materialOverride in MaterialOverride)
                                 {
                                     var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.Text;
+                                    
+                                    if (MaterialReplacements.ContainsKey(material))
+                                        material = MaterialReplacements[material];
+                                    
                                     var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
                                     swapModel.HeadMaterials.Add(matIndex, material);
                                 }
@@ -1049,6 +1102,10 @@ public sealed class SwapperService : ISwapperService
                                 foreach (var materialOverride in MaterialOverride)
                                 {
                                     var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
+                                    
+                                    if (MaterialReplacements.ContainsKey(material))
+                                        material = MaterialReplacements[material];
+                                    
                                     var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
                                     swapModel.FaceACCMaterials.Add(matIndex, material);
                                 }
@@ -1099,6 +1156,13 @@ public sealed class SwapperService : ISwapperService
         if (swapModel.FaceACCMaterials == new Dictionary<int, string>() || swapModel.FaceACCMaterials.Count < 5)
             for (int i = swapModel.FaceACCMaterials.Count; i < 5; i++)
                 swapModel.FaceACCMaterials.Add(i, "/");
+
+        if (swapModel.FaceACCABP == "None")
+            swapModel.FaceACCABP = null;
+        if (swapModel.HeadABP == "None")
+            swapModel.HeadABP = null;
+        if (swapModel.BodyABP == "None")
+            swapModel.BodyABP = null;
 
         if (string.IsNullOrEmpty(swapModel.BodyABP))
             swapModel.BodyABP = null;
