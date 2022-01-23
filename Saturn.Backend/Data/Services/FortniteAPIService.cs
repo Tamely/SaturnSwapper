@@ -111,7 +111,7 @@ namespace Saturn.Backend.Data.Services
             var data = await GetDataAsync(CosmeticsByType("AthenaCharacter"));
             var Skins = JsonConvert.DeserializeObject<CosmeticList>(data);
             
-            Skins.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
+            Skins.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero" || x.Id.ToLower().Contains("cid_vip_"));
 
             Dictionary<string, Cosmetic> CosmeticsToInsert = new();
 

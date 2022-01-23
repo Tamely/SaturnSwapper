@@ -2346,9 +2346,9 @@ public sealed class SwapperService : ISwapperService
         if (Rarity != EFortRarity.Common && await _configService.TryGetShouldRarityConvert())
         {
             if (!string.IsNullOrEmpty(option.Status))
-                option.Status = $"All common items are going to be {Rarity.ToString()} and {option.Status}";
+                option.Status = $"All common items are going to be {Rarity} and {option.Status}";
             else
-                option.Status = $"All common items are going to be {Rarity.ToString()}";
+                option.Status = $"All common items are going to be {Rarity}";
             output.Assets.Add(
                 Rarity switch
                 {

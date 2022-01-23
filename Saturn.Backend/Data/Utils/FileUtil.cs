@@ -139,7 +139,8 @@ namespace Saturn.Backend.Data.Utils
             foreach (var color in colorValues)
             {
                 Logger.Log(color.Key);
-                byte[] colorBytes = new byte[] {};
+                // Use 'Array.Empty<T>' when creating an empty array, to avoid unnecessary zero-length array allocations.
+                byte[] colorBytes = Array.Empty<byte>();
                 foreach (var colorValue in color.Value)
                 {
                     colorBytes = Combine(colorBytes, FloatToBytes(colorValue));
