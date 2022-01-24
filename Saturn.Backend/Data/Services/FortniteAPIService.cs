@@ -457,7 +457,8 @@ namespace Saturn.Backend.Data.Services
             if (convertedItems.Count > 0)
                 convertedItems.Any(x => ret.Any(y =>
                 {
-                    if (y.Id != x.ItemDefinition && y.Name != x.Name) return false;
+                    if (y.Id != x.ItemDefinition) return false;
+                    if (y.Name != x.Name) return false;
                     y.IsConverted = true;
                     return true;
                 }));

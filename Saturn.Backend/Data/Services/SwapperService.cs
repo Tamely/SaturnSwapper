@@ -840,6 +840,30 @@ public sealed class SwapperService : ISwapperService
                                     CharacterParts = CharacterParts.Concat(Parts).ToArray();
                                 }
                             }
+                            
+                            foreach (var MaterialOption in style.Get<FStructFallback[]>("MaterialOptions"))
+                            {
+                                if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
+                                {
+                                    if (VariantName.Text != item.Name)
+                                    {
+                                        Logger.Log("Skipping " + VariantName.Text);
+                                        continue;
+                                    }
+
+                                    Logger.Log("Found Item: " + VariantName.Text);
+                                }
+                                else
+                                {
+                                    Logger.Log("No VariantName found");
+                                    continue;
+                                }
+                                
+                                if (MaterialOption.TryGetValue(out UObject[] Parts, "VariantParts"))
+                                {
+                                    CharacterParts = CharacterParts.Concat(Parts).ToArray();
+                                }
+                            }
                         }
                     }
                 }
@@ -914,33 +938,74 @@ public sealed class SwapperService : ISwapperService
             if (!CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants")) return;
             foreach (var style in ItemVariants)
             {
-                foreach (var PartOption in style.Get<FStructFallback[]>("PartOptions"))
-                {
-                    if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
+                if (style.TryGetValue(out FStructFallback[] PartOptions, "PartOptions"))
+                    foreach (var PartOption in PartOptions)
                     {
-                        if (VariantName.Text != item.Name)
+                        if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
                         {
-                            Logger.Log("Skipping " + VariantName.Text);
-                            continue;
+                            Logger.Log("Found Item: " + VariantName.Text);
+                            if (VariantName.Text != item.Name)
+                            {
+                                Logger.Log("Skipping " + VariantName.Text);
+                                continue;
+                            }
+
+                            Logger.Log("Found Item: " + VariantName.Text);
+
+                        
+                            if (PartOption.TryGetValue(out FStructFallback[] VariantMaterials,"VariantMaterials"))
+                                foreach (var variantMaterial in VariantMaterials)
+                                {
+                                    var matOverride = variantMaterial.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.Text;
+                                    var MaterialToSwap = variantMaterial.Get<FSoftObjectPath>("MaterialToSwap").AssetPathName.Text;
+
+                                    Logger.Log("Original material: " + MaterialToSwap);
+                                    Logger.Log("Override material: " + matOverride);
+                                    MaterialReplacements.Add(MaterialToSwap, matOverride);
+                                }
                         }
-
-                        Logger.Log("Found Item: " + VariantName.Text);
-
-                        foreach (var variantMaterial in PartOption.Get<FStructFallback[]>("VariantMaterials"))
+                        else
                         {
-                            var matOverride = variantMaterial.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.Text;
-                            var MaterialToSwap = variantMaterial.Get<FSoftObjectPath>("MaterialToSwap").AssetPathName.Text;
-
-                            Logger.Log("Found material override: " + matOverride);
-                            Logger.Log("Found material to swap with above: " + MaterialToSwap);
-                            MaterialReplacements.Add(MaterialToSwap, matOverride);
+                            Logger.Log("No VariantName found");
                         }
                     }
-                    else
+                else
+                    Logger.Log("No PartOptions found");
+                
+                
+                if (style.TryGetValue(out FStructFallback[] MaterialOptions, "MaterialOptions"))
+                    foreach (var MaterialOption in MaterialOptions)
                     {
-                        Logger.Log("No VariantName found");
+                        if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
+                        {
+                            Logger.Log("Found Item: " + VariantName.Text);
+                            if (VariantName.Text != item.Name)
+                            {
+                                Logger.Log("Skipping " + VariantName.Text);
+                                continue;
+                            }
+
+                            Logger.Log("Found Item: " + VariantName.Text);
+
+                        
+                            if (MaterialOption.TryGetValue(out FStructFallback[] VariantMaterials,"VariantMaterials"))
+                                foreach (var variantMaterial in VariantMaterials)
+                                {
+                                    var matOverride = variantMaterial.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.Text;
+                                    var MaterialToSwap = variantMaterial.Get<FSoftObjectPath>("MaterialToSwap").AssetPathName.Text;
+
+                                    Logger.Log("Original material: " + MaterialToSwap);
+                                    Logger.Log("Override material: " + matOverride);
+                                    MaterialReplacements.Add(MaterialToSwap, matOverride);
+                                }
+                        }
+                        else
+                        {
+                            Logger.Log("No VariantName found");
+                        }
                     }
-                }
+                else
+                    Logger.Log("No MaterialOptions found");
             }
         });
 
