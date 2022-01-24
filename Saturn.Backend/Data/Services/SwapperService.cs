@@ -2,7 +2,6 @@
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
-using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.Misc;
 using CUE4Parse.UE4.Objects.UObject;
@@ -21,10 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CUE4Parse.UE4.Objects.Core.i18N;
-using CUE4Parse.UE4.Objects.GameplayTags;
-using MudBlazor;
 using Newtonsoft.Json;
-using Saturn.Backend.Data.Utils.ReadPlugins;
 using Colors = Saturn.Backend.Data.Enums.Colors;
 
 namespace Saturn.Backend.Data.Services;
@@ -99,6 +95,7 @@ public sealed class SwapperService : ISwapperService
                         $"There was an error reverting {item.Name}!",
                         Colors.C_RED);
                     Logger.Log($"There was an error reverting {item.Name}!", LogLevel.Error);
+                    Process.Start("notepad.exe", Config.LogFile);
                 }
             }
             else
@@ -122,6 +119,7 @@ public sealed class SwapperService : ISwapperService
                             $"There was an error converting {Items[randomNumber].Name}!",
                             Colors.C_RED);
                         Logger.Log($"There was an error converting {Items[randomNumber].Name}!", LogLevel.Error);
+                        Process.Start("notepad.exe", Config.LogFile);
                     }
                 }
                 else if (!await Convert(item, option, itemType, isAuto))
@@ -130,6 +128,7 @@ public sealed class SwapperService : ISwapperService
                         $"There was an error converting {item.Name}!",
                         Colors.C_RED);
                     Logger.Log($"There was an error converting {item.Name}!", LogLevel.Error);
+                    Process.Start("notepad.exe", Config.LogFile);
                 }
 
             }
@@ -329,6 +328,10 @@ public sealed class SwapperService : ISwapperService
                 $"There was an error converting {item.Name}. Please send the log to Tamely on Discord!",
                 Colors.C_RED);
             Logger.Log($"There was an error converting {ex.StackTrace}");
+
+            if (ex.StackTrace.Contains("CUE4Parse.UE4.Assets.Exports.PropertyUtil"))
+                await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a common error with CUE4Parse that occured.",
+                    "Restart the swapper to fix it!", "error");
             return false;
         }
     }
@@ -906,7 +909,7 @@ public sealed class SwapperService : ISwapperService
         Dictionary<string, string> MaterialReplacements = new Dictionary<string, string>();
         await Task.Run(() =>
         {
-            if (item.VariantChannel.ToLower() != "material") return;
+            if (item.VariantChannel.ToLower() != "material" && item.VariantChannel.ToLower() != "parts") return;
             if (!_provider.TryLoadObject(Constants.CidPath + item.Id, out var CharacterItemDefinition)) return;
             if (!CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants")) return;
             foreach (var style in ItemVariants)
@@ -922,26 +925,20 @@ public sealed class SwapperService : ISwapperService
                         }
 
                         Logger.Log("Found Item: " + VariantName.Text);
+
+                        foreach (var variantMaterial in PartOption.Get<FStructFallback[]>("VariantMaterials"))
+                        {
+                            var matOverride = variantMaterial.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.Text;
+                            var MaterialToSwap = variantMaterial.Get<FSoftObjectPath>("MaterialToSwap").AssetPathName.Text;
+
+                            Logger.Log("Found material override: " + matOverride);
+                            Logger.Log("Found material to swap with above: " + MaterialToSwap);
+                            MaterialReplacements.Add(MaterialToSwap, matOverride);
+                        }
                     }
                     else
                     {
                         Logger.Log("No VariantName found");
-                        continue;
-                    }
-
-
-                    if (!PartOption.TryGetValue(out FStructFallback[] VariantMaterials, "VariantMaterials"))
-                        continue;
-                    foreach (var variantMaterial in VariantMaterials)
-                    {
-                        if (!variantMaterial.TryGetValue(out FSoftObjectPath MaterialToSwap,
-                                "MaterialToSwap")) continue;
-                        if (variantMaterial.TryGetValue(out FSoftObjectPath OverrideMaterial,
-                                "OverrideMaterial"))
-                        {
-                            MaterialReplacements.Add(MaterialToSwap.AssetPathName.Text,
-                                OverrideMaterial.AssetPathName.Text);
-                        }
                     }
                 }
             }
@@ -1006,6 +1003,22 @@ public sealed class SwapperService : ISwapperService
                                     swapModel.BodyMaterials.Add(matIndex, material);
                                 }
                             }
+                            else
+                            {
+                                foreach (var materialOverride in MaterialReplacements)
+                                {
+                                    int i = 0;
+                                    if ((materialOverride.Value.ToLower().Contains("body") 
+                                         || materialOverride.Value.ToLower().Contains("bodies")) 
+                                        && !(materialOverride.Value.ToLower().Contains("hat") 
+                                        || materialOverride.Value.ToLower().Contains("helmet") 
+                                        || materialOverride.Value.ToLower().Contains("faceacc") 
+                                        || materialOverride.Value.ToLower().Contains("head")))
+                                    {
+                                        swapModel.BodyMaterials.Add(i, materialOverride.Value);
+                                    }
+                                }
+                            }
 
 
                             swapModel.BodyFX =
@@ -1057,6 +1070,18 @@ public sealed class SwapperService : ISwapperService
                                     
                                     var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
                                     swapModel.HeadMaterials.Add(matIndex, material);
+                                }
+                            }
+                            else
+                            {
+                                foreach (var materialOverride in MaterialReplacements)
+                                {
+                                    int i = 0;
+                                    if (materialOverride.Value.ToLower().Contains("head") 
+                                         || materialOverride.Value.ToLower().Contains("hair"))
+                                    {
+                                        swapModel.BodyMaterials.Add(i, materialOverride.Value);
+                                    }
                                 }
                             }
 
@@ -1114,6 +1139,20 @@ public sealed class SwapperService : ISwapperService
                                     swapModel.FaceACCMaterials.Add(matIndex, material);
                                 }
                             }
+                            else
+                            {
+                                foreach (var materialOverride in MaterialReplacements)
+                                {
+                                    int i = 0;
+                                    if (materialOverride.Value.ToLower().Contains("hat") 
+                                             || materialOverride.Value.ToLower().Contains("helmet") 
+                                             || materialOverride.Value.ToLower().Contains("faceacc"))
+                                    {
+                                        swapModel.BodyMaterials.Add(i, materialOverride.Value);
+                                    }
+                                }
+                            }
+                            
 
                             swapModel.FaceACCFX =
                                 part.TryGetValue(out FSoftObjectPath IdleEffectNiagara, "IdleEffectNiagara")
@@ -1130,15 +1169,6 @@ public sealed class SwapperService : ISwapperService
                     break;
             }
 
-        }
-
-        if (swapModel.FaceACCMesh == "/" && swapModel.HeadMaterials.ContainsValue(
-                "/Game/Characters/Player/Female/Medium/Heads/F_Med_Head_01/Materials/F_MED_Commando_Hair_Ponytail.F_MED_Commando_Hair_Ponytail"))
-        {
-            swapModel.HeadMaterials.Remove(swapModel.HeadMaterials.First(headMat =>
-                    headMat.Value ==
-                    "/Game/Characters/Player/Female/Medium/Heads/F_Med_Head_01/Materials/F_MED_Commando_Hair_Ponytail.F_MED_Commando_Hair_Ponytail")
-                .Key);
         }
 
         if ((swapModel.HeadMesh.ToLower().Contains("ramirez") || swapModel.HeadMesh.ToLower().Contains("starfish")) &&
