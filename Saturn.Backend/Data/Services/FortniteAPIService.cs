@@ -114,44 +114,48 @@ namespace Saturn.Backend.Data.Services
             Skins.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero" || x.Id.ToLower().Contains("cid_vip_"));
 
             Dictionary<string, Cosmetic> CosmeticsToInsert = new();
+            bool shouldShowStyles = await _configService.TryGetShouldShowStyles();
 
             foreach (var item in Skins.Data)
             {
                 if (item.Name.ToLower() == "random")
                     item.IsRandom = true;
-                    
-                int i = 0;
 
-                if (item.Variants != null)
-                    foreach (var variants in item.Variants)
-                    {
-                        if (variants.Channel.ToLower() != "parts" && variants.Channel.ToLower() != "material")
-                            continue;
+                if (shouldShowStyles)
+                {
+                    int i = 0;
 
-                        foreach (var style in variants.Options)
+                    if (item.Variants != null)
+                        foreach (var variants in item.Variants)
                         {
-                            if (string.IsNullOrEmpty(style.Name)) continue;
-                            if (style.Name.ToLower().Contains("default") || style.Name.Replace(item.Name, "") == "")
+                            if (variants.Channel.ToLower() != "parts" && variants.Channel.ToLower() != "material")
                                 continue;
-                            
-                            CosmeticsToInsert.Add(Skins.Data.IndexOf(item) + " + " + i, new Cosmetic()
-                            {
-                                Name = style.Name,
-                                Description = item.Description,
-                                Id = item.Id,
-                                Rarity = item.Rarity,
-                                Series = item.Series,
-                                Images = new Images()
-                                {
-                                    SmallIcon = style.Image
-                                },
-                                VariantChannel = variants.Channel,
-                                VariantTag = style.Tag
-                            });
 
-                            i++;
+                            foreach (var style in variants.Options)
+                            {
+                                if (string.IsNullOrEmpty(style.Name)) continue;
+                                if (style.Name.ToLower().Contains("default") || style.Name.Replace(item.Name, "") == "")
+                                    continue;
+                            
+                                CosmeticsToInsert.Add(Skins.Data.IndexOf(item) + " + " + i, new Cosmetic()
+                                {
+                                    Name = style.Name,
+                                    Description = item.Description,
+                                    Id = item.Id,
+                                    Rarity = item.Rarity,
+                                    Series = item.Series,
+                                    Images = new Images()
+                                    {
+                                        SmallIcon = style.Image
+                                    },
+                                    VariantChannel = variants.Channel,
+                                    VariantTag = style.Tag
+                                });
+
+                                i++;
+                            }
                         }
-                    }
+                }
             }
 
             int Offseter = 0;

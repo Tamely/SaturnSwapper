@@ -555,11 +555,11 @@
                         </div>
                     </div>
 
-                    <div class="card" @onclick=@(async () => await ToggleScalingFix())>
+                    <div class="card" @onclick=@(async () => await ToggleShowStyles())>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2>Enable Scaling Fix</h2>
-                            <p style="color:white">@ScalingFix</p>
+                            <h2>Show Styles</h2>
+                            <p style="color:white">@ShowStyles</p>
                         </div>
                     </div>
                 </div>
@@ -601,7 +601,7 @@
     private Colors OpenLogColor = Colors.C_WHITE;
 
     private string FlipRarity = "";
-    private string ScalingFix = "";
+    private string ShowStyles = "";
     private string FlipSeries = "";
 
     private SaturnState saturnState = SaturnState.S_Key;
@@ -617,8 +617,10 @@
     private async Task ShouldConvertRarity()
         => FlipRarity = await _configService.TryGetShouldRarityConvert() ? "Currently set to 'pickaxes WILL swap rarity'" : "Currently set to 'pickaxes WILL NOT swap rarity'";
 
-    private async Task ShouldFixScaling()
-        => ScalingFix = await _configService.TryGetShouldFixScalingBug() ? "Currently set to 'WILL Fix Scaling Issue'" : "Currently set to 'WILL NOT Fix Scaling Issue'";
+    private async Task ShouldShowStyles()
+        => ShowStyles = await _configService.TryGetShouldShowStyles() 
+            ? "Currently set to 'WILL show item styles.' This could cause performance issues on low-end PCs!" 
+            : "Currently set to 'WILL NOT show item styles.' This could cause performance issues on low-end PCs!";
 
     protected override async Task OnInitializedAsync()
     {
@@ -633,7 +635,7 @@
 
         await ShouldConvertSeries();
 
-        await ShouldFixScaling();
+        await ShouldShowStyles();
 
         var currentUser = _discordRPCService.Client.CurrentUser;
 
@@ -860,15 +862,15 @@
         };
     }
 
-    private async Task ToggleScalingFix()
+    private async Task ToggleShowStyles()
     {
-        await _configService.TrySetShouldFixScalingBug(!await _configService.TryGetShouldFixScalingBug());
+        await _configService.TrySetShouldShowStyles(!await _configService.TryGetShouldShowStyles());
 
-        ScalingFix = await _configService.TryGetShouldFixScalingBug() switch
+        ShowStyles = await _configService.TryGetShouldShowStyles() switch
         {
-            true => "Currently set to 'WILL Fix Scaling Issue'",
-            false => "Currently set to 'WILL NOT Fix Scaling Issue'"
-        };
+            true => "Currently set to 'WILL show item styles.' This could cause performance issues on low-end PCs!",
+            false => "Currently set to 'WILL NOT show item styles.' This could cause performance issues on low-end PCs!"
+    };
     }
 
     private async Task OpenLog()

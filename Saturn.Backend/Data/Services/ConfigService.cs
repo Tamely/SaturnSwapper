@@ -20,8 +20,8 @@ namespace Saturn.Backend.Data.Services
         public Task<bool> TrySetShouldRarityConvert(bool shouldConvert);
         public Task<bool> TryGetShouldSeriesConvert();
         public Task<bool> TrySetShouldSeriesConvert(bool shouldConvert);
-        public Task<bool> TryGetShouldFixScalingBug();
-        public Task<bool> TrySetShouldFixScalingBug(bool shouldFix);
+        public Task<bool> TryGetShouldShowStyles();
+        public Task<bool> TrySetShouldShowStyles(bool shouldShow);
         public Task<int> GetConvertedFileCount();
         public void SaveConfig();
     }
@@ -184,24 +184,24 @@ namespace Saturn.Backend.Data.Services
             }
         }
 
-        public async Task<bool> TryGetShouldFixScalingBug()
+        public async Task<bool> TryGetShouldShowStyles()
         {
             try
             {
-                return ConfigFile.ShouldFixScalingBug;
+                return ConfigFile.ShouldShowStyles;
             }
             catch
             {
-                ConfigFile.ShouldFixScalingBug = true;
+                ConfigFile.ShouldShowStyles = true;
                 return true;
             }
         }
 
-        public async Task<bool> TrySetShouldFixScalingBug(bool shouldFix)
+        public async Task<bool> TrySetShouldShowStyles(bool shouldShow)
         {
             try
             {
-                ConfigFile.ShouldFixScalingBug = shouldFix;
+                ConfigFile.ShouldShowStyles = shouldShow;
                 SaveConfig();
                 return true;
             }

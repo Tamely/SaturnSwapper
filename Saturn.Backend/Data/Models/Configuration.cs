@@ -18,7 +18,7 @@ namespace Saturn.Backend.Data.Models
         [JsonProperty("shouldDebugShow")] public bool ShouldDebugShow { get; set; } = true;
         [JsonProperty("shouldPickaxeSwapRarity")] public bool ShouldPickaxeSwapRarity { get; set; } = true;
         [JsonProperty("shouldPickaxeSwapSeries")] public bool ShouldPickaxeSwapSeries { get; set; } = true;
-        [JsonProperty("shouldFixScalingBug")] public bool ShouldFixScalingBug { get; set; } = false;
+        [JsonProperty("shouldShowStyles")] public bool ShouldShowStyles { get; set; } = true;
         [JsonProperty("isLobbyBackgroundConverted")] public bool IsLobbyBackgroundConverted { get; set; }
         [JsonProperty("key")] public string Key { get; set; }
     }
