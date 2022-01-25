@@ -17,12 +17,18 @@ The source on the swapper is 100% complete which means you can build it without 
     git clone https://github.com/Tamely/SaturnSwapper
     cd SaturnSwapper
     ```
+3. Remove 'SaturnBot' project from the .sln
+    Delete the lines:
+    ```
+    Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SaturnBot", "SaturnBot\SaturnBot.csproj", "{9B658498-B58B-4DB5-B275-4BFB59FAD1AD}"
+    EndProject
+    ```
 3. Build the solution
     ``` 
     dotnet build
     ```
 4. Make sure you have all the prerequisites installed.
-5. Navigate to Saturn.Client/Bin/Release/Saturn.exe and open it.
+5. Navigate to Saturn.Client\bin\Debug\net6.0-windows\Saturn.exe and open it.
 6. Get your key to access the swapper [here](https://linkvertise.com/88495/saturn-swapper-key/) (they expire every 48 hours).
 7. You're all set!
 </details>
