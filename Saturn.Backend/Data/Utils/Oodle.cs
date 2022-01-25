@@ -1,5 +1,6 @@
 ﻿using Saturn.Backend.Data.Enums;
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Saturn.Backend.Data.Utils
@@ -9,9 +10,18 @@ namespace Saturn.Backend.Data.Utils
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool SetDllDirectory(string lpPathName);
 
-        public static void Decompress(byte[] compressedData, ref byte[] decompressedData)
+        public static byte[] Decompress(byte[] compressedBuffer, int decompressedSize)
         {
-            OodleStream.Decompress(compressedData, ref decompressedData);
+            var array = new byte[decompressedSize];
+            var num = OodleStream.OodleLZ_Decompress(compressedBuffer, compressedBuffer.Length, array, decompressedSize, 0U, 0U, 0UL, 0U, 0U, 0U, 0U, 0U, 0U, 3U);
+            if (num == decompressedSize)
+            {
+                return array;
+            }
+
+            if (num < decompressedSize) return array.Take(num).ToArray();
+            Logger.Log("Decompressed size is bigger than expected!", LogLevel.Error);
+            throw new Exception("There was an error while decompressing!");
         }
 
         public static byte[] Compress(byte[] decompressed)
@@ -52,15 +62,9 @@ namespace Saturn.Backend.Data.Utils
             uint a, uint b, uint c, uint threadModule);
 
         [DllImport("oo2core_5_win64.dll")]
-        private static extern int OodleLZ_Decompress(byte[] src, long srcSize, byte[] dst, long dstSize, uint fuzz,
+        public static extern int OodleLZ_Decompress(byte[] src, long srcSize, byte[] dst, long dstSize, uint fuzz,
             uint crc, ulong verbosity, uint context, uint unused, uint callback, uint callbackCtx, uint scratch,
             uint scratchSize, uint threadModule);
-
-        public static void Decompress(byte[] compressedBuffer, ref byte[] destinationBuffer)
-        {
-            _ = OodleLZ_Decompress(compressedBuffer, compressedBuffer.Length, destinationBuffer, destinationBuffer.Length,
-                0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u);
-        }
 
         public static byte[] Compress(byte[]? buffer, int size, CompressionFormat format, CompressionLevel level,
             uint a)

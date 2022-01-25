@@ -28,13 +28,9 @@ public class DotSaturn
 
         Buffer.BlockCopy(data, index, pluginData, 0, compLength);
 
-        byte[] decompPluginData = new byte[decompLength];
-
-        Oodle.Decompress(pluginData, ref decompPluginData);
-
         using (var md5 = MD5.Create())
         {
-            var newHash = md5.ComputeHash(decompPluginData);
+            var newHash = md5.ComputeHash(pluginData);
             
             //if (hash != newHash)
                 //throw new Exception("Hash mismatch");
@@ -42,7 +38,7 @@ public class DotSaturn
         
         
         // get string from byte array
-        var pluginString = Encoding.UTF8.GetString(decompPluginData);
+        var pluginString = Crypto.DecryptToString(pluginData, "0x2CCDFD22AD74FBFEE693A81AC11ACE57E6D10D0B8AC5FA90E793A130BC540ED4");
 
         return pluginString;
     }
@@ -64,10 +60,11 @@ public class DotSaturn
         var pluginData =
             Crypto.EncryptString(json, "0x2CCDFD22AD74FBFEE693A81AC11ACE57E6D10D0B8AC5FA90E793A130BC540ED4");
 
+        File.WriteAllBytes("OriginalData.uasset", pluginData);
+        
+
         var decompLength = pluginData.Length;
 
-        pluginData = Oodle.Compress(pluginData);
-        
         var compLength = pluginData.Length;
         
         AddByteToArray(ref data, new byte[]{(byte)compLength});
