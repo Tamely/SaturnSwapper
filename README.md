@@ -17,8 +17,7 @@ The source on the swapper is 100% complete which means you can build it without 
     git clone https://github.com/Tamely/SaturnSwapper
     cd SaturnSwapper
     ```
-3. Remove 'SaturnBot' project from the .sln
-    Delete the lines:
+3. Remove 'SaturnBot' project from the .sln by deleting the lines:
     ```
     Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SaturnBot", "SaturnBot\SaturnBot.csproj", "{9B658498-B58B-4DB5-B275-4BFB59FAD1AD}"
     EndProject
