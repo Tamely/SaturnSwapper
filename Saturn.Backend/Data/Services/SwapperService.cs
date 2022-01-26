@@ -822,7 +822,7 @@ public sealed class SwapperService : ISwapperService
             if (CharacterItemDefinition.TryGetValue(out UObject[] CharacterParts, "BaseCharacterParts"))
             {
                 if (item is {VariantChannel: { }})
-                    if (item.VariantChannel.ToLower().Contains("parts") || item.VariantChannel.ToLower().Contains("material") || item.VariantTag == "")
+                    if (item.VariantChannel.ToLower().Contains("parts") || item.VariantChannel.ToLower().Contains("material") || item.VariantTag == null)
                     {
                         if (CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants"))
                         {
@@ -833,7 +833,7 @@ public sealed class SwapperService : ISwapperService
                                     {
                                         if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
                                         {
-                                            if (VariantName.Text != item.Name && item.VariantTag != "")
+                                            if (VariantName.Text != item.Name && item.VariantTag != null)
                                             {
                                                 Logger.Log("Skipping " + VariantName.Text);
                                                 continue;
@@ -858,7 +858,7 @@ public sealed class SwapperService : ISwapperService
                                     {
                                         if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
                                         {
-                                            if (VariantName.Text != item.Name && item.VariantTag != "")
+                                            if (VariantName.Text != item.Name && item.VariantTag != null)
                                             {
                                                 Logger.Log("Skipping " + VariantName.Text);
                                                 continue;
@@ -954,7 +954,7 @@ public sealed class SwapperService : ISwapperService
         {
             if (item is {VariantChannel: { }})
             {
-                if (item.VariantChannel.ToLower() != "material" && item.VariantChannel.ToLower() != "parts" && item.VariantTag != "") return;
+                if (item.VariantChannel.ToLower() != "material" && item.VariantChannel.ToLower() != "parts" && item.VariantTag != null) return;
                 if (!_provider.TryLoadObject(Constants.CidPath + item.Id, out var CharacterItemDefinition)) return;
                 if (!CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants")) return;
                 foreach (var style in ItemVariants)
@@ -965,7 +965,7 @@ public sealed class SwapperService : ISwapperService
                             if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
                             {
                                 Logger.Log("Found Item: " + VariantName.Text);
-                                if (VariantName.Text != item.Name && item.VariantTag != "")
+                                if (VariantName.Text != item.Name && item.VariantTag != null)
                                 {
                                     Logger.Log("Skipping " + VariantName.Text);
                                     continue;
@@ -999,7 +999,7 @@ public sealed class SwapperService : ISwapperService
                         {
                             if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
                             {
-                                if (VariantName.Text != item.Name && item.VariantTag != "")
+                                if (VariantName.Text != item.Name && item.VariantTag != null)
                                 {
                                     Logger.Log("Skipping " + VariantName.Text);
                                     continue;

@@ -128,7 +128,7 @@ namespace Saturn.Backend.Data.Models.FortniteAPI
         [JsonProperty("isRandom")] public bool IsRandom { get; set; }
         [JsonProperty("isCloudAdded")] public bool IsCloudAdded { get; set; }
         [JsonProperty("variantChannel")] public string VariantChannel { get; set; }
-        [JsonProperty("variantTag")] public string VariantTag { get; set; }
+        [JsonProperty("variantTag")] public string? VariantTag { get; set; }
     }
 
     public class CosmeticList
