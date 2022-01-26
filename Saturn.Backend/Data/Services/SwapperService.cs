@@ -19,8 +19,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CUE4Parse.UE4.Assets.Exports.Material;
+using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.UE4.Objects.Core.i18N;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Colors = Saturn.Backend.Data.Enums.Colors;
 
 namespace Saturn.Backend.Data.Services;
@@ -58,7 +61,7 @@ public sealed class SwapperService : ISwapperService
 
         Trace.WriteLine("Got AES");
 
-        _provider = new DefaultFileProvider(FortniteUtil.PakPath, SearchOption.TopDirectoryOnly, false, new CUE4Parse.UE4.Versions.VersionContainer(CUE4Parse.UE4.Versions.EGame.GAME_UE5_LATEST));
+        _provider = new DefaultFileProvider(FortniteUtil.PakPath, SearchOption.TopDirectoryOnly, false, new CUE4Parse.UE4.Versions.VersionContainer(CUE4Parse.UE4.Versions.EGame.GAME_UE5_1));
         _provider.Initialize();
 
         Trace.WriteLine("Initialized provider");
@@ -811,77 +814,85 @@ public sealed class SwapperService : ISwapperService
             
         if (_provider.TryLoadObject(Constants.CidPath + id, out var CharacterItemDefinition))
         {
-            var CharacterParts = CharacterItemDefinition.Get<UObject[]>("BaseCharacterParts");
-
-            if (item is {VariantChannel: { }})
-                if (item.VariantChannel.ToLower().Contains("parts"))
-                {
-                    if (CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants"))
+            if (CharacterItemDefinition.TryGetValue(out UObject[] CharacterParts, "BaseCharacterParts"))
+            {
+                if (item is {VariantChannel: { }})
+                    if (item.VariantChannel.ToLower().Contains("parts") || item.VariantChannel.ToLower().Contains("material") || item.VariantTag == "")
                     {
-                        foreach (var style in ItemVariants)
+                        if (CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants"))
                         {
-                            foreach (var PartOption in style.Get<FStructFallback[]>("PartOptions"))
+                            foreach (var style in ItemVariants)
                             {
-                                if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
-                                {
-                                    if (VariantName.Text != item.Name)
+                                if (style.TryGetValue(out FStructFallback[] PartOptions, "PartOptions"))
+                                    foreach (var PartOption in PartOptions)
                                     {
-                                        Logger.Log("Skipping " + VariantName.Text);
-                                        continue;
-                                    }
+                                        if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
+                                        {
+                                            if (VariantName.Text != item.Name && item.VariantTag != "")
+                                            {
+                                                Logger.Log("Skipping " + VariantName.Text);
+                                                continue;
+                                            }
 
-                                    Logger.Log("Found Item: " + VariantName.Text);
-                                }
-                                else
-                                {
-                                    Logger.Log("No VariantName found");
-                                    continue;
-                                }
+                                            Logger.Log("Found Item: " + VariantName.Text);
+                                        }
+                                        else
+                                        {
+                                            Logger.Log("No VariantName found");
+                                            continue;
+                                        }
                                 
-                                if (PartOption.TryGetValue(out UObject[] Parts, "VariantParts"))
-                                {
-                                    CharacterParts = CharacterParts.Concat(Parts).ToArray();
-                                }
-                            }
+                                        if (PartOption.TryGetValue(out UObject[] Parts, "VariantParts"))
+                                        {
+                                            CharacterParts = CharacterParts.Concat(Parts).ToArray();
+                                        }
+                                    }
                             
-                            foreach (var MaterialOption in style.Get<FStructFallback[]>("MaterialOptions"))
-                            {
-                                if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
-                                {
-                                    if (VariantName.Text != item.Name)
+                                if (style.TryGetValue(out FStructFallback[] MaterialOptions, "MaterialOptions"))
+                                    foreach (var MaterialOption in MaterialOptions)
                                     {
-                                        Logger.Log("Skipping " + VariantName.Text);
-                                        continue;
-                                    }
+                                        if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
+                                        {
+                                            if (VariantName.Text != item.Name && item.VariantTag != "")
+                                            {
+                                                Logger.Log("Skipping " + VariantName.Text);
+                                                continue;
+                                            }
 
-                                    Logger.Log("Found Item: " + VariantName.Text);
-                                }
-                                else
-                                {
-                                    Logger.Log("No VariantName found");
-                                    continue;
-                                }
+                                            Logger.Log("Found Item: " + VariantName.Text);
+                                        }
+                                        else
+                                        {
+                                            Logger.Log("No VariantName found");
+                                            continue;
+                                        }
                                 
-                                if (MaterialOption.TryGetValue(out UObject[] Parts, "VariantParts"))
-                                {
-                                    CharacterParts = CharacterParts.Concat(Parts).ToArray();
-                                }
+                                        if (MaterialOption.TryGetValue(out UObject[] Parts, "VariantParts"))
+                                        {
+                                            CharacterParts = CharacterParts.Concat(Parts).ToArray();
+                                        }
+                                    }
                             }
                         }
                     }
+                    else
+                        Logger.Log("Item style doesn't contain parts");
+
+                foreach (var characterPart in CharacterParts)
+                {
+                    characterPart.TryGetValue(out EFortCustomPartType CustomPartType, "CharacterPartType");
+
+                    if (cps.ContainsKey(CustomPartType.ToString()))
+                        cps.Remove(CustomPartType.ToString());
+                    
+                    cps.Add(CustomPartType.ToString(), characterPart.GetPathName());
                 }
-                else
-                    Logger.Log("Item style doesn't contain parts");
-
-            foreach (var characterPart in CharacterParts)
-            {
-                characterPart.TryGetValue(out EFortCustomPartType CustomPartType, "CharacterPartType");
-
-                if (cps.ContainsKey(CustomPartType.ToString()))
-                    cps.Remove(CustomPartType.ToString());
-                
-                cps.Add(CustomPartType.ToString(), characterPart.GetPathName());
             }
+            else
+            {
+                Logger.Log("Failed to load Character Parts...");
+            }
+                
         }
         else
         {
@@ -938,7 +949,7 @@ public sealed class SwapperService : ISwapperService
         {
             if (item is {VariantChannel: { }})
             {
-                if (item.VariantChannel.ToLower() != "material" && item.VariantChannel.ToLower() != "parts") return;
+                if (item.VariantChannel.ToLower() != "material" && item.VariantChannel.ToLower() != "parts" && item.VariantTag != "") return;
                 if (!_provider.TryLoadObject(Constants.CidPath + item.Id, out var CharacterItemDefinition)) return;
                 if (!CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants")) return;
                 foreach (var style in ItemVariants)
@@ -949,7 +960,7 @@ public sealed class SwapperService : ISwapperService
                             if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
                             {
                                 Logger.Log("Found Item: " + VariantName.Text);
-                                if (VariantName.Text != item.Name)
+                                if (VariantName.Text != item.Name && item.VariantTag != "")
                                 {
                                     Logger.Log("Skipping " + VariantName.Text);
                                     continue;
@@ -983,8 +994,7 @@ public sealed class SwapperService : ISwapperService
                         {
                             if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
                             {
-                                Logger.Log("Found Item: " + VariantName.Text);
-                                if (VariantName.Text != item.Name)
+                                if (VariantName.Text != item.Name && item.VariantTag != "")
                                 {
                                     Logger.Log("Skipping " + VariantName.Text);
                                     continue;
@@ -1049,43 +1059,36 @@ public sealed class SwapperService : ISwapperService
                     {
                         if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
                         {
-                            swapModel.BodyMesh = part.Get<FSoftObjectPath>("SkeletalMesh").AssetPathName.ToString();
+                            if (part.TryGetValue(out FSoftObjectPath mesh, "SkeletalMesh"))
+                                swapModel.BodyMesh = mesh.AssetPathName.Text;
+
                             swapModel.BodySkeleton =
                                 part.Get<FSoftObjectPath[]>("MasterSkeletalMeshes")[0].AssetPathName.ToString();
 
                             if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
                             {
-                                FSoftObjectPath AnimClass = AdditionalData.GetOrDefault("AnimClass", new FSoftObjectPath(), StringComparison.OrdinalIgnoreCase);
+                                FSoftObjectPath AnimClass = AdditionalData.GetOrDefault("AnimClass",
+                                    new FSoftObjectPath(), StringComparison.OrdinalIgnoreCase);
                                 swapModel.BodyABP = AnimClass.AssetPathName.ToString();
                             }
+
 
                             if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
                             {
                                 foreach (var materialOverride in MaterialOverride)
                                 {
-                                    var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
+                                    var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial")
+                                        .AssetPathName.ToString();
 
                                     if (MaterialReplacements.ContainsKey(material))
+                                    {
+                                        string temp = material;
                                         material = MaterialReplacements[material];
-                                    
+                                        MaterialReplacements.Remove(temp);
+                                    }
+
                                     var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
                                     swapModel.BodyMaterials.Add(matIndex, material);
-                                }
-                            }
-                            else
-                            {
-                                foreach (var materialOverride in MaterialReplacements)
-                                {
-                                    int i = 0;
-                                    if ((materialOverride.Value.ToLower().Contains("body") 
-                                         || materialOverride.Value.ToLower().Contains("bodies")) 
-                                        && !(materialOverride.Value.ToLower().Contains("hat") 
-                                        || materialOverride.Value.ToLower().Contains("helmet") 
-                                        || materialOverride.Value.ToLower().Contains("faceacc") 
-                                        || materialOverride.Value.ToLower().Contains("head")))
-                                    {
-                                        swapModel.BodyMaterials.Add(i, materialOverride.Value);
-                                    }
                                 }
                             }
 
@@ -1094,10 +1097,11 @@ public sealed class SwapperService : ISwapperService
                                 part.TryGetValue(out FSoftObjectPath IdleEffectNiagara, "IdleEffectNiagara")
                                     ? IdleEffectNiagara.AssetPathName.ToString()
                                     : "/";
-                            
-                            if (part.TryGetValue(out FSoftObjectPath IdleEffect, "IdleEffect") && swapModel.BodyFX == "/")
+
+                            if (part.TryGetValue(out FSoftObjectPath IdleEffect, "IdleEffect") &&
+                                swapModel.BodyFX == "/")
                                 swapModel.BodyFX = IdleEffect.AssetPathName.ToString();
-                                
+
                             if (part.TryGetValue(out FSoftObjectPath BodyPartModifierBP, "PartModifierBlueprint"))
                                 swapModel.BodyPartModifierBP = BodyPartModifierBP.AssetPathName.ToString();
                         }
@@ -1135,22 +1139,14 @@ public sealed class SwapperService : ISwapperService
                                     var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.Text;
                                     
                                     if (MaterialReplacements.ContainsKey(material))
+                                    {
+                                        string temp = material;
                                         material = MaterialReplacements[material];
+                                        MaterialReplacements.Remove(temp);
+                                    }
                                     
                                     var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
                                     swapModel.HeadMaterials.Add(matIndex, material);
-                                }
-                            }
-                            else
-                            {
-                                foreach (var materialOverride in MaterialReplacements)
-                                {
-                                    int i = 0;
-                                    if (materialOverride.Value.ToLower().Contains("head") 
-                                         || materialOverride.Value.ToLower().Contains("hair"))
-                                    {
-                                        swapModel.BodyMaterials.Add(i, materialOverride.Value);
-                                    }
                                 }
                             }
 
@@ -1202,26 +1198,17 @@ public sealed class SwapperService : ISwapperService
                                     var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
                                     
                                     if (MaterialReplacements.ContainsKey(material))
+                                    {
+                                        string temp = material;
                                         material = MaterialReplacements[material];
+                                        MaterialReplacements.Remove(temp);
+                                    }
                                     
                                     var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
                                     swapModel.FaceACCMaterials.Add(matIndex, material);
                                 }
                             }
-                            else
-                            {
-                                foreach (var materialOverride in MaterialReplacements)
-                                {
-                                    int i = 0;
-                                    if (materialOverride.Value.ToLower().Contains("hat") 
-                                             || materialOverride.Value.ToLower().Contains("helmet") 
-                                             || materialOverride.Value.ToLower().Contains("faceacc"))
-                                    {
-                                        swapModel.BodyMaterials.Add(i, materialOverride.Value);
-                                    }
-                                }
-                            }
-                            
+
 
                             swapModel.FaceACCFX =
                                 part.TryGetValue(out FSoftObjectPath IdleEffectNiagara, "IdleEffectNiagara")
@@ -1238,6 +1225,29 @@ public sealed class SwapperService : ISwapperService
                     break;
             }
 
+        }
+        
+        foreach (var (material, value) in MaterialReplacements)
+        {
+            if (material.ToLower().Contains("hat") || material.ToLower().Contains("helmet") ||
+                material.ToLower().Contains("faceacc"))
+            {
+                int i = 0;
+                while (swapModel.FaceACCMaterials.ContainsKey(i)) i++;
+                swapModel.FaceACCMaterials.Add(i, value);
+            }
+            else if (material.ToLower().Contains("head") || material.ToLower().Contains("hair"))
+            {
+                int i = 0;
+                while (swapModel.HeadMaterials.ContainsKey(i)) i++;
+                swapModel.HeadMaterials.Add(i, value);
+            }
+            else if (material.ToLower().Contains("body") || material.ToLower().Contains("bodies"))
+            {
+                int i = 0;
+                while (swapModel.BodyMaterials.ContainsKey(i)) i++;
+                swapModel.BodyMaterials.Add(i, value);
+            }
         }
 
         if ((swapModel.HeadMesh.ToLower().Contains("ramirez") || swapModel.HeadMesh.ToLower().Contains("starfish")) &&
