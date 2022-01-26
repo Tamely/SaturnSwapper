@@ -32,9 +32,9 @@ namespace Saturn.Backend.Data.Services
     public class ConfigService : IConfigService
     {
         private readonly IFortniteAPIService _fortniteAPIService;
-        public ConfigService(IFortniteAPIService fortniteAPIService)
+        public ConfigService(IDiscordRPCService discordRpcService, ICloudStorageService cloudStorageService)
         {
-            _fortniteAPIService = fortniteAPIService;
+            _fortniteAPIService = new FortniteAPIService(this, discordRpcService, cloudStorageService);
             
             if (!TryGetConfig())
                 Logger.Log("There was an error parsing the config. Generating new one!", LogLevel.Warning);
@@ -127,6 +127,7 @@ namespace Saturn.Backend.Data.Services
                 {
                     FortniteBuild = _fortniteAPIService.GetAES().Build
                 };
+                SaveConfig();
                 return false;
             }
         }

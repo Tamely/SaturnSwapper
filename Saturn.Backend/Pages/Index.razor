@@ -741,22 +741,22 @@
 
     private async Task CheckMaintenance()
     {
-        if (_fortniteAPIService.GetAES().Build != await GetFortniteBuild())
+        if (await GetFortniteBuild() != await GetLastestVersion())
             Config.isMaintenance = true;
     }
 
     private async Task CheckForOldFiles()
     {
-        if (await _configService.TryGetFortniteVersion() != await GetFortniteBuild())
+        if (await _configService.TryGetFortniteVersion() != await GetLastestVersion())
         {
-            await RemoveDupedFiles();
+            RemoveDupedFiles();
             await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected old backups!", "The swapper has automatically removed them for you!", "warning");
         }
     }
     
     private async Task CheckUpdate()
     {
-        if (Constants.UserVersion != await GetLastestVersion())
+        if (Constants.UserVersion != await GetSwapperVersion())
             saturnState = SaturnState.S_Update;
     }
 
@@ -765,11 +765,16 @@
         var data = await _saturnAPIService.ReturnEndpointAsync("/");
         return JsonConvert.DeserializeObject<IndexModel>(data).APIVersion;
     }
-    
-    private async Task<string> GetLastestVersion()
+
+    private async Task<string> GetSwapperVersion()
     {
         var data = await _saturnAPIService.ReturnEndpointAsync("/");
         return JsonConvert.DeserializeObject<IndexModel>(data).swapperVersion;
+    }
+    
+    private async Task<string> GetLastestVersion()
+    {
+        return _fortniteAPIService.GetAES().Build;
     }
 
     private async Task RunError()

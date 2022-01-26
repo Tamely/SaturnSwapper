@@ -100,6 +100,12 @@ public sealed class SwapperService : ISwapperService
                     Logger.Log($"There was an error reverting {item.Name}!", LogLevel.Error);
                     Process.Start("notepad.exe", Config.LogFile);
                 }
+                else if (Config.isMaintenance)
+                {
+                    await _jsRuntime.InvokeVoidAsync("MessageBox", "Some parts of the swapper may be broken!",
+                        "Tamely hasn't updated the swapper's offsets to the current Fortnite build. Watch announcements in his server so you are the first to know when he does!",
+                        "warning");
+                }
             }
             else
             {
@@ -124,6 +130,12 @@ public sealed class SwapperService : ISwapperService
                         Logger.Log($"There was an error converting {Items[randomNumber].Name}!", LogLevel.Error);
                         Process.Start("notepad.exe", Config.LogFile);
                     }
+                    else if (Config.isMaintenance)
+                    {
+                        await _jsRuntime.InvokeVoidAsync("MessageBox", "Some parts of the swapper may be broken!",
+                            "Tamely hasn't updated the swapper's offsets to the current Fortnite build. Watch announcements in his server so you are the first to know when he does!",
+                            "warning");
+                    }
                 }
                 else if (!await Convert(item, option, itemType, isAuto))
                 {
@@ -132,6 +144,12 @@ public sealed class SwapperService : ISwapperService
                         Colors.C_RED);
                     Logger.Log($"There was an error converting {item.Name}!", LogLevel.Error);
                     Process.Start("notepad.exe", Config.LogFile);
+                }
+                else if (Config.isMaintenance)
+                {
+                    await _jsRuntime.InvokeVoidAsync("MessageBox", "Some parts of the swapper may be broken!",
+                        "Tamely hasn't updated the swapper's offsets to the current Fortnite build. Watch announcements in his server so you are the first to know when he does!",
+                        "warning");
                 }
 
             }
