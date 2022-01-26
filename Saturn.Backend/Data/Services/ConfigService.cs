@@ -157,6 +157,7 @@ namespace Saturn.Backend.Data.Services
             try
             {
                 ConfigFile.FortniteBuild = fortniteBuild;
+                SaveConfig();
                 return true;
             }
             catch

@@ -749,8 +749,11 @@
     {
         if (await _configService.TryGetFortniteVersion() != await GetLastestVersion())
         {
+            Logger.Log(await _configService.TryGetFortniteVersion());
             RemoveDupedFiles();
             await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected old backups!", "The swapper has automatically removed them for you!", "warning");
+
+            await _configService.TrySetFortniteVersion(await GetLastestVersion());
         }
     }
     
