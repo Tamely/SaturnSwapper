@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using CUE4Parse.UE4.Assets.Exports.Material;
@@ -83,7 +84,7 @@ public sealed class SwapperService : ISwapperService
         Trace.WriteLine($"File provider initialized with {_provider.Keys.Count} keys");
     }
 
-    public async Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = true)
+    public async Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = false)
     {
         if (!_halted)
         {
@@ -100,7 +101,8 @@ public sealed class SwapperService : ISwapperService
                     Logger.Log($"There was an error reverting {item.Name}!", LogLevel.Error);
                     Process.Start("notepad.exe", Config.LogFile);
                 }
-                else if (Config.isMaintenance)
+                
+                if (Config.isMaintenance)
                 {
                     await _jsRuntime.InvokeVoidAsync("MessageBox", "Some parts of the swapper may be broken!",
                         "Tamely hasn't updated the swapper's offsets to the current Fortnite build. Watch announcements in his server so you are the first to know when he does!",
@@ -137,7 +139,28 @@ public sealed class SwapperService : ISwapperService
                             "warning");
                     }
                 }
-                else if (!await Convert(item, option, itemType, isAuto))
+                else if (option.Name == "Default")
+                {
+                    if (Config.isBeta)
+                    {
+                        if (!await Convert(item, option, itemType, true))
+                        {
+                            await ItemUtil.UpdateStatus(item, option,
+                                $"There was an error converting {item.Name}!",
+                                Colors.C_RED);
+                            Logger.Log($"There was an error converting {item.Name}!", LogLevel.Error);
+                            Process.Start("notepad.exe", Config.LogFile);
+                        }
+                    }
+                    else
+                    {
+                        await _jsRuntime.InvokeVoidAsync("MessageBox", "This is a BETA feature!",
+                            "You have to boost Tamely's server to be able to swap from the default skin due to Saturn using a method no other swapper can offer!",
+                            "warning");
+                        return;
+                    }
+                }
+                else if (!await Convert(item, option, itemType, false))
                 {
                     await ItemUtil.UpdateStatus(item, option,
                         $"There was an error converting {item.Name}!",
@@ -145,7 +168,8 @@ public sealed class SwapperService : ISwapperService
                     Logger.Log($"There was an error converting {item.Name}!", LogLevel.Error);
                     Process.Start("notepad.exe", Config.LogFile);
                 }
-                else if (Config.isMaintenance)
+                
+                if (Config.isMaintenance)
                 {
                     await _jsRuntime.InvokeVoidAsync("MessageBox", "Some parts of the swapper may be broken!",
                         "Tamely hasn't updated the swapper's offsets to the current Fortnite build. Watch announcements in his server so you are the first to know when he does!",
@@ -158,7 +182,7 @@ public sealed class SwapperService : ISwapperService
         }
     }
 
-    public async Task<bool> Convert(Cosmetic item, SaturnItem option, ItemType itemType, bool isDefault = true, bool isRandom = false, Cosmetic random = null)
+    public async Task<bool> Convert(Cosmetic item, SaturnItem option, ItemType itemType, bool isDefault = false, bool isRandom = false, Cosmetic random = null)
     {
         try
         {
@@ -193,7 +217,7 @@ public sealed class SwapperService : ISwapperService
                     Swaps = new List<ActiveSwap>()
                 };
             }
-
+            
             if (isRandom)
                 await ItemUtil.UpdateStatus(random, option, "Checking item type");
             else
@@ -207,7 +231,11 @@ public sealed class SwapperService : ISwapperService
             Logger.Log("Generating swaps...");
 
             SaturnOption itemSwap = new();
-            if (option.Options != null)
+            if (isDefault)
+            {
+                itemSwap = await GenerateDefaultSkins(item, option);
+            }
+            else if (option.Options != null)
                 itemSwap = option.Options[0];
             else
                 itemSwap = itemType switch
@@ -250,6 +278,9 @@ public sealed class SwapperService : ISwapperService
                     Logger.Log($"Failed to export \"{asset.ParentAsset}\"!", LogLevel.Error);
                     return false;
                 }
+                if (isDefault && asset.ParentAsset.Contains("DefaultGameDataCosmetics"))
+                    data = new WebClient().DownloadData(
+                        "https://cdn.discordapp.com/attachments/770991313490280478/936001299697242182/TamelysDefaultGameData.uasset");
                 Logger.Log("Asset exported");
                 Logger.Log($"Starting backup of {SaturnData.Path}");
 
@@ -932,6 +963,171 @@ public sealed class SwapperService : ISwapperService
 
     #region GenerateMeshDefaults
 
+    private async Task<SaturnOption> GenerateDefaultSkins(Cosmetic item, SaturnItem option)
+    {
+        Logger.Log($"Getting character parts for {item.Name}");
+        Logger.Log(Constants.CidPath + item.Id);
+        
+        var characterParts = Task.Run(() => GetCharacterPartsById(item.Id)).GetAwaiter().GetResult();
+
+        if (characterParts == new Dictionary<string, string>())
+            return null;
+
+        string headOrHat = _configService.ConfigFile.HeadOrHatCharacterPart;
+        if (headOrHat == "Hat")
+        {
+            if (!characterParts.ContainsKey("Hat"))
+                headOrHat = "Face";
+            if (!characterParts.ContainsKey("Face"))
+                headOrHat = "Head";
+        }
+
+        if (headOrHat == "Head")
+        {
+            if (!characterParts.ContainsKey("Head"))
+                headOrHat = "Hat";
+        }
+
+        if (characterParts.Count > 2)
+            option.Status = "This item might not be perfect!";
+
+        return new SaturnOption()
+        {
+            Name = item.Name,
+            Icon = item.Images.SmallIcon,
+            Rarity = item.Rarity.BackendValue,
+            Assets = new List<SaturnAsset>()
+            {
+                new SaturnAsset()
+                {
+                    ParentAsset = "FortniteGame/Content/Balance/DefaultGameDataCosmetics",
+                    Swaps = new List<SaturnSwap>()
+                    {
+                        new SaturnSwap()
+                        {
+                            Search =
+                                "/Game/Athena/Heroes/Mesh/Wslt/Will/Skid/This/From/Tamely/Because/He/Always/Does/BodyCharacterPartWithExtraLongLength.BodyCharacterPartWithExtraLongLengthTamelyTamelyTamelyTamelyTamelyTamelyTamelyTamelyTamelyTamelyTamelyTamelyTamelyW",
+                            Replace = characterParts["Body"],
+                            Type = SwapType.BodyCharacterPart
+                        },
+                        new SaturnSwap()
+                        {
+                            Search =
+                                "/Game/Characters/CharacterParts/Hopefully/Wslt/Doesnt/Skid/This/From/Me/Like/He/Usually/Does/Because/That/Would/Just/Prove/So/Much/Like/When/He/Said/That/I/Dont/Own/Uassets.ICreateMyOwn.ICreateMyOwnThoughL",
+                            Replace = characterParts[headOrHat],
+                            Type = SwapType.HeadCharacterPart
+                        }
+                    }
+                },
+                new SaturnAsset()
+                {
+                    ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Athena_Body_M_Prime",
+                    Swaps = new List<SaturnSwap>()
+                    {
+                        new SaturnSwap()
+                        {
+                            Search = "CP_Athena_Body_M_Prime",
+                            Replace = "CP_Athena_Body_M_Pr1me",
+                            Type = SwapType.BodyCharacterPart
+                        }
+                    }
+                },
+                new SaturnAsset()
+                {
+                    ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Athena_Body_M_Prime_G",
+                    Swaps = new List<SaturnSwap>()
+                    {
+                        new SaturnSwap()
+                        {
+                            Search = "CP_Athena_Body_M_Prime_G",
+                            Replace = "CP_Athena_Body_M_Pr1me_G",
+                            Type = SwapType.BodyCharacterPart
+                        }
+                    }
+                },
+                new SaturnAsset()
+                {
+                    ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Athena_Body_F_Prime_A",
+                    Swaps = new List<SaturnSwap>()
+                    {
+                        new SaturnSwap()
+                        {
+                            Search = "CP_Athena_Body_F_Prime_A",
+                            Replace = "CP_Athena_Body_F_Pr1me_A",
+                            Type = SwapType.BodyCharacterPart
+                        }
+                    }
+                },
+                new SaturnAsset()
+                {
+                    ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Athena_Body_F_Prime_B",
+                    Swaps = new List<SaturnSwap>()
+                    {
+                        new SaturnSwap()
+                        {
+                            Search = "CP_Athena_Body_F_Prime_B",
+                            Replace = "CP_Athena_Body_F_Pr1me_B",
+                            Type = SwapType.BodyCharacterPart
+                        }
+                    }
+                },
+                new SaturnAsset()
+                {
+                    ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Athena_Body_F_Prime_C",
+                    Swaps = new List<SaturnSwap>()
+                    {
+                        new SaturnSwap()
+                        {
+                            Search = "CP_Athena_Body_F_Prime_C",
+                            Replace = "CP_Athena_Body_F_Pr1me_C",
+                            Type = SwapType.BodyCharacterPart
+                        }
+                    }
+                },
+                new SaturnAsset()
+                {
+                    ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Athena_Body_F_Prime",
+                    Swaps = new List<SaturnSwap>()
+                    {
+                        new SaturnSwap()
+                        {
+                            Search = "CP_Athena_Body_F_Prime",
+                            Replace = "CP_Athena_Body_F_Pr1me",
+                            Type = SwapType.BodyCharacterPart
+                        }
+                    }
+                },
+                new SaturnAsset()
+                {
+                    ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Athena_Body_F_Prime_E",
+                    Swaps = new List<SaturnSwap>()
+                    {
+                        new SaturnSwap()
+                        {
+                            Search = "CP_Athena_Body_F_Prime_E",
+                            Replace = "CP_Athena_Body_F_Pr1me_E",
+                            Type = SwapType.BodyCharacterPart
+                        }
+                    }
+                },
+                new SaturnAsset()
+                {
+                    ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Athena_Body_F_Prime_G",
+                    Swaps = new List<SaturnSwap>()
+                    {
+                        new SaturnSwap()
+                        {
+                            Search = "CP_Athena_Body_F_Prime_G",
+                            Replace = "CP_Athena_Body_F_Pr1me_G",
+                            Type = SwapType.BodyCharacterPart
+                        }
+                    }
+                }
+            }
+        };
+
+    }
+    
     private async Task<SaturnOption> GenerateMeshSkins(Cosmetic item, SaturnItem option)
     {
         Logger.Log($"Getting character parts for {item.Name}");
@@ -3167,7 +3363,9 @@ public sealed class SwapperService : ISwapperService
                 && !asset.ParentAsset.Contains("Rarity") 
                 && !asset.ParentAsset.Contains("ID_") 
                 && !asset.ParentAsset.ToLower().Contains("backpack") 
-                && !asset.ParentAsset.ToLower().Contains("gameplay"))
+                && !asset.ParentAsset.ToLower().Contains("gameplay")
+                && !asset.ParentAsset.ToLower().Contains("defaultgamedatacosmetics")
+                && !asset.ParentAsset.ToLower().Contains("prime"))
             {
                 Searches.Add(Encoding.ASCII.GetBytes(asset.ParentAsset.Replace(".uasset", "").Replace("FortniteGame/Content/", "/Game/")));
                 Replaces.Add(Encoding.ASCII.GetBytes("/"));
@@ -3203,6 +3401,8 @@ public sealed class SwapperService : ISwapperService
 
             if (asset.ParentAsset.Contains("WID"))
                 AnyLength.TrySwap(ref data, Searches, Replaces, true);
+            else if (asset.ParentAsset.Contains("DefaultGameDataCosmetics") || asset.ParentAsset.Contains("Prime"))
+                AnyLength.SwapNormally(Searches, Replaces, ref data);
             else
                 AnyLength.TrySwap(ref data, Searches, Replaces);
             return true;

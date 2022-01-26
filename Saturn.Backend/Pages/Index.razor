@@ -562,6 +562,14 @@
                             <p style="color:white">@ShowStyles</p>
                         </div>
                     </div>
+                    
+                    <div class="card" @onclick=@(async () => await ToggleCharacterParts())>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2>Head or Hat?</h2>
+                            <p style="color:white">@FlipCharacterPart</p>
+                        </div>
+                    </div>
                 </div>
             }
             else
@@ -603,6 +611,7 @@
     private string FlipRarity = "";
     private string ShowStyles = "";
     private string FlipSeries = "";
+    private string FlipCharacterPart = "";
 
     private SaturnState saturnState = SaturnState.S_Key;
 
@@ -622,6 +631,9 @@
             ? "Currently set to 'WILL show item styles.' This could cause performance issues on low-end PCs!" 
             : "Currently set to 'WILL NOT show item styles.' This could cause performance issues on low-end PCs!";
 
+    private async Task ShouldFlipCharacterParts()
+        => FlipCharacterPart = "Currently set to 'Default swaps will use a " + await _configService.TryGetHeadOrHatCharacterPart() + " character part'";
+
     protected override async Task OnInitializedAsync()
     {
         AppDomain.CurrentDomain.UnhandledException += UnhandledException;
@@ -634,6 +646,8 @@
         await ShouldConvertSeries();
 
         await ShouldShowStyles();
+
+        await ShouldFlipCharacterParts();
 
         var currentUser = _discordRPCService.Client.CurrentUser;
 
@@ -881,6 +895,21 @@
         };
     }
 
+    private async Task ToggleCharacterParts()
+    {
+        switch (await _configService.TryGetHeadOrHatCharacterPart())
+        {
+            case "Head":
+                await _configService.TrySetHeadOrHatCharacterPart("Hat");
+                break;
+            case "Hat":
+                await _configService.TrySetHeadOrHatCharacterPart("Head");
+                break;
+        }
+        
+        FlipCharacterPart = "Currently set to 'Default swaps will use a " + await _configService.TryGetHeadOrHatCharacterPart() + " character part'";
+    }
+
     private async Task ToggleShowStyles()
     {
         await _configService.TrySetShouldShowStyles(!await _configService.TryGetShouldShowStyles());
@@ -889,7 +918,7 @@
         {
             true => "Currently set to 'WILL show item styles.' This could cause performance issues on low-end PCs!",
             false => "Currently set to 'WILL NOT show item styles.' This could cause performance issues on low-end PCs!"
-    };
+        };
     }
 
     private async Task OpenLog()

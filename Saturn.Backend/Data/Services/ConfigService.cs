@@ -25,6 +25,8 @@ namespace Saturn.Backend.Data.Services
         public Task<bool> TrySetShouldShowStyles(bool shouldShow);
         public Task<string> TryGetFortniteVersion();
         public Task<bool> TrySetFortniteVersion(string fortniteBuild);
+        public Task<string> TryGetHeadOrHatCharacterPart();
+        public Task<bool> TrySetHeadOrHatCharacterPart(string characterPart);
         public Task<int> GetConvertedFileCount();
         public void SaveConfig();
     }
@@ -184,6 +186,33 @@ namespace Saturn.Backend.Data.Services
             try
             {
                 ConfigFile.ShouldPickaxeSwapRarity = shouldConvert;
+                SaveConfig();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<string> TryGetHeadOrHatCharacterPart()
+        {
+            try
+            {
+                return ConfigFile.HeadOrHatCharacterPart;
+            }
+            catch
+            {
+                ConfigFile.HeadOrHatCharacterPart = "Hat";
+                return "Hat";
+            }
+        }
+        
+        public async Task<bool> TrySetHeadOrHatCharacterPart(string characterPart)
+        {
+            try
+            {
+                ConfigFile.HeadOrHatCharacterPart = characterPart;
                 SaveConfig();
                 return true;
             }

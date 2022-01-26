@@ -379,6 +379,16 @@ namespace Saturn.Backend.Data.Services
                         Rarity = "Rare"
                     }
                 };
+                if (string.IsNullOrEmpty(skin.VariantChannel))
+                    skin.CosmeticOptions.Add(new SaturnItem
+                    {
+                        ItemDefinition = "CID_A_275_Athena_Commando_F_Prime_D",
+                        Name = "Default",
+                        Description = "Standard issue Island combatant.",
+                        Icon =
+                            "https://fortnite-api.com/images/cosmetics/br/cid_a_275_athena_commando_f_prime_d/smallicon.png",
+                        Rarity = "Common"
+                    });
                 
                 if (skin.IsRandom)
                 {
@@ -444,6 +454,16 @@ namespace Saturn.Backend.Data.Services
                             Rarity = "Epic"
                         }
                     };
+                    if (string.IsNullOrEmpty(skin.VariantChannel))
+                        skin.CosmeticOptions.Add(new SaturnItem
+                        {
+                            ItemDefinition = "CID_A_275_Athena_Commando_F_Prime_D",
+                            Name = "Default",
+                            Description = "Standard issue Island combatant.",
+                            Icon =
+                                "https://fortnite-api.com/images/cosmetics/br/cid_a_275_athena_commando_f_prime_d/smallicon.png",
+                            Rarity = "Common"
+                        });
                 }
             }
             
