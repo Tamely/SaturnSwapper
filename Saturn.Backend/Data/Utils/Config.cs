@@ -19,5 +19,7 @@ namespace Saturn.Backend.Data.Utils
         public static readonly string CloudStoragePath = BasePath + "CloudStorage.ini";
         
         public static bool isBeta = false;
+        
+        public static bool isMaintenance = false;
     }
 }

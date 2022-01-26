@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using Newtonsoft.Json;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models;
 using Saturn.Backend.Data.Models.Items;
@@ -22,14 +23,19 @@ namespace Saturn.Backend.Data.Services
         public Task<bool> TrySetShouldSeriesConvert(bool shouldConvert);
         public Task<bool> TryGetShouldShowStyles();
         public Task<bool> TrySetShouldShowStyles(bool shouldShow);
+        public Task<string> TryGetFortniteVersion();
+        public Task<bool> TrySetFortniteVersion(string fortniteBuild);
         public Task<int> GetConvertedFileCount();
         public void SaveConfig();
     }
 
     public class ConfigService : IConfigService
     {
-        public ConfigService()
+        private readonly IFortniteAPIService _fortniteAPIService;
+        public ConfigService(IFortniteAPIService fortniteAPIService)
         {
+            _fortniteAPIService = fortniteAPIService;
+            
             if (!TryGetConfig())
                 Logger.Log("There was an error parsing the config. Generating new one!", LogLevel.Warning);
             if (!TrySetFortniteLocation().GetAwaiter().GetResult())
@@ -117,7 +123,10 @@ namespace Saturn.Backend.Data.Services
             }
             catch
             {
-                ConfigFile = new Configuration();
+                ConfigFile = new Configuration()
+                {
+                    FortniteBuild = _fortniteAPIService.GetAES().Build
+                };
                 return false;
             }
         }
@@ -128,6 +137,31 @@ namespace Saturn.Backend.Data.Services
             foreach (var swap in from item in ConfigFile.ConvertedItems from swap in item.Swaps where convertedFiles.IndexOf(swap.File) == -1 select swap)
                 convertedFiles.Add(swap.File);
             return convertedFiles.Count;
+        }
+
+        public async Task<string> TryGetFortniteVersion()
+        {
+            try
+            {
+                return ConfigFile.FortniteBuild;
+            }
+            catch
+            {
+                return "Null or error";
+            }
+        }
+
+        public async Task<bool> TrySetFortniteVersion(string fortniteBuild)
+        {
+            try
+            {
+                ConfigFile.FortniteBuild = fortniteBuild;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public async Task<bool> TryGetShouldRarityConvert()

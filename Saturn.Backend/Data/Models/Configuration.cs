@@ -14,6 +14,7 @@ namespace Saturn.Backend.Data.Models
         }
 
         [JsonProperty("installLocation")] public string InstallLocation { get; set; }
+        [JsonProperty("fortniteBuild")] public string FortniteBuild { get; set; }
         [JsonProperty("convertedItems")] public List<ConvertedItem> ConvertedItems { get; set; }
         [JsonProperty("shouldDebugShow")] public bool ShouldDebugShow { get; set; } = true;
         [JsonProperty("shouldPickaxeSwapRarity")] public bool ShouldPickaxeSwapRarity { get; set; } = true;

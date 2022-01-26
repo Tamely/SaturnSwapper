@@ -628,8 +628,6 @@
         
         if (!CheckForInternetConnection())
             throw new WebException("No internet connection");
-      
-        await CheckMaintenance();
 
         await ShouldConvertRarity();
 
@@ -659,6 +657,10 @@
         await CheckKey();
 
         await CheckUpdate();
+        
+        await CheckMaintenance();
+
+        await CheckForOldFiles();
 
         await base.OnInitializedAsync();
     }
@@ -740,7 +742,16 @@
     private async Task CheckMaintenance()
     {
         if (_fortniteAPIService.GetAES().Build != await GetFortniteBuild())
-            saturnState = SaturnState.S_Maintenance;
+            Config.isMaintenance = true;
+    }
+
+    private async Task CheckForOldFiles()
+    {
+        if (await _configService.TryGetFortniteVersion() != await GetFortniteBuild())
+        {
+            await RemoveDupedFiles();
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected old backups!", "The swapper has automatically removed them for you!", "warning");
+        }
     }
     
     private async Task CheckUpdate()
