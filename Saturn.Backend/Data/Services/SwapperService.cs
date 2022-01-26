@@ -974,10 +974,15 @@ public sealed class SwapperService : ISwapperService
             return null;
 
         string headOrHat = _configService.ConfigFile.HeadOrHatCharacterPart;
+        Logger.Log("Hat or head is set to: " + headOrHat);
         if (headOrHat == "Hat")
         {
             if (!characterParts.ContainsKey("Hat"))
                 headOrHat = "Face";
+        }
+        
+        if (headOrHat == "Face")
+        {
             if (!characterParts.ContainsKey("Face"))
                 headOrHat = "Head";
         }
@@ -987,6 +992,8 @@ public sealed class SwapperService : ISwapperService
             if (!characterParts.ContainsKey("Head"))
                 headOrHat = "Hat";
         }
+        
+        Logger.Log("Hat or head is swapping as: " + headOrHat);
 
         if (characterParts.Count > 2)
             option.Status = "This item might not be perfect!";
