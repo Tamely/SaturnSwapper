@@ -3145,7 +3145,11 @@ public sealed class SwapperService : ISwapperService
 
         try
         {
-            if (!asset.ParentAsset.Contains("WID") && !asset.ParentAsset.Contains("Rarity") && !asset.ParentAsset.Contains("ID_") && !asset.ParentAsset.ToLower().Contains("backpack") && !asset.ParentAsset.ToLower().Contains("gameplay"))
+            if (!asset.ParentAsset.Contains("WID") 
+                && !asset.ParentAsset.Contains("Rarity") 
+                && !asset.ParentAsset.Contains("ID_") 
+                && !asset.ParentAsset.ToLower().Contains("backpack") 
+                && !asset.ParentAsset.ToLower().Contains("gameplay"))
             {
                 Searches.Add(Encoding.ASCII.GetBytes(asset.ParentAsset.Replace(".uasset", "").Replace("FortniteGame/Content/", "/Game/")));
                 Replaces.Add(Encoding.ASCII.GetBytes("/"));
