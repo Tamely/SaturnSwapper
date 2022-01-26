@@ -1235,7 +1235,7 @@ public sealed class SwapperService : ISwapperService
         foreach (var (material, value) in MaterialReplacements)
         {
             if (material.ToLower().Contains("hat") || material.ToLower().Contains("helmet") ||
-                material.ToLower().Contains("faceacc"))
+                material.ToLower().Contains("faceacc") || material.ToLower().Contains("mask"))
             {
                 int i = 0;
                 while (swapModel.FaceACCMaterials.ContainsKey(i)) i++;
@@ -1255,7 +1255,7 @@ public sealed class SwapperService : ISwapperService
             }
         }
 
-        if ((swapModel.HeadMesh.ToLower().Contains("ramirez") || swapModel.HeadMesh.ToLower().Contains("starfish")) &&
+        if ((swapModel.HeadMesh.ToLower().Contains("ramirez")) &&
             !swapModel.HeadMesh.ToLower().Contains("/parts/"))
         {
             foreach (var material in swapModel.HeadMaterials)
@@ -1402,7 +1402,7 @@ public sealed class SwapperService : ISwapperService
                             new SaturnSwap()
                             {
                                 Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Skins/Female_Commando_StreetRacerBlack/Materials/F_MED_StreetRacerBlack_Head_01.F_MED_StreetRacerBlack_Head_01",
-                                Replace = swapModel.HeadMaterials[0],
+                                Replace = swapModel.HeadMaterials[1],
                                 Type = SwapType.HeadMaterial
                             }
                         }
