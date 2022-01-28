@@ -92,6 +92,14 @@ main {
         color: black;
     }
     
+    .plugins {
+        color: black;
+    }
+
+    .PluginButton {
+        color: black;
+    }
+    
     .maindash {
         color: white;
     }
@@ -124,7 +132,7 @@ main {
         );
     }
 
-    .items input {
+    .iteminput {
         background: linear-gradient(
                 to right bottom,
                 rgba(255, 255, 255, 0.7),
@@ -152,6 +160,14 @@ main {
 @media (prefers-color-scheme: light) {
     main {
         background: linear-gradient(to right top, #65dfc9, #6cdbeb);
+        color: black;
+    }
+
+    .plugins {
+        color: black;
+    }
+
+    .PluginButton {
         color: black;
     }
 
@@ -191,7 +207,7 @@ main {
         );
     }
 
-    .items input {
+    .iteminput {
         background: linear-gradient(
                 to right bottom,
                 rgba(255, 255, 255, 0.7),
@@ -230,6 +246,14 @@ main {
         );
     }
 
+    .plugins {
+        color: white;
+    }
+
+    .PluginButton {
+        color: white;
+    }
+
     .maindash {
         color: white;
     }
@@ -258,7 +282,7 @@ main {
         filter: invert(1);
     }
 
-    .items input {
+    .iteminput {
         background: linear-gradient(
                 to right bottom,
                 rgba(0, 0, 0, 0.7),
@@ -321,15 +345,6 @@ main {
     flex: 4;
 }
 
-.plugins input {
-    padding-left: 10px;
-    border: none;
-    width:70%;
-    border-radius: 25%;
-    color: grey;
-    background-color: #6cdbeb;
-}
-
 .key {
     padding-left: 10px;
     width: 50%;
@@ -338,14 +353,32 @@ main {
     border: none;
 }
 
-.plugins {
-    margin-top: 50%;
-    padding-top: 20px;
-    height: 10%;
-    position: relative;
+.plugins{
+    position: absolute;
 }
 
-.items input {
+.PluginButton {
+    margin-right: 5px;
+    background: transparent;
+    opacity: 0.75;
+    color: orangered;
+    border-radius: 2vh;
+    border: 0.5px solid orangered;
+    font-family: "Manrope Regular", sans-serif;
+    font-size: 13px;
+    width: 12%;
+    height: 4%;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-top: 20%;
+}
+
+.PluginButton:hover {
+    opacity: 1;
+    transition: 0.3s;
+}
+
+.iteminput {
     border: none;
     width: 50%;
     border-radius: 2vh;

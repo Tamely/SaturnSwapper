@@ -13,6 +13,7 @@ namespace Saturn.Backend.Data.Utils
         public static readonly string MappingsFolder = BasePath + "/Mappings/";
         public static readonly string CompressedDataPath = BasePath + "/CompressedData/";
         public static readonly string DecompressedDataPath = BasePath + "/DecompressedData/";
+        public static readonly string PluginsPath = BasePath + "/Plugins/";
 
         public static readonly string LogFile = LogPath + "Saturn.log";
 

@@ -16,11 +16,13 @@
 @using Saturn.Backend.Data.Models.Items
 @using Saturn.Backend.Data.Utils
 @using System.Diagnostics
+@using System.Reflection
 @using System.Runtime.ExceptionServices
 @using System.Text.RegularExpressions
 @using MudBlazor
 @using Newtonsoft.Json
 @using Saturn.Backend.Data.Models.SaturnAPI
+@using Saturn.Backend.Data.Utils.ReadPlugins
 @using Colors = Saturn.Backend.Data.Enums.Colors
 @inherits LayoutComponentBase
 
@@ -97,7 +99,7 @@
             <div class="items">
             @if (saturnState != SaturnState.S_Settings && saturnState != SaturnState.S_Dash && saturnState != SaturnState.S_Error)
             {
-                <input type="text" placeholder="Search" style="text-indent: 10px; color:grey;" @oninput="@(async change => {await FilterItems(change.Value.ToString()); })"/>
+                <input class="iteminput" type="text" placeholder="Search" style="text-indent: 10px; color:grey;" @oninput="@(async change => {await FilterItems(change.Value.ToString()); })"/>
                 
                 <select class="dropdown" name="searchType" id="searchType">
                     <option @onselect=@(async() => await SetSearchType(SearchType.ST_Name)) value="name">Name</option>
@@ -295,6 +297,14 @@
                             </div>
                         </div>
                     }
+                    <div class="card" @onclick=@(() => saturnState = SaturnState.S_Plugins)>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2 style="color: white;">Add plugin</h2>
+                            <p style="color:white">Be able to use your own swaps.</p>
+                        </div>
+                    </div>
+                    
                     @foreach (var item in Items)
                     {
                         if (!item.IsPickingStyles)
@@ -429,13 +439,10 @@
             }
             else if (saturnState == SaturnState.S_Plugins)
             {
-                <div class="plugins">
-                    <input type="text" placeholder="Item Name"/>
-                    <input type="text" placeholder="Item Description"/>
-                    <input type="text" placeholder="Item Rarity"/>
-                    <input type="text" placeholder="Item ID"/>
-                    <input type="text" placeholder="Item Icon (Link)"/>
-                </div>
+                <h2 class="plugins">Put plugins in the directory with the Saturn exe</h2>
+                <h2 style="margin-top: 10%;" class="plugins">then press the button below to add them!</h2>
+                
+                <button @onclick=@(async() => await SubmitPlugin()) class="PluginButton">Check Plugins</button>
             }
             else if (saturnState == SaturnState.S_Dash)
             {
@@ -681,7 +688,7 @@
     
     private void UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        if (_halted || e != null && !e.ToString().Contains("Saturn"))
+        if (_halted)
             return;
 
         _halted = true;
@@ -921,6 +928,16 @@
         };
     }
 
+    private async Task SubmitPlugin()
+    {
+        Directory.CreateDirectory(Config.PluginsPath);
+        foreach (var file in Directory.GetFiles(Assembly.GetEntryAssembly().Location.Replace(Path.GetFileName(Assembly.GetEntryAssembly().Location), "")))
+            if (file.EndsWith(".json") || file.EndsWith(".saturn"))
+                File.Move(file, Config.PluginsPath + Path.GetFileName(file));
+        
+        await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished moving plugin files to the plugins folder!", "success");
+    }
+
     private async Task OpenLog()
     {
         Process.Start("notepad.exe", Config.LogFile);
@@ -1039,6 +1056,14 @@
     {
         saturnState = SaturnState.S_Loading;
         Items = await _fortniteAPIService.GetSaturnMisc();
+
+        foreach (var file in Directory.EnumerateFiles(Config.PluginsPath))
+        {
+            Items.Add(await DotSaturn.Read(file));
+        }
+
+        Items = await _fortniteAPIService.AreItemsConverted(Items);
+        
         BackupItems = new List<Cosmetic>(Items);
         currentType = ItemType.IT_Misc;
         saturnState = SaturnState.S_Misc;

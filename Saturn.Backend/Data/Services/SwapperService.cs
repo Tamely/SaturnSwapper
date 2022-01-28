@@ -296,7 +296,7 @@ public sealed class SwapperService : ISwapperService
                     Logger.Log($"Cannot swap/determine if '{asset.ParentAsset}' is Base64 or not!",
                         LogLevel.Fatal);
 
-                var compressed = SaturnData.isCompressed ? Oodle.Compress(data) : data;
+                var compressed = SaturnData.isCompressed ? Utils.Oodle.Compress(data) : data;
 
                 Directory.CreateDirectory(Config.DecompressedDataPath);
                 File.SetAttributes(Config.DecompressedDataPath,
@@ -542,9 +542,6 @@ public sealed class SwapperService : ISwapperService
         {
             if (_provider.TryLoadObject(backblingCharacterPart.Split('.')[0], out var bCP))
             {
-                Logger.Log(JsonConvert.SerializeObject(_provider.LoadObjectExports(backblingCharacterPart.Split('.')[0]), Formatting.Indented));
-                
-                
                 output.Add("Mesh",
                     bCP.TryGetValue(out FSoftObjectPath SkeletalMesh, "SkeletalMesh") 
                         ? SkeletalMesh.AssetPathName.Text 
@@ -992,6 +989,20 @@ public sealed class SwapperService : ISwapperService
             if (!characterParts.ContainsKey("Head"))
                 headOrHat = "Hat";
         }
+        
+        if (headOrHat == "Hat")
+        {
+            if (!characterParts.ContainsKey("Hat"))
+                headOrHat = "Face";
+        }
+        
+        // Fallback, 2 body cps so nothing goes invalid because there isnt a head or hat
+        if (headOrHat == "Face")
+        {
+            if (!characterParts.ContainsKey("Face"))
+                headOrHat = "Body";
+        }
+
         
         Logger.Log("Hat or head is swapping as: " + headOrHat);
 
