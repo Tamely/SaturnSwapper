@@ -46,7 +46,8 @@ public class DotSaturn
     
     public static void Write(string filePath, string json)
     {
-        byte[] data = new byte[] { };
+        // Avoid 0 length array allocation
+        byte[] data = Array.Empty<byte>();
         
         using (var md5 = MD5.Create())
         {
