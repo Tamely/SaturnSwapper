@@ -12,6 +12,7 @@ using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Models.Items.Galaxy;
+using Saturn.Backend.Data.Models.Items.Lele;
 using Saturn.Backend.Data.Models.SaturnAPI;
 using Asset = Saturn.Backend.Data.Models.SaturnAPI.Asset;
 using Swap = Saturn.Backend.Data.Models.SaturnAPI.Swap;
@@ -42,12 +43,12 @@ public class DotSaturn
             }
             catch
             {
-                var plugin = JsonConvert.DeserializeObject<GalaxyPlugin>(await File.ReadAllTextAsync(filePath));
+                var plugin = JsonConvert.DeserializeObject<LelePlugin>(await File.ReadAllTextAsync(filePath));
 
-                Logger.Log("Plugin is of type Galaxy!");
+                Logger.Log("Plugin is of type Lele!");
                 Logger.Log("Converting Galaxy Swapper plugin to Saturn plugin format...");
 
-                var saturnTypePlugin = await ConvertGalaxyToSaturn(plugin);
+                var saturnTypePlugin = await ConvertLeleToSaturn(plugin);
 
                 Logger.Log("Conversion complete!");
                 Logger.Log("Converting Saturn plugin to Saturn item.");
@@ -160,6 +161,44 @@ public class DotSaturn
             assets.Add(new Asset()
             {
                 AssetPath = asset.Path,
+                Swaps = swaps
+            });
+        }
+        
+        pluginModel.Assets = assets;
+
+        return pluginModel;
+    }
+    
+    public static async Task<PluginModel> ConvertLeleToSaturn(LelePlugin lelePlugin)
+    {
+        var pluginModel = new PluginModel
+        {
+            Name = lelePlugin.DefaultName + " to " + lelePlugin.SwappedName,
+            Icon = lelePlugin.SwappedIcon,
+            SwapIcon = lelePlugin.DefaultIcon,
+            Message = lelePlugin.Messages[0].localization[0].message
+        };
+
+
+        List<Asset> assets = new List<Asset>();
+
+        foreach (var asset in lelePlugin.Swaps)
+        {
+            List<Swap> swaps = new List<Swap>();
+            foreach (var swap in asset.Swaps)
+            {
+                swaps.Add(new Swap()
+                {
+                    Search = swap.Key,
+                    Replace = swap.Value.ToString()
+                });
+            }
+            
+            
+            assets.Add(new Asset()
+            {
+                AssetPath = asset.AssetPath,
                 Swaps = swaps
             });
         }

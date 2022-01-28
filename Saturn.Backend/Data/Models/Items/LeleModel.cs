@@ -4,7 +4,7 @@ using J = Newtonsoft.Json.JsonPropertyAttribute;
 
 namespace Saturn.Backend.Data.Models.Items.Lele
 {
-    public class Plugin
+    public class LelePlugin
     {
         [J("default_icon")] public string DefaultIcon { get; set; }
         [J("default_id")] public string DefaultId { get; set; }
