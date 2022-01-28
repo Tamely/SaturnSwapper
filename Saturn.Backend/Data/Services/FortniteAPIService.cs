@@ -55,14 +55,14 @@ namespace Saturn.Backend.Data.Services
         {
             var data = await GetDataAsync(CosmeticsByType("AthenaDance"));
             var Emotes = JsonConvert.DeserializeObject<CosmeticList>(data);
-            
+
             Emotes.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
 
             foreach (var item in Emotes.Data.Where(item => item.Name.ToLower() == "random"))
             {
                 item.IsRandom = true;
             }
-            
+
             Trace.WriteLine($"Deserialized {Emotes.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Emotes.Data.Count} different emotes");
@@ -73,32 +73,32 @@ namespace Saturn.Backend.Data.Services
         {
             var data = await GetDataAsync(CosmeticsByType("AthenaBackpack"));
             var Backs = JsonConvert.DeserializeObject<CosmeticList>(data);
-            
+
             Backs.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
 
             foreach (var item in Backs.Data.Where(item => item.Name.ToLower() == "random"))
             {
                 item.IsRandom = true;
             }
-            
+
             Trace.WriteLine($"Deserialized {Backs.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Backs.Data.Count} different backpacks");
             return await AreItemsConverted(await AddExtraItems(await RemoveItems(Backs.Data), ItemType.IT_Backbling));
         }
-        
+
         public async Task<List<Cosmetic>> GetSaturnPickaxes()
         {
             var data = await GetDataAsync(CosmeticsByType("AthenaPickaxe"));
             var Picks = JsonConvert.DeserializeObject<CosmeticList>(data);
-            
+
             Picks.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
 
             foreach (var item in Picks.Data.Where(item => item.Name.ToLower() == "random"))
             {
                 item.IsRandom = true;
             }
-            
+
             Trace.WriteLine($"Deserialized {Picks.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Picks.Data.Count} different pickaxes");
@@ -107,10 +107,10 @@ namespace Saturn.Backend.Data.Services
 
         public async Task<List<Cosmetic>> GetSaturnSkins()
         {
-            
+
             var data = await GetDataAsync(CosmeticsByType("AthenaCharacter"));
             var Skins = JsonConvert.DeserializeObject<CosmeticList>(data);
-            
+
             Skins.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero" || x.Id.ToLower().Contains("cid_vip_"));
 
             Dictionary<string, Cosmetic> CosmeticsToInsert = new();
@@ -136,7 +136,7 @@ namespace Saturn.Backend.Data.Services
                                 if (string.IsNullOrEmpty(style.Name)) continue;
                                 if (style.Name.ToLower().Contains("default") || style.Name.Replace(item.Name, "") == "")
                                     continue;
-                            
+
                                 CosmeticsToInsert.Add(Skins.Data.IndexOf(item) + " + " + i, new Cosmetic()
                                 {
                                     Name = style.Name,
@@ -164,8 +164,8 @@ namespace Saturn.Backend.Data.Services
                 Skins.Data.Insert(int.Parse(key.Split(" + ")[0]) + Offseter, value);
                 Offseter++;
             }
-                
-                
+
+
             Trace.WriteLine($"Deserialized {Skins.Data.Count} objects");
 
             _discordRPCService.UpdatePresence($"Looking at {Skins.Data.Count} different skins");
@@ -174,12 +174,12 @@ namespace Saturn.Backend.Data.Services
                 ItemType.IT_Skin));
 
         }
-        
+
         public async Task<List<Cosmetic>> GetSaturnMisc()
         {
             return await AreItemsConverted(await AddExtraItems(new List<Cosmetic>(), ItemType.IT_Misc));
         }
-        
+
         private async Task<List<Cosmetic>> RemoveItems(List<Cosmetic> items)
         {
             Logger.Log("Removing items");
@@ -198,10 +198,10 @@ namespace Saturn.Backend.Data.Services
                         {
                             var item = items.Find(x => x.Id == changes.Item.ItemID);
                             if (item == null || item == new Cosmetic()) continue;
-                            
+
                             item.CosmeticOptions.RemoveAll(x => changes.RemoveOptions.Contains(x.ItemDefinition));
                         }
-                            
+
                     }
                     catch (Exception e)
                     {
@@ -216,7 +216,7 @@ namespace Saturn.Backend.Data.Services
         private async Task<List<Cosmetic>> AddExtraItems(List<Cosmetic> items, ItemType itemType)
         {
             Logger.Log("Adding extra items");
-            
+
             List<Cosmetic> extraItems = new List<Cosmetic>();
 
             foreach (var section in _cloudStorageService.GetSections())
@@ -224,7 +224,7 @@ namespace Saturn.Backend.Data.Services
                 foreach (var key in section.Keys)
                 {
                     var changes = _cloudStorageService.DecodeChanges(key.Value);
-                    
+
                     if (changes.addOptions && changes.Item.ItemType == itemType)
                     {
                         var itemInList = items.FirstOrDefault(x => x.Id.ToLower() == changes.Item.ItemID.ToLower());
@@ -309,15 +309,15 @@ namespace Saturn.Backend.Data.Services
         {
             Logger.Log("Getting hat types");
             var DifferentHatsStr = _cloudStorageService.GetChanges("Skins", "HatTypes");
-            
+
             Logger.Log(DifferentHatsStr);
 
             Logger.Log("Decoding hat types");
             var DifferentHats = _cloudStorageService.DecodeChanges(DifferentHatsStr).MiscData;
-            
+
             foreach (var skin in skins)
             {
-                skin.CosmeticOptions= new()
+                skin.CosmeticOptions = new()
                 {
                     new SaturnItem
                     {
@@ -377,6 +377,16 @@ namespace Saturn.Backend.Data.Services
                         Description = "Synthetic diamonds need not apply.",
                         Icon = "https://fortnite-api.com/images/cosmetics/br/cid_936_athena_commando_f_raidersilver/smallicon.png",
                         Rarity = "Rare"
+                    },
+                    new SaturnItem
+                    {
+                        ItemDefinition = "CID_294_Athena_Commando_F_RedKnightWinter",
+                        Name = "Frozen Red Knight",
+                        Description = "Frozen menace of icy tundra.",
+                        Icon =
+                                "https://fortnite-api.com/images/cosmetics/br/cid_294_athena_commando_f_redknightwinter/smallicon.png",
+                        Rarity = "Legendary",
+                        Series = "FrozenSeries"
                     }
                 };
                 if (string.IsNullOrEmpty(skin.VariantChannel))
@@ -389,10 +399,10 @@ namespace Saturn.Backend.Data.Services
                             "https://fortnite-api.com/images/cosmetics/br/cid_a_275_athena_commando_f_prime_d/smallicon.png",
                         Rarity = "Common"
                     });
-                
+
                 if (skin.IsRandom)
                 {
-                    skin.CosmeticOptions= new()
+                    skin.CosmeticOptions = new()
                     {
                         new SaturnItem
                         {
@@ -435,6 +445,16 @@ namespace Saturn.Backend.Data.Services
                             Icon =
                                 "https://fortnite-api.com/images/cosmetics/br/cid_162_athena_commando_f_streetracer/smallicon.png",
                             Rarity = "Epic"
+                        },
+                        new SaturnItem
+                        {
+                            ItemDefinition = "CID_294_Athena_Commando_F_RedKnightWinter",
+                            Name = "Frozen Red Knight",
+                            Description = "Frozen menace of icy tundra.",
+                            Icon =
+                                "https://fortnite-api.com/images/cosmetics/br/cid_294_athena_commando_f_redknightwinter/smallicon.png",
+                            Rarity = "Legendary",
+                            Series = "FrozenSeries"
                         }
                     };
                 }
@@ -466,7 +486,7 @@ namespace Saturn.Backend.Data.Services
                         });
                 }
             }
-            
+
             return skins;
         }
 
@@ -477,7 +497,7 @@ namespace Saturn.Backend.Data.Services
             Logger.Log("Checking if items are converted...");
             var convertedItems = await _configService.TryGetConvertedItems();
             Logger.Log("Cross checking a converted items list of " + convertedItems.Count + " items...");
-            
+
             if (convertedItems.Count > 0)
                 convertedItems.Any(x => ret.Any(y =>
                 {
