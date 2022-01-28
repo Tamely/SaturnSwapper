@@ -316,10 +316,12 @@ main {
 }
 
 .user p {
+    font-family: "Manrope Regular", sans-serif;
     font-size: 2vh;
 }
 
 .option {
+    font-family: "Manrope Regular", sans-serif;
     display: flex;
     padding: 2vh 2vh;
     align-items: center;
@@ -474,6 +476,7 @@ main {
 }
 
 .card-info p {
+    font-family: "Manrope Regular", sans-serif;
     font-size: 11px;
     padding-left: 10px;
     position: relative;
