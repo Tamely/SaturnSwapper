@@ -1503,6 +1503,18 @@ public sealed class SwapperService : ISwapperService
                 }
             }
         }
+        
+        if (option.Name == "Blizzabelle")
+        {
+            if (swapModel.HeadMaterials.Count > 1 && swapModel.FaceACCMaterials.Count < 2)
+            {
+                (swapModel.FaceACCMesh, swapModel.HeadMesh) = (swapModel.HeadMesh, swapModel.FaceACCMesh);
+                (swapModel.FaceACCABP, swapModel.HeadABP) = (swapModel.HeadABP, swapModel.FaceACCABP);
+                (swapModel.FaceACCMaterials, swapModel.HeadMaterials) = (swapModel.HeadMaterials, swapModel.FaceACCMaterials);
+                (swapModel.HeadFX, swapModel.FaceACCFX) = (swapModel.FaceACCFX, swapModel.HeadFX);
+                (swapModel.HeadPartModifierBP, swapModel.FaceACCPartModifierBP) = (swapModel.FaceACCPartModifierBP, swapModel.HeadPartModifierBP);
+            }
+        }
             
         if (swapModel.BodyMaterials == new Dictionary<int, string>() || swapModel.BodyMaterials.Count < 5)
             for (int i = swapModel.BodyMaterials.Count; i < 5; i++)
