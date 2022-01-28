@@ -577,6 +577,14 @@
                             <p style="color:white">@FlipCharacterPart</p>
                         </div>
                     </div>
+                    
+                    <div class="card" @onclick=@(async () => { Directory.Delete(Config.PluginsPath); await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished removing all plugins!", "success"); })>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2>Remove plugins</h2>
+                            <p style="color:white">Removes all plugins</p>
+                        </div>
+                    </div>
                 </div>
             }
             else
