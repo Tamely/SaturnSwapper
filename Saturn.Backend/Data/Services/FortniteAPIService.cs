@@ -377,6 +377,16 @@ namespace Saturn.Backend.Data.Services
                         Description = "Synthetic diamonds need not apply.",
                         Icon = "https://fortnite-api.com/images/cosmetics/br/cid_936_athena_commando_f_raidersilver/smallicon.png",
                         Rarity = "Rare"
+                    },
+                    new SaturnItem
+                    {
+                        ItemDefinition = "CID_294_Athena_Commando_F_RedKnightWinter",
+                        Name = "Frozen Red Knight",
+                        Description = "Frozen menace of icy tundra.",
+                        Icon =
+                                "https://fortnite-api.com/images/cosmetics/br/cid_294_athena_commando_f_redknightwinter/smallicon.png",
+                        Rarity = "Legendary",
+                        Series = "FrozenSeries"
                     }
                 };
                 if (string.IsNullOrEmpty(skin.VariantChannel))
@@ -435,6 +445,16 @@ namespace Saturn.Backend.Data.Services
                             Icon =
                                 "https://fortnite-api.com/images/cosmetics/br/cid_162_athena_commando_f_streetracer/smallicon.png",
                             Rarity = "Epic"
+                        },
+                        new SaturnItem
+                        {
+                            ItemDefinition = "CID_294_Athena_Commando_F_RedKnightWinter",
+                            Name = "Frozen Red Knight",
+                            Description = "Frozen menace of icy tundra.",
+                            Icon =
+                                "https://fortnite-api.com/images/cosmetics/br/cid_294_athena_commando_f_redknightwinter/smallicon.png",
+                            Rarity = "Legendary",
+                            Series = "FrozenSeries"
                         }
                     };
                 }

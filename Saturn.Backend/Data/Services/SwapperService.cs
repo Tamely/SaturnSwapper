@@ -2420,6 +2420,114 @@ public sealed class SwapperService : ISwapperService
                     }
                 }
             },
+            "CID_294_Athena_Commando_F_RedKnightWinter" => new SaturnOption()
+            {
+                Name = item.Name,
+                Icon = item.Images.SmallIcon,
+                Rarity = item.Rarity.BackendValue,
+                Assets = new()
+                {
+                    new SaturnAsset()
+                    {
+                        ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_RedKnightWinter",
+                        Swaps = new()
+                        {
+                            new SaturnSwap()
+                            {
+                                Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
+                                Replace = swapModel.BodyABP ?? "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C",
+                                Type = SwapType.BodyAnim
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01.F_Med_Soldier_01",
+                                Replace = swapModel.BodyMesh,
+                                Type = SwapType.BodyMesh
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = "/Game/Characters/Player/Female/Medium/Base/SK_M_Female_Base_Skeleton.SK_M_Female_Base_Skeleton",
+                                Replace = swapModel.BodySkeleton,
+                                Type = SwapType.BodySkeleton
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Skins/TV_32_RedKnight_Winter/Materials/M_F_MED_Commando_RedKnight_Winter.M_F_MED_Commando_RedKnight_Winter",
+                                Replace = swapModel.BodyMaterials[0],
+                                Type = SwapType.BodyMaterial
+                            }
+                        }
+                    },
+                    new SaturnAsset()
+                    {
+                        ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_RedKnightWinter",
+                        Swaps = new()
+                        {
+                            new SaturnSwap()
+                            {
+                                Search = "/Game/Characters/CharacterColorSwatches/Skin/F_Med_HIS.F_Med_HIS",
+                                Replace = swapModel.HeadSkinColor,
+                                Type = SwapType.SkinTone
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = "/Game/Characters/CharacterColorSwatches/Hair/HairColor_01.HairColor_01",
+                                Replace = swapModel.HeadHairColor,
+                                Type = SwapType.HairColor
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_HIS_Ramirez_Head_01/Mesh/F_MED_HIS_Ramirez_Head_01_AnimBP_Child.F_MED_HIS_Ramirez_Head_01_AnimBP_Child_C",
+                                Replace = swapModel.HeadABP ?? "/Game/Characters/Player/Female/Medium/Heads/F_MED_HIS_Ramirez_Head_01/Mesh/F_MED_HIS_Ramirez_Head_01_AnimBP_Child.F_MED_HIS_Ramirez_Head_01_AnimBP_Child_C",
+                                Type = SwapType.HeadAnim
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = "/Game/Characters/Player/Female/Medium/Heads/F_MED_HIS_Ramirez_Head_01/Mesh/F_MED_HIS_Ramirez_Head_01.F_MED_HIS_Ramirez_Head_01",
+                                Replace = swapModel.HeadMesh,
+                                Type = SwapType.HeadMesh
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = "/Game/Characters/Player/Female/Medium/Heads/F_Med_Head_01/Materials/Chainmail/F_MED_Commando_RedKnight_Winter.F_MED_Commando_RedKnight_Winter",
+                                Replace = swapModel.HeadMaterials[1],
+                                Type = SwapType.HeadMaterial
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = "/Game/Characters/Player/Female/Medium/Heads/F_Med_Head_01/Materials/F_MED_Commando_No_Hair.F_MED_Commando_No_Hair",
+                                Replace = swapModel.HeadMaterials[0] ?? "/Game/Owen",
+                                Type = SwapType.HairMaterial
+                            }
+                        }
+                    },
+                    new SaturnAsset()
+                    {
+                        ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Hats/Hat_F_Commando_RedKnightWinter",
+                        Swaps = new()
+                        {
+                            new SaturnSwap()
+                            {
+                                Search = "/Game/Accessories/Hats/Mesh/Female_Commando_BR_BlackKnight_01.Female_Commando_BR_BlackKnight_01",
+                                Replace = swapModel.FaceACCMesh,
+                                Type = SwapType.FaceAccessoryMesh
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = "/Game/Accessories/Hats/Materials/Hat_Commando_RedKnight_Winter.Hat_Commando_RedKnight_Winter",
+                                Replace = swapModel.FaceACCMaterials[0],
+                                Type = SwapType.FaceAccessoryMaterial
+                            },
+                            new SaturnSwap()
+                            {
+                                Search = System.Convert.ToBase64String(new byte[] { 0, 5, 2, 2, 0 }),
+                                Replace = System.Convert.ToBase64String(new byte[] { 0, 5, 2, (byte)swapModel.HatType, 0 }),
+                                Type = SwapType.Property
+                            }
+                        }
+                    }
+                }
+            },
             _ => new SaturnOption()
         };
     }
@@ -2580,13 +2688,13 @@ public sealed class SwapperService : ISwapperService
         switch (option.ItemDefinition)
         {
             case "Pickaxe_ID_541_StreetFashionEclipseFemale":
-            {
-                var returnPickaxe = new SaturnOption()
                 {
-                    Name = item.Name,
-                    Icon = item.Images.SmallIcon,
-                    Rarity = item.Rarity.BackendValue,
-                    Assets = new List<SaturnAsset>()
+                    var returnPickaxe = new SaturnOption()
+                    {
+                        Name = item.Name,
+                        Icon = item.Images.SmallIcon,
+                        Rarity = item.Rarity.BackendValue,
+                        Assets = new List<SaturnAsset>()
                     {
                         new SaturnAsset()
                         {
@@ -2664,17 +2772,17 @@ public sealed class SwapperService : ISwapperService
                             }
                         }
                     }
-                };
+                    };
 
-                if (swaps["Series"] != "/")
-                {
-                    returnPickaxe.Assets.Add(
-                        new SaturnAsset()
-                        {
-                            ParentAsset =
-                                "FortniteGame/Content/Balance/RarityData",
-                            Swaps = new List<SaturnSwap>()
+                    if (swaps["Series"] != "/")
+                    {
+                        returnPickaxe.Assets.Add(
+                            new SaturnAsset()
                             {
+                                ParentAsset =
+                                    "FortniteGame/Content/Balance/RarityData",
+                                Swaps = new List<SaturnSwap>()
+                                {
                                 new SaturnSwap()
                                 {
                                     Search = System.Convert.ToBase64String(new byte[] { 0,0,0,0,34,84,53,63,186,245,118,63,0,0,128,63 }),
@@ -2705,20 +2813,20 @@ public sealed class SwapperService : ISwapperService
                                     Replace = System.Convert.ToBase64String(SeriesBytes[4]),
                                     Type = SwapType.Property
                                 },
-                            }
-                        });
-                }
+                                }
+                            });
+                    }
 
-                return returnPickaxe;
-            }
+                    return returnPickaxe;
+                }
             case "Pickaxe_ID_408_MastermindShadow":
-            {
-                var returnPickaxe = new SaturnOption()
                 {
-                    Name = item.Name,
-                    Icon = item.Images.SmallIcon,
-                    Rarity = item.Rarity.BackendValue,
-                    Assets = new List<SaturnAsset>()
+                    var returnPickaxe = new SaturnOption()
+                    {
+                        Name = item.Name,
+                        Icon = item.Images.SmallIcon,
+                        Rarity = item.Rarity.BackendValue,
+                        Assets = new List<SaturnAsset>()
                     {
                         new SaturnAsset()
                         {
@@ -2804,17 +2912,17 @@ public sealed class SwapperService : ISwapperService
                             }
                         }
                     }
-                };
+                    };
 
-                if (swaps["Series"] != "/")
-                {
-                    returnPickaxe.Assets.Add(
-                        new SaturnAsset()
-                        {
-                            ParentAsset =
-                                "FortniteGame/Content/Balance/RarityData",
-                            Swaps = new List<SaturnSwap>()
+                    if (swaps["Series"] != "/")
+                    {
+                        returnPickaxe.Assets.Add(
+                            new SaturnAsset()
                             {
+                                ParentAsset =
+                                    "FortniteGame/Content/Balance/RarityData",
+                                Swaps = new List<SaturnSwap>()
+                                {
                                 new SaturnSwap()
                                 {
                                     Search = System.Convert.ToBase64String(new byte[] { 0,0,0,0,34,84,53,63,186,245,118,63,0,0,128,63 }),
@@ -2845,20 +2953,20 @@ public sealed class SwapperService : ISwapperService
                                     Replace = System.Convert.ToBase64String(SeriesBytes[4]),
                                     Type = SwapType.Property
                                 },
-                            }
-                        });
-                }
+                                }
+                            });
+                    }
 
-                return returnPickaxe;
-            }
+                    return returnPickaxe;
+                }
             case "Pickaxe_ID_713_GumballMale":
-            {
-                var returnPickaxe = new SaturnOption()
                 {
-                    Name = item.Name,
-                    Icon = item.Images.SmallIcon,
-                    Rarity = item.Rarity.BackendValue,
-                    Assets = new List<SaturnAsset>()
+                    var returnPickaxe = new SaturnOption()
+                    {
+                        Name = item.Name,
+                        Icon = item.Images.SmallIcon,
+                        Rarity = item.Rarity.BackendValue,
+                        Assets = new List<SaturnAsset>()
                     {
                         new SaturnAsset()
                         {
@@ -2930,17 +3038,17 @@ public sealed class SwapperService : ISwapperService
                             }
                         }
                     }
-                };
+                    };
 
-                if (swaps["Series"] != "/")
-                {
-                    returnPickaxe.Assets.Add(
-                        new SaturnAsset()
-                        {
-                            ParentAsset =
-                                "FortniteGame/Content/Balance/RarityData",
-                            Swaps = new List<SaturnSwap>()
+                    if (swaps["Series"] != "/")
+                    {
+                        returnPickaxe.Assets.Add(
+                            new SaturnAsset()
                             {
+                                ParentAsset =
+                                    "FortniteGame/Content/Balance/RarityData",
+                                Swaps = new List<SaturnSwap>()
+                                {
                                 new SaturnSwap()
                                 {
                                     Search = System.Convert.ToBase64String(new byte[] { 0,0,0,0,34,84,53,63,186,245,118,63,0,0,128,63 }),
@@ -2971,12 +3079,12 @@ public sealed class SwapperService : ISwapperService
                                     Replace = System.Convert.ToBase64String(SeriesBytes[4]),
                                     Type = SwapType.Property
                                 },
-                            }
-                        });
-                }
+                                }
+                            });
+                    }
 
-                return returnPickaxe;
-            }
+                    return returnPickaxe;
+                }
         }
 
         var output = new SaturnOption()
