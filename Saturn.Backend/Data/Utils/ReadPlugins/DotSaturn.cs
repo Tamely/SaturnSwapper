@@ -80,7 +80,7 @@ public class DotSaturn
             {
                 Name = plugin.Name.Split(" to ")[0],
                 ItemDefinition = plugin.Name,
-                Description = plugin.Message ?? "No message provided.",
+                Description = "Plugin option",
                 Icon = plugin.SwapIcon,
                 Type = ItemType.IT_Misc,
                 Rarity = "Epic",

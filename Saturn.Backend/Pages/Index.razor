@@ -578,7 +578,7 @@
                         </div>
                     </div>
                     
-                    <div class="card" @onclick=@(async () => { Directory.Delete(Config.PluginsPath); await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished removing all plugins!", "success"); })>
+                    <div class="card" @onclick=@(async () => { Directory.Delete(Config.PluginsPath, true); await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished removing all plugins!", "success"); })>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
                             <h2>Remove plugins</h2>
@@ -1063,6 +1063,8 @@
     private async Task GetSaturnMisc()
     {
         saturnState = SaturnState.S_Loading;
+
+        Directory.CreateDirectory(Config.PluginsPath);
         Items = await _fortniteAPIService.GetSaturnMisc();
 
         foreach (var file in Directory.EnumerateFiles(Config.PluginsPath))
