@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
-using System.Linq;
 using J = Newtonsoft.Json.JsonPropertyAttribute;
 
 namespace Saturn.Backend.Data.Models.Items.Lele
