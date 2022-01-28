@@ -46,7 +46,7 @@ public class DotSaturn
                 var plugin = JsonConvert.DeserializeObject<LelePlugin>(await File.ReadAllTextAsync(filePath));
 
                 Logger.Log("Plugin is of type Lele!");
-                Logger.Log("Converting Galaxy Swapper plugin to Saturn plugin format...");
+                Logger.Log("Converting Lele Swapper plugin to Saturn plugin format...");
 
                 var saturnTypePlugin = await ConvertLeleToSaturn(plugin);
 
