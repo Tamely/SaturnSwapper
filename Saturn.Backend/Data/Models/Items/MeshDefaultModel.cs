@@ -3,7 +3,9 @@ using System.Collections.Generic;
 
 namespace Saturn.Backend.Data.Models.Items
 {
-    public struct MeshDefaultModel
+    // This should be a class given that almost every property in it is a reference type,
+    // except for ECustomHatType which is the only value type
+    public class MeshDefaultModel
     {
         public string HeadSkinColor { get; set; }
         public Dictionary<int, string> HeadMaterials { get; set; }
