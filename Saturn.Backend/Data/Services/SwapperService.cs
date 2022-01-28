@@ -3401,6 +3401,20 @@ public sealed class SwapperService : ISwapperService
             }
 
             foreach (var swap in asset.Swaps)
+            {
+                if (swap.Search.StartsWith("hex="))
+                {
+                    swap.Search = System.Convert.ToBase64String(FileUtil.HexToBytes(swap.Search.Substring(4)));
+                    swap.Type = SwapType.Base64;
+                }
+                
+                if (swap.Replace.StartsWith("hex="))
+                {
+                    swap.Replace = System.Convert.ToBase64String(FileUtil.HexToBytes(swap.Replace.Substring(4)));
+                    swap.Type = SwapType.Property;
+                }
+
+
                 switch (swap)
                 {
                     case { Type: SwapType.Base64 }:
@@ -3416,6 +3430,7 @@ public sealed class SwapperService : ISwapperService
                         Replaces.Add(Encoding.ASCII.GetBytes(swap.Replace));
                         break;
                 }
+            }
 
             if (asset.ParentAsset.Contains("WID"))
                 AnyLength.TrySwap(ref data, Searches, Replaces, true);

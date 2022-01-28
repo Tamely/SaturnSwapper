@@ -17,6 +17,20 @@ namespace Saturn.Backend.Data.Utils
     {
         private static MemoryStream? _stream;
 
+        // Hex to byte[]
+        public static byte[] HexToByteArray(string hex)
+        {
+            if (hex.Length % 2 != 0)
+                throw new Exception("Hex string must have an even number of characters.");
+
+            byte[] bytes = new byte[hex.Length / 2];
+            for (int i = 0; i < hex.Length; i += 2)
+            {
+                string sub = hex.Substring(i, 2);
+                bytes[i / 2] = Convert.ToByte(sub, 16);
+            }
+            return bytes;
+        }
         public static async Task OpenBrowser(string url)
         {
             try
