@@ -768,7 +768,7 @@
 
     private async Task CheckForOldFiles()
     {
-        if (await _configService.TryGetFortniteVersion() != await GetLastestVersion())
+        if (await _configService.TryGetFortniteVersion() != await GetLastestVersion() && File.Exists(Directory.GetFiles(FortniteUtil.PakPath).FirstOrDefault(x => x.Contains("Saturn"))))
         {
             Logger.Log(await _configService.TryGetFortniteVersion());
             RemoveDupedFiles();

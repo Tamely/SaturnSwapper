@@ -66,6 +66,12 @@ namespace Saturn.Backend.Data.Utils
 
                 int a = 0;
                 List<byte> append = new();
+
+                if (diff < 0)
+                {
+                    throw new Exception("Difference of swaps is less than 0!");
+                }
+                
                 if (diff > -1)
                 {
                     while (diff > a)
