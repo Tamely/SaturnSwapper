@@ -938,12 +938,20 @@
 
     private async Task SubmitPlugin()
     {
-        Directory.CreateDirectory(Config.PluginsPath);
-        foreach (var file in Directory.GetFiles(Assembly.GetEntryAssembly().Location.Replace(Path.GetFileName(Assembly.GetEntryAssembly().Location), "")))
-            if (file.EndsWith(".json") || file.EndsWith(".saturn"))
-                File.Move(file, Config.PluginsPath + Path.GetFileName(file));
+        try
+        {
+            Directory.CreateDirectory(Config.PluginsPath);
+            foreach (var file in Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory))
+                if (file.EndsWith(".json") || file.EndsWith(".saturn"))
+                    File.Move(file, Config.PluginsPath + Path.GetFileName(file));
         
-        await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished moving plugin files to the plugins folder!", "success");
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished moving plugin files to the plugins folder!", "success");
+        }
+        catch (Exception e)
+        {
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Error", "There was an error moving the plugin files to the plugins folder! Please report this and the current swapper log to Tamely in his Discord!", "error");
+            Logger.Log(e.ToString());
+        }
     }
 
     private async Task OpenLog()

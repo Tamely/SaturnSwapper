@@ -172,12 +172,20 @@ public class DotSaturn
     
     public static async Task<PluginModel> ConvertLeleToSaturn(LelePlugin lelePlugin)
     {
+        string message = "No message provided.";
+        if (lelePlugin.Messages.Count > 0)
+        {
+            if (lelePlugin.Messages[0].localization.Count > 0)
+            {
+                message = lelePlugin.Messages[0].localization[0].message;
+            }
+        }
         var pluginModel = new PluginModel
         {
             Name = lelePlugin.DefaultName + " to " + lelePlugin.SwappedName,
             Icon = lelePlugin.SwappedIcon,
             SwapIcon = lelePlugin.DefaultIcon,
-            Message = lelePlugin.Messages[0].localization[0].message
+            Message = message
         };
 
 
