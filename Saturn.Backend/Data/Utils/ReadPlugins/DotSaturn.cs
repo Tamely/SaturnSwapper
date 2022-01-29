@@ -177,7 +177,7 @@ public class DotSaturn
         {
             if (lelePlugin.Messages[0].localization.Count > 0)
             {
-                message = lelePlugin.Messages[0].localization[0].message;
+                message = (lelePlugin.Messages[0].localization.Find(e => e.languageId.ToLower() == "en") ?? lelePlugin.Messages[0].localization[0]).message;
             }
         }
         var pluginModel = new PluginModel
