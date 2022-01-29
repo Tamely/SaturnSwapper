@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Saturn.Backend.Data.Utils
 {
-    public class FileUtil
+    public static class FileUtil
     {
         private static MemoryStream? _stream;
 
@@ -31,6 +31,17 @@ namespace Saturn.Backend.Data.Utils
             }
             return bytes;
         }
+        
+        //Capitalize first letter of string
+        public static string CapitalizeFirstLetter(this string str)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return string.Empty;
+            }
+            return char.ToUpper(str[0]) + str.Substring(1);
+        }
+        
         public static async Task OpenBrowser(string url)
         {
             try

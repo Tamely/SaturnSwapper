@@ -65,7 +65,7 @@ public class DotSaturn
         Cosmetic item = new Cosmetic();
         try
         {
-            item.Name = plugin.Name.Split(" to ")[1];
+            item.Name = plugin.Name.ToLower().Split(" to ")[1].CapitalizeFirstLetter();
             item.Id = plugin.Name;
             item.Description = plugin.Message ?? "No message provided.";
             item.Images = new Images()
@@ -78,7 +78,7 @@ public class DotSaturn
             };
             SaturnItem saturnItem = new SaturnItem
             {
-                Name = plugin.Name.Split(" to ")[0],
+                Name = plugin.Name.ToLower().Split(" to ")[0].CapitalizeFirstLetter(),
                 ItemDefinition = plugin.Name,
                 Description = "Plugin option",
                 Icon = plugin.SwapIcon,
