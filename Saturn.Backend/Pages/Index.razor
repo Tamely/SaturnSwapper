@@ -834,7 +834,7 @@
         switch (searchType)
         {
             case SearchType.ST_Name:
-                Items.RemoveAll(x => !FilterString(x.Name.ToLower()).Contains(FilterString(input.ToLower())));
+                Items.RemoveAll(x => !FilterString(x.Name.ToLower()).Contains(FilterString(input.ToLower())) && !FilterString(x.Description.ToLower()).Contains(FilterString(input.ToLower())));
                 break;
             case SearchType.ST_ID:
                 Items.RemoveAll(x => !FilterString(x.Id.ToLower()).Contains(FilterString(input.ToLower())));

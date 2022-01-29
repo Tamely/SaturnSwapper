@@ -140,7 +140,7 @@ namespace Saturn.Backend.Data.Services
                                 CosmeticsToInsert.Add(Skins.Data.IndexOf(item) + " + " + i, new Cosmetic()
                                 {
                                     Name = style.Name,
-                                    Description = item.Description,
+                                    Description = item.Name + " style: " + item.Description,
                                     Id = item.Id,
                                     Rarity = item.Rarity,
                                     Series = item.Series,
