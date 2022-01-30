@@ -603,7 +603,7 @@
 {
     private List<Cosmetic> Items;
     private List<Cosmetic> BackupItems;
-    
+
     private bool _halted;
 
     private string Avatar { get; set; }
@@ -613,10 +613,10 @@
 
     private string RemoveDuped = "This will remove all duplicated files from Fortnite (resetting all swaps) and reset the config.";
     private Colors RemoveDupedColor = Colors.C_YELLOW;
-    
+
     private string ResetConfig = "This will reset the config to the default settings. WARNING: This will not unswap anything!";
     private Colors ResetConfigColor = Colors.C_YELLOW;
-    
+
     private string LaunchFortnite = "This will launch Fortnite and prevent it from verifying your game on close.";
     private Colors LaunchFortniteColor = Colors.C_WHITE;
 
@@ -634,10 +634,10 @@
 
     private async Task SwitchItemStyleChoice(Cosmetic item)
         => item.IsPickingStyles = !item.IsPickingStyles;
-    
+
     private async Task ShouldConvertSeries()
         => FlipSeries = await _configService.TryGetShouldSeriesConvert() ? "Currently set to 'pickaxes WILL swap series'" : "Currently set to 'pickaxes WILL NOT swap series'";
-    
+
     private async Task ShouldConvertRarity()
         => FlipRarity = await _configService.TryGetShouldRarityConvert() ? "Currently set to 'pickaxes WILL swap rarity'" : "Currently set to 'pickaxes WILL NOT swap rarity'";
 
@@ -652,7 +652,7 @@
     protected override async Task OnInitializedAsync()
     {
         AppDomain.CurrentDomain.UnhandledException += UnhandledException;
-        
+
         if (!CheckForInternetConnection())
             throw new WebException("No internet connection");
 
@@ -674,7 +674,7 @@
                 currentUser = _discordRPCService.Client.CurrentUser;
             }
         }
-        
+
         await CheckIfUserIsBeta();
 
         if (currentUser != null)
@@ -682,18 +682,18 @@
             Avatar = currentUser.GetAvatarURL(User.AvatarFormat.PNG);
             Username = $"{currentUser.Username}#{currentUser.Discriminator}";
         }
-        
+
         await CheckKey();
 
         await CheckUpdate();
-        
+
         await CheckMaintenance();
 
         await CheckForOldFiles();
 
         await base.OnInitializedAsync();
     }
-    
+
     private void UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         if (_halted)
@@ -739,7 +739,7 @@
             await _jsRuntime.InvokeVoidAsync("MessageBox", "Couldn't get Discord user info!", "Please open discord if you intend to use BETA features!", "error");
             return;
         }
-        
+
         var user = _discordRPCService.Client.CurrentUser;
 
         ulong userID = 0u;
@@ -751,17 +751,17 @@
         {
             Logger.Log("Could not get user ID. Is user using Discord web?", LogLevel.Error);
         }
-        
+
         var betaUsers = await GetBetaIDs();
-        
+
         foreach (var _ in betaUsers.Where(betaUser => betaUser == userID))
             Config.isBeta = true;
-        
+
 
         if (!Config.isBeta)
             await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected you are not a BETA user!", "Boost Tamely's Discord if you want to use BETA features!", "error");
     }
-    
+
     private async Task<List<ulong>> GetBetaIDs()
     {
         var json = await _saturnAPIService.ReturnEndpointAsync("/api/v1/Saturn/GetBeta");
@@ -785,7 +785,7 @@
             await _configService.TrySetFortniteVersion(await GetLastestVersion());
         }
     }
-    
+
     private async Task CheckUpdate()
     {
         if (Constants.UserVersion != await GetSwapperVersion())
@@ -803,7 +803,7 @@
         var data = await _saturnAPIService.ReturnEndpointAsync("/");
         return JsonConvert.DeserializeObject<IndexModel>(data).swapperVersion;
     }
-    
+
     private async Task<string> GetLastestVersion()
     {
         return _fortniteAPIService.GetAES().Build;
@@ -817,19 +817,19 @@
 
         Process.Start("notepad.exe", Config.LogFile);
     }
-    
+
     private async Task RunUpdate()
     {
         await _jsRuntime.InvokeVoidAsync("MessageBox", "There is a swapper update ready to download!", "Please download it from Tamely's Discord.", "error");
         await FileUtil.OpenBrowser(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).DiscordServer);
     }
-    
+
     private async Task FilterItems(string input)
     {
         Items = new List<Cosmetic>(BackupItems);
-        
+
         searchType = (SearchType) await _jsRuntime.InvokeAsync<int>("GetSelectedElement");
-        
+
 
         switch (searchType)
         {
@@ -847,7 +847,7 @@
                 {
                     if (x.GameplayTags == null || x.GameplayTags.Count == 0 || x.GameplayTags == new List<string>())
                         return true;
-                    
+
                     return x.GameplayTags.Count(tag => FilterString(tag.ToLower()).Contains(FilterString(input.ToLower())) && tag.ToLower().Contains("set")) <= 0;
                 });
                 break;
@@ -856,7 +856,7 @@
                 {
                     if (x.GameplayTags == null || x.GameplayTags.Count == 0 || x.GameplayTags == new List<string>())
                         return true;
-                    
+
                     return x.GameplayTags.Count(tag => tag.ToLower().Equals($"cosmetics.filter.season.{input}")) <= 0;
                 });
                 break;
@@ -874,15 +874,15 @@
                 {
                     if (x.GameplayTags == null || x.GameplayTags.Count == 0 || x.GameplayTags == new List<string>())
                         return true;
-                    
+
                     return x.GameplayTags.Count(tag => FilterString(tag.ToLower()).Contains(FilterString(input.ToLower())) && tag.ToLower().Contains("source")) <= 0;
                 });
                 break;
             default:
                 throw new ArgumentOutOfRangeException("How tf did you select a search type that doesn't exist?");
         }
-        
-        
+
+
     }
 
     private string FilterString(string input)
@@ -921,7 +921,7 @@
                 await _configService.TrySetHeadOrHatCharacterPart("Head");
                 break;
         }
-        
+
         FlipCharacterPart = "Currently set to 'Default swaps will use a " + await _configService.TryGetHeadOrHatCharacterPart() + " character part'";
     }
 
@@ -941,10 +941,17 @@
         try
         {
             Directory.CreateDirectory(Config.PluginsPath);
+            List<string> blacklistedFiles = new List<string>()
+            {
+                "Saturn.Backend.staticwebassets.runtime.json",
+                "Saturn.deps.json",
+                "Saturn.runtimeconfig.json",
+                "Saturn.staticwebassets.runtime.json"
+            };
             foreach (var file in Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory))
-                if (file.EndsWith(".json") || file.EndsWith(".saturn"))
+                if ((file.EndsWith(".json") || file.EndsWith(".saturn")) && blacklistedFiles.Find(e => file.ToLower().EndsWith(e.ToLower())) == null)
                     File.Move(file, Config.PluginsPath + Path.GetFileName(file));
-        
+
             await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished moving plugin files to the plugins folder!", "success");
         }
         catch (Exception e)
@@ -968,18 +975,18 @@
             WindowStyle = ProcessWindowStyle.Hidden,
             CreateNoWindow = true
         });
-        
+
         LaunchFortnite = "Fortnite is launching... please wait.";
         LaunchFortniteColor = Colors.C_GREEN;
 
         await WaitForFortnite();
-        
+
         LaunchFortnite = "Epic Games Launcher has been closed which stopped the verification process.";
         LaunchFortniteColor = Colors.C_GREEN;
-        
-        
+
+
         await Task.Delay(5000);
-        
+
         LaunchFortnite = "This will launch Fortnite and prevent it from verifying your game on close.";
         LaunchFortniteColor = Colors.C_WHITE;
     }
@@ -991,7 +998,7 @@
             // Give it a half a second break until we check if it launched
             await Task.Delay(500);
         }
-        
+
         // It has launched!
         LaunchFortnite = "Fortnite has launched!";
 
@@ -999,13 +1006,13 @@
 
         LaunchFortnite = "Waiting for Fortnite to close...";
         LaunchFortniteColor = Colors.C_WHITE;
-        
+
         while (Process.GetProcessesByName("FortniteClient-Win64-Shipping").Length != 0)
         {
             // Give it a 2 second break until we check if it closed
             await Task.Delay(2000);
         }
-        
+
         foreach (var process in Process.GetProcesses())
             if (process.ProcessName == "EpicGamesLauncher")
                 process.Kill();
@@ -1015,10 +1022,10 @@
     {
         _configService.ConfigFile = new Saturn.Backend.Data.Models.Configuration();
         _configService.SaveConfig();
-        
+
         ResetConfig = "Reset the swapper's config to default settings!";
         ResetConfigColor = Colors.C_GREEN;
-        
+
         await Task.Delay(5000);
 
         ResetConfig = "This will reset the config to the default settings. WARNING: if you swapped something and need to revert it, you wont be able to!";
@@ -1030,12 +1037,12 @@
         foreach (var file in Directory.EnumerateFiles(FortniteUtil.PakPath))
             if (file.Contains("Saturn"))
                 File.Delete(file);
-        
+
         if (!Directory.Exists(Config.CompressedDataPath))
             Logger.Log("Compressed data path was not found! Did you not swap anything?", LogLevel.Fatal);
         else
             Directory.Delete(Config.CompressedDataPath, true);
-        
+
         if (!Directory.Exists(Config.DecompressedDataPath))
             Logger.Log("Decompressed data path was not found! Did you not swap anything?", LogLevel.Fatal);
         else
@@ -1043,10 +1050,10 @@
 
         _configService.ConfigFile = new Saturn.Backend.Data.Models.Configuration();
         _configService.SaveConfig();
-        
+
         RemoveDuped = "Removed all duplicated files from Fortnite!";
         RemoveDupedColor = Colors.C_GREEN;
-        
+
         await Task.Delay(5000);
 
         RemoveDuped = "This will remove all duplicated files from Fortnite (resetting all swaps) and reset the config.";
@@ -1067,7 +1074,7 @@
         currentType = ItemType.IT_Skin;
         saturnState = SaturnState.S_Items;
     }
-    
+
     private async Task GetSaturnMisc()
     {
         saturnState = SaturnState.S_Loading;
@@ -1077,7 +1084,8 @@
 
         foreach (var file in Directory.EnumerateFiles(Config.PluginsPath))
         {
-            Items.Add(await DotSaturn.Read(file));
+            if (!file.Contains("/Plugins/Saturn."))
+               Items.Add(await DotSaturn.Read(file));
         }
 
         Items = await _fortniteAPIService.AreItemsConverted(Items);
