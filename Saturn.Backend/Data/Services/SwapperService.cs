@@ -21,11 +21,8 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using CUE4Parse.UE4.Assets.Exports.Material;
-using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.UE4.Objects.Core.i18N;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using Saturn.Backend.Data.SwapOptions.Pickaxe;
 using Colors = Saturn.Backend.Data.Enums.Colors;
 
 namespace Saturn.Backend.Data.Services;
@@ -1370,8 +1367,7 @@ public sealed class SwapperService : ISwapperService
         };
     }
     #endregion
-
-    #region GeneratePickaxeSwaps
+    
     private async Task<SaturnOption> GenerateMeshPickaxe(Cosmetic item, SaturnItem option)
     {
         Logger.Log($"Getting wid for {item.Name}");
@@ -1420,419 +1416,137 @@ public sealed class SwapperService : ISwapperService
                 break;
         }
 
-        switch (option.ItemDefinition)
+        var output = option.ItemDefinition switch
         {
-            case "Pickaxe_ID_541_StreetFashionEclipseFemale":
-            {
-                var returnPickaxe = new SaturnOption()
-                {
-                    Name = item.Name,
-                    Icon = item.Images.SmallIcon,
-                    Rarity = item.Rarity.BackendValue,
-                    Assets = new List<SaturnAsset>()
-                    {
-                        new SaturnAsset()
-                        {
-                            ParentAsset = "FortniteGame/Content/Athena/Items/Weapons/WID_Harvest_Pickaxe_StreetFashionEclipseFemale",
-                            Swaps = new List<SaturnSwap>()
-                            {
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] {252,255,255,255}),
-                                    Replace = System.Convert.ToBase64String(new byte[] {0,0,0,0}),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] {255,255,255,3}),
-                                    Replace = System.Convert.ToBase64String(new byte[] {255,255,255,(byte)Rarity}),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/UI/Foundation/Textures/Icons/Weapons/Items/T-Icon-Pickaxes-StreetFashionEclipsePickaxe.T-Icon-Pickaxes-StreetFashionEclipsePickaxe",
-                                    Replace = swaps["SmallIcon"],
-                                    Type = SwapType.SmallIcon
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/UI/Foundation/Textures/Icons/Weapons/Items/T-Icon-Pickaxes-StreetFashionEclipsePickaxe-L.T-Icon-Pickaxes-StreetFashionEclipsePickaxe-L",
-                                    Replace = "/",
-                                    Type = SwapType.LargeIcon
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Weapons/FORT_Melee/Pickaxe_StreetFashionRed/Meshes/Demo/SK_Pickaxe_StreetFashionRed_DEMO.SK_Pickaxe_StreetFashionRed_DEMO",
-                                    Replace = swaps["Mesh"],
-                                    Type = SwapType.WeaponMesh
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Weapons/FORT_Melee/Pickaxe_Street_Fashion_Eclipse_Female/Materials/MI_Pickaxe_StreetFashionEclipseFemale.MI_Pickaxe_StreetFashionEclipseFemale",
-                                    Replace = swaps["Material"],
-                                    Type = SwapType.WeaponMaterial
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Athena/Sounds/Weapons/PickAxes/Street_Fashion_Red/PA_StreetFashionRed_Swing_Cue.PA_StreetFashionRed_Swing_Cue",
-                                    Replace = swaps["SwingCue"],
-                                    Type = SwapType.WeaponSound
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Athena/Sounds/Weapons/PickAxes/Street_Fashion_Red/PA_StreetFashionRed_Ready_Cue.PA_StreetFashionRed_Ready_Cue",
-                                    Replace = swaps["EquipCue"],
-                                    Type = SwapType.WeaponSound
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Athena/Sounds/Weapons/PickAxes/Street_Fashion_Red/PA_StreetFashionRed_Impact_Cue.PA_StreetFashionRed_Impact_Cue",
-                                    Replace = swaps["ImpactCue"],
-                                    Type = SwapType.WeaponSound
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Effects/Fort_Effects/Effects/Melee/P_Melee_Trail_Default.P_Melee_Trail_Default",
-                                    Replace = swaps["Trail"],
-                                    Type = SwapType.WeaponTrail
-                                }
-                            }
-                        }
-                    }
-                };
-
-                if (swaps["Series"] != "/")
-                {
-                    returnPickaxe.Assets.Add(
-                        new SaturnAsset()
-                        {
-                            ParentAsset =
-                                "FortniteGame/Content/Balance/RarityData",
-                            Swaps = new List<SaturnSwap>()
-                            {
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 0,0,0,0,34,84,53,63,186,245,118,63,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[0]),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 0,0,0,0,0,0,128,63,251,121,211,62,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[1]),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 19,129,58,62,254,95,5,63,0,0,128,63,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[2]),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 143,170,22,62,18,192,77,61,54,32,130,62,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[3]),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 20,151,35,61,35,75,102,60,10,215,35,61,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[4]),
-                                    Type = SwapType.Property
-                                },
-                            }
-                        });
-                }
-
-                return returnPickaxe;
-            }
-            case "Pickaxe_ID_408_MastermindShadow":
-            {
-                var returnPickaxe = new SaturnOption()
-                {
-                    Name = item.Name,
-                    Icon = item.Images.SmallIcon,
-                    Rarity = item.Rarity.BackendValue,
-                    Assets = new List<SaturnAsset>()
-                    {
-                        new SaturnAsset()
-                        {
-                            ParentAsset = "FortniteGame/Content/Athena/Items/Weapons/WID_Harvest_Pickaxe_MastermindShadow",
-                            Swaps = new List<SaturnSwap>()
-                            {
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] {255,255,255,3}),
-                                    Replace = System.Convert.ToBase64String(new byte[] {255,255,255,(byte)Rarity}),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/UI/Foundation/Textures/Icons/Weapons/Items/T-Icon-Pickaxes-Mastermind-Shadow-Pickaxe.T-Icon-Pickaxes-Mastermind-Shadow-Pickaxe",
-                                    Replace = swaps["SmallIcon"],
-                                    Type = SwapType.SmallIcon
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/UI/Foundation/Textures/Icons/Weapons/Items/T-Icon-Pickaxes-Mastermind-Shadow-Pickaxe-L.T-Icon-Pickaxes-Mastermind-Shadow-Pickaxe-L",
-                                    Replace = "/",
-                                    Type = SwapType.LargeIcon
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Weapons/FORT_Melee/Pickaxe_Mastermind/Meshes/SK_Pickaxe_Mastermind.SK_Pickaxe_Mastermind",
-                                    Replace = swaps["Mesh"],
-                                    Type = SwapType.WeaponMesh
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Weapons/FORT_Melee/Pickaxe_Mastermind_Shadow/Materials/MI_Pickaxe_Mastermind.MI_Pickaxe_Mastermind",
-                                    Replace = swaps["Material"],
-                                    Type = SwapType.WeaponMaterial
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Athena/Sounds/Weapons/PickAxes/Mastermind/PickAxe_MasterMind_Swing_Athena_Cue.PickAxe_MasterMind_Swing_Athena_Cue",
-                                    Replace = swaps["SwingCue"],
-                                    Type = SwapType.WeaponSound
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Athena/Sounds/Weapons/PickAxes/Mastermind/PickAxe_MasterMind_Ready_Athena_Cue.PickAxe_MasterMind_Ready_Athena_Cue",
-                                    Replace = swaps["EquipCue"],
-                                    Type = SwapType.WeaponSound
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Athena/Sounds/Weapons/PickAxes/Mastermind/PickAxe_MasterMind_Impact_Player_Athena_Cue.PickAxe_MasterMind_Impact_Player_Athena_Cue",
-                                    Replace = swaps["ImpactCue"],
-                                    Type = SwapType.WeaponSound
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Weapons/FORT_Melee/Pickaxe_Mastermind_Shadow/FX/P_Mastermind_Shadow_AnimTrail.P_Mastermind_Shadow_AnimTrail",
-                                    Replace = swaps["Trail"],
-                                    Type = SwapType.WeaponTrail
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Weapons/FORT_Melee/Pickaxe_Mastermind_Shadow/FX/P_Mastermind_Shadow_Idle.P_Mastermind_Shadow_Idle",
-                                    Replace = swaps["FX"],
-                                    Type = SwapType.WeaponFx
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Weapons/FORT_Melee/Pickaxe_Mastermind_Shadow/FX/P_Masermind_Shadow_Swing.P_Masermind_Shadow_Swing",
-                                    Replace = swaps["SwingFX"],
-                                    Type = SwapType.WeaponFx
-                                }
-                            }
-                        }
-                    }
-                };
-
-                if (swaps["Series"] != "/")
-                {
-                    returnPickaxe.Assets.Add(
-                        new SaturnAsset()
-                        {
-                            ParentAsset =
-                                "FortniteGame/Content/Balance/RarityData",
-                            Swaps = new List<SaturnSwap>()
-                            {
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 0,0,0,0,34,84,53,63,186,245,118,63,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[0]),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 0,0,0,0,0,0,128,63,251,121,211,62,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[1]),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 19,129,58,62,254,95,5,63,0,0,128,63,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[2]),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 143,170,22,62,18,192,77,61,54,32,130,62,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[3]),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 20,151,35,61,35,75,102,60,10,215,35,61,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[4]),
-                                    Type = SwapType.Property
-                                },
-                            }
-                        });
-                }
-
-                return returnPickaxe;
-            }
-            case "Pickaxe_ID_713_GumballMale":
-            {
-                var returnPickaxe = new SaturnOption()
-                {
-                    Name = item.Name,
-                    Icon = item.Images.SmallIcon,
-                    Rarity = item.Rarity.BackendValue,
-                    Assets = new List<SaturnAsset>()
-                    {
-                        new SaturnAsset()
-                        {
-                            ParentAsset = "FortniteGame/Content/Athena/Items/Weapons/WID_Harvest_Pickaxe_GumballMale",
-                            Swaps = new List<SaturnSwap>()
-                            {
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] {255,255,255,2}),
-                                    Replace = System.Convert.ToBase64String(new byte[] {255,255,255,(byte)Rarity}),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/UI/Foundation/Textures/Icons/Weapons/Items/T-Icon-Pickaxes-GumballPickaxe.T-Icon-Pickaxes-GumballPickaxe",
-                                    Replace = swaps["SmallIcon"],
-                                    Type = SwapType.SmallIcon
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/UI/Foundation/Textures/Icons/Weapons/Items/T-Icon-Pickaxes-GumballPickaxe-L.T-Icon-Pickaxes-GumballPickaxe-L",
-                                    Replace = "/",
-                                    Type = SwapType.LargeIcon
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Weapons/FORT_Melee/Pickaxe_Gumball_Male/Meshes/Gumball_Male_Axe.Gumball_Male_Axe",
-                                    Replace = swaps["Mesh"],
-                                    Type = SwapType.WeaponMesh
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Athena/Sounds/Weapons/PickAxes/GumballMale/PickaxeSwing_GumballMale.PickaxeSwing_GumballMale",
-                                    Replace = swaps["SwingCue"],
-                                    Type = SwapType.WeaponSound
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Athena/Sounds/Weapons/PickAxes/GumballMale/PickaxeReady_GumballMale.PickaxeReady_GumballMale",
-                                    Replace = swaps["EquipCue"],
-                                    Type = SwapType.WeaponSound
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Athena/Sounds/Weapons/PickAxes/GumballMale/PickaxeImpactEnemy_GumballMale.PickaxeImpactEnemy_GumballMale",
-                                    Replace = swaps["ImpactCue"],
-                                    Type = SwapType.WeaponSound
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Effects/Fort_Effects/Effects/Melee/P_Melee_Trail_Generic_Shorter.P_Melee_Trail_Generic_Shorter",
-                                    Replace = swaps["OffhandTrail"],
-                                    Type = SwapType.WeaponTrail
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search =
-                                        "/Game/Weapons/FORT_Melee/Pickaxe_Gumball_Male/FX/NS_Pickaxe_Gumball_Trail.NS_Pickaxe_Gumball_Trail",
-                                    Replace = swaps["OffhandSwingFX"],
-                                    Type = SwapType.WeaponFx
-                                },
-                            }
-                        }
-                    }
-                };
-
-                if (swaps["Series"] != "/")
-                {
-                    returnPickaxe.Assets.Add(
-                        new SaturnAsset()
-                        {
-                            ParentAsset =
-                                "FortniteGame/Content/Balance/RarityData",
-                            Swaps = new List<SaturnSwap>()
-                            {
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 0,0,0,0,34,84,53,63,186,245,118,63,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[0]),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 0,0,0,0,0,0,128,63,251,121,211,62,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[1]),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 19,129,58,62,254,95,5,63,0,0,128,63,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[2]),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 143,170,22,62,18,192,77,61,54,32,130,62,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[3]),
-                                    Type = SwapType.Property
-                                },
-                                new SaturnSwap()
-                                {
-                                    Search = System.Convert.ToBase64String(new byte[] { 20,151,35,61,35,75,102,60,10,215,35,61,0,0,128,63 }),
-                                    Replace = System.Convert.ToBase64String(SeriesBytes[4]),
-                                    Type = SwapType.Property
-                                },
-                            }
-                        });
-                }
-
-                return returnPickaxe;
-            }
-        }
-
-        var output = new DefaultPickaxeSwap(item.Name,
-                                            item.Rarity.BackendValue,
-                                            item.Images.SmallIcon,
-                                            swaps).ToSaturnOption();
+            "Pickaxe_ID_408_MastermindShadow" => new MayhemScytheSwap(
+                                                    item.Name,
+                                                    item.Rarity.Value,
+                                                    item.Images.SmallIcon,
+                                                    swaps,
+                                                    Rarity).ToSaturnOption(),
+            "DefaultPickaxe" => new DefaultPickaxeSwap(
+                                    item.Name,
+                                    item.Rarity.Value,
+                                    item.Images.SmallIcon,
+                                    swaps).ToSaturnOption(),
+            "Pickaxe_ID_541_StreetFashionEclipseFemale" => new ShadowSlicerSwap(
+                                                                item.Name,
+                                                                item.Rarity.Value,
+                                                                item.Images.SmallIcon,
+                                                                swaps,
+                                                                Rarity).ToSaturnOption(),
+            "Pickaxe_ID_713_GumballMale" => new GumBrawlerSwap(
+                                                item.Name,
+                                                item.Rarity.Value,
+                                                item.Images.SmallIcon,
+                                                swaps,
+                                                Rarity).ToSaturnOption(),
+            _ => new SaturnOption()
             
-        if (Rarity != EFortRarity.Common && await _configService.TryGetShouldRarityConvert())
+        };
+
+        #region Default Pickaxe Rarity and Series Swaps
+
+                if (SeriesBytes != new List<byte[]>() && await _configService.TryGetShouldSeriesConvert() && option.ItemDefinition != "DefaultPickaxe")
         {
-            if (!string.IsNullOrEmpty(option.Status))
-                option.Status = $"All common items are going to be {Rarity} and {option.Status}";
-            else
-                option.Status = $"All common items are going to be {Rarity}";
+            output.Assets.Add(
+                new SaturnAsset()
+            {
+                ParentAsset =
+                    "FortniteGame/Content/Balance/RarityData",
+                Swaps = new List<SaturnSwap>()
+                {
+                    new SaturnSwap()
+                    {
+                        Search = System.Convert.ToBase64String(new byte[]
+                            { 0, 0, 0, 0, 34, 84, 53, 63, 186, 245, 118, 63, 0, 0, 128, 63 }),
+                        Replace = System.Convert.ToBase64String(SeriesBytes[0]),
+                        Type = SwapType.Property
+                    },
+                    new SaturnSwap()
+                    {
+                        Search = System.Convert.ToBase64String(new byte[]
+                            { 0, 0, 0, 0, 0, 0, 128, 63, 251, 121, 211, 62, 0, 0, 128, 63 }),
+                        Replace = System.Convert.ToBase64String(SeriesBytes[1]),
+                        Type = SwapType.Property
+                    },
+                    new SaturnSwap()
+                    {
+                        Search = System.Convert.ToBase64String(new byte[]
+                            { 19, 129, 58, 62, 254, 95, 5, 63, 0, 0, 128, 63, 0, 0, 128, 63 }),
+                        Replace = System.Convert.ToBase64String(SeriesBytes[2]),
+                        Type = SwapType.Property
+                    },
+                    new SaturnSwap()
+                    {
+                        Search = System.Convert.ToBase64String(new byte[]
+                            { 143, 170, 22, 62, 18, 192, 77, 61, 54, 32, 130, 62, 0, 0, 128, 63 }),
+                        Replace = System.Convert.ToBase64String(SeriesBytes[3]),
+                        Type = SwapType.Property
+                    },
+                    new SaturnSwap()
+                    {
+                        Search = System.Convert.ToBase64String(new byte[]
+                            { 20, 151, 35, 61, 35, 75, 102, 60, 10, 215, 35, 61, 0, 0, 128, 63 }),
+                        Replace = System.Convert.ToBase64String(SeriesBytes[4]),
+                        Type = SwapType.Property
+                    }
+                }
+            });
+        }
+        else if (SeriesBytes != new List<byte[]>() && await _configService.TryGetShouldSeriesConvert() &&
+                 option.ItemDefinition == "DefaultPickaxe")
+        {
+            output.Assets.RemoveAll(x => x.ParentAsset == "FortniteGame/Content/Balance/RarityData");
+            option.Status = !string.IsNullOrEmpty(option.Status) ? $"All common items are going to be a series and {option.Status}" : "All common items are going to be a series";
+            output.Assets.Add(
+                new SaturnAsset()
+                {
+                    ParentAsset = "FortniteGame/Content/Balance/RarityData",
+                    Swaps = new List<SaturnSwap>()
+                    {
+                        new SaturnSwap()
+                        {
+                            Search = System.Convert.ToBase64String(new byte[]
+                                { 152, 161, 49, 63, 152, 161, 49, 63, 152, 161, 49, 63, 0, 0, 128, 63 }),
+                            Replace = System.Convert.ToBase64String(SeriesBytes[0]),
+                            Type = SwapType.Property
+                        },
+                        new SaturnSwap()
+                        {
+                            Search = System.Convert.ToBase64String(new byte[]
+                                { 168, 114, 242, 62, 254, 95, 5, 63, 95, 239, 14, 63, 0, 0, 128, 63 }),
+                            Replace = System.Convert.ToBase64String(SeriesBytes[1]),
+                            Type = SwapType.Property
+                        },
+                        new SaturnSwap()
+                        {
+                            Search = System.Convert.ToBase64String(new byte[]
+                                { 170, 214, 50, 62, 241, 73, 71, 62, 170, 10, 93, 62, 0, 0, 128, 63 }),
+                            Replace = System.Convert.ToBase64String(SeriesBytes[2]),
+                            Type = SwapType.Property
+                        },
+                        new SaturnSwap()
+                        {
+                            Search = System.Convert.ToBase64String(new byte[]
+                                { 113, 255, 81, 61, 22, 221, 122, 61, 130, 253, 151, 61, 0, 0, 128, 63 }),
+                            Replace = System.Convert.ToBase64String(SeriesBytes[3]),
+                            Type = SwapType.Property
+                        },
+                        new SaturnSwap()
+                        {
+                            Search = System.Convert.ToBase64String(new byte[]
+                                { 30, 53, 166, 60, 120, 211, 173, 60, 26, 168, 12, 61, 0, 0, 128, 63 }),
+                            Replace = System.Convert.ToBase64String(SeriesBytes[4]),
+                            Type = SwapType.Property
+                        }
+                    }
+                });
+        }
+        else if (option.ItemDefinition == "DefaultPickaxe" && await _configService.TryGetShouldRarityConvert())
+        {
+            output.Assets.RemoveAll(x => x.ParentAsset == "FortniteGame/Content/Balance/RarityData");
+            option.Status = !string.IsNullOrEmpty(option.Status) ? $"All common items are going to be {Rarity} and {option.Status}" : $"All common items are going to be {Rarity}";
             output.Assets.Add(
                 Rarity switch
                 {
@@ -2095,14 +1809,14 @@ public sealed class SwapperService : ISwapperService
                             }
                         }
                     },
-
                     _ => throw new Exception("Rarity not found")
                 });
         }
 
+        #endregion
+
         return output;
     }
-    #endregion
 
     private async Task BackupFile(string sourceFile, Cosmetic item, SaturnItem option)
     {
