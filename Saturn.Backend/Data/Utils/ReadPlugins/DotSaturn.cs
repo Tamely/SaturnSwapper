@@ -11,8 +11,6 @@ using Newtonsoft.Json.Linq;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
-using Saturn.Backend.Data.Models.Items.Galaxy;
-using Saturn.Backend.Data.Models.Items.Lele;
 using Saturn.Backend.Data.Models.SaturnAPI;
 using Asset = Saturn.Backend.Data.Models.SaturnAPI.Asset;
 using Swap = Saturn.Backend.Data.Models.SaturnAPI.Swap;

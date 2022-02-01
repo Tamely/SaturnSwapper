@@ -2,7 +2,7 @@
 using Newtonsoft.Json.Linq;
 using J = Newtonsoft.Json.JsonPropertyAttribute;
 
-namespace Saturn.Backend.Data.Models.Items.Lele
+namespace Saturn.Backend.Data.Models.Items
 {
     public class LelePlugin
     {

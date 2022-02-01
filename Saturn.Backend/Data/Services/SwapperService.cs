@@ -12,7 +12,6 @@ using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Utils;
 using Saturn.Backend.Data.Utils.FortniteUtils;
-using Saturn.Backend.Data.Utils.Swaps;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,10 +21,11 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using CUE4Parse.UE4.Objects.Core.i18N;
-using Saturn.Backend.Data.SwapOptions;
-using Saturn.Backend.Data.SwapOptions.Pickaxe;
+using Saturn.Backend.Data.SwapOptions.Pickaxes;
 using Saturn.Backend.Data.SwapOptions.Skins;
 using Colors = Saturn.Backend.Data.Enums.Colors;
+using Saturn.Backend.Data.SwapOptions.Backblings;
+using Saturn.Backend.Data.SwapOptions.Emotes;
 
 namespace Saturn.Backend.Data.Services;
 
