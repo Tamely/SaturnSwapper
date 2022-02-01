@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.Items;
-using Saturn.Backend.Data.Utils.Swaps;
 
 namespace Saturn.Backend.Data.SwapOptions.Skins;
 

@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Services;
-using Saturn.Backend.Data.Utils.Swaps;
 
-namespace Saturn.Backend.Data.SwapOptions.Pickaxe;
+namespace Saturn.Backend.Data.SwapOptions.Pickaxes;
 
 internal sealed class DefaultPickaxeSwap : PickaxeSwap
 {
-    public DefaultPickaxeSwap(string name, string rarity, string icon, Dictionary<string, string> swaps) 
+    public DefaultPickaxeSwap(string name, string rarity, string icon, Dictionary<string, string> swaps)
         : base(name, rarity, icon, swaps, EFortRarity.Common)
     {
     }

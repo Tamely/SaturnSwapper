@@ -2,9 +2,9 @@
 using System.Linq;
 using J = Newtonsoft.Json.JsonPropertyAttribute;
 
-namespace Saturn.Backend.Data.Models.Items.Galaxy
+namespace Saturn.Backend.Data.Models.Items
 {
-   public class GalaxyPlugin
+    public class GalaxyPlugin
     {
         [J("Name")] public string Name { get; set; }
         [J("Icon")] public string Icon { get; set; }
