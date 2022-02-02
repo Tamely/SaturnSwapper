@@ -22,7 +22,7 @@ internal abstract class AbstractSwap
         Name = name;
         Rarity = rarity;
         Icon = icon;
-        this.rarityEnum = rarityEnum;
+        RarityEnum = rarityEnum;
     }
 
     public virtual string Name { get; }
@@ -32,5 +32,5 @@ internal abstract class AbstractSwap
     public virtual string Icon { get; }
 
     public abstract List<SaturnAsset> Assets { get; }
-    public virtual EFortRarity rarityEnum { get; set; }
+    public virtual EFortRarity RarityEnum { get; set; }
 }

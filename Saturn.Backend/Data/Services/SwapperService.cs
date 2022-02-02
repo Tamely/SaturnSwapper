@@ -24,8 +24,10 @@ using CUE4Parse.UE4.Objects.Core.i18N;
 using Saturn.Backend.Data.SwapOptions.Pickaxes;
 using Saturn.Backend.Data.SwapOptions.Skins;
 using Colors = Saturn.Backend.Data.Enums.Colors;
+using SystemType = System.Type;
 using Saturn.Backend.Data.SwapOptions.Backblings;
 using Saturn.Backend.Data.SwapOptions.Emotes;
+using Saturn.Backend.Data.Utils.Swaps;
 
 namespace Saturn.Backend.Data.Services;
 
@@ -749,7 +751,6 @@ public sealed class SwapperService : ISwapperService
             {
                 Logger.Log("Failed to load Character Parts...");
             }
-                
         }
         else
         {
@@ -1208,7 +1209,7 @@ public sealed class SwapperService : ISwapperService
             }
         }
 
-        if ((swapModel.HeadMesh.ToLower().Contains("ramirez")) &&
+        if (swapModel.HeadMesh.ToLower().Contains("ramirez") &&
             !swapModel.HeadMesh.ToLower().Contains("/parts/"))
         {
             foreach (var material in swapModel.HeadMaterials)
@@ -1246,7 +1247,7 @@ public sealed class SwapperService : ISwapperService
                 if (swapModel.HeadMaterials.ContainsKey(i))
                     swapModel.HeadMaterials.Add(i - 1, "/");
                 else
-                 swapModel.HeadMaterials.Add(i, "/");
+                    swapModel.HeadMaterials.Add(i, "/");
             
         if (swapModel.FaceACCMaterials == new Dictionary<int, string>() || swapModel.FaceACCMaterials.Count < 5)
             for (int i = swapModel.FaceACCMaterials.Count; i < 5; i++)
@@ -1368,7 +1369,7 @@ public sealed class SwapperService : ISwapperService
         };
     }
     #endregion
-    
+
     private async Task<SaturnOption> GenerateMeshPickaxe(Cosmetic item, SaturnItem option)
     {
         Logger.Log($"Getting wid for {item.Name}");

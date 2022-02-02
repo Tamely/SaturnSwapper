@@ -39,7 +39,7 @@ namespace Saturn.Backend.Data.Utils
             {
                 return string.Empty;
             }
-            return char.ToUpper(str[0]) + str.Substring(1);
+            return char.ToUpper(str[0]) + str[1..];
         }
         
         public static async Task OpenBrowser(string url)

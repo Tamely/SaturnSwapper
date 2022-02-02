@@ -218,90 +218,77 @@ namespace Saturn.Backend.Data.Services
             Logger.Log("Adding extra items");
 
             List<Cosmetic> extraItems = new List<Cosmetic>();
-
-            foreach (var section in _cloudStorageService.GetSections())
+            foreach (var changes in from section in _cloudStorageService.GetSections()
+                                    from key in section.Keys
+                                    let changes = _cloudStorageService.DecodeChanges(key.Value)
+                                    select changes)
             {
-                foreach (var key in section.Keys)
+                if (changes.addOptions && changes.Item.ItemType == itemType)
                 {
-                    var changes = _cloudStorageService.DecodeChanges(key.Value);
+                    var itemInList = items.FirstOrDefault(x => x.Id.ToLower() == changes.Item.ItemID.ToLower());
+                    itemInList.CosmeticOptions.AddRange(from option in changes.SwapOptions
+                                                        select new SaturnItem()
+                                                        {
+                                                            Name = option.ItemName,
+                                                            Description = option.ItemDescription,
+                                                            Icon = option.ItemIcon,
+                                                            ItemDefinition = option.ItemID,
+                                                            Rarity = option.Rarity.Value,
+                                                            Options = new List<SaturnOption>()
+                                                            {
+                                                                new SaturnOption()
+                                                                {
+                                                                    Name = option.ItemName,
+                                                                    Icon = option.ItemIcon,
+                                                                    Rarity = option.Rarity.Value,
+                                                                    Assets = option.OverrideAssets
+                                                                }
+                                                            }
+                                                        });
+                    items.RemoveAll(x => x.Id == itemInList.Id);
+                    items.Reverse();
+                    items.Add(itemInList);
+                    items.Reverse();
+                }
 
-                    if (changes.addOptions && changes.Item.ItemType == itemType)
+                if (changes.addItem && changes.Item.ItemType == itemType)
+                {
+                    List<SaturnItem> itemOptions = new();
+                    itemOptions.AddRange(from itemInfo in changes.SwapOptions
+                                         select new SaturnItem
+                                         {
+                                             Name = itemInfo.ItemName,
+                                             Icon = itemInfo.ItemIcon,
+                                             Description = itemInfo.ItemDescription,
+                                             Rarity = itemInfo.Rarity.Value,
+                                             Options = new List<SaturnOption>()
+                                             {
+                                                 new SaturnOption()
+                                                 {
+                                                     Name = itemInfo.ItemName,
+                                                     Icon = itemInfo.ItemIcon,
+                                                     Rarity = itemInfo.Rarity.Value,
+                                                     Assets = itemInfo.OverrideAssets
+                                                 }
+                                             }
+                                         });
+                    extraItems.Add(new Cosmetic()
                     {
-                        var itemInList = items.FirstOrDefault(x => x.Id.ToLower() == changes.Item.ItemID.ToLower());
-
-                        foreach (var option in changes.SwapOptions)
-                        {
-                            itemInList.CosmeticOptions.Add(new SaturnItem()
-                            {
-                                Name = option.ItemName,
-                                Description = option.ItemDescription,
-                                Icon = option.ItemIcon,
-                                ItemDefinition = option.ItemID,
-                                Rarity = option.Rarity.Value,
-                                Options = new List<SaturnOption>()
-                                {
-                                    new SaturnOption()
-                                    {
-                                        Name = option.ItemName,
-                                        Icon = option.ItemIcon,
-                                        Rarity = option.Rarity.Value,
-                                        Assets = option.OverrideAssets
-                                    }
-                                }
-                            });
-                        }
-
-                        items.RemoveAll(x => x.Id == itemInList.Id);
-                        items.Reverse();
-                        items.Add(itemInList);
-                        items.Reverse();
-                    }
-
-                    if (changes.addItem && changes.Item.ItemType == itemType)
-                    {
-                        List<SaturnItem> itemOptions = new();
-                        for (int i = 0; i < changes.SwapOptions.Count; i++)
-                        {
-                            itemOptions.Add(new()
-                            {
-                                Name = changes.SwapOptions[i].ItemName,
-                                Icon = changes.SwapOptions[i].ItemIcon,
-                                Description = changes.SwapOptions[i].ItemDescription,
-                                Rarity = changes.SwapOptions[i].Rarity.Value,
-                                Options = new List<SaturnOption>()
-                                {
-                                    new SaturnOption()
-                                    {
-                                        Name = changes.SwapOptions[i].ItemName,
-                                        Icon = changes.SwapOptions[i].ItemIcon,
-                                        Rarity = changes.SwapOptions[i].Rarity.Value,
-                                        Assets = changes.SwapOptions[i].OverrideAssets
-                                    }
-                                }
-                            });
-                        }
-
-
-                        extraItems.Add(new Cosmetic()
-                        {
-                            Images = new() { SmallIcon = changes.Item.ItemIcon },
-                            Description = changes.Item.ItemDescription,
-                            Id = changes.Item.ItemID,
-                            Name = changes.Item.ItemName,
-                            Series = changes.Item.Series ?? new Series(),
-                            Rarity = changes.Item.Rarity,
-                            IsCloudAdded = true,
-                            CosmeticOptions = itemOptions
-                        });
-                    }
+                        Images = new() { SmallIcon = changes.Item.ItemIcon },
+                        Description = changes.Item.ItemDescription,
+                        Id = changes.Item.ItemID,
+                        Name = changes.Item.ItemName,
+                        Series = changes.Item.Series ?? new Series(),
+                        Rarity = changes.Item.Rarity,
+                        IsCloudAdded = true,
+                        CosmeticOptions = itemOptions
+                    });
                 }
             }
 
             items.Reverse();
             items.AddRange(extraItems);
             items.Reverse();
-            return items;
-
             return items;
         }
 
