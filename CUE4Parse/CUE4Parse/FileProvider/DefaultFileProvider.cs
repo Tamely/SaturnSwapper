@@ -45,7 +45,8 @@ namespace CUE4Parse.FileProvider
 
             if (_extraDirectories is {Count: > 0})
             {
-                availableFiles.AddRange(_extraDirectories.Select(directory => IterateFiles(directory, _searchOption)));
+                availableFiles.AddRange(from directory in _extraDirectories
+                                        select IterateFiles(directory, _searchOption));
             }
 
             foreach (var osFiles in availableFiles)

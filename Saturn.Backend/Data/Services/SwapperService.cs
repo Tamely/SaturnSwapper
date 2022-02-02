@@ -67,16 +67,15 @@ public sealed class SwapperService : ISwapperService
 
         Trace.WriteLine("Initialized provider");
 
-        new Mappings(_provider, benBotApiService, fortniteAPIService, jsRuntime).Init();
+        _ = new Mappings(_provider, benBotApiService, fortniteAPIService, jsRuntime).Init();
 
         Trace.WriteLine("Loaded mappings");
-
 
         var keys = new List<KeyValuePair<FGuid, FAesKey>>();
         if (_aes.MainKey != null)
             keys.Add(new(new FGuid(), new FAesKey(_aes.MainKey)));
-        keys.AddRange(_aes.DynamicKeys.Select(x =>
-            new KeyValuePair<FGuid, FAesKey>(new FGuid(x.PakGuid), new FAesKey(x.Key))));
+        keys.AddRange(from x in _aes.DynamicKeys
+                      select new KeyValuePair<FGuid, FAesKey>(new FGuid(x.PakGuid), new FAesKey(x.Key)));
 
         Trace.WriteLine("Set Keys");
         _provider.SubmitKeys(keys);
