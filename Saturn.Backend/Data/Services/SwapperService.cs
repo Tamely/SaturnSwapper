@@ -94,12 +94,12 @@ public sealed class SwapperService : ISwapperService
     public async Task<List<Cosmetic>> GetSaturnSkins()
     {
         var Skins = new List<Cosmetic>();
-        foreach (var (assetPath, assetValue) in _provider.Files)
-        {
-            if (!assetPath.Contains("/CID_")) continue;
 
-            await Task.Run(() =>
+        await Task.Run(() =>
+        {
+            foreach (var (assetPath, assetValue) in _provider.Files)
             {
+                if (!assetPath.Contains("/CID_")) continue;
                 if (_provider.TryLoadObject(assetPath.Split('.')[0], out var asset))
                 {
                     Cosmetic skin = new();
@@ -109,6 +109,9 @@ public sealed class SwapperService : ISwapperService
 
                     skin.Id = FileUtil.SubstringFromLast(assetPath, '/').Split('.')[0];
                     
+                    if (skin.Name.ToLower() is "null" or "tbd" or "hero" || skin.Id.ToLower().Contains("cid_vip_"))
+                        continue;
+                    
                     skin.Rarity = new Rarity
                     {
                         Value = asset.TryGetValue(out EFortRarity Rarity, "Rarity") ? Rarity.ToString().Split("::")[0] : "Uncommon"
@@ -116,12 +119,16 @@ public sealed class SwapperService : ISwapperService
 
                     if (skin.Name is "Recruit" or "Random")
                         skin.Rarity.Value = "Common";
-                    
+
+                    if (skin.Name is "Random")
+                        skin.IsRandom = true;
+
                     skin.Series = asset.TryGetValue(out UObject Series, "Series")
                         ? new Series()
                         {
                             BackendValue = FileUtil.SubstringFromLast(Series.GetFullName(), '/').Split('.')[0]
                         } : null;
+                    
                     skin.Images = new Images();
 
                     if (File.Exists(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + ".png")))
@@ -143,17 +150,15 @@ public sealed class SwapperService : ISwapperService
                             }
                             else
                             {
-                                Logger.Log("Cannot parse the small icon.");
-                                skin.Images.SmallIcon =
-                                    "https://fortnite-api.com/images/cosmetics/br/bid_npc_hightowerdate/smallicon.png";
+                                Logger.Log("Cannot parse the small icon for " + skin.Id);
+                                continue;
                             }
 
                         }
                         else
                         {
-                            Logger.Log("Cannot parse the HID.");
-                            skin.Images.SmallIcon =
-                                "https://fortnite-api.com/images/cosmetics/br/bid_npc_hightowerdate/smallicon.png";
+                            Logger.Log("Cannot parse the HID for " + skin.Id);
+                            continue;
                         }
                     }
                     
@@ -167,22 +172,22 @@ public sealed class SwapperService : ISwapperService
                 // sort skins by alphabetical order
                 Skins = Skins.OrderBy(x => x.Id).ToList();
 
-                // Remove items from the array with the same name and description
+                // Remove items from the array that are duplicates
                 for (var i = 0; i < Skins.Count; i++)
                 {
                     for (var j = i + 1; j < Skins.Count; j++)
                     {
-                        if (Skins[i].Name == Skins[j].Name && Skins[i].Description == Skins[j].Description &&
-                            Skins[j].Images.SmallIcon ==
-                            "https://fortnite-api.com/images/cosmetics/br/bid_npc_hightowerdate/smallicon.pnghttps://fortnite-api.com/images/cosmetics/br/bid_npc_hightowerdate/smallicon.png")
+                        if (Skins[i].Name == Skins[j].Name
+                            && Skins[i].Images.SmallIcon == Skins[j].Images.SmallIcon
+                            && Skins[i].Description == Skins[j].Description)
                         {
                             Skins.RemoveAt(j);
                             j--;
                         }
                     }
                 }
-            });
-        }
+            }
+        });
 
         Trace.WriteLine($"Deserialized {Skins.Count} objects");
 
