@@ -155,7 +155,7 @@
                                 {
                                     <img class="base" src="img/Rarity/@(item.Rarity.Value.ToLower()).png" alt=""/>
                                 }
-
+                                
                                 <img class="icon" src="@item.Images.SmallIcon" alt=""/>
                                 <div class="card-info">
                                     @if (item.IsConverted)
@@ -196,7 +196,7 @@
                                 {
                                     <img class="base" src="img/Rarity/@(item.Rarity.Value.ToLower()).png" alt=""/>
                                 }
-
+                                
                                 <img class="icon" src="@item.Images.SmallIcon" alt=""/>
                                 <div class="card-info">
                                     @if (item.IsConverted)
@@ -360,7 +360,14 @@
                                     <img class="base" src="img/Rarity/@(item.Rarity.Value.ToLower()).png" alt=""/>
                                 }
 
-                                <img class="icon" src="@item.Images.SmallIcon" alt=""/>
+                                @if (item.StreamImage != null)
+                                {
+                                    <img class="icon" src="data:image/png;base64," + @Convert.ToBase64String(item.StreamImage.ToArray(), 0, item.StreamImage.ToArray().Length); alt=""/>
+                                }
+                                else
+                                {
+                                    <img class="icon" src="@item.Images.SmallIcon" alt=""/>
+                                }
                                 <div class="card-info">
                                     @if (item.IsConverted)
                                     {
@@ -1069,7 +1076,7 @@
     private async Task GetSaturnSkins()
     {
         saturnState = SaturnState.S_Loading;
-        Items = await _fortniteAPIService.GetSaturnSkins();
+        Items = await _swapperService.GetSaturnSkins();
         BackupItems = new List<Cosmetic>(Items);
         currentType = ItemType.IT_Skin;
         saturnState = SaturnState.S_Items;

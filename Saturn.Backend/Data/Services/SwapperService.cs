@@ -20,12 +20,17 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media;
+using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Objects.Core.i18N;
+using CUE4Parse_Conversion.Textures;
 using Saturn.Backend.Data.SwapOptions.Pickaxes;
 using Saturn.Backend.Data.SwapOptions.Skins;
 using Colors = Saturn.Backend.Data.Enums.Colors;
 using Saturn.Backend.Data.SwapOptions.Backblings;
 using Saturn.Backend.Data.SwapOptions.Emotes;
+using SharpGLTF.Schema2;
+using SkiaSharp;
 
 namespace Saturn.Backend.Data.Services;
 
@@ -33,6 +38,7 @@ public interface ISwapperService
 {
     public Task<bool> Convert(Cosmetic item, SaturnItem option, ItemType itemType, bool isAuto = true, bool isRandom = false, Cosmetic random = null);
     public Task<bool> Revert(Cosmetic item, SaturnItem option, ItemType itemType);
+    public Task<List<Cosmetic>> GetSaturnSkins();
     public Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = true);
 }
 
@@ -40,6 +46,7 @@ public sealed class SwapperService : ISwapperService
 {
     private readonly IConfigService _configService;
     private readonly IFortniteAPIService _fortniteAPIService;
+    private readonly IDiscordRPCService _discordRPCService;
 
     private readonly ISaturnAPIService _saturnAPIService;
     private readonly ICloudStorageService _cloudStorageService;
@@ -50,13 +57,14 @@ public sealed class SwapperService : ISwapperService
     private readonly DefaultFileProvider _provider;
 
     public SwapperService(IFortniteAPIService fortniteAPIService, ISaturnAPIService saturnAPIService,
-        IConfigService configService, ICloudStorageService cloudStorageService, IJSRuntime jsRuntime, IBenBotAPIService benBotApiService)
+        IConfigService configService, ICloudStorageService cloudStorageService, IJSRuntime jsRuntime, IBenBotAPIService benBotApiService, IDiscordRPCService discordRPCService)
     {
         _fortniteAPIService = fortniteAPIService;
         _saturnAPIService = saturnAPIService;
         _configService = configService;
         _cloudStorageService = cloudStorageService;
         _jsRuntime = jsRuntime;
+        _discordRPCService = discordRPCService;
 
         var _aes = _fortniteAPIService.GetAES();
 
@@ -67,7 +75,7 @@ public sealed class SwapperService : ISwapperService
 
         Trace.WriteLine("Initialized provider");
 
-        _ = new Mappings(_provider, benBotApiService, fortniteAPIService, jsRuntime).Init();
+        new Mappings(_provider, benBotApiService, fortniteAPIService, jsRuntime).Init();
 
         Trace.WriteLine("Loaded mappings");
 
@@ -81,6 +89,107 @@ public sealed class SwapperService : ISwapperService
         _provider.SubmitKeys(keys);
         Trace.WriteLine("Submitted Keys");
         Trace.WriteLine($"File provider initialized with {_provider.Keys.Count} keys");
+    }
+
+    public async Task<List<Cosmetic>> GetSaturnSkins()
+    {
+        var Skins = new List<Cosmetic>();
+        foreach (var (assetPath, assetValue) in _provider.Files)
+        {
+            if (!assetPath.Contains("/CID_")) continue;
+
+            await Task.Run(() =>
+            {
+                if (_provider.TryLoadObject(assetPath.Split('.')[0], out var asset))
+                {
+                    Cosmetic skin = new();
+
+                    skin.Name = asset.TryGetValue(out FText DisplayName, "DisplayName") ? DisplayName.Text : "TBD";
+                    skin.Description = asset.TryGetValue(out FText Description, "Description") ? Description.Text : "To be determined...";
+
+                    skin.Id = FileUtil.SubstringFromLast(assetPath, '/').Split('.')[0];
+                    
+                    skin.Rarity = new Rarity
+                    {
+                        Value = asset.TryGetValue(out EFortRarity Rarity, "Rarity") ? Rarity.ToString().Split("::")[0] : "Uncommon"
+                    };
+
+                    if (skin.Name is "Recruit" or "Random")
+                        skin.Rarity.Value = "Common";
+                    
+                    skin.Series = asset.TryGetValue(out UObject Series, "Series")
+                        ? new Series()
+                        {
+                            BackendValue = FileUtil.SubstringFromLast(Series.GetFullName(), '/').Split('.')[0]
+                        } : null;
+                    skin.Images = new Images();
+
+                    if (File.Exists(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + ".png")))
+                        skin.Images.SmallIcon = "skins/" + skin.Id + ".png";
+                    else
+                    {
+                        if (asset.TryGetValue(out UObject HID, "HeroDefinition"))
+                        {
+                            if (HID.TryGetValue(out UTexture2D smallIcon, "SmallPreviewImage"))
+                            {
+                                using var ms = new MemoryStream();
+                                smallIcon.Decode().Encode().SaveTo(ms);
+                            
+                                Directory.CreateDirectory(Path.Combine(Config.ApplicationPath, "wwwroot/skins/"));
+                                if (!File.Exists(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + ".png")))
+                                    File.WriteAllBytes(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + ".png"), ms.ToArray());
+
+                                skin.Images.SmallIcon = "skins/" + skin.Id + ".png";
+                            }
+                            else
+                            {
+                                Logger.Log("Cannot parse the small icon.");
+                                skin.Images.SmallIcon =
+                                    "https://fortnite-api.com/images/cosmetics/br/bid_npc_hightowerdate/smallicon.png";
+                            }
+
+                        }
+                        else
+                        {
+                            Logger.Log("Cannot parse the HID.");
+                            skin.Images.SmallIcon =
+                                "https://fortnite-api.com/images/cosmetics/br/bid_npc_hightowerdate/smallicon.png";
+                        }
+                    }
+                    
+                    Skins.Add(skin.AddSkinOptions());
+                }
+                else
+                {
+                    Logger.Log($"Failed to load {assetPath}");
+                }
+                
+                // sort skins by alphabetical order
+                Skins = Skins.OrderBy(x => x.Id).ToList();
+
+                // Remove items from the array with the same name and description
+                for (var i = 0; i < Skins.Count; i++)
+                {
+                    for (var j = i + 1; j < Skins.Count; j++)
+                    {
+                        if (Skins[i].Name == Skins[j].Name && Skins[i].Description == Skins[j].Description &&
+                            Skins[j].Images.SmallIcon ==
+                            "https://fortnite-api.com/images/cosmetics/br/bid_npc_hightowerdate/smallicon.pnghttps://fortnite-api.com/images/cosmetics/br/bid_npc_hightowerdate/smallicon.png")
+                        {
+                            Skins.RemoveAt(j);
+                            j--;
+                        }
+                    }
+                }
+            });
+        }
+
+        Trace.WriteLine($"Deserialized {Skins.Count} objects");
+
+        _discordRPCService.UpdatePresence($"Looking at {Skins.Count} different skins");
+
+        return Skins;
+
     }
 
     public async Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = false)

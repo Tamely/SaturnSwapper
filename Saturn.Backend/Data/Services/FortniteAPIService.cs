@@ -6,17 +6,24 @@ using Saturn.Backend.Data.Utils;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using CUE4Parse.FileProvider;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Exports.Texture;
+using CUE4Parse.UE4.Objects.UObject;
 using MudBlazor;
 using Serilog;
+using SkiaSharp;
 
 namespace Saturn.Backend.Data.Services
 {
     public interface IFortniteAPIService
     {
-        public Task<List<Cosmetic>> GetSaturnSkins();
         public Task<List<Cosmetic>> GetSaturnMisc();
         public Task<List<Cosmetic>> GetSaturnBackblings();
         public Task<List<Cosmetic>> GetSaturnPickaxes();
@@ -105,75 +112,11 @@ namespace Saturn.Backend.Data.Services
             return await AreItemsConverted(await AddExtraItems(await RemoveItems(Picks.Data), ItemType.IT_Pickaxe));
         }
 
-        public async Task<List<Cosmetic>> GetSaturnSkins()
+        /*public async Task<List<Cosmetic>> GetSaturnSkins(DefaultFileProvider _provider)
         {
-
-            var data = await GetDataAsync(CosmeticsByType("AthenaCharacter"));
-            var Skins = JsonConvert.DeserializeObject<CosmeticList>(data);
-
-            Skins.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero" || x.Id.ToLower().Contains("cid_vip_"));
-
-            Dictionary<string, Cosmetic> CosmeticsToInsert = new();
-            bool shouldShowStyles = await _configService.TryGetShouldShowStyles();
-
-            foreach (var item in Skins.Data)
-            {
-                if (item.Name.ToLower() == "random")
-                    item.IsRandom = true;
-
-                if (shouldShowStyles)
-                {
-                    int i = 0;
-
-                    if (item.Variants != null)
-                        foreach (var variants in item.Variants)
-                        {
-                            if (variants.Channel.ToLower() != "parts" && variants.Channel.ToLower() != "material")
-                                continue;
-
-                            foreach (var style in variants.Options)
-                            {
-                                if (string.IsNullOrEmpty(style.Name)) continue;
-                                if (style.Name.ToLower().Contains("default") || style.Name.Replace(item.Name, "") == "")
-                                    continue;
-
-                                CosmeticsToInsert.Add(Skins.Data.IndexOf(item) + " + " + i, new Cosmetic()
-                                {
-                                    Name = style.Name,
-                                    Description = item.Name + " style: " + item.Description,
-                                    Id = item.Id,
-                                    Rarity = item.Rarity,
-                                    Series = item.Series,
-                                    Images = new Images()
-                                    {
-                                        SmallIcon = style.Image
-                                    },
-                                    VariantChannel = variants.Channel,
-                                    VariantTag = style.Tag
-                                });
-
-                                i++;
-                            }
-                        }
-                }
-            }
-
-            int Offseter = 0;
-            foreach (var (key, value) in CosmeticsToInsert)
-            {
-                Skins.Data.Insert(int.Parse(key.Split(" + ")[0]) + Offseter, value);
-                Offseter++;
-            }
-
-
-            Trace.WriteLine($"Deserialized {Skins.Data.Count} objects");
-
-            _discordRPCService.UpdatePresence($"Looking at {Skins.Data.Count} different skins");
-
-            return await AreItemsConverted(await AddExtraItems(await RemoveItems(await IsHatTypeDifferent(Skins.Data)),
+            return await AreItemsConverted(await AddExtraItems(await RemoveItems(await IsHatTypeDifferent(Skins)),
                 ItemType.IT_Skin));
-
-        }
+        }*/
 
         public async Task<List<Cosmetic>> GetSaturnMisc()
         {
@@ -346,6 +289,16 @@ namespace Saturn.Backend.Data.Services
                     },
                     new SaturnItem
                     {
+                        ItemDefinition = "CID_294_Athena_Commando_F_RedKnightWinter",
+                        Name = "Frozen Red Knight",
+                        Description = "Frozen menace of icy tundra.",
+                        Icon =
+                            "https://fortnite-api.com/images/cosmetics/br/cid_294_athena_commando_f_redknightwinter/smallicon.png",
+                        Rarity = "Legendary",
+                        Series = "FrozenSeries"
+                    },
+                    new SaturnItem
+                    {
                         ItemDefinition = "CID_653_Athena_Commando_F_UglySweaterFrozen",
                         Name = "Frozen Nog Ops",
                         Description = "Bring some chill to the skirmish.",
@@ -377,16 +330,6 @@ namespace Saturn.Backend.Data.Services
                         Description = "Synthetic diamonds need not apply.",
                         Icon = "https://fortnite-api.com/images/cosmetics/br/cid_936_athena_commando_f_raidersilver/smallicon.png",
                         Rarity = "Rare"
-                    },
-                    new SaturnItem
-                    {
-                        ItemDefinition = "CID_294_Athena_Commando_F_RedKnightWinter",
-                        Name = "Frozen Red Knight",
-                        Description = "Frozen menace of icy tundra.",
-                        Icon =
-                                "https://fortnite-api.com/images/cosmetics/br/cid_294_athena_commando_f_redknightwinter/smallicon.png",
-                        Rarity = "Legendary",
-                        Series = "FrozenSeries"
                     }
                 };
                 if (string.IsNullOrEmpty(skin.VariantChannel))

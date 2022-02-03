@@ -3,6 +3,7 @@ using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.Items;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Saturn.Backend.Data.Models.FortniteAPI
 {
@@ -79,6 +80,7 @@ namespace Saturn.Backend.Data.Models.FortniteAPI
 
     public class Cosmetic
     {
+        [JsonProperty("streamImage")] public MemoryStream? StreamImage { get; set; }
         [JsonProperty("id")] public string Id { get; set; }
 
         [JsonProperty("name")] public string Name { get; set; }
