@@ -676,62 +676,15 @@ public sealed class SwapperService : ISwapperService
             if (CharacterItemDefinition.TryGetValue(out UObject[] CharacterParts, "BaseCharacterParts"))
             {
                 if (item is {VariantChannel: { }})
-                    if (item.VariantChannel.ToLower().Contains("parts") || item.VariantChannel.ToLower().Contains("material") || item.VariantTag == null)
+                    if ((item.VariantChannel.ToLower().Contains("parts") ||
+                         item.VariantChannel.ToLower().Contains("material") ||
+                         item.VariantTag == null) &&
+                         CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants"))
                     {
-                        if (CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants"))
+                        foreach (var style in ItemVariants)
                         {
-                            foreach (var style in ItemVariants)
-                            {
-                                if (style.TryGetValue(out FStructFallback[] PartOptions, "PartOptions"))
-                                    foreach (var PartOption in PartOptions)
-                                    {
-                                        if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
-                                        {
-                                            if (VariantName.Text != item.Name && item.VariantTag != null)
-                                            {
-                                                Logger.Log("Skipping " + VariantName.Text);
-                                                continue;
-                                            }
-
-                                            Logger.Log("Found Item: " + VariantName.Text);
-                                        }
-                                        else
-                                        {
-                                            Logger.Log("No VariantName found");
-                                            continue;
-                                        }
-                                
-                                        if (PartOption.TryGetValue(out UObject[] Parts, "VariantParts"))
-                                        {
-                                            CharacterParts = CharacterParts.Concat(Parts).ToArray();
-                                        }
-                                    }
-                            
-                                if (style.TryGetValue(out FStructFallback[] MaterialOptions, "MaterialOptions"))
-                                    foreach (var MaterialOption in MaterialOptions)
-                                    {
-                                        if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
-                                        {
-                                            if (VariantName.Text != item.Name && item.VariantTag != null)
-                                            {
-                                                Logger.Log("Skipping " + VariantName.Text);
-                                                continue;
-                                            }
-
-                                            Logger.Log("Found Item: " + VariantName.Text);
-                                        }
-                                        else
-                                        {
-                                            Logger.Log("No VariantName found");
-                                            continue;
-                                        }
-                                
-                                        if (MaterialOption.TryGetValue(out UObject[] Parts, "VariantParts"))
-                                        {
-                                            CharacterParts = CharacterParts.Concat(Parts).ToArray();
-                                        }
-                                    }
-                            }
+                            DoSomething(style, "PartOptions", item, ref CharacterParts);
+                            DoSomething(style, "MaterialOptions", item, ref CharacterParts);
                         }
                     }
                     else
@@ -763,6 +716,37 @@ public sealed class SwapperService : ISwapperService
         }
 
         return cps;
+    }
+
+    private static void DoSomething(UObject style, string name, Cosmetic item, ref UObject[] characterParts)
+    {
+        if (style.TryGetValue(out FStructFallback[] options, name))
+        {
+            foreach (var option in options)
+            {
+                if (option.TryGetValue(out FText variantName, "VariantName"))
+                {
+                    if (variantName.Text != item.Name &&
+                        item.VariantTag != null)
+                    {
+                        Logger.Log("Skipping " + variantName.Text);
+                        continue;
+                    }
+
+                    Logger.Log("Found Item: " + variantName.Text);
+                }
+                else
+                {
+                    Logger.Log("No VariantName found");
+                    continue;
+                }
+
+                if (option.TryGetValue(out UObject[] parts, "VariantParts"))
+                {
+                    characterParts = characterParts.Concat(parts).ToArray();
+                }
+            }
+        }
     }
 
     #region GenerateBackbling
