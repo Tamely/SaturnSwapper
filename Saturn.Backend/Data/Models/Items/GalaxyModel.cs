@@ -24,7 +24,7 @@ namespace Saturn.Backend.Data.Models.Items
 
     public class Swap
     {
-        [J("type")] public string? Type { get; set; }
+        [J("type")] public string Type { get; set; } = "string";
         [J("search")] public string Search { get; set; }
         [J("replace")] public string Replace { get; set; }
     }
