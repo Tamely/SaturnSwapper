@@ -49,3 +49,10 @@ The source on the swapper is 100% complete which means you can build it without 
 Contributions are always welcome as it helps keep the project working!
 - To make a contribution, fork the repository, make your change to the code, then submit a pull request on this repo.
 - Let me (Tamely#6469) know when you make a pull request so I can give you the contributor role on Saturn's Discord server.
+
+## Unlisted Contributors
+
+- [Amr Satrio]("https://github.com/Amrsatrio") (Helped with asset obfuscation and just general questions)
+- [cyclonefreeze]("https://github.com/cyclonefreeze") (Developed base which Saturn built upon)
+- [jakedothow]("https://github.com/jakedothow") (Developed base which Saturn built upon)
+- [All CUE4Parse contributors]("https://github.com/FabianFG/CUE4Parse/graphs/contributors") (CUE4Parse is the main part of the swapper)
