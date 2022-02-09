@@ -52,7 +52,9 @@ Contributions are always welcome as it helps keep the project working!
 
 ## Unlisted Contributors
 
-[Amr Satrio]("https://github.com/Amrsatrio") (Helped with asset obfuscation and just general questions)
-[cyclonefreeze]("https://github.com/cyclonefreeze") (Developed base which Saturn built upon)
-[jakedothow]("https://github.com/jakedothow") (Developed base which Saturn built upon)
-[All CUE4Parse contributors]("https://github.com/FabianFG/CUE4Parse/graphs/contributors") (CUE4Parse is the main part of the swapper)
+| Contributor | Helped with |
+| ----------- | ----------- |
+| [Amr Satrio](https://github.com/Amrsatrio)   | Helped with asset obfuscation and just general questions |
+| [cyclonefreeze](https://github.com/cyclonefreeze)   | Developed base which Saturn built upon |
+| [jakedothow](https://github.com/jakedothow)   | Developed base which Saturn built upon |
+| [All CUE4Parse contributors](https://github.com/FabianFG/CUE4Parse/graphs/contributors)   | CUE4Parse is the main part of the swapper |
