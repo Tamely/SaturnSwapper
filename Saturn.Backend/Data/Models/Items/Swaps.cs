@@ -23,6 +23,7 @@ namespace Saturn.Backend.Data.Models.Items
         public string Path { get; set; }
         public Colors PrintColor { get; set; } = Colors.C_WHITE;
         public string? Status { get; set; } = null;
+        public MeshDefaultModel SwapModel { get; set; }
     }
 
     public class SaturnOption

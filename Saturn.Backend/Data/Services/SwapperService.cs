@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Media;
@@ -38,6 +39,7 @@ public interface ISwapperService
 {
     public Task<bool> Convert(Cosmetic item, SaturnItem option, ItemType itemType, bool isAuto = true, bool isRandom = false, Cosmetic random = null);
     public Task<bool> Revert(Cosmetic item, SaturnItem option, ItemType itemType);
+    public Task<Dictionary<string, string>> GetCharacterPartsById(string id, Cosmetic? item = null);
     public Task<List<Cosmetic>> GetSaturnSkins();
     public Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = true);
 }
@@ -95,7 +97,7 @@ public sealed class SwapperService : ISwapperService
     {
         var Skins = new List<Cosmetic>();
 
-        await Task.Run(() =>
+        await Task.Run(async() =>
         {
             foreach (var (assetPath, assetValue) in _provider.Files)
             {
@@ -162,7 +164,7 @@ public sealed class SwapperService : ISwapperService
                         }
                     }
                     
-                    Skins.Add(skin.AddSkinOptions());
+                    Skins.Add(await new AddSkins().AddSkinOptions(skin, this, _provider));
                 }
                 else
                 {
@@ -225,6 +227,7 @@ public sealed class SwapperService : ISwapperService
             else
             {
                 Logger.Log("Item is not converted! Converting!");
+                await _jsRuntime.InvokeVoidAsync("MessageBox", "Converting", $"Converting {option.SwapModel.BodyMesh} to {item.Name}!", "success");
 
                 if (item.IsRandom)
                 {
@@ -801,11 +804,8 @@ public sealed class SwapperService : ISwapperService
                                         {
                                             if (VariantName.Text != item.Name && item.VariantTag != null)
                                             {
-                                                Logger.Log("Skipping " + VariantName.Text);
                                                 continue;
                                             }
-
-                                            Logger.Log("Found Item: " + VariantName.Text);
                                         }
                                         else
                                         {
@@ -826,11 +826,8 @@ public sealed class SwapperService : ISwapperService
                                         {
                                             if (VariantName.Text != item.Name && item.VariantTag != null)
                                             {
-                                                Logger.Log("Skipping " + VariantName.Text);
                                                 continue;
                                             }
-
-                                            Logger.Log("Found Item: " + VariantName.Text);
                                         }
                                         else
                                         {
@@ -851,7 +848,10 @@ public sealed class SwapperService : ISwapperService
 
                 foreach (var characterPart in CharacterParts)
                 {
-                    characterPart.TryGetValue(out EFortCustomPartType CustomPartType, "CharacterPartType");
+                    if (characterPart == null)
+                        continue;
+                    if (!characterPart.TryGetValue(out EFortCustomPartType CustomPartType, "CharacterPartType"))
+                        continue;
 
                     if (cps.ContainsKey(CustomPartType.ToString()))
                         cps.Remove(CustomPartType.ToString());
@@ -868,11 +868,6 @@ public sealed class SwapperService : ISwapperService
         else
         {
             Logger.Log("Failed to Load Character...", LogLevel.Fatal);
-        }
-
-        foreach (var cp in cps)
-        {
-            Logger.Log(cp.Key + ": " + cp.Value, LogLevel.Debug);
         }
 
         return cps;
@@ -988,423 +983,6 @@ public sealed class SwapperService : ISwapperService
         Logger.Log($"Getting character parts for {item.Name}");
         Logger.Log(Constants.CidPath + item.Id);
 
-        var characterParts = Task.Run(() => GetCharacterPartsById(item.Id, item)).GetAwaiter().GetResult();
-
-        if (characterParts == new Dictionary<string, string>())
-            return null;
-
-        Logger.Log("Creating swap model");
-
-        MeshDefaultModel swapModel = new()
-        {
-            HeadMaterials = new Dictionary<int, string>(),
-            HeadHairColor = "/Game/Tamely",
-            HeadFX = "/Game/Tamely",
-            HeadSkinColor = "/Game/Tamely",
-            HeadPartModifierBP = "/Game/Tamely",
-            HeadMesh = "/Game/Tamely",
-            HeadABP = null,
-            BodyFX = "/Game/Tamely",
-            BodyPartModifierBP = "/Game/Tamely",
-            BodyABP = null,
-            BodyMesh = "/Game/Tamely",
-            BodyMaterials = new Dictionary<int, string>(),
-            BodySkeleton = "/Game/Tamely",
-            FaceACCMaterials = new Dictionary<int, string>(),
-            FaceACCMesh = "/Game/Tamely",
-            FaceACCABP = null,
-            FaceACCFX = "/Game/Tamely",
-            FaceACCPartModifierBP = "/Game/Tamely",
-            HatType = ECustomHatType.ECustomHatType_None
-        };
-
-        Dictionary<string, string> MaterialReplacements = new Dictionary<string, string>();
-        await Task.Run(() =>
-        {
-            if (item is {VariantChannel: { }})
-            {
-                if (item.VariantChannel.ToLower() != "material" &&
-                    item.VariantChannel.ToLower() != "parts" &&
-                    item.VariantTag != null ||
-                    !_provider.TryLoadObject(Constants.CidPath + item.Id, out var CharacterItemDefinition) ||
-                    !CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants")) 
-                    return;
-                foreach (var style in ItemVariants)
-                {
-                    if (style.TryGetValue(out FStructFallback[] PartOptions, "PartOptions"))
-                        foreach (var PartOption in PartOptions)
-                        {
-                            if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
-                            {
-                                Logger.Log("Found Item: " + VariantName.Text);
-                                if (VariantName.Text != item.Name && item.VariantTag != null)
-                                {
-                                    Logger.Log("Skipping " + VariantName.Text);
-                                    continue;
-                                }
-
-                                Logger.Log("Found Item: " + VariantName.Text);
-
-                            
-                                if (PartOption.TryGetValue(out FStructFallback[] VariantMaterials,"VariantMaterials"))
-                                    foreach (var variantMaterial in VariantMaterials)
-                                    {
-                                        var matOverride = variantMaterial.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.Text;
-                                        var MaterialToSwap = variantMaterial.Get<FSoftObjectPath>("MaterialToSwap").AssetPathName.Text;
-
-                                        Logger.Log("Original material: " + MaterialToSwap);
-                                        Logger.Log("Override material: " + matOverride);
-                                        MaterialReplacements.Add(MaterialToSwap, matOverride);
-                                    }
-                            }
-                            else
-                            {
-                                Logger.Log("No VariantName found");
-                            }
-                        }
-                    else
-                        Logger.Log("No PartOptions found");
-                    
-                    
-                    if (style.TryGetValue(out FStructFallback[] MaterialOptions, "MaterialOptions"))
-                        foreach (var MaterialOption in MaterialOptions)
-                        {
-                            if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
-                            {
-                                if (VariantName.Text != item.Name && item.VariantTag != null)
-                                {
-                                    Logger.Log("Skipping " + VariantName.Text);
-                                    continue;
-                                }
-
-                                Logger.Log("Found Item: " + VariantName.Text);
-
-                            
-                                if (MaterialOption.TryGetValue(out FStructFallback[] VariantMaterials,"VariantMaterials"))
-                                    foreach (var variantMaterial in VariantMaterials)
-                                    {
-                                        var matOverride = variantMaterial.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.Text;
-                                        var MaterialToSwap = variantMaterial.Get<FSoftObjectPath>("MaterialToSwap").AssetPathName.Text;
-
-                                        Logger.Log("Original material: " + MaterialToSwap);
-                                        Logger.Log("Override material: " + matOverride);
-                                        MaterialReplacements.Add(MaterialToSwap, matOverride);
-                                    }
-                            }
-                            else
-                            {
-                                Logger.Log("No VariantName found");
-                            }
-                        }
-                    else
-                        Logger.Log("No MaterialOptions found");
-                }
-            }
-        });
-
-        Dictionary<int, string> OGHeadMaterials = new();
-        var optionsParts = Task.Run(() => GetCharacterPartsById(option.ItemDefinition)).GetAwaiter()
-            .GetResult();
-
-        await Task.Run(() =>
-        {
-            if (!_provider.TryLoadObject(optionsParts["Head"].Split('.')[0], out var part) ||
-                !part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides")) return;
-            foreach (var (material, matIndex) in from materialOverride in MaterialOverride
-                     let material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString()
-                     let matIndex = materialOverride.Get<int>("MaterialOverrideIndex")
-                     select (material, matIndex))
-            {
-                OGHeadMaterials.Add(matIndex, material);
-            }
-        });
-
-        Logger.Log("Looping through character parts");
-        foreach (var characterPart in characterParts)
-        {
-            Logger.Log($"Getting strings in asset: {characterPart.Value}");
-            switch (characterPart.Key)
-            {
-                case "Body":
-                    Logger.Log("Character part is type: Body");
-
-                    await Task.Run(() =>
-                    {
-                        if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
-                        {
-                            if (part.TryGetValue(out FSoftObjectPath mesh, "SkeletalMesh"))
-                                swapModel.BodyMesh = mesh.AssetPathName.Text;
-
-                            swapModel.BodySkeleton =
-                                part.Get<FSoftObjectPath[]>("MasterSkeletalMeshes")[0].AssetPathName.ToString();
-
-                            if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
-                            {
-                                FSoftObjectPath AnimClass = AdditionalData.GetOrDefault("AnimClass",
-                                    new FSoftObjectPath(), StringComparison.OrdinalIgnoreCase);
-                                swapModel.BodyABP = AnimClass.AssetPathName.ToString();
-                            }
-
-
-                            if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
-                            {
-                                foreach (var materialOverride in MaterialOverride)
-                                {
-                                    var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial")
-                                        .AssetPathName.ToString();
-
-                                    if (MaterialReplacements.ContainsKey(material))
-                                    {
-                                        string temp = material;
-                                        material = MaterialReplacements[material];
-                                        MaterialReplacements.Remove(temp);
-                                    }
-
-                                    var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
-                                    swapModel.BodyMaterials.Add(matIndex, material);
-                                }
-                            }
-
-
-                            swapModel.BodyFX =
-                                part.TryGetValue(out FSoftObjectPath IdleEffectNiagara, "IdleEffectNiagara")
-                                    ? IdleEffectNiagara.AssetPathName.ToString()
-                                    : "/";
-
-                            if (part.TryGetValue(out FSoftObjectPath IdleEffect, "IdleEffect") &&
-                                swapModel.BodyFX == "/")
-                                swapModel.BodyFX = IdleEffect.AssetPathName.ToString();
-
-                            if (part.TryGetValue(out FSoftObjectPath BodyPartModifierBP, "PartModifierBlueprint"))
-                                swapModel.BodyPartModifierBP = BodyPartModifierBP.AssetPathName.ToString();
-                        }
-                    });
-                    break;
-                    
-                case "Head":
-                    Logger.Log("Character part is type: Head");
-
-                    await Task.Run(() =>
-                    {
-                        if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
-                        {
-                            swapModel.HeadMesh = part.Get<FSoftObjectPath>("SkeletalMesh").AssetPathName.Text;
-
-                            if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
-                            {
-                                if (AdditionalData.TryGetValue(out FSoftObjectPath AnimClass, "AnimClass"))
-                                    swapModel.HeadABP = AnimClass.AssetPathName.Text;
-
-                                swapModel.HeadHairColor = AdditionalData.TryGetValue(out FSoftObjectPath HairColorSwatch, "HairColorSwatch") 
-                                    ? HairColorSwatch.AssetPathName.Text 
-                                    : "/";
-                                    
-                                swapModel.HeadSkinColor = AdditionalData.TryGetValue(out FSoftObjectPath SkinColorSwatch, "SkinColorSwatch") 
-                                    ? SkinColorSwatch.AssetPathName.Text
-                                    : "/";
-                            }
-                                
-                                
-                            if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
-                            {
-                                foreach (var materialOverride in MaterialOverride)
-                                {
-                                    var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.Text;
-                                    
-                                    if (MaterialReplacements.ContainsKey(material))
-                                    {
-                                        string temp = material;
-                                        material = MaterialReplacements[material];
-                                        MaterialReplacements.Remove(temp);
-                                    }
-                                    
-                                    var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
-                                    swapModel.HeadMaterials.Add(matIndex, material);
-                                }
-                            }
-
-                            swapModel.HeadFX =
-                                part.TryGetValue(out FSoftObjectPath IdleEffectNiagara, "IdleEffectNiagara")
-                                    ? IdleEffectNiagara.AssetPathName.ToString()
-                                    : "/";
-
-                            if (part.TryGetValue(out FSoftObjectPath IdleEffect, "IdleEffect") && swapModel.HeadFX == "/")
-                                swapModel.HeadFX = IdleEffect.AssetPathName.Text;
-                                
-                            if (part.TryGetValue(out FSoftObjectPath BodyPartModifierBP, "PartModifierBlueprint"))
-                                swapModel.HeadPartModifierBP = BodyPartModifierBP.AssetPathName.Text;
-                        }
-                    });
-                    break;
-                    
-                case "Face":
-                case "Hat":
-                    Logger.Log("Character part is type: Hat or FaceACC");
-
-                    await Task.Run(() =>
-                    {
-                        if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
-                        {
-                            swapModel.FaceACCMesh = part.Get<FSoftObjectPath>("SkeletalMesh").AssetPathName.Text;
-
-                            // This is for skins like ghoul trooper and maven
-                            if (swapModel.FaceACCMesh.ToLower().Contains("glasses"))
-                            {
-                                swapModel.FaceACCMesh = "/";
-                                swapModel.HatType = ECustomHatType.ECustomHatType_None;
-                                return;
-                            }
-
-                            if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
-                            {
-                                swapModel.FaceACCABP = AdditionalData.GetOrDefault("AnimClass", new FSoftObjectPath(),
-                                    StringComparison.OrdinalIgnoreCase).AssetPathName.Text;
-
-                                swapModel.HatType = AdditionalData.GetOrDefault("HatType",
-                                    ECustomHatType.ECustomHatType_None, StringComparison.OrdinalIgnoreCase);
-                            }
-
-                            if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
-                            {
-                                foreach (var materialOverride in MaterialOverride)
-                                {
-                                    var material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.ToString();
-                                    
-                                    if (MaterialReplacements.ContainsKey(material))
-                                    {
-                                        string temp = material;
-                                        material = MaterialReplacements[material];
-                                        MaterialReplacements.Remove(temp);
-                                    }
-                                    
-                                    var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
-                                    swapModel.FaceACCMaterials.Add(matIndex, material);
-                                }
-                            }
-
-
-                            swapModel.FaceACCFX =
-                                part.TryGetValue(out FSoftObjectPath IdleEffectNiagara, "IdleEffectNiagara")
-                                    ? IdleEffectNiagara.AssetPathName.ToString()
-                                    : "/";
-                            
-                            if (part.TryGetValue(out FSoftObjectPath IdleEffect, "IdleEffect") && swapModel.FaceACCFX == "/")
-                                swapModel.FaceACCFX = IdleEffect.AssetPathName.Text;
-                                
-                            if (part.TryGetValue(out FSoftObjectPath FaceACCPartModifierBP, "PartModifierBlueprint"))
-                                swapModel.FaceACCPartModifierBP = FaceACCPartModifierBP.AssetPathName.Text;
-                        }
-                    });
-                    break;
-            }
-        }
-        
-        foreach (var (material, value) in MaterialReplacements)
-        {
-            if (material.ToLower().Contains("hat") || material.ToLower().Contains("helmet") ||
-                material.ToLower().Contains("faceacc") || material.ToLower().Contains("mask"))
-            {
-                int i = 0;
-                while (swapModel.FaceACCMaterials.ContainsKey(i)) i++;
-                swapModel.FaceACCMaterials.Add(i, value);
-            }
-            else if (material.ToLower().Contains("head") || material.ToLower().Contains("hair"))
-            {
-                int i = 0;
-                while (swapModel.HeadMaterials.ContainsKey(i)) i++;
-                swapModel.HeadMaterials.Add(i, value);
-            }
-            else if (material.ToLower().Contains("body") || material.ToLower().Contains("bodies"))
-            {
-                int i = 0;
-                while (swapModel.BodyMaterials.ContainsKey(i)) i++;
-                swapModel.BodyMaterials.Add(i, value);
-            }
-        }
-
-        if ((swapModel.HeadMesh.ToLower().Contains("ramirez")) &&
-            !swapModel.HeadMesh.ToLower().Contains("/parts/"))
-        {
-            foreach (var material in swapModel.HeadMaterials)
-            {
-                if (!material.Value.ToLower().Contains("hair") ||
-                    !OGHeadMaterials[material.Key].ToLower().Contains("hair") ||
-                    material.Value.ToLower().Contains("hide")) continue;
-                foreach (var ogMaterial in OGHeadMaterials.Where(ogMaterial 
-                             => ogMaterial.Value.ToLower().Contains("hair")))
-                {
-                    (swapModel.HeadMaterials[material.Key], swapModel.HeadMaterials[ogMaterial.Key]) = (
-                        swapModel.HeadMaterials[ogMaterial.Key], swapModel.HeadMaterials[material.Key]);
-                }
-            }
-        }
-        
-        if (option.Name == "Blizzabelle")
-        {
-            if (swapModel.HeadMaterials.Count > 1 && swapModel.FaceACCMaterials.Count < 2)
-            {
-                (swapModel.FaceACCMesh, swapModel.HeadMesh) = (swapModel.HeadMesh, swapModel.FaceACCMesh);
-                (swapModel.FaceACCABP, swapModel.HeadABP) = (swapModel.HeadABP, swapModel.FaceACCABP);
-                (swapModel.FaceACCMaterials, swapModel.HeadMaterials) = (swapModel.HeadMaterials, swapModel.FaceACCMaterials);
-                (swapModel.HeadFX, swapModel.FaceACCFX) = (swapModel.FaceACCFX, swapModel.HeadFX);
-                (swapModel.HeadPartModifierBP, swapModel.FaceACCPartModifierBP) = (swapModel.FaceACCPartModifierBP, swapModel.HeadPartModifierBP);
-            }
-        }
-            
-        if (swapModel.BodyMaterials == new Dictionary<int, string>() || swapModel.BodyMaterials.Count < 5)
-            for (int i = swapModel.BodyMaterials.Count; i < 5; i++)
-                swapModel.BodyMaterials.Add(i, "/");
-            
-        if (swapModel.HeadMaterials == new Dictionary<int, string>() || swapModel.HeadMaterials.Count < 5)
-            for (int i = swapModel.HeadMaterials.Count; i < 5; i++)
-                if (swapModel.HeadMaterials.ContainsKey(i))
-                    swapModel.HeadMaterials.Add(i - 1, "/");
-                else
-                 swapModel.HeadMaterials.Add(i, "/");
-            
-        if (swapModel.FaceACCMaterials == new Dictionary<int, string>() || swapModel.FaceACCMaterials.Count < 5)
-            for (int i = swapModel.FaceACCMaterials.Count; i < 5; i++)
-                swapModel.FaceACCMaterials.Add(i, "/");
-
-        if (swapModel.FaceACCABP == "None")
-            swapModel.FaceACCABP = null;
-        if (swapModel.HeadABP == "None")
-            swapModel.HeadABP = null;
-        if (swapModel.BodyABP == "None")
-            swapModel.BodyABP = null;
-
-        if (string.IsNullOrEmpty(swapModel.BodyABP))
-            swapModel.BodyABP = null;
-        if (string.IsNullOrEmpty(swapModel.HeadABP))
-            swapModel.HeadABP = null;
-        if (string.IsNullOrEmpty(swapModel.FaceACCABP))
-            swapModel.FaceACCABP = null;
-
-        Logger.Log($"Head hair color: {swapModel.HeadHairColor}");
-        Logger.Log($"Head skin color: {swapModel.HeadSkinColor}");
-        Logger.Log($"Head part modifier bp: {swapModel.HeadPartModifierBP}");
-        Logger.Log($"Head FX: {swapModel.HeadFX}");
-        Logger.Log($"Head mesh: {swapModel.HeadMesh}");
-        Logger.Log($"Head ABP: {swapModel.HeadABP ?? "Null"}");
-        Logger.Log($"Head Materials:");
-        foreach (var material in swapModel.HeadMaterials)
-            Logger.Log($"\t{material.Key}: {material.Value}");
-        Logger.Log($"Body ABP: {swapModel.BodyABP ?? "Null"}");
-        Logger.Log($"Body mesh: {swapModel.BodyMesh}");
-        Logger.Log($"Body materials:");
-        foreach (var material in swapModel.BodyMaterials)
-            Logger.Log($"\t{material.Key}: {material.Value}");
-        Logger.Log($"Body skeleton: {swapModel.BodySkeleton}");
-        Logger.Log($"Body part modifier BP: {swapModel.BodyPartModifierBP}");
-        Logger.Log($"Body FX: {swapModel.BodyFX}");
-        Logger.Log($"Face ACC materials:");
-        foreach (var material in swapModel.FaceACCMaterials)
-            Logger.Log($"\t{material.Key}: {material.Value}");
-        Logger.Log($"Face ACC mesh: {swapModel.FaceACCMesh}");
-        Logger.Log($"Face ACC ABP: {swapModel.FaceACCABP ?? "Null"}");
-        Logger.Log($"Face ACC part modifier BP: {swapModel.FaceACCPartModifierBP}");
-        Logger.Log($"Face ACC FX: {swapModel.FaceACCFX}");
-
         Logger.Log("Generating swaps");
 
         return option.ItemDefinition switch
@@ -1412,39 +990,39 @@ public sealed class SwapperService : ISwapperService
             "CID_162_Athena_Commando_F_StreetRacer" => new RedlineSkinSwap(item.Name, 
                                                                            item.Rarity.BackendValue, 
                                                                            item.Images.SmallIcon, 
-                                                                           swapModel).ToSaturnOption(),
+                                                                           option.SwapModel).ToSaturnOption(),
             "CID_653_Athena_Commando_F_UglySweaterFrozen" => new FrozenNogOpsSkinSwap(item.Name,
                                                                                       item.Rarity.BackendValue,
                                                                                       item.Images.SmallIcon,
-                                                                                      swapModel).ToSaturnOption(),
+                                                                                      option.SwapModel).ToSaturnOption(),
             "CID_784_Athena_Commando_F_RenegadeRaiderFire" => new BlazeSkinSwap(item.Name,
                                                                                 item.Rarity.BackendValue,
                                                                                 item.Images.SmallIcon,
-                                                                                swapModel).ToSaturnOption(),
+                                                                                option.SwapModel).ToSaturnOption(),
             "CID_970_Athena_Commando_F_RenegadeRaiderHoliday" => new GingerbreadRaiderSkinSwap(item.Name,
                                                                                                item.Rarity.BackendValue,
                                                                                                item.Images.SmallIcon,
-                                                                                               swapModel).ToSaturnOption(),
+                                                                                               option.SwapModel).ToSaturnOption(),
             "CID_A_322_Athena_Commando_F_RenegadeRaiderIce" => new PermafrostRaiderSkinSwap(item.Name,
                                                                                             item.Rarity.BackendValue,
                                                                                             item.Images.SmallIcon,
-                                                                                            swapModel).ToSaturnOption(),
+                                                                                            option.SwapModel).ToSaturnOption(),
             "CID_936_Athena_Commando_F_RaiderSilver" => new DiamondDivaSkinSwap(item.Name,
                                                                                 item.Rarity.BackendValue,
                                                                                 item.Images.SmallIcon,
-                                                                                swapModel).ToSaturnOption(),
+                                                                                option.SwapModel).ToSaturnOption(),
             "CID_A_007_Athena_Commando_F_StreetFashionEclipse" => new RubyShadowsSkinSwap(item.Name,
                                                                                           item.Rarity.BackendValue,
                                                                                           item.Images.SmallIcon,
-                                                                                          swapModel).ToSaturnOption(),
+                                                                                          option.SwapModel).ToSaturnOption(),
             "CID_A_311_Athena_Commando_F_ScholarFestiveWinter" => new BlizzabelleSkinSwap(item.Name,
                                                                                           item.Rarity.BackendValue,
                                                                                           item.Images.SmallIcon,
-                                                                                          swapModel).ToSaturnOption(),
+                                                                                          option.SwapModel).ToSaturnOption(),
             "CID_294_Athena_Commando_F_RedKnightWinter" => new FrozenRedKnightSkinSwap(item.Name,
                                                                                        item.Rarity.BackendValue,
                                                                                        item.Images.SmallIcon,
-                                                                                       swapModel).ToSaturnOption(),
+                                                                                       option.SwapModel).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }

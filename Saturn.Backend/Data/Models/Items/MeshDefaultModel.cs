@@ -26,5 +26,57 @@ namespace Saturn.Backend.Data.Models.Items
         public string FaceACCMesh { get; set; }
         public Dictionary<int, string> FaceACCMaterials { get; set; }
         public ECustomHatType HatType { get; set; }
+
+        public MeshDefaultModel(MeshDefaultModel model = new MeshDefaultModel())
+        {
+            if (Equals(model, new MeshDefaultModel()))
+            {
+                HeadSkinColor = "";
+                HeadMaterials = new Dictionary<int, string>();
+                HeadFX = "";
+                HeadPartModifierBP = "";
+                HeadHairColor = "";
+                HeadMesh = "";
+                HeadABP = "";
+
+                BodyABP = "";
+                BodyFX = "";
+                BodyPartModifierBP = "";
+                BodyMesh = "";
+                BodyMaterials = new Dictionary<int, string>();
+                BodySkeleton = "";
+
+                FaceACCFX = "";
+                FaceACCPartModifierBP = "";
+                FaceACCABP = "";
+                FaceACCMesh = "";
+                FaceACCMaterials = new Dictionary<int, string>();
+                HatType = ECustomHatType.ECustomHatType_None;
+            }
+            else
+            {
+                HeadSkinColor = model.HeadSkinColor;
+                HeadMaterials = model.HeadMaterials;
+                HeadFX = model.HeadFX;
+                HeadPartModifierBP = model.HeadPartModifierBP;
+                HeadHairColor = model.HeadHairColor;
+                HeadMesh = model.HeadMesh;
+                HeadABP = model.HeadABP;
+
+                BodyABP = model.BodyABP;
+                BodyFX = model.BodyFX;
+                BodyPartModifierBP = model.BodyPartModifierBP;
+                BodyMesh = model.BodyMesh;
+                BodyMaterials = model.BodyMaterials;
+                BodySkeleton = model.BodySkeleton;
+
+                FaceACCFX = model.FaceACCFX;
+                FaceACCPartModifierBP = model.FaceACCPartModifierBP;
+                FaceACCABP = model.FaceACCABP;
+                FaceACCMesh = model.FaceACCMesh;
+                FaceACCMaterials = model.FaceACCMaterials;
+                HatType = model.HatType;
+            }
+        }
     }
 }

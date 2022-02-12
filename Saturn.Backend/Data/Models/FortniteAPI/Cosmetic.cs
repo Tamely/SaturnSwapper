@@ -126,7 +126,7 @@ namespace Saturn.Backend.Data.Models.FortniteAPI
         [JsonProperty("printColor")] public Colors PrintColor { get; set; } = Colors.C_WHITE;
         [JsonProperty("isPickingStyles")] public bool IsPickingStyles { get; set; } = false;
         [JsonProperty("hatType")] public HatTypes HatTypes { get; set; } = HatTypes.HT_FaceACC;
-        [JsonProperty("cosmeticOptions")] public List<SaturnItem> CosmeticOptions { get; set; }
+        [JsonProperty("cosmeticOptions")] public List<SaturnItem> CosmeticOptions { get; set; }  = new List<SaturnItem>();
         [JsonProperty("isRandom")] public bool IsRandom { get; set; }
         [JsonProperty("isCloudAdded")] public bool IsCloudAdded { get; set; }
         [JsonProperty("variantChannel")] public string VariantChannel { get; set; }

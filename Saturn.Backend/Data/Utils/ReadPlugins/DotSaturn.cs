@@ -41,17 +41,25 @@ public class DotSaturn
             }
             catch
             {
-                var plugin = JsonConvert.DeserializeObject<LelePlugin>(await File.ReadAllTextAsync(filePath));
+                try
+                {
+                    var plugin = JsonConvert.DeserializeObject<LelePlugin>(await File.ReadAllTextAsync(filePath));
 
-                Logger.Log("Plugin is of type Lele!");
-                Logger.Log("Converting Lele Swapper plugin to Saturn plugin format...");
+                    Logger.Log("Plugin is of type Lele!");
+                    Logger.Log("Converting Lele Swapper plugin to Saturn plugin format...");
 
-                var saturnTypePlugin = await ConvertLeleToSaturn(plugin);
+                    var saturnTypePlugin = await ConvertLeleToSaturn(plugin);
 
-                Logger.Log("Conversion complete!");
-                Logger.Log("Converting Saturn plugin to Saturn item.");
+                    Logger.Log("Conversion complete!");
+                    Logger.Log("Converting Saturn plugin to Saturn item.");
 
-                return await ConvertPluginToItem(saturnTypePlugin);
+                    return await ConvertPluginToItem(saturnTypePlugin);
+                }
+                catch
+                {
+                    Logger.Log($"Plugin \"{Path.GetFileName(filePath)}\" is not a valid type!", LogLevel.Error);
+                }
+
             }
         }
 
