@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.i18N;
 using CUE4Parse.UE4.Objects.UObject;
+using MudBlazor;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
@@ -29,7 +32,7 @@ internal abstract class SkinSwap : AbstractSwap
 
 public class AddSkins
 {
-    public static List<SaturnItem> SkinOptions = new List<SaturnItem>()
+    public List<SaturnItem> SkinOptions = new List<SaturnItem>()
     {
         new SaturnItem
         {
@@ -224,6 +227,9 @@ public class AddSkins
             Dictionary<int, string> OGHeadMaterials = new();
             Dictionary<int, string> OGBodyMaterials = new();
             Dictionary<int, string> OGFaceACCMaterials = new();
+            ECustomHatType OGHatType = ECustomHatType.ECustomHatType_None;
+            string OGHatSocket = "Hat";
+            bool OGbAttachToSocket = true;
             bool bDontProceed = false;
             var optionsParts = await Task.Run(() => swapperService.GetCharacterPartsById(option.ItemDefinition));
 
@@ -245,30 +251,56 @@ public class AddSkins
 
                 if (optionsParts.ContainsKey("Face"))
                 {
-                    if (!_provider.TryLoadObject(optionsParts["Face"].Split('.')[0], out var part) ||
-                        !part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides")) return;
-                    foreach (var (material, matIndex) in from materialOverride in MaterialOverride
-                             let material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName
-                                 .ToString()
-                             let matIndex = materialOverride.Get<int>("MaterialOverrideIndex")
-                             select (material, matIndex))
+                    if (!_provider.TryLoadObject(optionsParts["Face"].Split('.')[0], out var part)) return;
+
+                    if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
                     {
-                        OGFaceACCMaterials.Add(matIndex, material);
+                        foreach (var (material, matIndex) in from materialOverride in MaterialOverride
+                                 let material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName
+                                     .ToString()
+                                 let matIndex = materialOverride.Get<int>("MaterialOverrideIndex")
+                                 select (material, matIndex))
+                        {
+                            OGFaceACCMaterials.Add(matIndex, material);
+                        }
                     }
+
+                    if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
+                    {
+                        if (AdditionalData.TryGetValue(out ECustomHatType HatType, "HatType"))
+                            OGHatType = HatType;
+                        if (AdditionalData.TryGetValue(out FName AttachSocketName, "AttachSocketName"))
+                            OGHatSocket = AttachSocketName.Text;
+                    }
+
+                    OGbAttachToSocket = part.GetOrDefault("bAttachToSocket", true);
                 }
                 
                 if (optionsParts.ContainsKey("Hat"))
                 {
-                    if (!_provider.TryLoadObject(optionsParts["Hat"].Split('.')[0], out var part) ||
-                        !part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides")) return;
-                    foreach (var (material, matIndex) in from materialOverride in MaterialOverride
-                             let material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName
-                                 .ToString()
-                             let matIndex = materialOverride.Get<int>("MaterialOverrideIndex")
-                             select (material, matIndex))
+                    if (!_provider.TryLoadObject(optionsParts["Hat"].Split('.')[0], out var part)) return;
+
+                    if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
                     {
-                        OGFaceACCMaterials.Add(matIndex, material);
+                        foreach (var (material, matIndex) in from materialOverride in MaterialOverride
+                                 let material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName
+                                     .ToString()
+                                 let matIndex = materialOverride.Get<int>("MaterialOverrideIndex")
+                                 select (material, matIndex))
+                        {
+                            OGFaceACCMaterials.Add(matIndex, material);
+                        }
                     }
+
+                    if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
+                    {
+                        if (AdditionalData.TryGetValue(out ECustomHatType HatType, "HatType"))
+                            OGHatType = HatType;
+                        if (AdditionalData.TryGetValue(out FName AttachSocketName, "AttachSocketName"))
+                            OGHatSocket = AttachSocketName.Text;
+                    }
+                    
+                    OGbAttachToSocket = part.GetOrDefault("bAttachToSocket", true);
                 }
                 
                 if (optionsParts.ContainsKey("Body"))
@@ -298,6 +330,7 @@ public class AddSkins
                             {
                                 if (part.TryGetValue(out FSoftObjectPath mesh, "SkeletalMesh"))
                                     swapModel.BodyMesh = mesh.AssetPathName.Text;
+
 
                                 swapModel.BodySkeleton =
                                     part.Get<FSoftObjectPath[]>("MasterSkeletalMeshes")[0].AssetPathName.ToString();
@@ -353,7 +386,8 @@ public class AddSkins
                         {
                             if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
                             {
-                                swapModel.HeadMesh = part.Get<FSoftObjectPath>("SkeletalMesh").AssetPathName.Text;
+                                if (part.TryGetValue(out FSoftObjectPath mesh, "SkeletalMesh"))
+                                    swapModel.HeadMesh = mesh.AssetPathName.Text;
 
                                 if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
                                 {
@@ -393,9 +427,6 @@ public class AddSkins
                                             swapModel.HeadMaterials.Add(matIndex, material);
                                     }
                                 }
-                                
-                                if (OGHeadMaterials.Count < swapModel.HeadMaterials.Count)
-                                    bDontProceed = true;
 
                                 swapModel.HeadFX =
                                     part.TryGetValue(out FSoftObjectPath IdleEffectNiagara, "IdleEffectNiagara")
@@ -436,6 +467,22 @@ public class AddSkins
 
                                     swapModel.HatType = AdditionalData.GetOrDefault("HatType",
                                         ECustomHatType.ECustomHatType_None, StringComparison.OrdinalIgnoreCase);
+
+                                    if (AdditionalData.TryGetValue(out FName AttachSocketName, "AttachSocketName"))
+                                    {
+                                        bool bAttachToSocket = part.GetOrDefault("bAttachToSocket", true);
+
+                                        if ((bAttachToSocket && AttachSocketName.Text.ToLower() != "face") &&
+                                            OGHatSocket.ToLower() == "face")
+                                            bDontProceed = true;
+                                        else if ((bAttachToSocket && AttachSocketName.Text.ToLower() != "face") &&
+                                                 OGHatSocket.ToLower() == "face")
+                                            bDontProceed = true;
+                                        else if ((OGbAttachToSocket && OGHatSocket.ToLower() == "hat") &&
+                                                 AttachSocketName.Text.ToLower() != "hat")
+                                            bDontProceed = true;
+
+                                    }
                                 }
 
                                 if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
@@ -459,9 +506,6 @@ public class AddSkins
                                     }
                                 }
 
-                                if (swapModel.FaceACCMaterials.Count > OGFaceACCMaterials.Count)
-                                    bDontProceed = true;
-
 
                                 swapModel.FaceACCFX =
                                     part.TryGetValue(out FSoftObjectPath IdleEffectNiagara, "IdleEffectNiagara")
@@ -481,11 +525,9 @@ public class AddSkins
                 }
             }
 
-            if (bDontProceed)
-            {
-                Logger.Log($"Dont proceed adding option \"{option.Name}\" to item \"{skin.Name}\"");
-                continue;
-            }
+            if (swapModel.HatType != ECustomHatType.ECustomHatType_None)
+                if (OGHatType == ECustomHatType.ECustomHatType_None)
+                    bDontProceed = true;
 
             foreach (var (material, value) in MaterialReplacements)
             {
@@ -540,6 +582,12 @@ public class AddSkins
                         swapModel.HeadPartModifierBP);
                 }
             }
+            
+            if (OGHeadMaterials.Count < swapModel.HeadMaterials.Count || swapModel.FaceACCMaterials.Count > OGFaceACCMaterials.Count)
+                bDontProceed = true;
+            
+            if (bDontProceed)
+                continue;
 
             if (swapModel.BodyMaterials == new Dictionary<int, string>() || swapModel.BodyMaterials.Count < 5)
                 for (int i = swapModel.BodyMaterials.Count; i < 5; i++)
@@ -583,7 +631,16 @@ public class AddSkins
         }
 
 
-
+        if (skin.CosmeticOptions.Count == 0)
+        {
+            skin.CosmeticOptions.Add(new SaturnItem()
+            {
+                Name = "No options!",
+                Description = "Send a picture of this to Tamely on Discord and tell him to add an option for this!",
+                Rarity = "Epic",
+                Icon = "img/Saturn.png"
+            });
+        }
 
         return skin;
     }

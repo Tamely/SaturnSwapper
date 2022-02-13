@@ -136,6 +136,7 @@
                                                                             margin-top: 8%"/>
                         <h2 style="margin-left: -165%; margin-top: 15%; white-space: nowrap; text-align: center">Please Wait</h2>
                         <p style="margin-left: -155%; white-space: nowrap; text-align: center">The swapper is generating the cosmetics...</p>
+                        <p style="margin-left: -155%; white-space: nowrap; text-align: center">This usually takes about a minute to do.</p>
                     </div>
                 </div>
             }
@@ -610,6 +611,8 @@
 {
     private List<Cosmetic> Items;
     private List<Cosmetic> BackupItems;
+
+    private Stopwatch sw = new Stopwatch();
 
     private bool _halted;
 

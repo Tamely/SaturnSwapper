@@ -227,7 +227,6 @@ public sealed class SwapperService : ISwapperService
             else
             {
                 Logger.Log("Item is not converted! Converting!");
-                await _jsRuntime.InvokeVoidAsync("MessageBox", "Converting", $"Converting {option.SwapModel.BodyMesh} to {item.Name}!", "success");
 
                 if (item.IsRandom)
                 {
@@ -851,7 +850,9 @@ public sealed class SwapperService : ISwapperService
                     if (characterPart == null)
                         continue;
                     if (!characterPart.TryGetValue(out EFortCustomPartType CustomPartType, "CharacterPartType"))
-                        continue;
+                    {
+                        CustomPartType = EFortCustomPartType.Head;
+                    }
 
                     if (cps.ContainsKey(CustomPartType.ToString()))
                         cps.Remove(CustomPartType.ToString());
