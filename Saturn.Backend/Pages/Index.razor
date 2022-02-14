@@ -661,7 +661,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        AppDomain.CurrentDomain.UnhandledException += UnhandledException;
+        AppDomain.CurrentDomain.FirstChanceException += UnhandledException;
 
         if (!CheckForInternetConnection())
             throw new WebException("No internet connection");
@@ -704,7 +704,7 @@
         await base.OnInitializedAsync();
     }
 
-    private void UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    private void UnhandledException(object sender, FirstChanceExceptionEventArgs e)
     {
         if (_halted)
             return;
@@ -713,7 +713,7 @@
 
         var stackTrace = "\n" + e.ToString().Split("--- ")[0];
 
-        Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal);
+        Logger.Log($"Unhandled exception occurred. {e.Exception.ToString().GetType().Name}: {e.Exception.ToString()} {stackTrace}", LogLevel.Fatal);
 
         Items = new List<Cosmetic>();
         saturnState = SaturnState.S_Error;
@@ -788,10 +788,13 @@
     {
         if (await _configService.TryGetFortniteVersion() != await GetLastestVersion() && File.Exists(Directory.GetFiles(FortniteUtil.PakPath).FirstOrDefault(x => x.Contains("Saturn"))))
         {
-            Logger.Log(await _configService.TryGetFortniteVersion());
-            RemoveDupedFiles();
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected old backups!", "The swapper has automatically removed them for you!", "warning");
+            if (string.IsNullOrEmpty(await _configService.TryGetFortniteVersion()))
+            {
+                Logger.Log(await _configService.TryGetFortniteVersion());
+                RemoveDupedFiles();
+                await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected old backups!", "The swapper has automatically removed them for you!", "warning");
 
+            }
             await _configService.TrySetFortniteVersion(await GetLastestVersion());
         }
     }

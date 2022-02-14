@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using System.Windows.Media;
 using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Objects.Core.i18N;
+using CUE4Parse.UE4.Objects.GameplayTags;
 using CUE4Parse_Conversion.Textures;
 using Saturn.Backend.Data.SwapOptions.Pickaxes;
 using Saturn.Backend.Data.SwapOptions.Skins;
@@ -95,6 +96,8 @@ public sealed class SwapperService : ISwapperService
 
     public async Task<List<Cosmetic>> GetSaturnSkins()
     {
+        Dictionary<string, Cosmetic> CosmeticsToInsert = new();
+        bool shouldShowStyles = await _configService.TryGetShouldShowStyles();
         var Skins = new List<Cosmetic>();
 
         await Task.Run(async() =>
@@ -146,7 +149,7 @@ public sealed class SwapperService : ISwapperService
                             
                                 Directory.CreateDirectory(Path.Combine(Config.ApplicationPath, "wwwroot/skins/"));
                                 if (!File.Exists(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + ".png")))
-                                    File.WriteAllBytes(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + ".png"), ms.ToArray());
+                                    await File.WriteAllBytesAsync(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + ".png"), ms.ToArray());
 
                                 skin.Images.SmallIcon = "skins/" + skin.Id + ".png";
                             }
@@ -162,6 +165,66 @@ public sealed class SwapperService : ISwapperService
                             Logger.Log("Cannot parse the HID for " + skin.Id);
                             continue;
                         }
+                    }
+
+                    if (shouldShowStyles)
+                    {
+                        int i = 0;
+
+                        if (asset.TryGetValue(out UObject[] variant, "ItemVariants"))
+                        {
+                            foreach (var variants in variant)
+                            {
+                                if (variants.TryGetValue(out FStructFallback FVariantChannelTag,
+                                        "VariantChannelTag"))
+                                {
+                                    FVariantChannelTag.TryGetValue(out FName VariantChannelTag, "TagName");
+                                    if (!VariantChannelTag.Text.Contains("Material") && !VariantChannelTag.Text.Contains("Parts"))
+                                        continue;
+                                    
+                                    
+                                    if (variants.TryGetValue(out FStructFallback[] MaterialOptions, "MaterialOptions"))
+                                        foreach (var MaterialOption in MaterialOptions)
+                                        {
+                                            if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
+                                            {
+                                                FName TagName = new FName();
+
+                                                if (MaterialOption.TryGetValue(out FStructFallback CustomizationVariantTag,
+                                                        "CustomizationVariantTag"))
+                                                    CustomizationVariantTag.TryGetValue(out TagName, "TagName");
+                                            
+                                                if (string.IsNullOrWhiteSpace(VariantName.Text) || VariantName.Text.ToLower().Contains("default") || VariantName.Text.Replace(VariantName.Text, "") == "")
+                                                    continue;
+                                            
+                                                CosmeticsToInsert.Add(Skins.Count + " + " + i, new Cosmetic()
+                                                {
+                                                    Name = VariantName.Text,
+                                                    Description = skin.Name + " style: " + skin.Description,
+                                                    Id = skin.Id,
+                                                    Rarity = skin.Rarity,
+                                                    Series = skin.Series,
+                                                    Images = new Images()
+                                                    {
+                                                        SmallIcon = skin.Images.SmallIcon
+                                                    },
+                                                    VariantChannel = VariantChannelTag.Text,
+                                                    VariantTag = TagName.Text
+                                                });
+
+                                                i++;
+                                            }
+                                        }
+                                }
+                            }
+                        }
+                    }
+                    
+                    int Offseter = 0;
+                    foreach (var (key, value) in CosmeticsToInsert)
+                    {
+                        Skins.Insert(int.Parse(key.Split(" + ")[0]) + Offseter, await new AddSkins().AddSkinOptions(value, this, _provider));
+                        Offseter++;
                     }
                     
                     Skins.Add(await new AddSkins().AddSkinOptions(skin, this, _provider));
@@ -253,6 +316,12 @@ public sealed class SwapperService : ISwapperService
                             "Tamely hasn't updated the swapper's offsets to the current Fortnite build. Watch announcements in his server so you are the first to know when he does!",
                             "warning");
                     }
+                }
+                else if (option.Name == "No options!")
+                {
+                    await _jsRuntime.InvokeVoidAsync("MessageBox", "No options!",
+                        $"There are no options for {item.Name}! Can you not read the name and description?",
+                        "warning");
                 }
                 else if (option.Name == "Default")
                 {
