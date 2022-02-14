@@ -231,6 +231,7 @@ public class AddSkins
             string OGHatSocket = "Hat";
             bool OGbAttachToSocket = true;
             bool bDontProceed = false;
+            FName[] HatMorphTargets = new FName[] { };
             var optionsParts = await Task.Run(() => swapperService.GetCharacterPartsById(option.ItemDefinition));
 
             await Task.Run(() =>
@@ -482,6 +483,8 @@ public class AddSkins
                                                  AttachSocketName.Text.ToLower() != "hat")
                                             bDontProceed = true;
 
+                                        AdditionalData.TryGetValue(out HatMorphTargets, "HatMorphTargets");
+
                                     }
                                 }
 
@@ -524,6 +527,20 @@ public class AddSkins
                         break;
                 }
             }
+
+            if (HatMorphTargets != null && HatMorphTargets.Any(x => x.Text.ToLower().Contains("null")))
+                if (swapModel.HeadMesh.Contains("Jonesy"))
+                    swapModel.HeadMesh =
+                        "/Game/Characters/Player/Male/Medium/Heads/M_MED_CAU_Jonesy_Head_01/Meshes/M_MED_CAU_Jonesy_Head_02.M_MED_CAU_Jonesy_Head_02";
+                else if (swapModel.HeadMesh.Contains("BLK_Red_"))
+                    swapModel.HeadMesh =
+                        "/Game/Characters/Player/Female/Medium/Heads/F_MED_BLK_Red_Head_01/Mesh/F_MED_BLK_Red_Compute_Head.F_MED_BLK_Red_Compute_Head";
+                else if (swapModel.HeadMesh.Contains("BLK_Jada_"))
+                    swapModel.HeadMesh =
+                        "/Game/Characters/Player/Female/Medium/Heads/F_MED_BLK_Jada_Head_01/Meshes/F_MED_BLK_Jada_Head_02.F_MED_BLK_Jada_Head_02";
+                else if (swapModel.HeadMesh.Contains("ASN_Kumiko"))
+                    swapModel.HeadMesh =
+                        "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Kumiko_Head_01/Meshes/F_MED_ASN_Kumiko_Head_Compute.F_MED_ASN_Kumiko_Head_Compute";
 
             if (swapModel.HatType != ECustomHatType.ECustomHatType_None)
                 if (OGHatType == ECustomHatType.ECustomHatType_None)
