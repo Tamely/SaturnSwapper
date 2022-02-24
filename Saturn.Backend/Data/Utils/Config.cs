@@ -14,6 +14,9 @@ namespace Saturn.Backend.Data.Utils
         public static readonly string CompressedDataPath = BasePath + "/CompressedData/";
         public static readonly string DecompressedDataPath = BasePath + "/DecompressedData/";
         public static readonly string PluginsPath = BasePath + "/Plugins/";
+        public static readonly string CachePath = BasePath + "/Cache/";
+
+        public static readonly string SkinsCache = CachePath + "Skins.json";
 
         public static readonly string LogFile = LogPath + "Saturn.log";
 

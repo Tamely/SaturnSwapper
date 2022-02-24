@@ -70,7 +70,7 @@ namespace Saturn.Backend.Data
             }
             catch (Exception ex)
             {
-                await _jsRuntime.InvokeVoidAsync("MessageBox", "There was an error while loading mappings. Please try again or contact support in Tamely's Discord.", "error");
+                await _jsRuntime.InvokeVoidAsync("MessageBox", "Please restart the swapper", "There was an error while loading mappings. Please try again or contact support in Tamely's Discord.");
                 Logger.Log("Unable to parse/load mappings, please contact support! " + ex, LogLevel.Fatal);
             }
         }

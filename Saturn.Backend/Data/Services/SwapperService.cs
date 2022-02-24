@@ -26,6 +26,7 @@ using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Objects.Core.i18N;
 using CUE4Parse.UE4.Objects.GameplayTags;
 using CUE4Parse_Conversion.Textures;
+using Newtonsoft.Json;
 using Saturn.Backend.Data.SwapOptions.Pickaxes;
 using Saturn.Backend.Data.SwapOptions.Skins;
 using Colors = Saturn.Backend.Data.Enums.Colors;
@@ -96,15 +97,36 @@ public sealed class SwapperService : ISwapperService
 
     public async Task<List<Cosmetic>> GetSaturnSkins()
     {
+        Directory.CreateDirectory(Config.CachePath);
         bool shouldShowStyles = await _configService.TryGetShouldShowStyles();
         var Skins = new List<Cosmetic>();
 
         await Task.Run(async() =>
         {
+            if (File.Exists(Config.SkinsCache))
+            {
+                Skins = JsonConvert.DeserializeObject<List<Cosmetic>>(await File.ReadAllTextAsync(Config.SkinsCache));
+            }
+            
             foreach (var (assetPath, assetValue) in _provider.Files)
             {
-                List<Cosmetic> CosmeticsToInsert = new();
                 if (!assetPath.Contains("/CID_")) continue;
+                
+                // doing a foreach instead of LINQ because LINQ is fucking stupid and slow
+                bool any = false;
+                foreach (var x in Skins)
+                {
+                    if (x.Id == FileUtil.SubstringFromLast(assetPath, '/').Split('.')[0])
+                    {
+                        any = true;
+                        break;
+                    }
+                }
+                if (any)
+                    continue;
+                
+                List<Cosmetic> CosmeticsToInsert = new();
+                
                 if (_provider.TryLoadObject(assetPath.Split('.')[0], out var asset))
                 {
                     Cosmetic skin = new();
@@ -195,7 +217,7 @@ public sealed class SwapperService : ISwapperService
                                                         "CustomizationVariantTag"))
                                                     CustomizationVariantTag.TryGetValue(out TagName, "TagName");
 
-                                                if (string.IsNullOrWhiteSpace(VariantName.Text) || VariantName.Text.ToLower() == "default" || VariantName.Text.ToLower() == skin.Name)
+                                                if (string.IsNullOrWhiteSpace(VariantName.Text) || VariantName.Text.ToLower() == "default" || VariantName.Text.ToLower() == skin.Name.ToLower())
                                                     continue;
                                                 
                                                 if (!File.Exists(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + "_" + VariantName.Text.Replace(" ","_").Replace("\\","").Replace("/","") + ".png") + ".png"))
@@ -264,6 +286,8 @@ public sealed class SwapperService : ISwapperService
                 }
             }
         });
+        
+        await File.WriteAllTextAsync(Config.SkinsCache, JsonConvert.SerializeObject(Skins, Formatting.Indented));
 
         Trace.WriteLine($"Deserialized {Skins.Count} objects");
 

@@ -593,6 +593,23 @@
                             <p style="color:white">Removes all plugins</p>
                         </div>
                     </div>
+                    
+                    <div class="card" @onclick=@(async () => await GetCurrentlySwapped())>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2>Get converted items</h2>
+                            <p style="color:white">Returns your currently converted items in a list</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card" @onclick=@(async () => { Directory.Delete(Config.CachePath, true); await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished removing all cache files!", "success"); })>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2>Remove item cache</h2>
+                            <p style="color:white">Removes all generated swaps from items</p>
+                        </div>
+                    </div>
+
                 </div>
             }
             else
@@ -659,9 +676,21 @@
     private async Task ShouldFlipCharacterParts()
         => FlipCharacterPart = "Currently set to 'Default swaps will use a " + await _configService.TryGetHeadOrHatCharacterPart() + " character part'";
 
+    private async Task GetCurrentlySwapped()
+    {
+        string CurrentlySwapped = "";
+
+        foreach (var x in await _configService.TryGetConvertedItems())
+        {
+            CurrentlySwapped += x.Name + "\n";
+        }
+        
+        await _jsRuntime.InvokeVoidAsync("MessageBox", "Currently Swapped Items", "You currently have the following items swapped: " + CurrentlySwapped);
+    }
+
     protected override async Task OnInitializedAsync()
     {
-        AppDomain.CurrentDomain.FirstChanceException += UnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += UnhandledException;
 
         if (!CheckForInternetConnection())
             throw new WebException("No internet connection");
@@ -704,7 +733,7 @@
         await base.OnInitializedAsync();
     }
 
-    private void UnhandledException(object sender, FirstChanceExceptionEventArgs e)
+    private void UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         if (_halted)
             return;
@@ -713,7 +742,7 @@
 
         var stackTrace = "\n" + e.ToString().Split("--- ")[0];
 
-        Logger.Log($"Unhandled exception occurred. {e.Exception.ToString().GetType().Name}: {e.Exception.ToString()} {stackTrace}", LogLevel.Fatal);
+        Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal);
 
         Items = new List<Cosmetic>();
         saturnState = SaturnState.S_Error;
