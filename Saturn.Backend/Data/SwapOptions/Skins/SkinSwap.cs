@@ -146,14 +146,15 @@ public class AddSkins
             Dictionary<string, string> MaterialReplacements = new Dictionary<string, string>();
             await Task.Run(() =>
             {
-                if (skin is { VariantChannel: { } })
+                if (skin.VariantChannel != null)
                 {
-                    if (skin.VariantChannel.ToLower() != "material" &&
-                        skin.VariantChannel.ToLower() != "parts" &&
+                    if (!skin.VariantChannel.ToLower().Contains(".material") &&
+                        !skin.VariantChannel.ToLower().Contains(".parts") &&
                         skin.VariantTag != null ||
                         !_provider.TryLoadObject(Constants.CidPath + skin.Id, out var CharacterItemDefinition) ||
                         !CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants"))
                         return;
+                    
                     foreach (var style in ItemVariants)
                     {
                         if (style.TryGetValue(out FStructFallback[] PartOptions, "PartOptions"))
@@ -161,13 +162,10 @@ public class AddSkins
                             {
                                 if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
                                 {
-                                    Logger.Log("Found Item: " + VariantName.Text);
-                                    if (VariantName.Text != skin.Name && skin.VariantTag != null)
-                                    {
+                                    if (VariantName.Text != skin.Name)
                                         continue;
-                                    }
-                                    
 
+                                    Logger.Log("Continuing with Item: " + VariantName.Text);
 
                                     if (PartOption.TryGetValue(out FStructFallback[] VariantMaterials,
                                             "VariantMaterials"))
@@ -178,16 +176,11 @@ public class AddSkins
                                             var MaterialToSwap = variantMaterial.Get<FSoftObjectPath>("MaterialToSwap")
                                                 .AssetPathName.Text;
                                             
-                                            MaterialReplacements.Add(MaterialToSwap, matOverride);
+                                            if (!MaterialReplacements.ContainsKey(MaterialToSwap))
+                                                MaterialReplacements.Add(MaterialToSwap, matOverride);
                                         }
                                 }
-                                else
-                                {
-                                    Logger.Log("No VariantName found");
-                                }
                             }
-                        else
-                            Logger.Log("No PartOptions found");
 
 
                         if (style.TryGetValue(out FStructFallback[] MaterialOptions, "MaterialOptions"))
@@ -195,11 +188,8 @@ public class AddSkins
                             {
                                 if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
                                 {
-                                    if (VariantName.Text != skin.Name && skin.VariantTag != null)
-                                    {
+                                    if (VariantName.Text != skin.Name)
                                         continue;
-                                    }
-
 
                                     if (MaterialOption.TryGetValue(out FStructFallback[] VariantMaterials,
                                             "VariantMaterials"))
@@ -210,16 +200,11 @@ public class AddSkins
                                             var MaterialToSwap = variantMaterial.Get<FSoftObjectPath>("MaterialToSwap")
                                                 .AssetPathName.Text;
                                             
-                                            MaterialReplacements.Add(MaterialToSwap, matOverride);
+                                            if (!MaterialReplacements.ContainsKey(MaterialToSwap))
+                                                MaterialReplacements.Add(MaterialToSwap, matOverride);
                                         }
                                 }
-                                else
-                                {
-                                    Logger.Log("No VariantName found");
-                                }
                             }
-                        else
-                            Logger.Log("No MaterialOptions found");
                     }
                 }
             });

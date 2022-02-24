@@ -96,7 +96,6 @@ public sealed class SwapperService : ISwapperService
 
     public async Task<List<Cosmetic>> GetSaturnSkins()
     {
-        Dictionary<string, Cosmetic> CosmeticsToInsert = new();
         bool shouldShowStyles = await _configService.TryGetShouldShowStyles();
         var Skins = new List<Cosmetic>();
 
@@ -104,6 +103,7 @@ public sealed class SwapperService : ISwapperService
         {
             foreach (var (assetPath, assetValue) in _provider.Files)
             {
+                List<Cosmetic> CosmeticsToInsert = new();
                 if (!assetPath.Contains("/CID_")) continue;
                 if (_provider.TryLoadObject(assetPath.Split('.')[0], out var asset))
                 {
@@ -145,7 +145,7 @@ public sealed class SwapperService : ISwapperService
                             if (HID.TryGetValue(out UTexture2D smallIcon, "SmallPreviewImage"))
                             {
                                 using var ms = new MemoryStream();
-                                smallIcon.Decode().Encode().SaveTo(ms);
+                                smallIcon.Decode()?.Encode().SaveTo(ms);
                             
                                 Directory.CreateDirectory(Path.Combine(Config.ApplicationPath, "wwwroot/skins/"));
                                 if (!File.Exists(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + ".png")))
@@ -169,8 +169,6 @@ public sealed class SwapperService : ISwapperService
 
                     if (shouldShowStyles)
                     {
-                        int i = 0;
-
                         if (asset.TryGetValue(out UObject[] variant, "ItemVariants"))
                         {
                             foreach (var variants in variant)
@@ -186,6 +184,9 @@ public sealed class SwapperService : ISwapperService
                                     if (variants.TryGetValue(out FStructFallback[] MaterialOptions, "MaterialOptions"))
                                         foreach (var MaterialOption in MaterialOptions)
                                         {
+                                            if (MaterialOption.TryGetValue(out FStructFallback[] MaterialParams, "VariantMaterialParams") && MaterialParams.Length != 0)
+                                                continue;
+
                                             if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
                                             {
                                                 FName TagName = new FName();
@@ -193,11 +194,25 @@ public sealed class SwapperService : ISwapperService
                                                 if (MaterialOption.TryGetValue(out FStructFallback CustomizationVariantTag,
                                                         "CustomizationVariantTag"))
                                                     CustomizationVariantTag.TryGetValue(out TagName, "TagName");
-                                            
-                                                if (string.IsNullOrWhiteSpace(VariantName.Text) || VariantName.Text.ToLower().Contains("default") || VariantName.Text.Replace(VariantName.Text, "") == "")
+
+                                                if (string.IsNullOrWhiteSpace(VariantName.Text) || VariantName.Text.ToLower() == "default" || VariantName.Text.ToLower() == skin.Name)
                                                     continue;
-                                            
-                                                CosmeticsToInsert.Add(Skins.Count + " + " + i, new Cosmetic()
+                                                
+                                                if (!File.Exists(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + "_" + VariantName.Text.Replace(" ","_").Replace("\\","").Replace("/","") + ".png") + ".png"))
+                                                {
+                                                    if (MaterialOption.TryGetValue(out UTexture2D PreviewImage,
+                                                            "PreviewImage"))
+                                                    {
+                                                        await using var ms = new MemoryStream();
+                                                        PreviewImage.Decode()?.Encode().SaveTo(ms);
+                            
+                                                        Directory.CreateDirectory(Path.Combine(Config.ApplicationPath, "wwwroot/skins/"));
+                                                        if (!File.Exists(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + "_" + VariantName.Text.Replace(" ","_").Replace("\\","").Replace("/","") + ".png") + ".png"))
+                                                            await File.WriteAllBytesAsync(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + "_" + VariantName.Text.Replace(" ","_").Replace("\\","").Replace("/","") + ".png"), ms.ToArray());
+                                                    }
+                                                }
+
+                                                CosmeticsToInsert.Add(new Cosmetic()
                                                 {
                                                     Name = VariantName.Text,
                                                     Description = skin.Name + " style: " + skin.Description,
@@ -206,13 +221,11 @@ public sealed class SwapperService : ISwapperService
                                                     Series = skin.Series,
                                                     Images = new Images()
                                                     {
-                                                        SmallIcon = skin.Images.SmallIcon
+                                                        SmallIcon = "skins/" + skin.Id  + "_" + VariantName.Text.Replace(" ","_").Replace("\\","").Replace("/","") + ".png"
                                                     },
                                                     VariantChannel = VariantChannelTag.Text,
                                                     VariantTag = TagName.Text
                                                 });
-
-                                                i++;
                                             }
                                         }
                                 }
@@ -220,11 +233,9 @@ public sealed class SwapperService : ISwapperService
                         }
                     }
                     
-                    int Offseter = 0;
-                    foreach (var (key, value) in CosmeticsToInsert)
+                    foreach (var value in CosmeticsToInsert)
                     {
-                        Skins.Insert(int.Parse(key.Split(" + ")[0]) + Offseter, await new AddSkins().AddSkinOptions(value, this, _provider));
-                        Offseter++;
+                        Skins.Add(await new AddSkins().AddSkinOptions(value, this, _provider));
                     }
                     
                     Skins.Add(await new AddSkins().AddSkinOptions(skin, this, _provider));
@@ -464,7 +475,7 @@ public sealed class SwapperService : ISwapperService
                 }
                 if (isDefault && asset.ParentAsset.Contains("DefaultGameDataCosmetics"))
                     data = new WebClient().DownloadData(
-                        "https://cdn.discordapp.com/attachments/770991313490280478/936001299697242182/TamelysDefaultGameData.uasset");
+                        "https://cdn.discordapp.com/attachments/770991313490280478/943307827357823007/TamelysDefaultGameData.uasset");
                 Logger.Log("Asset exported");
                 Logger.Log($"Starting backup of {SaturnData.Path}");
 
