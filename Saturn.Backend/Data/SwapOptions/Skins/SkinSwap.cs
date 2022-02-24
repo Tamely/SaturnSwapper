@@ -146,65 +146,63 @@ public class AddSkins
             Dictionary<string, string> MaterialReplacements = new Dictionary<string, string>();
             await Task.Run(() =>
             {
-                if (skin.VariantChannel != null)
-                {
-                    if (!skin.VariantChannel.ToLower().Contains(".material") &&
-                        !skin.VariantChannel.ToLower().Contains(".parts") &&
-                        skin.VariantTag != null ||
-                        !_provider.TryLoadObject(Constants.CidPath + skin.Id, out var CharacterItemDefinition) ||
-                        !CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants"))
-                        return;
+                if (skin.VariantChannel == null) return;
+                if (!skin.VariantChannel.ToLower().Contains(".material") &&
+                    !skin.VariantChannel.ToLower().Contains(".parts") &&
+                    skin.VariantTag != null ||
+                    !_provider.TryLoadObject(Constants.CidPath + skin.Id, out var CharacterItemDefinition) ||
+                    !CharacterItemDefinition.TryGetValue(out UObject[] ItemVariants, "ItemVariants"))
+                    return;
                     
-                    foreach (var style in ItemVariants)
+                foreach (var style in ItemVariants)
+                {
+                    if (style.TryGetValue(out FStructFallback[] PartOptions, "PartOptions"))
+                        foreach (var PartOption in PartOptions)
+                        {
+                            if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
+                            {
+                                if (VariantName.Text != skin.Name)
+                                    continue;
+
+                                if (PartOption.TryGetValue(out FStructFallback[] VariantMaterials,
+                                        "VariantMaterials"))
+                                    foreach (var variantMaterial in VariantMaterials)
+                                    {
+                                        var matOverride = variantMaterial.Get<FSoftObjectPath>("OverrideMaterial")
+                                            .AssetPathName.Text;
+                                        var MaterialToSwap = variantMaterial.Get<FSoftObjectPath>("MaterialToSwap")
+                                            .AssetPathName.Text;
+                                            
+                                        if (!MaterialReplacements.ContainsKey(MaterialToSwap))
+                                            MaterialReplacements.Add(MaterialToSwap, matOverride);
+                                    }
+                            }
+                        }
+
+
+                    if (!style.TryGetValue(out FStructFallback[] MaterialOptions, "MaterialOptions")) continue;
                     {
-                        if (style.TryGetValue(out FStructFallback[] PartOptions, "PartOptions"))
-                            foreach (var PartOption in PartOptions)
+                        foreach (var MaterialOption in MaterialOptions)
+                        {
+                            if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
                             {
-                                if (PartOption.TryGetValue(out FText VariantName, "VariantName"))
-                                {
-                                    if (VariantName.Text != skin.Name)
-                                        continue;
+                                if (VariantName.Text != skin.Name)
+                                    continue;
 
-                                    Logger.Log("Continuing with Item: " + VariantName.Text);
-
-                                    if (PartOption.TryGetValue(out FStructFallback[] VariantMaterials,
-                                            "VariantMaterials"))
-                                        foreach (var variantMaterial in VariantMaterials)
-                                        {
-                                            var matOverride = variantMaterial.Get<FSoftObjectPath>("OverrideMaterial")
-                                                .AssetPathName.Text;
-                                            var MaterialToSwap = variantMaterial.Get<FSoftObjectPath>("MaterialToSwap")
-                                                .AssetPathName.Text;
+                                if (MaterialOption.TryGetValue(out FStructFallback[] VariantMaterials,
+                                        "VariantMaterials"))
+                                    foreach (var variantMaterial in VariantMaterials)
+                                    {
+                                        var matOverride = variantMaterial.Get<FSoftObjectPath>("OverrideMaterial")
+                                            .AssetPathName.Text;
+                                        var MaterialToSwap = variantMaterial.Get<FSoftObjectPath>("MaterialToSwap")
+                                            .AssetPathName.Text;
                                             
-                                            if (!MaterialReplacements.ContainsKey(MaterialToSwap))
-                                                MaterialReplacements.Add(MaterialToSwap, matOverride);
-                                        }
-                                }
+                                        if (!MaterialReplacements.ContainsKey(MaterialToSwap))
+                                            MaterialReplacements.Add(MaterialToSwap, matOverride);
+                                    }
                             }
-
-
-                        if (style.TryGetValue(out FStructFallback[] MaterialOptions, "MaterialOptions"))
-                            foreach (var MaterialOption in MaterialOptions)
-                            {
-                                if (MaterialOption.TryGetValue(out FText VariantName, "VariantName"))
-                                {
-                                    if (VariantName.Text != skin.Name)
-                                        continue;
-
-                                    if (MaterialOption.TryGetValue(out FStructFallback[] VariantMaterials,
-                                            "VariantMaterials"))
-                                        foreach (var variantMaterial in VariantMaterials)
-                                        {
-                                            var matOverride = variantMaterial.Get<FSoftObjectPath>("OverrideMaterial")
-                                                .AssetPathName.Text;
-                                            var MaterialToSwap = variantMaterial.Get<FSoftObjectPath>("MaterialToSwap")
-                                                .AssetPathName.Text;
-                                            
-                                            if (!MaterialReplacements.ContainsKey(MaterialToSwap))
-                                                MaterialReplacements.Add(MaterialToSwap, matOverride);
-                                        }
-                                }
-                            }
+                        }
                     }
                 }
             });
