@@ -167,8 +167,8 @@ public sealed class SwapperService : ISwapperService
                             if (HID.TryGetValue(out UTexture2D smallIcon, "SmallPreviewImage"))
                             {
                                 using var ms = new MemoryStream();
-                                smallIcon.Decode()?.Encode().SaveTo(ms);
-                            
+                                smallIcon.Decode()?.Encode(ms, SKEncodedImageFormat.Png, 30);
+
                                 Directory.CreateDirectory(Path.Combine(Config.ApplicationPath, "wwwroot/skins/"));
                                 if (!File.Exists(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + ".png")))
                                     await File.WriteAllBytesAsync(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + ".png"), ms.ToArray());
@@ -226,7 +226,7 @@ public sealed class SwapperService : ISwapperService
                                                             "PreviewImage"))
                                                     {
                                                         await using var ms = new MemoryStream();
-                                                        PreviewImage.Decode()?.Encode().SaveTo(ms);
+                                                        PreviewImage.Decode()?.Encode(ms, SKEncodedImageFormat.Png, 30);
                             
                                                         Directory.CreateDirectory(Path.Combine(Config.ApplicationPath, "wwwroot/skins/"));
                                                         if (!File.Exists(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + "_" + VariantName.Text.Replace(" ","_").Replace("\\","").Replace("/","") + ".png") + ".png"))

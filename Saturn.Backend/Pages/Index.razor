@@ -16,8 +16,6 @@
 @using Saturn.Backend.Data.Models.Items
 @using Saturn.Backend.Data.Utils
 @using System.Diagnostics
-@using System.Reflection
-@using System.Runtime.ExceptionServices
 @using System.Text.RegularExpressions
 @using MudBlazor
 @using Newtonsoft.Json
@@ -629,8 +627,6 @@
     private List<Cosmetic> Items;
     private List<Cosmetic> BackupItems;
 
-    private Stopwatch sw = new Stopwatch();
-
     private bool _halted;
 
     private string Avatar { get; set; }
@@ -659,462 +655,596 @@
 
     private SearchType searchType = SearchType.ST_Name;
 
+    /// <summary>
+    /// Toggles if the item is picking styles or not/
+    /// </summary>
+    /// <param name="item">The clicked item</param>
     private async Task SwitchItemStyleChoice(Cosmetic item)
         => item.IsPickingStyles = !item.IsPickingStyles;
 
+    /// <summary>
+    /// Sets the Series button text
+    /// </summary>
     private async Task ShouldConvertSeries()
         => FlipSeries = await _configService.TryGetShouldSeriesConvert() ? "Currently set to 'pickaxes WILL swap series'" : "Currently set to 'pickaxes WILL NOT swap series'";
 
+    /// <summary>
+    /// Sets the Rarity button text
+    /// </summary>
     private async Task ShouldConvertRarity()
         => FlipRarity = await _configService.TryGetShouldRarityConvert() ? "Currently set to 'pickaxes WILL swap rarity'" : "Currently set to 'pickaxes WILL NOT swap rarity'";
 
+    /// <summary>
+    /// Sets the Show Styles button text
+    /// </summary>
     private async Task ShouldShowStyles()
         => ShowStyles = await _configService.TryGetShouldShowStyles() 
             ? "Currently set to 'WILL show item styles.' This could cause performance issues on low-end PCs!" 
             : "Currently set to 'WILL NOT show item styles.' This could cause performance issues on low-end PCs!";
 
+    /// <summary>
+    /// Sets the Character Part button text
+    /// </summary>
     private async Task ShouldFlipCharacterParts()
         => FlipCharacterPart = "Currently set to 'Default swaps will use a " + await _configService.TryGetHeadOrHatCharacterPart() + " character part'";
 
+    /// <summary>
+    /// This will get the currently swapped items and return them in a message box.
+    /// </summary>
     private async Task GetCurrentlySwapped()
     {
-        string CurrentlySwapped = "";
+        string CurrentlySwapped = (await _configService.TryGetConvertedItems()).Aggregate("", (current, x) => current + (x.Name + "\n")); // Loops through all the converted items and adds them in a string together that will be displayed
 
-        foreach (var x in await _configService.TryGetConvertedItems())
-        {
-            CurrentlySwapped += x.Name + "\n";
-        }
-        
-        await _jsRuntime.InvokeVoidAsync("MessageBox", "Currently Swapped Items", "You currently have the following items swapped: " + CurrentlySwapped);
+        await _jsRuntime.InvokeVoidAsync("MessageBox", "Currently Swapped Items", "You currently have the following items swapped: " + CurrentlySwapped); // Display the string in a message box
     }
 
+    /// <summary>
+    /// Called on the window load event.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        AppDomain.CurrentDomain.UnhandledException += UnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += UnhandledException; // Catch unhandled exceptions
 
-        if (!CheckForInternetConnection())
-            throw new WebException("No internet connection");
+        if (!CheckForInternetConnection()) // Check for internet connection
+            throw new WebException("No internet connection"); // Throw exception if no internet connection
 
-        await ShouldConvertRarity();
+        await ShouldConvertRarity(); // Get the current rarity setting
 
-        await ShouldConvertSeries();
+        await ShouldConvertSeries(); // Get the current series setting
 
-        await ShouldShowStyles();
+        await ShouldShowStyles(); // Get the current style setting
 
-        await ShouldFlipCharacterParts();
+        await ShouldFlipCharacterParts(); // Get the current character part setting
 
-        var currentUser = _discordRPCService.Client.CurrentUser;
+        var currentUser = _discordRPCService.Client.CurrentUser; // Get the current user
 
-        for (int i = 0; i <= 5; i++)
+        for (int i = 0; i <= 5; i++) // If the current user doesn't exist, try to get it again (MAX 5 TIMES)
         {
-            if (currentUser == null)
+            if (currentUser == null) // If the current user doesn't exist
             {
-                await Task.Delay(500);
-                currentUser = _discordRPCService.Client.CurrentUser;
+                await Task.Delay(500); // Wait half a second
+                currentUser = _discordRPCService.Client.CurrentUser; // Get the current user
             }
         }
 
-        await CheckIfUserIsBeta();
+        await CheckIfUserIsBeta(); // Check if the user is a beta tester
 
-        if (currentUser != null)
+        if (currentUser != null) // If the current user exists
         {
-            Avatar = currentUser.GetAvatarURL(User.AvatarFormat.PNG);
-            Username = $"{currentUser.Username}#{currentUser.Discriminator}";
+            Avatar = currentUser.GetAvatarURL(User.AvatarFormat.PNG); // Get the current user's avatar
+            Username = $"{currentUser.Username}#{currentUser.Discriminator}"; // Get the current user's username
         }
 
-        await CheckKey();
+        await CheckKey(); // Check if the key is valid
 
-        await CheckUpdate();
+        await CheckUpdate(); // Check if there is an update
 
-        await CheckMaintenance();
+        await CheckMaintenance(); // Check if the swapper is in maintenance mode
 
-        await CheckForOldFiles();
+        await CheckForOldFiles(); // Check if there are old files
 
-        await base.OnInitializedAsync();
+        await DeleteGalaxySwapperBackups(); // Deletes backups from Pedo Swapper
+
+        await DeleteOtherBackups(); // Deletes backups from other swappers
+
+        await base.OnInitializedAsync(); // Call the base OnInitializedAsync method
     }
 
+    /// <summary>
+    /// On an unhandled exception, this will log the exception and set the error state.
+    /// </summary>
     private void UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        if (_halted)
-            return;
+        if (_halted) // If the app is already halted, don't do anything.
+            return; // This is to prevent the app opening inf log tabs.
+        
+        // Otherwise
+        
+        _halted = true; // Set the halted state to true.
 
-        _halted = true;
+        var stackTrace = "\n" + e.ToString().Split("--- ")[0]; // Get the stack trace.
 
-        var stackTrace = "\n" + e.ToString().Split("--- ")[0];
+        Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.
 
-        Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal);
-
-        Items = new List<Cosmetic>();
-        saturnState = SaturnState.S_Error;
+        Items = new List<Cosmetic>(); // Clear the items.
+        saturnState = SaturnState.S_Error; // Set the state to error.
 
     }
 
+    // So the key only shows up once
     bool _once;
+    
+    /// <summary>
+    /// Checks if the key is valid
+    /// </summary>
+    /// <param name="key">The key the user is trying to use</param>
     private async Task CheckKey(string? key = null)
     {
-        var keyToUse = key ?? _configService.ConfigFile.Key;
+        var keyToUse = key ?? _configService.ConfigFile.Key; // If the key is null, use the key from the config file
 
-        if (JsonConvert.DeserializeObject<bool>(await _saturnAPIService.ReturnEndpointAsync($"/api/v1/Saturn/ReturnKeyExists?key={keyToUse}")))
+        if (JsonConvert.DeserializeObject<bool>(await _saturnAPIService.ReturnEndpointAsync($"/api/v1/Saturn/ReturnKeyExists?key={keyToUse}"))) // Get the key info from the Saturn API, if it's valid continue
         {
-            _configService.ConfigFile.Key = keyToUse;
-            _configService.SaveConfig();
-            saturnState = SaturnState.S_Dash;
-            await FileUtil.OpenBrowser(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).DiscordServer);
+            _configService.ConfigFile.Key = keyToUse; // Set the key in the config file to the key the user is trying to use
+            _configService.SaveConfig(); // Save the config file
+            saturnState = SaturnState.S_Dash; // Set the saturn state to the dash
+            await FileUtil.OpenBrowser(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).DiscordServer); // Open the discord server invite in the browser
         }
-        else if (Config.isBeta)
-            saturnState = SaturnState.S_Dash;
-        else if (!_once)
+        else if (Config.isBeta) // If the user is a beta user, continue
+            saturnState = SaturnState.S_Dash; // Set the saturn state to the dash
+        else if (!_once) // If the key is not valid, the user is not a beta user, and the key has not been shown yet
         {
-            FileUtil.OpenBrowser(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).KeyLink);
-            _once = true;
+            await FileUtil.OpenBrowser(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).KeyLink); // Open the key link in the browser
+            _once = true; // Set the bool for if the key has been shown to true
         }
 
     }
 
+    /// <summary>
+    /// Check if the user is a beta user
+    /// </summary>
     private async Task CheckIfUserIsBeta()
     {
-        if (_discordRPCService.Client.CurrentUser == null)
+        if (_discordRPCService.Client.CurrentUser == null) // If the user is not logged in or doesn't have Discord desktop open
         {
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Couldn't get Discord user info!", "Please open discord if you intend to use BETA features!", "error");
-            return;
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Couldn't get Discord user info!", "Please open discord if you intend to use BETA features!", "error"); // show a message saying they need to open discord to use beta features
+            return; // return
         }
 
-        var user = _discordRPCService.Client.CurrentUser;
+        // Otherwise
+        
+        var user = _discordRPCService.Client.CurrentUser; // get the user
 
-        ulong userID = 0u;
+        ulong userID = 0u; // create a user id
         try
         {
-            userID = user.ID;
+            userID = user.ID; // try to set the user id
         }
         catch
         {
-            Logger.Log("Could not get user ID. Is user using Discord web?", LogLevel.Error);
+            Logger.Log("Could not get user ID. Is user using Discord web?", LogLevel.Error); // if it fails, log it
         }
 
-        var betaUsers = await GetBetaIDs();
+        var betaUsers = await GetBetaIDs(); // get the beta users
 
-        foreach (var _ in betaUsers.Where(betaUser => betaUser == userID))
-            Config.isBeta = true;
-
-
-        if (!Config.isBeta)
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected you are not a BETA user!", "Boost Tamely's Discord if you want to use BETA features!", "error");
+        foreach (var _ in betaUsers.Where(betaUser => betaUser == userID)) // If the user id is in the list of beta users
+            Config.isBeta = true; // set the config to beta
+        
+        if (!Config.isBeta) // if the user is not a beta user
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected you are not a BETA user!", "Boost Tamely's Discord if you want to use BETA features!", "error"); // show a message saying they need to boost Saturn's discord to use beta features
     }
-
+    
+    /// <summary>
+    /// Get all the beta users from the database
+    /// </summary>
+    /// <returns>List<ulong>: All the user's IDs that have access to the BETA version of the swapper.</returns>
     private async Task<List<ulong>> GetBetaIDs()
     {
         var json = await _saturnAPIService.ReturnEndpointAsync("/api/v1/Saturn/GetBeta");
         return JsonConvert.DeserializeObject<List<ulong>>(json);
     }
 
+    /// <summary>
+    /// Check if the swapper should be in maintenance mode
+    /// </summary>
     private async Task CheckMaintenance()
     {
-        if (await GetFortniteBuild() != await GetLastestVersion())
-            Config.isMaintenance = true;
+        if (await GetFortniteBuild() != await GetLastestVersion()) // If the build is outdated
+            Config.isMaintenance = true; // Set the swapper to maintenance mode
     }
 
+    /// <summary>
+    /// Checks for old backups
+    /// </summary>
     private async Task CheckForOldFiles()
     {
-        if (await _configService.TryGetFortniteVersion() != await GetLastestVersion() && File.Exists(Directory.GetFiles(FortniteUtil.PakPath).FirstOrDefault(x => x.Contains("Saturn"))))
+        if (await _configService.TryGetFortniteVersion() != await GetLastestVersion() && File.Exists(Directory.GetFiles(FortniteUtil.PakPath).FirstOrDefault(x => x.Contains("Saturn")))) // If there is a backup and the swapper is not the latest Fortnite version
         {
-            if (string.IsNullOrEmpty(await _configService.TryGetFortniteVersion()))
+            if (!string.IsNullOrEmpty(await _configService.TryGetFortniteVersion())) // If the configs Fortnite version isn't null
             {
-                Logger.Log(await _configService.TryGetFortniteVersion());
-                RemoveDupedFiles();
-                await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected old backups!", "The swapper has automatically removed them for you!", "warning");
+                Logger.Log(await _configService.TryGetFortniteVersion()); // Log the configs version
+                await RemoveDupedFiles(); // Remove duped files
+                await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected old backups!", "The swapper has automatically removed them for you!", "warning"); // Show a message confirming the files have been removed
 
             }
-            await _configService.TrySetFortniteVersion(await GetLastestVersion());
+            await _configService.TrySetFortniteVersion(await GetLastestVersion()); // Set the configs version to the latest version
         }
     }
 
+    /// <summary>
+    /// Checks if there are duped files from Galaxy Swapper
+    /// </summary>
+    private async Task DeleteGalaxySwapperBackups()
+    {
+        bool found = false; // Create a bool for if the backup has been found
+        foreach (var dir in Directory.GetDirectories(FortniteUtil.PakPath)) // Foreach folder in the pak path
+            if (dir.Contains("Galaxy")) // If the folder contains Galaxy
+            {
+                Directory.Delete(dir, true); // Delete the folder
+                found = true; // Set found to true
+            }
+
+        if (found) // If we found a galaxy backup
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Deleted Galaxy Swapper backups!", "The swapper has automatically removed them for you! You should never combine swappers, but if you do, don't use Galaxy because the owner is a known pedophile.", "warning"); // Show a message confirming the files have been removed
+    }
+
+    /// <summary>
+    /// Checks if there are duped files from anything else
+    /// </summary>
+    private async Task DeleteOtherBackups()
+    {
+        bool found = false; // Create a bool for if the backup has been found
+        foreach (var dir in Directory.GetDirectories(FortniteUtil.PakPath)) // Foreach folder in the pak path
+        {
+            Directory.Delete(dir, true); // Delete the folder
+            found = true; // Set found to true
+        }
+
+        if (found) // If we found a backup
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Deleted other swapper's backups!", "The swapper has automatically removed them for you!", "warning"); // Show a message confirming the files have been removed
+    }
+
+    /// <summary>
+    /// Checks if there is an update available for the swapper.
+    /// </summary>
     private async Task CheckUpdate()
     {
-        if (Constants.UserVersion != await GetSwapperVersion())
-            saturnState = SaturnState.S_Update;
+        if (Constants.UserVersion != await GetSwapperVersion()) // If the user's version is not the latest version
+            saturnState = SaturnState.S_Update; // Set the state to update
     }
 
+    /// <summary>
+    /// Gets the latest supported Fortnite version from the swapper API.
+    /// </summary>
+    /// <returns>String: The latest supported Fortnite version of the swapper.</returns>
     private async Task<string> GetFortniteBuild()
     {
-        var data = await _saturnAPIService.ReturnEndpointAsync("/");
-        return JsonConvert.DeserializeObject<IndexModel>(data).APIVersion;
+        var data = await _saturnAPIService.ReturnEndpointAsync("/"); // Gets the index of Tamely's API.
+        return JsonConvert.DeserializeObject<IndexModel>(data).APIVersion; // Parses the index and returns the latest supported version.
     }
 
+    /// <summary>
+    /// Gets the latest version of the swapper from Tamely's API
+    /// </summary>
+    /// <returns>String: The latest version of Saturn Swapper</returns>
     private async Task<string> GetSwapperVersion()
     {
-        var data = await _saturnAPIService.ReturnEndpointAsync("/");
-        return JsonConvert.DeserializeObject<IndexModel>(data).swapperVersion;
+        var data = await _saturnAPIService.ReturnEndpointAsync("/"); // Gets the data from the index of the API
+        return JsonConvert.DeserializeObject<IndexModel>(data).swapperVersion; // Gets the version from the index of the API and returns it
     }
 
+    /// <summary>
+    /// Gets the latest version of Fortnite from FortniteAPI
+    /// </summary>
+    /// <returns>String: The latest build name of Fortnite</returns>
     private async Task<string> GetLastestVersion()
     {
-        return _fortniteAPIService.GetAES().Build;
+        return _fortniteAPIService.GetAES().Build; // Returns the latest build number
     }
 
+    /// <summary>
+    /// Opens the log file and shows a message saying there was an error
+    /// </summary>
     private async Task RunError()
     {
-        await _jsRuntime.InvokeVoidAsync("MessageBox", "There has been an error that we were not able to recover from!", "Please send your logs in Saturn Support so we are able to solve it for you!");
+        await _jsRuntime.InvokeVoidAsync("MessageBox", "There has been an error that we were not able to recover from!", "Please send your logs in Saturn Support so we are able to solve it for you!"); // Shows a message that says there was an error
 
-        await Task.Delay(1500);
+        await Task.Delay(1500); // Waits for the message to be shown and the user ot read it
 
-        Process.Start("notepad.exe", Config.LogFile);
+        Process.Start("notepad.exe", Config.LogFile); // Opens the log file
     }
 
+    /// <summary>
+    /// Shows the update message to update the swapper
+    /// </summary>
     private async Task RunUpdate()
     {
-        await _jsRuntime.InvokeVoidAsync("MessageBox", "There is a swapper update ready to download!", "Please download it from Tamely's Discord.", "error");
-        await FileUtil.OpenBrowser(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).DiscordServer);
+        await _jsRuntime.InvokeVoidAsync("MessageBox", "There is a swapper update ready to download!", "Please download it from Tamely's Discord.", "error"); // Show update message on screen
+        await FileUtil.OpenBrowser(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).DiscordServer); // Open discord server in browser
     }
 
+    /// <summary>
+    /// Filters items according to your search input from the list of items
+    /// </summary>
+    /// <param name="input">The search input</param>
     private async Task FilterItems(string input)
     {
-        Items = new List<Cosmetic>(BackupItems);
+        Items = new List<Cosmetic>(BackupItems); // Sets the items to the backup items
 
-        searchType = (SearchType) await _jsRuntime.InvokeAsync<int>("GetSelectedElement");
+        searchType = (SearchType) await _jsRuntime.InvokeAsync<int>("GetSelectedElement"); // Gets the selected search type
 
-
-        switch (searchType)
+        switch (searchType) // Switch what the swapper will do with the search type
         {
-            case SearchType.ST_Name:
-                Items.RemoveAll(x => !FilterString(x.Name.ToLower()).Contains(FilterString(input.ToLower())) && !FilterString(x.Description.ToLower()).Contains(FilterString(input.ToLower())));
+            case SearchType.ST_Name: // If the search type is name
+                Items.RemoveAll(x => !FilterString(x.Name.ToLower()).Contains(FilterString(input.ToLower())) && !FilterString(x.Description.ToLower()).Contains(FilterString(input.ToLower()))); // Removes all items that don't contain the search input in the name or description
                 break;
-            case SearchType.ST_ID:
-                Items.RemoveAll(x => !FilterString(x.Id.ToLower()).Contains(FilterString(input.ToLower())));
+            case SearchType.ST_ID: // If the search type is ID
+                Items.RemoveAll(x => !FilterString(x.Id.ToLower()).Contains(FilterString(input.ToLower()))); // Removes all items that don't contain the search input in the ID
                 break;
-            case SearchType.ST_Rarity:
-                Items.RemoveAll(x => !FilterString(x.Rarity.BackendValue.ToLower().Replace("efortrarity::", "")).StartsWith(FilterString(input.ToLower())));
+            case SearchType.ST_Rarity: // If the search type is rarity
+                Items.RemoveAll(x => !FilterString(x.Rarity.BackendValue.ToLower().Replace("efortrarity::", "")).StartsWith(FilterString(input.ToLower()))); // Removes all items that don't have the rarity in the search input
                 break;
-            case SearchType.ST_Set:
+            case SearchType.ST_Set: // If the search type is set
                 Items.RemoveAll(x =>
                 {
-                    if (x.GameplayTags == null || x.GameplayTags.Count == 0 || x.GameplayTags == new List<string>())
-                        return true;
+                    if (x.GameplayTags == null || x.GameplayTags.Count == 0 || x.GameplayTags == new List<string>()) // If the item has no gameplay tags
+                        return true; // remove it
 
-                    return x.GameplayTags.Count(tag => FilterString(tag.ToLower()).Contains(FilterString(input.ToLower())) && tag.ToLower().Contains("set")) <= 0;
+                    return x.GameplayTags.Count(tag => FilterString(tag.ToLower()).Contains(FilterString(input.ToLower())) && tag.ToLower().Contains("set")) <= 0; // If the item has a gameplay tag that contains the search input and it contains the word "set", don't remove it
                 });
                 break;
-            case SearchType.ST_Season:
+            case SearchType.ST_Season: // If the search type is season
                 Items.RemoveAll(x =>
                 {
-                    if (x.GameplayTags == null || x.GameplayTags.Count == 0 || x.GameplayTags == new List<string>())
-                        return true;
+                    if (x.GameplayTags == null || x.GameplayTags.Count == 0 || x.GameplayTags == new List<string>()) // If the item has no gameplay tags
+                        return true; // remove it
 
-                    return x.GameplayTags.Count(tag => tag.ToLower().Equals($"cosmetics.filter.season.{input}")) <= 0;
+                    return x.GameplayTags.Count(tag => tag.ToLower().Equals($"cosmetics.filter.season.{input}")) <= 0; // If the item has a gameplay tag that contains the season specified in the input, don't remove it
                 });
                 break;
-            case SearchType.ST_Series:
+            case SearchType.ST_Series: // If the search type is series
                 Items.RemoveAll(x =>
                 {
-                    if (x.Series == null || x.Series == new Series() || x.Series.Value == null)
-                        return true;
+                    if (x.Series == null || x.Series == new Series() || x.Series.Value == null) // If the item has no series
+                        return true; // remove it
 
-                    return !FilterString(x.Series.Value.ToLower()).Contains(FilterString(input.ToLower()));
+                    return !FilterString(x.Series.Value.ToLower()).Contains(FilterString(input.ToLower())); // If the item has a series that contains the search input, don't remove it
                 });
                 break;
-            case SearchType.ST_Source:
+            case SearchType.ST_Source: // If the search type is source
                 Items.RemoveAll(x =>
                 {
-                    if (x.GameplayTags == null || x.GameplayTags.Count == 0 || x.GameplayTags == new List<string>())
-                        return true;
+                    if (x.GameplayTags == null || x.GameplayTags.Count == 0 || x.GameplayTags == new List<string>()) // If the item has no gameplay tags
+                        return true; // remove it
 
-                    return x.GameplayTags.Count(tag => FilterString(tag.ToLower()).Contains(FilterString(input.ToLower())) && tag.ToLower().Contains("source")) <= 0;
+                    return x.GameplayTags.Count(tag => FilterString(tag.ToLower()).Contains(FilterString(input.ToLower())) && tag.ToLower().Contains("source")) <= 0; // If the item has a gameplay tag that contains the search input and it contains the word "source", don't remove it
                 });
                 break;
-            default:
-                throw new ArgumentOutOfRangeException("How tf did you select a search type that doesn't exist?");
+            default: // If the search type is anything else
+                throw new ArgumentOutOfRangeException("How tf did you select a search type that doesn't exist?"); // Throw an exception
         }
 
 
     }
 
+    /// <summary>
+    /// Removes all non-alphanumeric characters from a string
+    /// </summary>
     private string FilterString(string input)
         => Regex.Replace(input, @"[^0-9a-zA-Z]+", "");
 
+    /// <summary>
+    /// Toggles whether or not the user wants to swap pickaxe rarity
+    /// </summary>
     private async Task FlipRarityOption()
     {
-        await _configService.TrySetShouldRarityConvert(!await _configService.TryGetShouldRarityConvert());
+        await _configService.TrySetShouldRarityConvert(!await _configService.TryGetShouldRarityConvert()); // Toggle the value
 
-        FlipRarity = await _configService.TryGetShouldRarityConvert() switch
+        FlipRarity = await _configService.TryGetShouldRarityConvert() switch // Set the text to the new value
         {
-            true => "Currently set to 'pickaxes WILL swap rarity'",
-            false => "Currently set to 'pickaxes WILL NOT swap rarity'"
+            true => "Currently set to 'pickaxes WILL swap rarity'", // If true, set pickaxes will swap rarity
+            false => "Currently set to 'pickaxes WILL NOT swap rarity'" // If false, set pickaxes will not swap rarity
         };
     }
 
+    /// <summary>
+    /// Toggles whether or not the user wants to swap pickaxe series
+    /// </summary>
     private async Task FlipSeriesOption()
     {
-        await _configService.TrySetShouldSeriesConvert(!await _configService.TryGetShouldSeriesConvert());
+        await _configService.TrySetShouldSeriesConvert(!await _configService.TryGetShouldSeriesConvert()); // Toggle the value
 
-        FlipSeries = await _configService.TryGetShouldSeriesConvert() switch
+        FlipSeries = await _configService.TryGetShouldSeriesConvert() switch // Set the text to the new value
         {
-            true => "Currently set to 'pickaxes WILL swap series'",
-            false => "Currently set to 'pickaxes WILL NOT swap series'"
+            true => "Currently set to 'pickaxes WILL swap series'", // If true, set pickaxes will swap series
+            false => "Currently set to 'pickaxes WILL NOT swap series'" // If false, set pickaxes will not swap series
         };
     }
 
+    /// <summary>
+    /// Toggles which character part the swapper should use when swapping.
+    /// </summary>
     private async Task ToggleCharacterParts()
     {
-        switch (await _configService.TryGetHeadOrHatCharacterPart())
+        switch (await _configService.TryGetHeadOrHatCharacterPart()) // Gets the config value
         {
-            case "Head":
-                await _configService.TrySetHeadOrHatCharacterPart("Hat");
+            case "Head": // If it's head
+                await _configService.TrySetHeadOrHatCharacterPart("Hat"); // Set it to hat
                 break;
-            case "Hat":
-                await _configService.TrySetHeadOrHatCharacterPart("Head");
+            case "Hat": // If it's hat
+                await _configService.TrySetHeadOrHatCharacterPart("Head"); // Set it to head
                 break;
         }
 
-        FlipCharacterPart = "Currently set to 'Default swaps will use a " + await _configService.TryGetHeadOrHatCharacterPart() + " character part'";
+        FlipCharacterPart = "Currently set to 'Default swaps will use a " + await _configService.TryGetHeadOrHatCharacterPart() + " character part'"; // Set the text to the new value
     }
 
+    /// <summary>
+    /// Toggles showing items styles in the item lists.
+    /// </summary>
     private async Task ToggleShowStyles()
     {
-        await _configService.TrySetShouldShowStyles(!await _configService.TryGetShouldShowStyles());
+        await _configService.TrySetShouldShowStyles(!await _configService.TryGetShouldShowStyles()); // Toggle the config value
 
-        ShowStyles = await _configService.TryGetShouldShowStyles() switch
+        ShowStyles = await _configService.TryGetShouldShowStyles() switch // Set the text to display
         {
-            true => "Currently set to 'WILL show item styles.' This could cause performance issues on low-end PCs!",
-            false => "Currently set to 'WILL NOT show item styles.' This could cause performance issues on low-end PCs!"
+            true => "Currently set to 'WILL show item styles.' This could cause performance issues on low-end PCs!", // If true, it will show styles
+            false => "Currently set to 'WILL NOT show item styles.' This could cause performance issues on low-end PCs!" // If false, it will not show styles
         };
     }
 
+    /// <summary>
+    /// Moves plugins to the plugin folder.
+    /// </summary>
     private async Task SubmitPlugin()
     {
-        try
+        try // Try doing the following:
         {
-            Directory.CreateDirectory(Config.PluginsPath);
-            List<string> blacklistedFiles = new List<string>()
+            Directory.CreateDirectory(Config.PluginsPath); // Create the plugins folder if it doesn't exist.
+            List<string> blacklistedFiles = new List<string>() // Create a list of blacklisted files (only ever in debugging)
             {
                 "Saturn.Backend.staticwebassets.runtime.json",
                 "Saturn.deps.json",
                 "Saturn.runtimeconfig.json",
                 "Saturn.staticwebassets.runtime.json"
-            };
-            foreach (var file in Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory))
-                if ((file.EndsWith(".json") || file.EndsWith(".saturn")) && blacklistedFiles.Find(e => file.ToLower().EndsWith(e.ToLower())) == null)
-                    File.Move(file, Config.PluginsPath + Path.GetFileName(file));
+            }; // Ends the list of blacklisted files.
+            foreach (var file in Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory)) // For each file in the current directory.
+                if ((file.EndsWith(".json") || file.EndsWith(".saturn")) && blacklistedFiles.Find(e => file.ToLower().EndsWith(e.ToLower())) == null) // If the file is a json file and isn't blacklisted.
+                    File.Move(file, Config.PluginsPath + Path.GetFileName(file)); // Move the file to the plugins folder.
 
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished moving plugin files to the plugins folder!", "success");
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished moving plugin files to the plugins folder!", "success"); // Show a message box saying it was successful.
         }
-        catch (Exception e)
+        catch (Exception e) // If something went wrong
         {
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Error", "There was an error moving the plugin files to the plugins folder! Please report this and the current swapper log to Tamely in his Discord!", "error");
-            Logger.Log(e.ToString());
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Error", "There was an error moving the plugin files to the plugins folder! Please report this and the current swapper log to Tamely in his Discord!", "error"); // Show a message box saying it was unsuccessful.
+            Logger.Log(e.ToString()); // Log the error.
         }
     }
 
+    /// <summary>
+    /// Opens a new window of notepad with the logfile in it
+    /// </summary>
     private async Task OpenLog()
     {
-        Process.Start("notepad.exe", Config.LogFile);
+        Process.Start("notepad.exe", Config.LogFile); // Open the log file in notepad
     }
 
+    /// <summary>
+    /// Launches Fortnite
+    /// </summary>
     private async Task Launch()
     {
-        Process.Start(new ProcessStartInfo
+        Process.Start(new ProcessStartInfo // Create a new process
         {
-            FileName = "cmd.exe",
-            Arguments = "/c start com.epicgames.launcher://apps/Fortnite?action=launch&silent=true",
-            WindowStyle = ProcessWindowStyle.Hidden,
-            CreateNoWindow = true
-        });
+            FileName = "cmd.exe", // Use cmd.exe
+            Arguments = "/c start com.epicgames.launcher://apps/Fortnite?action=launch&silent=true", // Set the arguments we want
+            WindowStyle = ProcessWindowStyle.Hidden, // Hide the window
+            CreateNoWindow = true // Don't create a new window
+        }); // Start the process
 
-        LaunchFortnite = "Fortnite is launching... please wait.";
-        LaunchFortniteColor = Colors.C_GREEN;
+        LaunchFortnite = "Fortnite is launching... please wait."; // Set the button text to "Fortnite is launching..."
+        LaunchFortniteColor = Colors.C_GREEN; // Set the button color to green
 
-        await WaitForFortnite();
+        await WaitForFortnite(); // Wait for Fortnite to close
 
-        LaunchFortnite = "Epic Games Launcher has been closed which stopped the verification process.";
-        LaunchFortniteColor = Colors.C_GREEN;
+        LaunchFortnite = "Epic Games Launcher has been closed which stopped the verification process."; // Set the button text to "Epic Games Launcher has been closed which stopped the verification process."
+        LaunchFortniteColor = Colors.C_GREEN; // Set the button color to green
 
+        await Task.Delay(5000); // Wait 5 seconds
 
-        await Task.Delay(5000);
-
-        LaunchFortnite = "This will launch Fortnite and prevent it from verifying your game on close.";
-        LaunchFortniteColor = Colors.C_WHITE;
+        LaunchFortnite = "This will launch Fortnite and prevent it from verifying your game on close."; // Set the button text to "This will launch Fortnite and prevent it from verifying your game on close."
+        LaunchFortniteColor = Colors.C_WHITE; // Set the button color to white
     }
 
+    /// <summary>
+    /// Waits for Fortnite to launch. Then when it closes, it closes Epic Games Launcher to stop the verification process.
+    /// </summary>
     private async Task WaitForFortnite()
     {
-        while (Process.GetProcessesByName("FortniteClient-Win64-Shipping").Length == 0)
-        {
-            // Give it a half a second break until we check if it launched
-            await Task.Delay(500);
-        }
+        while (Process.GetProcessesByName("FortniteClient-Win64-Shipping").Length == 0) // Waits for Fortnite to launch
+            await Task.Delay(500); // Give it a half a second break until we check if it launched
+        
+        LaunchFortnite = "Fortnite has launched!"; // Change the text of the settings button to show that Fortnite has launched
 
-        // It has launched!
-        LaunchFortnite = "Fortnite has launched!";
+        await Task.Delay(5000); // Wait 5 seconds
 
-        await Task.Delay(5000);
+        LaunchFortnite = "Waiting for Fortnite to close..."; // Change the text of the settings button to show that we are waiting for Fortnite to close
+        LaunchFortniteColor = Colors.C_WHITE; // Change the color of the settings button to white
 
-        LaunchFortnite = "Waiting for Fortnite to close...";
-        LaunchFortniteColor = Colors.C_WHITE;
+        while (Process.GetProcessesByName("FortniteClient-Win64-Shipping").Length != 0) // Waits for Fortnite to close
+            await Task.Delay(2000); // Wait two seconds before checking again
 
-        while (Process.GetProcessesByName("FortniteClient-Win64-Shipping").Length != 0)
-        {
-            // Give it a 2 second break until we check if it closed
-            await Task.Delay(2000);
-        }
-
-        foreach (var process in Process.GetProcesses())
-            if (process.ProcessName == "EpicGamesLauncher")
-                process.Kill();
+        foreach (var process in Process.GetProcesses()) // Get all processes running on the computer
+            if (process.ProcessName == "EpicGamesLauncher") // If the process is Epic Games Launcher
+                process.Kill(); // Kill it
     }
 
+    /// <summary>
+    /// Resets the config file to the default values
+    /// </summary>
     private async Task ResetConfiguration()
     {
-        _configService.ConfigFile = new Saturn.Backend.Data.Models.Configuration();
-        _configService.SaveConfig();
+        _configService.ConfigFile = new Saturn.Backend.Data.Models.Configuration(); // Reset the config file
+        _configService.SaveConfig(); // Save the config file
 
-        ResetConfig = "Reset the swapper's config to default settings!";
-        ResetConfigColor = Colors.C_GREEN;
+        ResetConfig = "Reset the swapper's config to default settings!"; // Set the reset config message
+        ResetConfigColor = Colors.C_GREEN; // Set the reset config message color
 
-        await Task.Delay(5000);
+        await Task.Delay(5000); // Wait 5 seconds
 
-        ResetConfig = "This will reset the config to the default settings. WARNING: if you swapped something and need to revert it, you wont be able to!";
-        ResetConfigColor = Colors.C_YELLOW;
+        ResetConfig = "This will reset the config to the default settings. WARNING: if you swapped something and need to revert it, you wont be able to!"; // Set the reset config message
+        ResetConfigColor = Colors.C_YELLOW; // Set the reset config message color
     }
 
+    /// <summary>
+    /// Removes all files in the paks folder the have 'Saturn' in their name.
+    /// </summary>
     private async Task RemoveDupedFiles()
     {
-        foreach (var file in Directory.EnumerateFiles(FortniteUtil.PakPath))
-            if (file.Contains("Saturn"))
-                File.Delete(file);
+        foreach (var file in Directory.EnumerateFiles(FortniteUtil.PakPath)) // Enumerates through the files in the paks folder
+            if (file.Contains("Saturn")) // If the file contains 'Saturn' in its name
+                File.Delete(file); // Delete the file
 
-        if (!Directory.Exists(Config.CompressedDataPath))
-            Logger.Log("Compressed data path was not found! Did you not swap anything?", LogLevel.Fatal);
-        else
-            Directory.Delete(Config.CompressedDataPath, true);
+        if (!Directory.Exists(Config.CompressedDataPath)) // If the compressed data folder doesn't exist
+            Logger.Log("Compressed data path was not found! Did you not swap anything?", LogLevel.Fatal); // Log it
+        else // Otherwise
+            Directory.Delete(Config.CompressedDataPath, true); // Delete the folder
 
-        if (!Directory.Exists(Config.DecompressedDataPath))
-            Logger.Log("Decompressed data path was not found! Did you not swap anything?", LogLevel.Fatal);
-        else
-            Directory.Delete(Config.DecompressedDataPath, true);
+        if (!Directory.Exists(Config.DecompressedDataPath)) // If the decompressed data folder doesn't exist
+            Logger.Log("Decompressed data path was not found! Did you not swap anything?", LogLevel.Fatal); // Log it
+        else // Otherwise
+            Directory.Delete(Config.DecompressedDataPath, true); // Delete the folder
 
-        _configService.ConfigFile = new Saturn.Backend.Data.Models.Configuration();
-        _configService.SaveConfig();
+        _configService.ConfigFile = new Saturn.Backend.Data.Models.Configuration(); // Reset the config
+        _configService.SaveConfig(); // Save the config
 
-        RemoveDuped = "Removed all duplicated files from Fortnite!";
-        RemoveDupedColor = Colors.C_GREEN;
+        RemoveDuped = "Removed all duplicated files from Fortnite!"; // Set the message on the settings button
+        RemoveDupedColor = Colors.C_GREEN; // Set the color of the settings button
 
-        await Task.Delay(5000);
+        await Task.Delay(5000); // Wait 5 seconds
 
-        RemoveDuped = "This will remove all duplicated files from Fortnite (resetting all swaps) and reset the config.";
-        RemoveDupedColor = Colors.C_YELLOW;
+        RemoveDuped = "This will remove all duplicated files from Fortnite (resetting all swaps) and reset the config."; // Set the message on the settings button
+        RemoveDupedColor = Colors.C_YELLOW;  // Set the color of the settings button
     }
 
+    /// <summary>
+    /// Changes the state of the screen to settings
+    /// </summary>
     private async Task GoToSettings()
         => saturnState = SaturnState.S_Settings;
 
     private async Task SetSearchType(SearchType searchType)
         => this.searchType = searchType;
 
+    /// <summary>
+    /// Generates, loads, and displays skins on the screen.
+    /// </summary>
     private async Task GetSaturnSkins()
     {
-        saturnState = SaturnState.S_Loading;
-        Items = await _swapperService.GetSaturnSkins();
-        BackupItems = new List<Cosmetic>(Items);
-        currentType = ItemType.IT_Skin;
-        saturnState = SaturnState.S_Items;
+        saturnState = SaturnState.S_Loading; // Set the screens state to loading
+        Items = await _swapperService.GetSaturnSkins(); // Generates the list of skins
+        BackupItems = new List<Cosmetic>(Items); // Creates a backup of the list (used for searching)
+        currentType = ItemType.IT_Skin; // Sets the current type of item to skin
+        saturnState = SaturnState.S_Items; // Sets the screens state to items
     }
 
     private async Task GetSaturnMisc()
@@ -1288,19 +1418,24 @@
     {
         
     }
-
-    // Taken from Darkblade on Twilight
+    
+    /// <summary>
+    /// Sends a ping to google with a timeout of 5 seconds. Taken from CycloneFreeze on Twilight
+    /// </summary>
+    /// <returns>
+    /// True if the ping was successful, false if it timed out or an error occured.
+    /// </returns>
     private static bool CheckForInternetConnection()
     {
-        using var ping = new Ping();
+        using var ping = new Ping(); // Initializes a new Ping instance.
         try
         {
-            var reply = ping.Send("google.com", 5000);
-            return reply.Status == IPStatus.Success;
+            var reply = ping.Send("google.com", 5000); // Sends a ping to 'google.com' and timesout in 5 seconds.
+            return reply.Status == IPStatus.Success; // Returns true if the status is 'success'.
         }
         catch
         {
-            return false;
+            return false; // Returns false if error occured.
         }
     }
 }
