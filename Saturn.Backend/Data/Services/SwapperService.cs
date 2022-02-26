@@ -81,7 +81,7 @@ public sealed class SwapperService : ISwapperService
 
         Trace.WriteLine("Initialized provider");
 
-        new Mappings(_provider, benBotApiService, fortniteAPIService, jsRuntime).Init();
+        CreateMappings(benBotApiService, fortniteAPIService, jsRuntime);
 
         Trace.WriteLine("Loaded mappings");
 
@@ -96,6 +96,11 @@ public sealed class SwapperService : ISwapperService
         Trace.WriteLine("Submitted Keys");
         Trace.WriteLine($"File provider initialized with {_provider.Keys.Count} keys");
     }
+
+    private async void CreateMappings(IBenBotAPIService benBotApiService, 
+                                      IFortniteAPIService fortniteAPIService, 
+                                      IJSRuntime jsRuntime) =>
+        await new Mappings(_provider, benBotApiService, fortniteAPIService, jsRuntime).Init();
 
     public async Task<List<Cosmetic>> GetSaturnSkins()
     {
