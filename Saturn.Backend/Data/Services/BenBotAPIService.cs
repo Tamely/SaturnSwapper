@@ -1,4 +1,5 @@
-﻿using Saturn.Backend.Data.Utils;
+﻿#pragma warning disable CA1416, SYSLIB0014 // Disable the warning that says something is deprecated and obsolete
+using Saturn.Backend.Data.Utils;
 using System;
 using System.Net;
 using System.Threading.Tasks;

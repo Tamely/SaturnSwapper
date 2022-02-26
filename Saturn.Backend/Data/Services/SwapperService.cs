@@ -1,4 +1,6 @@
-﻿using CUE4Parse;
+﻿#pragma warning disable CA1416, SYSLIB0014 // Disable the warning that says something is deprecated and obsolete
+
+using CUE4Parse;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
