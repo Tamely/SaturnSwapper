@@ -1,4 +1,6 @@
-﻿using CUE4Parse;
+﻿#pragma warning disable CA1416, SYSLIB0014 // Disable the warning that says something is deprecated and obsolete
+
+using CUE4Parse;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
@@ -79,7 +81,7 @@ public sealed class SwapperService : ISwapperService
 
         Trace.WriteLine("Initialized provider");
 
-        new Mappings(_provider, benBotApiService, fortniteAPIService, jsRuntime).Init();
+        CreateMappings(benBotApiService, fortniteAPIService, jsRuntime);
 
         Trace.WriteLine("Loaded mappings");
 
@@ -94,6 +96,11 @@ public sealed class SwapperService : ISwapperService
         Trace.WriteLine("Submitted Keys");
         Trace.WriteLine($"File provider initialized with {_provider.Keys.Count} keys");
     }
+
+    private async void CreateMappings(IBenBotAPIService benBotApiService, 
+                                      IFortniteAPIService fortniteAPIService, 
+                                      IJSRuntime jsRuntime) =>
+        await new Mappings(_provider, benBotApiService, fortniteAPIService, jsRuntime).Init();
 
     public async Task<List<Cosmetic>> GetSaturnSkins()
     {

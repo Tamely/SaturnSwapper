@@ -1,4 +1,6 @@
-﻿using System;
+﻿#pragma warning disable CA1416, SYSLIB0014 // Disable the warning that says something is deprecated and obsolete
+
+using System;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -15,7 +17,7 @@ namespace Saturn.Backend.Data.Services
         public SaturnAPIService()
         {
             ApiKey = "\u0701\u06A1\u08C1\u06A1\u0601\u0841\u0621\u0881\u0661\u0621";
-            for (int queVe = 0, jCarg = 0; queVe < 10; queVe++)
+            for (int queVe = 0, jCarg; queVe < 10; queVe++)
             {
                 jCarg = ApiKey[queVe];
                 jCarg--;
