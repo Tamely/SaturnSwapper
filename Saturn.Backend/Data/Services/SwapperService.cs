@@ -98,12 +98,13 @@ public sealed class SwapperService : ISwapperService
 
     public async Task<List<Cosmetic>> GetSaturnSkins()
     {
-        Directory.CreateDirectory(Config.CachePath);
         var skins = new List<Cosmetic>();
 
-        await skins.GenerateSkins(_provider, _configService, this);
-        
-        await File.WriteAllTextAsync(Config.SkinsCache, JsonConvert.SerializeObject(skins, Formatting.Indented));
+        AbstractGeneration Generation = new SkinGeneration(skins, _provider, _configService, this);
+
+        skins = await Generation.Generate();
+
+        Generation.WriteItems(skins);
 
         Trace.WriteLine($"Deserialized {skins.Count} objects");
 

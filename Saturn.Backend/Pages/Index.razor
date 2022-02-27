@@ -704,7 +704,7 @@
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        AppDomain.CurrentDomain.FirstChanceException += UnhandledException; // Catch unhandled exceptions
+        AppDomain.CurrentDomain.UnhandledException += UnhandledException; // Catch unhandled exceptions
 
         if (!CheckForInternetConnection()) // Check for internet connection
             throw new WebException("No internet connection"); // Throw exception if no internet connection
@@ -754,7 +754,7 @@
     /// <summary>
     /// On an unhandled exception, this will log the exception and set the error state.
     /// </summary>
-    private void UnhandledException(object sender, FirstChanceExceptionEventArgs e)
+    private void UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         if (_halted) // If the app is already halted, don't do anything.
             return; // This is to prevent the app opening inf log tabs.
@@ -765,7 +765,7 @@
 
         var stackTrace = "\n" + e.ToString().Split("--- ")[0]; // Get the stack trace.
 
-        Logger.Log($"Unhandled exception occurred. {e.Exception.ToString().GetType().Name}: {e.Exception.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.
+        Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.
 
         Items = new List<Cosmetic>(); // Clear the items.
         saturnState = SaturnState.S_Error; // Set the state to error.
@@ -832,6 +832,21 @@
         
         if (!Config.isBeta) // if the user is not a beta user
             await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected you are not a BETA user!", "Boost Tamely's Discord if you want to use BETA features!", "error"); // show a message saying they need to boost Saturn's discord to use beta features
+    }
+    
+    /// <summary>
+    /// Gets font size from character count
+    /// </summary>
+    /// <returns>double: The font size the swapper should use</returns>
+    /// <param name="text">The text to scale</param>
+    /// <param name="isHeader">Is the text a header or a body?</param>
+    private double GetTextSize(string text, bool isHeader = false)
+    {
+        return isHeader switch
+        {
+            true => text.Length * .03,
+            false => text.Length * .02
+        };
     }
     
     /// <summary>
