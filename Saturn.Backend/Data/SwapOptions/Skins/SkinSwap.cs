@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
@@ -9,14 +8,12 @@ using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.i18N;
 using CUE4Parse.UE4.Objects.UObject;
-using MudBlazor;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Services;
 using Saturn.Backend.Data.Utils;
 using Saturn.Backend.Data.Utils.Swaps;
-using SharpGLTF.Schema2;
 
 namespace Saturn.Backend.Data.SwapOptions.Skins;
 
@@ -28,12 +25,12 @@ internal abstract class SkinSwap : AbstractSwap
         SwapModel = swapModel;
     }
 
-    public MeshDefaultModel SwapModel { get; }
+    protected MeshDefaultModel SwapModel { get; }
 }
 
 public class AddSkins
 {
-    public List<SaturnItem> SkinOptions = new List<SaturnItem>()
+    private protected List<SaturnItem> SkinOptions = new List<SaturnItem>()
     {
         new SaturnItem
         {
