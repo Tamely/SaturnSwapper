@@ -16,6 +16,7 @@ using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Services;
 using Saturn.Backend.Data.Utils;
 using Saturn.Backend.Data.Utils.Swaps;
+using SharpGLTF.Schema2;
 
 namespace Saturn.Backend.Data.SwapOptions.Skins;
 
@@ -111,8 +112,12 @@ public class AddSkins
             Series = "FrozenSeries"
         }
     };
+
+    private string _lastID = "";
+    private Dictionary<string, FSkeletalMaterial[]> _lastMaterials = new Dictionary<string, FSkeletalMaterial[]>();
     public async Task<Cosmetic> AddSkinOptions(Cosmetic skin, ISwapperService swapperService, DefaultFileProvider _provider)
     {
+        Logger.Log(skin.Name);
         var characterParts = await Task.Run(() => swapperService.GetCharacterPartsById(skin.Id, skin));
 
         if (characterParts == new Dictionary<string, string>())
@@ -317,7 +322,7 @@ public class AddSkins
 
 
                                 swapModel.BodySkeleton =
-                                    part.Get<FSoftObjectPath[]>("MasterSkeletalMeshes")[0].AssetPathName.ToString();
+                                    part.Get<FSoftObjectPath[]>("MasterSkeletalMeshes")[0].AssetPathName.Text;
 
                                 if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
                                 {
@@ -347,6 +352,42 @@ public class AddSkins
                                     }
                                 }
 
+                                if (MaterialReplacements.Count > 0)
+                                {
+                                    if (_lastID == skin.Id)
+                                    {
+                                        foreach (var material in _lastMaterials["Body"])
+                                            if (MaterialReplacements.ContainsKey(material.Material?.GetPathName() ?? "tamely"))
+                                            {
+                                                string mat = material.Material.GetPathName();
+                                                string temp = mat;
+                                                mat = MaterialReplacements[mat];
+                                                MaterialReplacements.Remove(temp);
+                                                
+                                                
+                                                if (!swapModel.BodyMaterials.ContainsKey(_lastMaterials["Body"].ToList().IndexOf(material)))
+                                                    swapModel.BodyMaterials.Add(_lastMaterials["Body"].ToList().IndexOf(material), mat);
+                                            }
+                                    }
+                                    else if (part.TryGetValue(out USkeletalMesh skeletalMesh, "SkeletalMesh"))
+                                    {
+                                        _lastMaterials = new Dictionary<string, FSkeletalMaterial[]>();
+                                        foreach (var material in skeletalMesh.Materials)
+                                            if (MaterialReplacements.ContainsKey(material.Material?.GetPathName() ?? "tamely"))
+                                            {
+                                                string mat = material.Material.GetPathName();
+                                                string temp = mat;
+                                                mat = MaterialReplacements[mat];
+                                                MaterialReplacements.Remove(temp);
+                                                    
+                                                    
+                                                if (!swapModel.BodyMaterials.ContainsKey(skeletalMesh.Materials.ToList().IndexOf(material)))
+                                                    swapModel.BodyMaterials.Add(skeletalMesh.Materials.ToList().IndexOf(material), mat);
+                                            }
+                                        _lastMaterials.Add("Body", skeletalMesh.Materials);
+                                    }
+                                }
+                                
                                 if (swapModel.BodyMaterials.Count > OGBodyMaterials.Count)
                                     bDontProceed = true;
 
@@ -409,6 +450,43 @@ public class AddSkins
                                         var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
                                         if (!swapModel.HeadMaterials.ContainsKey(matIndex))
                                             swapModel.HeadMaterials.Add(matIndex, material);
+                                    }
+                                }
+                                
+                                if (MaterialReplacements.Count > 0)
+                                {
+                                    if (_lastID == skin.Id)
+                                    {
+                                        foreach (var material in _lastMaterials["Head"])
+                                            if (MaterialReplacements.ContainsKey(material.Material?.GetPathName() ?? "tamely"))
+                                            {
+                                                string mat = material.Material.GetPathName();
+                                                string temp = mat;
+                                                mat = MaterialReplacements[mat];
+                                                MaterialReplacements.Remove(temp);
+                                                
+                                                
+                                                if (!swapModel.HeadMaterials.ContainsKey(_lastMaterials["Head"].ToList().IndexOf(material)))
+                                                    swapModel.HeadMaterials.Add(_lastMaterials["Head"].ToList().IndexOf(material), mat);
+                                            }
+                                    }
+                                    else if (part.TryGetValue(out USkeletalMesh skeletalMesh, "SkeletalMesh"))
+                                    {
+                                        foreach (var material in skeletalMesh.Materials)
+                                            if (MaterialReplacements.ContainsKey(material.Material?.GetPathName() ?? "tamely"))
+                                            {
+                                                string mat = material.Material.GetPathName();
+                                                string temp = mat;
+                                                mat = MaterialReplacements[mat];
+                                                MaterialReplacements.Remove(temp);
+                                                    
+                                                    
+                                                if (!swapModel.HeadMaterials.ContainsKey(skeletalMesh.Materials.ToList().IndexOf(material)))
+                                                    swapModel.HeadMaterials.Add(skeletalMesh.Materials.ToList().IndexOf(material), mat);
+                                            }
+                                        if (_lastMaterials.ContainsKey("Head"))
+                                            _lastMaterials.Remove("Head");
+                                        _lastMaterials.Add("Head", skeletalMesh.Materials);
                                     }
                                 }
 
@@ -491,6 +569,43 @@ public class AddSkins
                                             swapModel.FaceACCMaterials.Add(matIndex, material);
                                     }
                                 }
+                                
+                                if (MaterialReplacements.Count > 0)
+                                {
+                                    if (_lastID == skin.Id)
+                                    {
+                                        foreach (var material in _lastMaterials["Hat"])
+                                            if (MaterialReplacements.ContainsKey(material.Material?.GetPathName() ?? "tamely"))
+                                            {
+                                                string mat = material.Material.GetPathName();
+                                                string temp = mat;
+                                                mat = MaterialReplacements[mat];
+                                                MaterialReplacements.Remove(temp);
+                                                
+                                                
+                                                if (!swapModel.FaceACCMaterials.ContainsKey(_lastMaterials["Hat"].ToList().IndexOf(material)))
+                                                    swapModel.FaceACCMaterials.Add(_lastMaterials["Hat"].ToList().IndexOf(material), mat);
+                                            }
+                                    }
+                                    else if (part.TryGetValue(out USkeletalMesh skeletalMesh, "SkeletalMesh"))
+                                    {
+                                        foreach (var material in skeletalMesh.Materials)
+                                            if (MaterialReplacements.ContainsKey(material.Material?.GetPathName() ?? "tamely"))
+                                            {
+                                                string mat = material.Material.GetPathName();
+                                                string temp = mat;
+                                                mat = MaterialReplacements[mat];
+                                                MaterialReplacements.Remove(temp);
+                                                    
+                                                    
+                                                if (!swapModel.FaceACCMaterials.ContainsKey(skeletalMesh.Materials.ToList().IndexOf(material)))
+                                                    swapModel.FaceACCMaterials.Add(skeletalMesh.Materials.ToList().IndexOf(material), mat);
+                                            }
+                                        if (_lastMaterials.ContainsKey("Hat"))
+                                            _lastMaterials.Remove("Hat");
+                                        _lastMaterials.Add("Hat", skeletalMesh.Materials);
+                                    }
+                                }
 
 
                                 swapModel.FaceACCFX =
@@ -529,29 +644,6 @@ public class AddSkins
                 if (OGHatType == ECustomHatType.ECustomHatType_None)
                     bDontProceed = true;
 
-            foreach (var (material, value) in MaterialReplacements)
-            {
-                if (material.ToLower().Contains("hat") || material.ToLower().Contains("helmet") ||
-                    material.ToLower().Contains("faceacc") || material.ToLower().Contains("mask"))
-                {
-                    int i = 0;
-                    while (swapModel.FaceACCMaterials.ContainsKey(i)) i++;
-                    swapModel.FaceACCMaterials.Add(i, value);
-                }
-                else if (material.ToLower().Contains("head") || material.ToLower().Contains("hair"))
-                {
-                    int i = 0;
-                    while (swapModel.HeadMaterials.ContainsKey(i)) i++;
-                    swapModel.HeadMaterials.Add(i, value);
-                }
-                else if (material.ToLower().Contains("body") || material.ToLower().Contains("bodies"))
-                {
-                    int i = 0;
-                    while (swapModel.BodyMaterials.ContainsKey(i)) i++;
-                    swapModel.BodyMaterials.Add(i, value);
-                }
-            }
-            
             if ((swapModel.HeadMesh.ToLower().Contains("ramirez")) &&
                 !swapModel.HeadMesh.ToLower().Contains("/parts/"))
             {
@@ -641,6 +733,8 @@ public class AddSkins
                 Icon = "img/Saturn.png"
             });
         }
+        
+        _lastID = skin.Id;
 
         return skin;
     }
