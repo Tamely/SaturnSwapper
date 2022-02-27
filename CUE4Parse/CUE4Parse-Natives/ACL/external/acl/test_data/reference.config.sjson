@@ -1,0 +1,19 @@
+// A version identifier, make sure to use the latest supported number
+//version = 1		// initial version
+version = 2		// cleanup with 2.0
+
+// The name of the algorithm to use. See function get_algorithm_type(..)
+// Required
+algorithm_name = "uniformly_sampled"
+
+// The rotation, translation, and scale formats to use. See functions get_rotation_format(..) and get_vector_format(..)
+// Defaults to raw: quatf_full and vector3f_full
+rotation_format = "quatf_full"
+translation_format = "vector3f_full"
+scale_format = "vector3f_full"
+
+// The error threshold used when performing regression testing
+// We will sample the clip at various positions and compare the raw and decompressed poses
+// and fail if the error is above or equal to this threshold
+// Defaults to '0.0'
+regression_error_threshold = 0.0
