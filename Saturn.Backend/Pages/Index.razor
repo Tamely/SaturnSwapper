@@ -165,7 +165,7 @@
                                     }
                                     else
                                     {
-                                        <h2>@item.Name</h2>
+                                        <h2 style="font-size: @(GetTextSize(item.Name, true))px">@item.Name</h2>
                                         switch (item.PrintColor)
                                         {
                                             case Colors.C_WHITE:
@@ -844,8 +844,8 @@
     {
         return isHeader switch
         {
-            true => text.Length * .03,
-            false => text.Length * .02
+            true => 40 / text.Length * 5,
+            false => text.Length * .0002
         };
     }
     
