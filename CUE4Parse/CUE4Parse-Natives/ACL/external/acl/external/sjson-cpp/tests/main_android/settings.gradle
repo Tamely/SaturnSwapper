@@ -1,2 +1,0 @@
-include ':app'
-rootProject.name='sjson-cpp Unit Tests'
