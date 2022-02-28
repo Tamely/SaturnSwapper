@@ -24,6 +24,7 @@ namespace Saturn.Backend.Data.Models.Items
         public Colors PrintColor { get; set; } = Colors.C_WHITE;
         public string? Status { get; set; } = null;
         public MeshDefaultModel SwapModel { get; set; }
+        public Dictionary<string, string> Swaps { get; set; }
     }
 
     public class SaturnOption

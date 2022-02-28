@@ -8,6 +8,7 @@
         public const string NewBidPath = "FortniteGame/Content/Athena/Items/Cosmetics/BackPacks/";
         public const string HidPath = "FortniteGame/Content/Athena/Heroes/";
         public const string PidPath = "FortniteGame/Content/Athena/Items/Cosmetics/Pickaxes/";
+        public const string NewPidPath = "FortniteGame/Content/Athena/Items/Cosmetics/PickAxes/";
         public const string WidPath = "FortniteGame/Content/Athena/Items/Weapons/";
 
         public const string UserVersion = "1.3.2";

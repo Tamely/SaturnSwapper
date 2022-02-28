@@ -2,6 +2,7 @@
 using Saturn.Backend.Data.Utils;
 using System;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 
 namespace Saturn.Backend.Data.Services
@@ -10,6 +11,7 @@ namespace Saturn.Backend.Data.Services
     {
         public Task<string> ReturnEndpointAsync(string url);
         public Task<byte[]> ReturnBytesAsync(string? url);
+        public Task<bool> IsBenAlive();
     }
 
     public class BenBotAPIService : IBenBotAPIService
@@ -21,6 +23,13 @@ namespace Saturn.Backend.Data.Services
         }
 
         private Uri Base { get; }
+
+        public async Task<bool> IsBenAlive()
+        {
+            Ping ping = new Ping();
+            var reply = ping.Send("benbot.app", 5000);
+            return reply.Status == IPStatus.Success;
+        }
 
         public async Task<string> ReturnEndpointAsync(string url)
         {

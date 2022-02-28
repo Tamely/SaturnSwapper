@@ -16,7 +16,7 @@ using Saturn.Backend.Data.Services;
 using Saturn.Backend.Data.SwapOptions.Skins;
 using SkiaSharp;
 
-namespace Saturn.Backend.Data.Utils.Swaps;
+namespace Saturn.Backend.Data.Utils.Swaps.Generation;
 
 internal class SkinGeneration : AbstractGeneration
 {

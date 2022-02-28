@@ -17,6 +17,7 @@ namespace Saturn.Backend.Data.Utils
         public static readonly string CachePath = BasePath + "/Cache/";
 
         public static readonly string SkinsCache = CachePath + "Skins.json";
+        public static readonly string PickaxeCache = CachePath + "Pickaxes.json";
 
         public static readonly string LogFile = LogPath + "Saturn.log";
 

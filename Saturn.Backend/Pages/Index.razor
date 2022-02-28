@@ -165,7 +165,7 @@
                                     }
                                     else
                                     {
-                                        <h2 style="font-size: @(GetTextSize(item.Name, true))px">@item.Name</h2>
+                                        <h2>@item.Name</h2>
                                         switch (item.PrintColor)
                                         {
                                             case Colors.C_WHITE:
@@ -704,7 +704,7 @@
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        AppDomain.CurrentDomain.UnhandledException += UnhandledException; // Catch unhandled exceptions
+        AppDomain.CurrentDomain.FirstChanceException += UnhandledException; // Catch unhandled exceptions
 
         if (!CheckForInternetConnection()) // Check for internet connection
             throw new WebException("No internet connection"); // Throw exception if no internet connection
@@ -754,7 +754,7 @@
     /// <summary>
     /// On an unhandled exception, this will log the exception and set the error state.
     /// </summary>
-    private void UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    private void UnhandledException(object sender, FirstChanceExceptionEventArgs e)
     {
         if (_halted) // If the app is already halted, don't do anything.
             return; // This is to prevent the app opening inf log tabs.
@@ -765,7 +765,7 @@
 
         var stackTrace = "\n" + e.ToString().Split("--- ")[0]; // Get the stack trace.
 
-        Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.
+        Logger.Log($"Unhandled exception occurred. {e.Exception.ToString().GetType().Name}: {e.Exception.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.
 
         Items = new List<Cosmetic>(); // Clear the items.
         saturnState = SaturnState.S_Error; // Set the state to error.
@@ -1372,57 +1372,16 @@
         saturnState = SaturnState.S_Items;
     }
     
+    /// <summary>
+    /// Generates, loads, and displays pickaxes on the screen.
+    /// </summary>
     private async Task GetSaturnPickaxes()
     {
-        saturnState = SaturnState.S_Loading;
-        Items = await _fortniteAPIService.GetSaturnPickaxes();
-
-        foreach (var item in Items.Where(item => !item.IsCloudAdded))
-        {
-            item.CosmeticOptions = new()
-            {
-                new SaturnItem
-                {
-                    ItemDefinition = "Pickaxe_ID_408_MastermindShadow",
-                    Name = "Mayhem Scythe",
-                    Description = "Mayhem is golden...",
-                    Icon =
-                        "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_408_mastermindshadow/smallicon.png",
-                    Rarity = "Rare"
-                },
-                new SaturnItem
-                {
-                    ItemDefinition = "Pickaxe_ID_541_StreetFashionEclipseFemale",
-                    Name = "Shadow Slicer",
-                    Description = "Not even the darkness is safe.",
-                    Icon =
-                        "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_541_streetfashioneclipsefemale/smallicon.png",
-                    Rarity = "Epic",
-                    Series = "ShadowSeries"
-                },
-                new SaturnItem
-                {
-                    ItemDefinition = "DefaultPickaxe",
-                    Name = "Default Pickaxe",
-                    Description = "Perfectly unremarkable.",
-                    Icon =
-                        "https://fortnite-api.com/images/cosmetics/br/defaultpickaxe/smallicon.png",
-                    Rarity = "Common"
-                },
-                new SaturnItem
-                {
-                    ItemDefinition = "Pickaxe_ID_713_GumballMale",
-                    Name = "Gum Brawler",
-                    Description = "Long-lasting sticky sledge action.",
-                    Icon =
-                        "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_713_gumballmale/smallicon.png",
-                    Rarity = "Rare"
-                }
-            };
-        }
-        BackupItems = new List<Cosmetic>(Items);
-        currentType = ItemType.IT_Pickaxe;
-        saturnState = SaturnState.S_Items;
+        saturnState = SaturnState.S_Loading; // Set the screens state to loading
+        Items = await _swapperService.GetSaturnPickaxes(); // Generates the list of pickaxes
+        BackupItems = new List<Cosmetic>(Items); // Creates a backup of the list (used for searching)
+        currentType = ItemType.IT_Pickaxe; // Sets the current type of item to pickaxe
+        saturnState = SaturnState.S_Items; // Sets the screens state to items
     }
 
     private async Task SwapLobbyBG()

@@ -30,6 +30,7 @@ using Colors = Saturn.Backend.Data.Enums.Colors;
 using Saturn.Backend.Data.SwapOptions.Backblings;
 using Saturn.Backend.Data.SwapOptions.Emotes;
 using Saturn.Backend.Data.Utils.Swaps;
+using Saturn.Backend.Data.Utils.Swaps.Generation;
 
 namespace Saturn.Backend.Data.Services;
 
@@ -38,7 +39,9 @@ public interface ISwapperService
     public Task<bool> Convert(Cosmetic item, SaturnItem option, ItemType itemType, bool isAuto = true, bool isRandom = false, Cosmetic random = null);
     public Task<bool> Revert(Cosmetic item, SaturnItem option, ItemType itemType);
     public Task<Dictionary<string, string>> GetCharacterPartsById(string id, Cosmetic? item = null);
+    public Task<UObject> GetWIDByID(string id);
     public Task<List<Cosmetic>> GetSaturnSkins();
+    public Task<List<Cosmetic>> GetSaturnPickaxes();
     public Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = true);
 }
 
@@ -111,6 +114,23 @@ public sealed class SwapperService : ISwapperService
         _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
 
         return skins;
+    }
+    
+    public async Task<List<Cosmetic>> GetSaturnPickaxes()
+    {
+        var pickaxes = new List<Cosmetic>();
+
+        AbstractGeneration Generation = new PickaxeGeneration(pickaxes, _provider, _configService, this);
+
+        pickaxes = await Generation.Generate();
+
+        Generation.WriteItems(pickaxes);
+
+        Trace.WriteLine($"Deserialized {pickaxes.Count} objects");
+
+        _discordRPCService.UpdatePresence($"Looking at {pickaxes.Count} different pickaxes");
+
+        return pickaxes;
     }
 
     public async Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = false)
@@ -630,75 +650,25 @@ public sealed class SwapperService : ISwapperService
         return output;
     }
 
-    public async Task<Dictionary<string, string>> GetAssetsFromWID(string wid)
+    /// <summary>
+    /// Gets the WID from the pickaxes ID
+    /// </summary>
+    /// <param name="id">The pickaxes ID</param>
+    /// <returns>UObject: The WID of the pickaxe specified in the arguments.</returns>
+    public async Task<UObject> GetWIDByID(string id)
     {
-        var output = new Dictionary<string, string>();
-
-        UObject? export = await _provider.TryLoadObjectAsync(wid);
-
-        Logger.Log("Getting WeaponMeshOverride");
-        export.TryGetValue(out FSoftObjectPath Mesh, "WeaponMeshOverride");
-        Logger.Log("Getting WeaponMaterialOverrides");
-        export.TryGetValue(out FSoftObjectPath[] Material, "WeaponMaterialOverrides");
-        Logger.Log("Getting SmallPreviewImage");
-        export.TryGetValue(out FSoftObjectPath SmallIcon, "SmallPreviewImage");
-        Logger.Log("Getting LargePreviewImage");
-        export.TryGetValue(out FSoftObjectPath LargeIcon, "LargePreviewImage");
-        Logger.Log("Getting IdleEffect");
-        export.TryGetValue(out FSoftObjectPath FX, "IdleEffect");
-        Logger.Log("Getting SwingFX");
-        export.TryGetValue(out FSoftObjectPath SwingFX, "SwingEffect");
-        Logger.Log("Getting Offhand SwingFX");
-        export.TryGetValue(out FSoftObjectPath OffhandSwingFX, "SwingEffectOffhandNiagara");
-        FPropertyTagType? ImpactCue = null;
-        if (export.TryGetValue(out UScriptMap ImpactPhysicalSurfaceSoundsMap, "ImpactPhysicalSurfaceSoundsMap"))
-            ImpactPhysicalSurfaceSoundsMap.Properties.TryGetValue(ImpactPhysicalSurfaceSoundsMap.Properties.Keys.First(), out ImpactCue);
-        FPropertyTagType? EquipCue = null;
-        if (export.TryGetValue(out UScriptMap ReloadSoundsMap, "ReloadSoundsMap"))
-            ReloadSoundsMap.Properties.TryGetValue(ReloadSoundsMap.Properties.Keys.First(), out EquipCue);
-        FPropertyTagType? SwingCue = null;
-        if (export.TryGetValue(out UScriptMap PrimaryFireSoundMap, "PrimaryFireSoundMap"))
-            PrimaryFireSoundMap.Properties.TryGetValue(PrimaryFireSoundMap.Properties.Keys.First(), out SwingCue);
-        Logger.Log("Getting WeaponActorClass");
-        export.TryGetValue(out FSoftObjectPath ActorClass, "WeaponActorClass");
-        Logger.Log("Getting AnimTrails");
-        export.TryGetValue(out FSoftObjectPath Trail, "AnimTrails");
-        export.TryGetValue(out FSoftObjectPath OffhandTrail, "AnimTrailsOffhand");
-        Logger.Log("Getting Rarity");
-        output.Add("Rarity", export.TryGetValue(out EFortRarity Rarity, "Rarity") 
-            ? ((int)Rarity).ToString() 
-            : "1");
-
-        Logger.Log("Getting Series");
-        string Series = "/";
-        if (export.TryGetValue(out UObject SeriesObject, "Series"))
-            Series = SeriesObject.GetPathName();
-
-        output.Add("Mesh", Mesh.AssetPathName.Text);
-        output.Add("Material", Material != null ? Material[0].AssetPathName.Text : "/");
-        output.Add("SmallIcon", SmallIcon.AssetPathName.Text);
-        output.Add("LargeIcon", LargeIcon.AssetPathName.Text);
-        output.Add("SwingFX", SwingFX.AssetPathName.Text);
-        output.Add("OffhandSwingFX", OffhandSwingFX.AssetPathName.Text);
-        output.Add("FX", FX.AssetPathName.Text);
-        output.Add("SwingCue", SwingCue != null ? ((FSoftObjectPath)SwingCue.GenericValue).AssetPathName.Text : "/");
-        output.Add("EquipCue", EquipCue != null ? ((FSoftObjectPath)EquipCue.GenericValue).AssetPathName.Text : "/");
-        output.Add("ImpactCue", ImpactCue != null ? ((FSoftObjectPath)ImpactCue.GenericValue).AssetPathName.Text : "/");
-        output.Add("ActorClass", ActorClass.AssetPathName.Text);
-        output.Add("Trail", Trail.AssetPathName.Text);
-        output.Add("OffhandTrail", OffhandTrail.AssetPathName.Text);
-        output.Add("Series", Series);
-
-        
-        foreach (var str in output)
+        UObject export = new UObject(); // Create a new UObject to hold the export
+        await Task.Run(() => // Run the following code on a separate thread because mappings hang on the main one
         {
-            if (String.IsNullOrEmpty(str.Value))
-                output[str.Key] = null;
-            
-            Logger.Log(str.Key + ": " + str.Value ?? "Null");
-        }
+            if (_provider.TryLoadObject(Constants.PidPath + id, out UObject PID))
+                PID.TryGetValue(out export, "WeaponDefinition"); // Get the WID from the PID
+            else if (_provider.TryLoadObject(Constants.NewPidPath + id, out PID))
 
-        return output;
+                PID.TryGetValue(out export, "WeaponDefinition"); // Get the WID from the PID
+
+        });
+
+        return export; // Return the WID
     }
 
     public async Task<Dictionary<string, string>> GetCharacterPartsById(string id, Cosmetic? item = null)
@@ -985,47 +955,21 @@ public sealed class SwapperService : ISwapperService
     private async Task<SaturnOption> GenerateMeshPickaxe(Cosmetic item, SaturnItem option)
     {
         Logger.Log($"Getting wid for {item.Name}");
-        var swaps = await GetAssetsFromWID(item.DefinitionPath);
-        
+
         Logger.Log("Generating swaps");
-        EFortRarity Rarity = (EFortRarity)int.Parse(swaps["Rarity"]);
+        EFortRarity Rarity = (EFortRarity)int.Parse(option.Swaps["Rarity"]);
         
         List<byte[]> SeriesBytes = new List<byte[]>();
 
-        if (swaps["FX"] == "None")
-            swaps["FX"] = "/";
-
-        switch (option.ItemDefinition)
+        switch (option.Name)
         {
-            case "DefaultPickaxe":
-                if (swaps["FX"] != "/" || swaps["Material"] != "/" || swaps["ActorClass"] != "/Game/Weapons/FORT_Melee/Blueprints/B_Athena_Pickaxe_Generic.B_Athena_Pickaxe_Generic_C")
-                    option.Status = "This item might not be perfect!";
+            case "Default Pickaxe":
                 break;
-            case "Pickaxe_ID_541_StreetFashionEclipseFemale":
-                if (swaps["FX"] != "/" || swaps["ActorClass"] != "/Game/Weapons/FORT_Melee/Blueprints/B_Athena_Pickaxe_Generic.B_Athena_Pickaxe_Generic_C")
-                    option.Status = "This item might not be perfect!";
-                if (swaps["Series"] != "/" && await _configService.TryGetShouldSeriesConvert())
+            default:
+                if (option.Swaps["Series"] != "/" && await _configService.TryGetShouldSeriesConvert())
                 {
                     Rarity = EFortRarity.Transcendent;
-                    SeriesBytes = await FileUtil.GetColorsFromSeries(swaps["Series"], _provider);
-                }
-                break;
-            case "Pickaxe_ID_408_MastermindShadow":
-                if (swaps["ActorClass"] != "/Game/Weapons/FORT_Melee/Blueprints/B_Athena_Pickaxe_Generic.B_Athena_Pickaxe_Generic_C")
-                    option.Status = "This item might not be perfect!";
-                if (swaps["Series"] != "/" && await _configService.TryGetShouldSeriesConvert())
-                {
-                    Rarity = EFortRarity.Transcendent;
-                    SeriesBytes = await FileUtil.GetColorsFromSeries(swaps["Series"], _provider);
-                }
-                break;
-            case "Pickaxe_ID_713_GumballMale":
-                if (swaps["ActorClass"] != "/Game/Weapons/FORT_Melee/Blueprints/Impact/B_Athena_Pickaxe_Sythe1H.B_Athena_Pickaxe_Sythe1H_C")
-                    option.Status = "This item might not be perfect!";
-                if (swaps["Series"] != "/" && await _configService.TryGetShouldSeriesConvert())
-                {
-                    Rarity = EFortRarity.Transcendent;
-                    SeriesBytes = await FileUtil.GetColorsFromSeries(swaps["Series"], _provider);
+                    SeriesBytes = await FileUtil.GetColorsFromSeries(option.Swaps["Series"], _provider);
                 }
                 break;
         }
@@ -1036,24 +980,24 @@ public sealed class SwapperService : ISwapperService
                                                     item.Name,
                                                     item.Rarity.Value,
                                                     item.Images.SmallIcon,
-                                                    swaps,
+                                                    option.Swaps,
                                                     Rarity).ToSaturnOption(),
             "DefaultPickaxe" => new DefaultPickaxeSwap(
                                     item.Name,
                                     item.Rarity.Value,
                                     item.Images.SmallIcon,
-                                    swaps).ToSaturnOption(),
+                                    option.Swaps).ToSaturnOption(),
             "Pickaxe_ID_541_StreetFashionEclipseFemale" => new ShadowSlicerSwap(
                                                                 item.Name,
                                                                 item.Rarity.Value,
                                                                 item.Images.SmallIcon,
-                                                                swaps,
+                                                                option.Swaps,
                                                                 Rarity).ToSaturnOption(),
             "Pickaxe_ID_713_GumballMale" => new GumBrawlerSwap(
                                                 item.Name,
                                                 item.Rarity.Value,
                                                 item.Images.SmallIcon,
-                                                swaps,
+                                                option.Swaps,
                                                 Rarity).ToSaturnOption(),
             _ => new SaturnOption()
             
@@ -1061,7 +1005,7 @@ public sealed class SwapperService : ISwapperService
 
         #region Default Pickaxe Rarity and Series Swaps
 
-                if (SeriesBytes != new List<byte[]>() && await _configService.TryGetShouldSeriesConvert() && option.ItemDefinition != "DefaultPickaxe")
+        if (SeriesBytes.Count > 0 && await _configService.TryGetShouldSeriesConvert() && option.ItemDefinition != "DefaultPickaxe")
         {
             output.Assets.Add(
                 new SaturnAsset()
@@ -1108,7 +1052,7 @@ public sealed class SwapperService : ISwapperService
                 }
             });
         }
-        else if (SeriesBytes != new List<byte[]>() && await _configService.TryGetShouldSeriesConvert() &&
+        else if (SeriesBytes.Count > 0 && await _configService.TryGetShouldSeriesConvert() &&
                  option.ItemDefinition == "DefaultPickaxe")
         {
             output.Assets.RemoveAll(x => x.ParentAsset == "FortniteGame/Content/Balance/RarityData");
