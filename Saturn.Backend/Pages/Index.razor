@@ -744,7 +744,7 @@
 
         await CheckForOldFiles(); // Check if there are old files
 
-        await DeleteGalaxySwapperBackups(); // Deletes backups from Pedo Swapper
+        await DeletePedoSwapperBackups(); // Deletes backups from Pedo Swapper
 
         await DeleteOtherBackups(); // Deletes backups from other swappers
 
@@ -889,7 +889,7 @@
     /// <summary>
     /// Checks if there are duped files from Galaxy Swapper
     /// </summary>
-    private async Task DeleteGalaxySwapperBackups()
+    private async Task DeletePedoSwapperBackups()
     {
         bool found = false; // Create a bool for if the backup has been found
         foreach (var dir in Directory.GetDirectories(FortniteUtil.PakPath)) // Foreach folder in the pak path
