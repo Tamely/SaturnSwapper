@@ -23,6 +23,7 @@
 @using Saturn.Backend.Data.Models.SaturnAPI
 @using Saturn.Backend.Data.Utils.ReadPlugins
 @using Colors = Saturn.Backend.Data.Enums.Colors
+@using System.Reflection
 @inherits LayoutComponentBase
 
 <body>
@@ -608,6 +609,13 @@
                             <p style="color:white">Removes all generated swaps from items</p>
                         </div>
                     </div>
+                    <div class="card" @onclick=@(async () => await Uninstall())>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2>Uninstall</h2>
+                            <p style="color:white">Uninstalls every asset related to Saturn.</p>
+                        </div>
+                    </div>
 
                 </div>
             }
@@ -655,6 +663,16 @@
     private SaturnState saturnState = SaturnState.S_Key;
 
     private SearchType searchType = SearchType.ST_Name;
+
+    internal async Task Uninstall()
+    {
+        await Task.Run(() =>
+        {
+            Process.Start("uninst.exe");
+            Process.GetCurrentProcess().Kill();
+        });
+
+    }
 
     /// <summary>
     /// Toggles if the item is picking styles or not/

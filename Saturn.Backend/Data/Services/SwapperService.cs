@@ -43,6 +43,7 @@ public interface ISwapperService
     public Task<List<Cosmetic>> GetSaturnSkins();
     public Task<List<Cosmetic>> GetSaturnPickaxes();
     public Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = true);
+    public DefaultFileProvider Provider { get; }
 }
 
 public sealed class SwapperService : ISwapperService
@@ -94,6 +95,7 @@ public sealed class SwapperService : ISwapperService
         Trace.WriteLine($"File provider initialized with {_provider.Keys.Count} keys");
     }
 
+    public DefaultFileProvider Provider { get => _provider; }
     private async void CreateMappings(IBenBotAPIService benBotApiService, 
                                       IFortniteAPIService fortniteAPIService, 
                                       IJSRuntime jsRuntime) =>
