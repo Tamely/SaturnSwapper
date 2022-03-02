@@ -666,8 +666,10 @@
 
     internal async Task Uninstall()
     {
-        await Task.Run(() =>
+        await Task.Run(async () =>
         {
+            await RemoveDupedFiles();
+
             Process.Start("uninst.exe");
             Process.GetCurrentProcess().Kill();
         });
