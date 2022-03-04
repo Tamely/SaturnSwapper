@@ -23,6 +23,7 @@
 @using Saturn.Backend.Data.Models.SaturnAPI
 @using Saturn.Backend.Data.Utils.ReadPlugins
 @using Colors = Saturn.Backend.Data.Enums.Colors
+@using System.Reflection
 @inherits LayoutComponentBase
 
 <body>
@@ -608,6 +609,13 @@
                             <p style="color:white">Removes all generated swaps from items</p>
                         </div>
                     </div>
+                    <div class="card" @onclick=@(async () => await Uninstall())>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2>Uninstall</h2>
+                            <p style="color:white">Uninstalls every asset related to Saturn.</p>
+                        </div>
+                    </div>
 
                 </div>
             }
@@ -655,6 +663,18 @@
     private SaturnState saturnState = SaturnState.S_Key;
 
     private SearchType searchType = SearchType.ST_Name;
+
+    internal async Task Uninstall()
+    {
+        await Task.Run(async () =>
+        {
+            await RemoveDupedFiles();
+
+            Process.Start("uninst.exe");
+            Process.GetCurrentProcess().Kill();
+        });
+
+    }
 
     /// <summary>
     /// Toggles if the item is picking styles or not/
@@ -744,7 +764,7 @@
 
         await CheckForOldFiles(); // Check if there are old files
 
-        await DeleteGalaxySwapperBackups(); // Deletes backups from Pedo Swapper
+        await DeletePedoSwapperBackups(); // Deletes backups from Pedo Swapper
 
         await DeleteOtherBackups(); // Deletes backups from other swappers
 
@@ -889,7 +909,7 @@
     /// <summary>
     /// Checks if there are duped files from Galaxy Swapper
     /// </summary>
-    private async Task DeleteGalaxySwapperBackups()
+    private async Task DeletePedoSwapperBackups()
     {
         bool found = false; // Create a bool for if the backup has been found
         foreach (var dir in Directory.GetDirectories(FortniteUtil.PakPath)) // Foreach folder in the pak path
