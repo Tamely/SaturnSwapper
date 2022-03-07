@@ -5,6 +5,8 @@ Most advanced Fortnite Skin Swapper to this date. UI made in HTML and Backend ma
 - [.NET 6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.0-windows-x64-installer)
 - [.NET 6 SDK (if you are building yourself)](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-6.0.101-windows-x64-installer)
 - [WebView2 Runtime (comes with Windows 11 and you need the x64 Evergreen Bootstrapper)](https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download-section)
+- [CMake (if you are building yourself)](https://github.com/Kitware/CMake/releases/download/v3.23.0-rc2/cmake-3.23.0-rc2-windows-x86_64.msi)
+- [Windows SDK (if you are building yourself)](https://go.microsoft.com/fwlink/?linkid=2173743)
 
 ## Usage
 <details>
