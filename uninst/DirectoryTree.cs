@@ -69,6 +69,8 @@ internal sealed class DirectoryTree
         return directories;
     }
 
+    // I don't know if this will be needed, so for now, it will just be here and not compile
+#if false
     public IEnumerable<SDirectory> GetNestedDirectories(string[] partialDirectories, int option = 0)
     {
         var dirs = GetNestedDirectories().ToList();
@@ -102,6 +104,7 @@ internal sealed class DirectoryTree
 
         return option == 0 ? dirs : targetDirs;
     }
+#endif
 
     public SDirectory GetNestedDirectory(string partialPath)
     {
