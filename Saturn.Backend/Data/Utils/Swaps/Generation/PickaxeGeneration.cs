@@ -82,7 +82,15 @@ internal class PickaxeGeneration : AbstractGeneration
                     pickaxe.Images.SmallIcon = "pickaxes/" + pickaxe.Id + ".png"; // Set the small icon to the pickaxe image
                 else // Otherwise
                 {
-                    if (asset.TryGetValue(out UTexture2D smallIcon, "SmallPreviewImage")) // If the small icon is readable
+                    UObject WID = await _swapperService.GetWIDByID(pickaxe.Id); // Gets the WID of the pickaxe from the ID
+
+                    if (WID == new UObject()) // Check if it was successful
+                    {
+                        Logger.Log("Cannot get the WID for " + pickaxe.Id); // Log the error
+                        continue; // Skip the pickaxe
+                    }
+                    
+                    if (WID.TryGetValue(out UTexture2D smallIcon, "SmallPreviewImage")) // If the small icon is readable
                     {
                         await using var ms = new MemoryStream(); // Create a new memory stream
                         smallIcon.Decode()?.Encode(ms, SKEncodedImageFormat.Png, 30); // Encode the small icon to the memory stream

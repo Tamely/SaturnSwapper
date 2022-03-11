@@ -56,6 +56,7 @@ namespace CUE4Parse.FileProvider
 
         private void RegisterFile(string file, Stream[] stream = null!)
         {
+            if (file.Name.Contains("Saturn")) return;
             var ext = file.SubstringAfterLast('.');
             if (ext.Equals("pak", StringComparison.OrdinalIgnoreCase))
             {

@@ -957,8 +957,6 @@ public sealed class SwapperService : ISwapperService
     
     private async Task<SaturnOption> GenerateMeshPickaxe(Cosmetic item, SaturnItem option)
     {
-        Logger.Log($"Getting wid for {item.Name}");
-
         Logger.Log("Generating swaps");
         EFortRarity Rarity = (EFortRarity)int.Parse(option.Swaps["Rarity"]);
         
@@ -971,6 +969,7 @@ public sealed class SwapperService : ISwapperService
             default:
                 if (option.Swaps["Series"] != "/" && await _configService.TryGetShouldSeriesConvert())
                 {
+                    Logger.Log(option.Swaps["Series"]);
                     Rarity = EFortRarity.Transcendent;
                     SeriesBytes = await FileUtil.GetColorsFromSeries(option.Swaps["Series"], _provider);
                 }
