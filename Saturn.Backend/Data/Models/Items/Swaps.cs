@@ -25,6 +25,7 @@ namespace Saturn.Backend.Data.Models.Items
         public string? Status { get; set; } = null;
         public MeshDefaultModel SwapModel { get; set; }
         public Dictionary<string, string> Swaps { get; set; }
+        public Dictionary<string, string> OGSwaps { get; set; }
     }
 
     public class SaturnOption

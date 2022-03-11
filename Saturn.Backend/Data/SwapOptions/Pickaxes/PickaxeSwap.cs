@@ -20,7 +20,7 @@ namespace Saturn.Backend.Data.SwapOptions.Pickaxes;
 internal abstract class PickaxeSwap : AbstractSwap
 {
     protected PickaxeSwap(string name, string rarity, string icon, Dictionary<string, string> swaps, EFortRarity rarityEnum)
-        : base(name, rarity, icon)
+        : base(name, rarity, icon, rarityEnum)
     {
         Swaps = swaps;
     }

@@ -2,7 +2,6 @@
 using Saturn.Backend.Data.Utils;
 using System;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 
 namespace Saturn.Backend.Data.Services
@@ -24,11 +23,16 @@ namespace Saturn.Backend.Data.Services
 
         private Uri Base { get; }
 
+        /// <summary>
+        /// Checks if benbots mappings are up
+        /// </summary>
+        /// <returns>Bool: true if they are up, false if they are down</returns>
         public async Task<bool> IsBenAlive()
         {
-            Ping ping = new Ping();
-            var reply = ping.Send("benbot.app", 5000);
-            return reply.Status == IPStatus.Success;
+            var request = WebRequest.Create("https://benbot.app/api/v1/mappings"); // Create a response to benbots mappings page
+            request.Timeout = 5000; // Set the timeout to 5 seconds
+            using var response = await request.GetResponseAsync(); // Get the response
+            return response.ContentLength > 5; // If the content length is less than 5, return false, otherwise return true
         }
 
         public async Task<string> ReturnEndpointAsync(string url)
