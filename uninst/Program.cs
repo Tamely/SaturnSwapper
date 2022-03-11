@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Uninstaller;
 
 public static class Program
 {
+    private static string _logPath; 
+
     public static void Main()
     {
         Uninstall().GetAwaiter().GetResult();
@@ -16,100 +19,137 @@ public static class Program
 
     private static async Task Uninstall()
     {
-        var currentAssemblyPath = AppDomain.CurrentDomain.BaseDirectory;
-        var dataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\Saturn\\";
-
-        var currentDirectctoryTree = await DirectoryTree.CreateDirectoryTreeAsync(currentAssemblyPath);
-        var plugins = currentDirectctoryTree.GetFiles(x => x.Path.Contains(".json") &&
-                                             x.FileContents.Contains("AssetPath")); // Gets all plugins. All plugin files should contain a part that says "Appdata"
-        foreach (var plugin in plugins)
+        try
         {
-            plugin.Delete();
+            var currentAssemblyPath = AppDomain.CurrentDomain.BaseDirectory;
+            _logPath = $"{currentAssemblyPath}\\uninst.log";
+            var dataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\Saturn\\";
+
+            var currentDirectctoryTree = await DirectoryTree.CreateDirectoryTreeAsync(currentAssemblyPath);
+            var plugins = currentDirectctoryTree.GetFiles(x => x.Path.Contains(".json") &&
+                                                 x.FileContents.Contains("AssetPath")); // Gets all plugins. All plugin files should contain a part that says "Appdata"
+            foreach (var plugin in plugins)
+            {
+                plugin.Delete();
+            }
+
+            var assemblyFileNames = new string[] { "uninst.exe", "uninst.dll" }; // Essentially the partial paths of the assembly.
+
+            var targetFiles = new string[] { "Saturn.exe", "oo2core_9_win64.dll", "uninst.r", "uninst.p", "uninst.deps" };
+            var targetDirectories = new string[] { "wwwroot", "Saturn.exe.WebView2" };
+
+            await DeleteDirectoryTree(currentDirectctoryTree, targetFiles, targetDirectories);
+
+            var adDirectoryTree = await DirectoryTree.CreateDirectoryTreeAsync(dataPath);
+            var adPlugins = adDirectoryTree.GetFiles(x => x.Path.Contains(".json") &&
+                                                     x.FileContents.Contains("AssetPath")); // Check if this directory contains any plugins
+
+            foreach (var plugin in adPlugins)
+            {
+                plugin.Delete();
+            }
+
+            await DeleteDirectoryTree(adDirectoryTree, null, null);
+
+            var assemblyFiles = new List<SFile>();
+            foreach (var name in assemblyFileNames)
+            {
+                assemblyFiles.Add(currentDirectctoryTree.GetFile(name)); // Get the current assembly, and it's executing parent
+            }
+
+            // This command force deletes this assembly.
+            var command = "/C choice /C Y /N /D Y /T 3 & Del ";
+            foreach (var file in assemblyFiles)
+            {
+                Process.Start("cmd.exe", command + file.Path);
+            }
         }
-
-        var assemblyFileNames = new string[] { "uninst.exe", "uninst.dll" }; // Essentially the partial paths of the assembly.
-
-        var targetFiles = new string[] { "Saturn.exe", "oo2core_9_win64.dll", "uninst.r", "uninst.p", "uninst.deps" };
-        var targetDirectories = new string[] { "wwwroot", "Saturn.exe.WebView2" };
-
-        await DeleteDirectoryTree(currentDirectctoryTree, targetFiles, targetDirectories);
-
-        var adDirectoryTree = await DirectoryTree.CreateDirectoryTreeAsync(dataPath);
-        var adPlugins = adDirectoryTree.GetFiles(x => x.Path.Contains(".json") &&
-                                                 x.FileContents.Contains("AssetPath")); // Check if this directory contains any plugins
-
-        foreach (var plugin in adPlugins)
+        catch (Exception)
         {
-            plugin.Delete();
-        }
-
-        await DeleteDirectoryTree(adDirectoryTree, null, null);
-        
-        var assemblyFiles = new List<SFile>();
-        foreach (var name in assemblyFileNames)
-        {
-            assemblyFiles.Add(currentDirectctoryTree.GetFile(name)); // Get the current assembly, and it's executing parent
-        }
-
-        // This command force deletes this assembly.
-        var command = "/C choice /C Y /N /D Y /T 3 & Del ";
-        foreach (var file in assemblyFiles)
-        {
-            Process.Start("cmd.exe", command + file.Path);
+            return;
         }
     }
 
     private static async Task DeleteDirectoryTree(DirectoryTree tree, string[] partialFilePaths, string[] partialDirectoryPaths)
     {
-        if (!Directory.Exists(tree.BaseDirectory.Path))
+        try
         {
-            return;
-        }
-
-        var files = tree.GetFiles(partialFilePaths, 1).ToList();
-        if (partialDirectoryPaths is not null)
-        {
-            foreach (var directory in partialDirectoryPaths)
+            if (!Directory.Exists(tree.BaseDirectory.Path))
             {
-                var path = tree.GetNestedDirectory(directory).Path;
-                if (!Directory.Exists(path))
+                return;
+            }
+
+            var files = tree.GetFiles(partialFilePaths, 1).ToList();
+            if (partialDirectoryPaths is not null)
+            {
+                foreach (var directory in partialDirectoryPaths)
                 {
-                    continue;
+                    var path = tree.GetNestedDirectory(directory).Path;
+                    if (!Directory.Exists(path))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        var dTree = await DirectoryTree.CreateDirectoryTreeAsync(tree.GetNestedDirectory(directory).Path);
+                        files.AddRange(dTree.GetFiles());
+                    }
                 }
-                else
+            }
+
+            foreach (var file in files)
+            {
+                file.Delete();
+            }
+
+            if (partialDirectoryPaths is not null)
+            {
+                foreach (var directory in partialDirectoryPaths)
                 {
-                    var dTree = await DirectoryTree.CreateDirectoryTreeAsync(tree.GetNestedDirectory(directory).Path);
-                    files.AddRange(dTree.GetFiles());
+                    var path = tree.GetNestedDirectory(directory).Path;
+                    if (!Directory.Exists(path))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        tree.GetNestedDirectory(directory).Delete();
+                    }
+                }
+            }
+            else
+            {
+                foreach (var child in tree.BaseDirectory.Children)
+                {
+                    child.Delete();
                 }
             }
         }
-
-        foreach (var file in files)
+        catch (Exception ex)
         {
-            file.Delete();
-        }
-
-        if (partialDirectoryPaths is not null)
-        {
-            foreach (var directory in partialDirectoryPaths)
+            FileStream fs;
+            if (!File.Exists(_logPath))
             {
-                var path = tree.GetNestedDirectory(directory).Path;
-                if (!Directory.Exists(path))
-                {
-                    continue;
-                }
-                else
-                {
-                    tree.GetNestedDirectory(directory).Delete();
-                }
+                fs = File.Create(_logPath);
             }
-        }
-        else
-        {
-            foreach (var child in tree.BaseDirectory.Children)
+            else
             {
-                child.Delete();
+                fs = File.OpenRead(_logPath);
+            }
+
+            try
+            {
+                await fs.WriteAsync(Encoding.ASCII.GetBytes(ex.ToString()));
+            }
+            finally
+            {
+                if (fs != null)
+                {
+                    ((IDisposable)fs).Dispose();
+                }
             }
         }
     }
+
+    
 }

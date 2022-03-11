@@ -426,7 +426,8 @@ public sealed class SwapperService : ISwapperService
             Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
 
             if (await _configService.GetConvertedFileCount() > 2)
-                _jsRuntime.InvokeVoidAsync("MessageBox", "You might want to revert the last item you swapped!", "If you go ingame with your currently swapped items, you will be kicked from Fortnite.", "warning");
+                // Don't know why this wasn't awaited
+                await _jsRuntime.InvokeVoidAsync("MessageBox", "You might want to revert the last item you swapped!", "If you go ingame with your currently swapped items, you will be kicked from Fortnite.", "warning");
 
 
             return true;
