@@ -18,24 +18,29 @@ using SkiaSharp;
 
 namespace Saturn.Backend.Data.Utils.Swaps.Generation;
 
-internal class SkinGeneration : AbstractGeneration
+internal sealed class SkinGeneration : AbstractGeneration
 {
+    private List<Cosmetic> _skins { get; set; }
+    private DefaultFileProvider _provider { get; set; }
+    private IConfigService _configService { get; set; }
+    private ISwapperService _swapperService { get; set; }
+
     /// <summary>
     /// The constructor for the skin generation class which helps with methods to generate skins.
     /// </summary>
     /// <param name="skins">The list of skins (should be empty if you are just generating) that we will be adding to</param>
-    /// <param name="_provider">The default file provider from CUE4Parse</param>
-    /// <param name="_configService">The config service from the MainWindow class in Saturn.Client</param>
-    /// <param name="_swapperService">The swapper service class which calls this class</param>
+    /// <param name="provider">The default file provider from CUE4Parse</param>
+    /// <param name="configService">The config service from the MainWindow class in Saturn.Client</param>
+    /// <param name="swapperService">The swapper service class which calls this class</param>
     public SkinGeneration(List<Cosmetic> skins, 
-                            DefaultFileProvider _provider, 
-                            IConfigService _configService, 
-                            ISwapperService _swapperService) : base(ItemType.IT_Skin)
+                            DefaultFileProvider provider, 
+                            IConfigService configService, 
+                            ISwapperService swapperService) : base(ItemType.IT_Skin)
     {
-        this.skins = skins; // Set the skins list
-        this._provider = _provider; // Set the file provider
-        this._configService = _configService; // Set the config service
-        this._swapperService = _swapperService; // Set the swapper service
+        _skins = skins; // Set the skins list
+        _provider = provider; // Set the file provider
+        _configService = configService; // Set the config service
+        _swapperService = swapperService; // Set the swapper service
     }
 
     /// <summary>
@@ -47,7 +52,7 @@ internal class SkinGeneration : AbstractGeneration
         bool shouldShowStyles = await _configService.TryGetShouldShowStyles(); // Get the config value for showing styles
 
         if (File.Exists(Config.SkinsCache)) // If the cache file exists
-                skins = JsonConvert.DeserializeObject<List<Cosmetic>>(await File.ReadAllTextAsync(Config.SkinsCache)); // Deserialize the cache file
+                _skins = JsonConvert.DeserializeObject<List<Cosmetic>>(await File.ReadAllTextAsync(Config.SkinsCache)); // Deserialize the cache file
 
         foreach (var (assetPath, _) in _provider.Files) // For every file in Fortnite
         {
@@ -55,7 +60,7 @@ internal class SkinGeneration : AbstractGeneration
                 
             // doing a foreach instead of LINQ because LINQ is fucking stupid and slow
             bool any = false; // Set the any variable to false because we will need to check if the skin was already added
-            foreach (var x in skins) // For every skin in the skins list from the cache file
+            foreach (var x in _skins) // For every skin in the skins list from the cache file
             {
                 if (x.Id != FileUtil.SubstringFromLast(assetPath, '/').Split('.')[0]) continue; // If the skin id is not the same as the file name, skip it
                 any = true; // Set the any variable to true because the skin was already added
@@ -117,7 +122,6 @@ internal class SkinGeneration : AbstractGeneration
                             Logger.Log("Cannot parse the small icon for " + skin.Id); // Log the error
                             continue; // Skip the skin
                         }
-
                     }
                     else // Otherwise
                     {
@@ -193,34 +197,27 @@ internal class SkinGeneration : AbstractGeneration
                 }
                     
                 foreach (var value in CosmeticsToInsert) // For each cosmetic to insert
-                    skins.Add(await new AddSkins().AddSkinOptions(value, _swapperService, _provider)); // Add the cosmetic to the skins list
+                    _skins.Add(await new AddSkins().AddSkinOptions(value, _swapperService, _provider)); // Add the cosmetic to the skins list
 
-                skins.Add(await new AddSkins().AddSkinOptions(skin, _swapperService, _provider));  // Add the skin to the skins list
+                _skins.Add(await new AddSkins().AddSkinOptions(skin, _swapperService, _provider));  // Add the skin to the skins list
             }
             else // Otherwise
                 Logger.Log($"Failed to load {assetPath}"); // Log that the asset failed to load
             
-            skins = skins.OrderBy(x => x.Id).ToList(); // sort skins by alphabetical order
+            _skins = _skins.OrderBy(x => x.Id).ToList(); // sort skins by alphabetical order
 
             // Remove items from the array that are duplicates
-            for (var i = 0; i < skins.Count; i++) // For every item in the skins list
-            for (var j = i + 1; j < skins.Count; j++) // We want to loop through the skins list again to get each skin compared to each skin
+            for (var i = 0; i < _skins.Count; i++) // For every item in the skins list
+            for (var j = i + 1; j < _skins.Count; j++) // We want to loop through the skins list again to get each skin compared to each skin
             {
-                if (skins[i].Name != skins[j].Name ||  // If the skins names are not the same
-                    skins[i].Images.SmallIcon != skins[j].Images.SmallIcon || // If the small icons are not the same
-                    skins[i].Description != skins[j].Description) continue; // If the descriptions are not the same, skip them
-                skins.RemoveAt(j); // Remove the duplicate skin
+                if (_skins[i].Name != _skins[j].Name ||  // If the skins names are not the same
+                    _skins[i].Images.SmallIcon != _skins[j].Images.SmallIcon || // If the small icons are not the same
+                    _skins[i].Description != _skins[j].Description) continue; // If the descriptions are not the same, skip them
+                _skins.RemoveAt(j); // Remove the duplicate skin
                 j--; // Decrement the j value to fix the list
             }
         }
 
-        return skins; // Return the skins list
+        return _skins; // Return the skins list
     }
-    
-    private List<Cosmetic> skins { get; set; }
-    private DefaultFileProvider _provider { get; set; }
-    private IConfigService _configService { get; set; }
-    private ISwapperService _swapperService { get; set; }
-    
-    
 }

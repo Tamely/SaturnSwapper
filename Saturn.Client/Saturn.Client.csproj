@@ -42,6 +42,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Saturn.Backend\Saturn.Backend.csproj" />
+        <ProjectReference Include="..\uninst\uninst.csproj" />
     </ItemGroup>
 
     <ItemGroup>
