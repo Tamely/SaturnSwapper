@@ -57,7 +57,22 @@ public class DotSaturn
                 }
                 catch
                 {
-                    Logger.Log($"Plugin \"{Path.GetFileName(filePath)}\" is not a valid type!", LogLevel.Error);
+                    Logger.Log("There was an error parsing plugin file! Name: " + Path.GetFileName(filePath), LogLevel.Error);
+                    return new Cosmetic()
+                    {
+                        Name = "Error",
+                        Id = "BROKEN",
+                        Description = $"There was an error parsing {Path.GetFileNameWithoutExtension(filePath)}! Report this to Tamely!",
+                        Rarity = new Rarity()
+                        {
+                            Value = "Epic"
+                        },
+                        Images = new Images()
+                        {
+                            SmallIcon =
+                                "https://fortnite-api.com/images/cosmetics/br/bid_npc_hightowerdate/smallicon.png"
+                        }
+                    };
                 }
 
             }
@@ -86,7 +101,7 @@ public class DotSaturn
             {
                 Name = plugin.Name.ToLower().Split(" to ")[0].CapitalizeFirstLetter(),
                 ItemDefinition = plugin.Name,
-                Description = "Plugin option",
+                Description = plugin.Message ?? "No message provided.",
                 Icon = plugin.SwapIcon,
                 Type = ItemType.IT_Misc,
                 Rarity = "Epic",
@@ -186,6 +201,7 @@ public class DotSaturn
                 message = (lelePlugin.Messages[0].localization.Find(e => e.languageId.ToLower() == "en") ?? lelePlugin.Messages[0].localization[0]).message;
             }
         }
+        
         var pluginModel = new PluginModel
         {
             Name = lelePlugin.DefaultName + " to " + lelePlugin.SwappedName,
