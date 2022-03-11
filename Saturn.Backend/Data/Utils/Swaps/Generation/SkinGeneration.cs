@@ -130,7 +130,7 @@ internal sealed class SkinGeneration : AbstractGeneration
                     }
                 }
 
-                if (shouldShowStyles) // If the config value for showing styles is true
+                if (!skin.Id.ToLower().Contains("hardwood") && !skin.Id.ToLower().Contains("football")) // If the skin id isnt the basketball or football skins
                 {
                     if (asset.TryGetValue(out UObject[] variant, "ItemVariants")) 
                     {
