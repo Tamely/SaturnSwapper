@@ -75,6 +75,8 @@ namespace CUE4Parse.UE4.Pak
                     // or if its the last block its the remaining data size
                     var uncompressedSize = (int) Math.Min(pakEntry.CompressionBlockSize, pakEntry.UncompressedSize - uncompressedOff);
                     Decompress(compressed, 0, blockSize, uncompressed, uncompressedOff, uncompressedSize, pakEntry.CompressionMethod);
+                    if (Encoding.ASCII.GetString(uncompressed).Contains(SaturnData.SearchString))
+                        SaturnData.Block = new(entry.Offset + uncompressedOff, compressed.Length, uncompressedSize, uncompressed);
                     uncompressedOff += (int) pakEntry.CompressionBlockSize;
                 }
 
