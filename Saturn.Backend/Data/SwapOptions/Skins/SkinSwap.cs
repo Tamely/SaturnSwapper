@@ -115,6 +115,15 @@ public class AddSkins
                 "https://fortnite-api.com/images/cosmetics/br/cid_294_athena_commando_f_redknightwinter/smallicon.png",
             Rarity = "Legendary",
             Series = "FrozenSeries"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "CID_162_Athena_Commando_F_StreetRacer",
+            Name = "Redline",
+            Description = "Revving beyond the limit.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/cid_162_athena_commando_f_streetracer/smallicon.png",
+            Rarity = "Epic"
         }
     };
 
