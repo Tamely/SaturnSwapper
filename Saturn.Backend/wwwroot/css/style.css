@@ -468,20 +468,18 @@ main {
 
 
 .card-info h2 {
-    padding-left: 10px;
-    position: relative;
+    position: absolute;
     margin-top: -17%;
-    margin-left: 20%;
+    margin-left: 21%;
     padding-right: 10px;
 }
 
 .card-info p {
     font-family: "Manrope Regular", sans-serif;
     font-size: 11px;
-    padding-left: 10px;
-    position: relative;
-    margin-top: -5.5%;
-    margin-left: 20%;
+    position: absolute;
+    margin-top: -8.5%;
+    margin-left: 21%;
 }
 
 @font-face {
