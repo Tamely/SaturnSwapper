@@ -11,6 +11,7 @@ using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
 using Saturn.Backend.Data.Services;
+using Saturn.Backend.Data.Utils;
 
 namespace Saturn.Backend.Data.SwapOptions.Backblings;
 
@@ -34,8 +35,19 @@ public class AddBackblings
         
         UObject export = await _provider.TryLoadObjectAsync(cp.Split('.')[0]) ?? new UObject();
 
+        string Material = "/";
+
         export.TryGetValue(out FSoftObjectPath Mesh, "SkeletalMesh");
-        export.TryGetValue(out FSoftObjectPath[] Material, "MaterialOverrides");
+        if (export.TryGetValue(out FStructFallback[] MaterialOverrides, "MaterialOverrides"))
+            foreach (var (material, matIndex) in from materialOverride in MaterialOverrides
+                     let material = materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName
+                         .ToString()
+                     let matIndex = materialOverride.Get<int>("MaterialOverrideIndex")
+                     select (material, matIndex))
+                {
+                    if (matIndex == 0)
+                        Material = material;
+                }
         export.TryGetValue(out FSoftObjectPath FX, "IdleEffect");
         export.TryGetValue(out FSoftObjectPath NiagaraFX, "IdleEffectNiagara");
         export.TryGetValue(out FSoftObjectPath PartModifierBP, "PartModifierBlueprint");
@@ -53,7 +65,7 @@ public class AddBackblings
         }
 
         output.Add("Mesh", string.IsNullOrWhiteSpace(Mesh.AssetPathName.Text) || Mesh.AssetPathName.Text == "None" ? "/" : Mesh.AssetPathName.Text);
-        output.Add("Material", Material == null || Material[0].AssetPathName.Text == "None" ? "/" : Material[0].AssetPathName.Text);
+        output.Add("Material", Material);
         
         output.Add("FX", string.IsNullOrWhiteSpace(FX.AssetPathName.Text) || FX.AssetPathName.Text == "None" ? "/" : FX.AssetPathName.Text);
         output.Add("NFX", string.IsNullOrWhiteSpace(NiagaraFX.AssetPathName.Text) || NiagaraFX.AssetPathName.Text == "None" ? "/" : NiagaraFX.AssetPathName.Text);
