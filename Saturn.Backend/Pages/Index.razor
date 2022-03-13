@@ -245,8 +245,8 @@
                                         <div class="card-info">
                                             @if (option.IsConverted)
                                             {
-                                                <h2 style="color: green;">@option.Name</h2>
-                                                <p style="color: green;">@option.Description</p>
+                                                <h2 style="color: green; font-size: @GetTextSize(option.Name);">@option.Name</h2>
+                                                <p style="color: green; font-size: @GetTextSize(option.Description);">@option.Description</p>
                                             }
                                             else
                                             {
@@ -254,16 +254,16 @@
                                                 switch (option.PrintColor)
                                                 {
                                                     case Colors.C_WHITE:
-                                                        <p style="color:white">@option.Description</p>
+                                                        <p style="color:white; font-size: @GetTextSize(option.Description);">@option.Description</p>
                                                         break;
                                                     case Colors.C_YELLOW:
-                                                        <p style="color:yellow">@option.Description</p>
+                                                        <p style="color:yellow; font-size: @GetTextSize(option.Description);">@option.Description</p>
                                                         break;
                                                     case Colors.C_RED:
-                                                        <p style="color:red">@option.Description</p>
+                                                        <p style="color:red; font-size: @GetTextSize(option.Description);">@option.Description</p>
                                                         break;
                                                     case Colors.C_GREEN:
-                                                        <p style="color:green">@option.Description</p>
+                                                        <p style="color:green; font-size: @GetTextSize(option.Description);">@option.Description</p>
                                                         break;
 
                                                 }
@@ -327,8 +327,8 @@
                                 <div class="card-info">
                                     @if (item.IsConverted)
                                     {
-                                        <h2 style="color: green;">@item.Name</h2>
-                                        <p style="color: green;">@item.Description</p>
+                                        <h2 style="color: green; font-size: @GetTextSize(item.Name);">@item.Name</h2>
+                                        <p style="color: green; font-size: @GetTextSize(item.Description);">@item.Description</p>
                                     }
                                     else
                                     {
@@ -336,16 +336,16 @@
                                         switch (item.PrintColor)
                                         {
                                             case Colors.C_WHITE:
-                                                <p style="color:white">@item.Description</p>
+                                                <p style="color:white; font-size: @GetTextSize(item.Description);">@item.Description</p>
                                                 break;
                                             case Colors.C_YELLOW:
-                                                <p style="color:yellow">@item.Description</p>
+                                                <p style="color:yellow; font-size: @GetTextSize(item.Description);">@item.Description</p>
                                                 break;
                                             case Colors.C_RED:
-                                                <p style="color:red">@item.Description</p>
+                                                <p style="color:red; font-size: @GetTextSize(item.Description);">@item.Description</p>
                                                 break;
                                             case Colors.C_GREEN:
-                                                <p style="color:green">@item.Description</p>
+                                                <p style="color:green; font-size: @GetTextSize(item.Description);">@item.Description</p>
                                                 break;
                                         }
                                     }
@@ -375,8 +375,8 @@
                                 <div class="card-info">
                                     @if (item.IsConverted)
                                     {
-                                        <h2 style="color: green;">@item.Name</h2>
-                                        <p style="color: green;">@item.Description</p>
+                                        <h2 style="color: green; font-size: @GetTextSize(item.Name);">@item.Name</h2>
+                                        <p style="color: green; font-size: @GetTextSize(item.Description);">@item.Description</p>
                                     }
                                     else
                                     {
@@ -384,16 +384,16 @@
                                         switch (item.PrintColor)
                                         {
                                             case Colors.C_WHITE:
-                                                <p style="color:white">@item.Description</p>
+                                                <p style="color:white; font-size: @GetTextSize(item.Description);">@item.Description</p>
                                                 break;
                                             case Colors.C_YELLOW:
-                                                <p style="color:yellow">@item.Description</p>
+                                                <p style="color:yellow"; font-size: @GetTextSize(item.Description);>@item.Description</p>
                                                 break;
                                             case Colors.C_RED:
-                                                <p style="color:red">@item.Description</p>
+                                                <p style="color:red; font-size: @GetTextSize(item.Description);">@item.Description</p>
                                                 break;
                                             case Colors.C_GREEN:
-                                                <p style="color:green">@item.Description</p>
+                                                <p style="color:green; font-size: @GetTextSize(item.Description);">@item.Description</p>
                                                 break;
                                         }
                                     }
@@ -415,8 +415,8 @@
                                         <div class="card-info">
                                             @if (option.IsConverted)
                                             {
-                                                <h2 style="color: green;">@option.Name</h2>
-                                                <p style="color: green;">@option.Description</p>
+                                                <h2 style="color: green; font-size: @GetTextSize(option.Name);">@option.Name</h2>
+                                                <p style="color: green; font-size: @GetTextSize(option.Description);">@option.Description</p>
                                             }
                                             else
                                             {
@@ -424,16 +424,16 @@
                                                 switch (option.PrintColor)
                                                 {
                                                     case Colors.C_WHITE:
-                                                        <p style="color:white">@option.Description</p>
+                                                        <p style="color:white; font-size: @GetTextSize(option.Description);">@option.Description</p>
                                                         break;
                                                     case Colors.C_YELLOW:
-                                                        <p style="color:yellow">@option.Description</p>
+                                                        <p style="color:yellow; font-size: @GetTextSize(option.Description);">@option.Description</p>
                                                         break;
                                                     case Colors.C_RED:
-                                                        <p style="color:red">@option.Description</p>
+                                                        <p style="color:red; font-size: @GetTextSize(option.Description);">@option.Description</p>
                                                         break;
                                                     case Colors.C_GREEN:
-                                                        <p style="color:green">@option.Description</p>
+                                                        <p style="color:green; font-size: @GetTextSize(option.Description);">@option.Description</p>
                                                         break;
 
                                                 }
