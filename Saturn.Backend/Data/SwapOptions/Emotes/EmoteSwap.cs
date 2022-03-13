@@ -36,12 +36,14 @@ public class AddEmotes
         EID.TryGetValue(out FSoftObjectPath LargePreviewImage, "LargePreviewImage");
         EID.TryGetValue(out FSoftObjectPath SmallPreviewImage, "SmallPreviewImage");
         EID.TryGetValue(out float PreviewLength, "PreviewLength");
+        EID.TryGetValue(out bool bMovingEmote, "bMovingEmote");
         
         output.Add("CMM", string.IsNullOrWhiteSpace(CMM.AssetPathName.Text) || CMM.AssetPathName.Text == "None" ? "/" : CMM.AssetPathName.Text);
         output.Add("CMF", string.IsNullOrWhiteSpace(CMF.AssetPathName.Text) || CMF.AssetPathName.Text == "None" ? output["CMM"] : CMF.AssetPathName.Text);
         output.Add("LargeIcon", string.IsNullOrWhiteSpace(LargePreviewImage.AssetPathName.Text) || LargePreviewImage.AssetPathName.Text == "None" ? "/" : LargePreviewImage.AssetPathName.Text);
         output.Add("SmallIcon", string.IsNullOrWhiteSpace(SmallPreviewImage.AssetPathName.Text) || SmallPreviewImage.AssetPathName.Text == "None" ? "/" : SmallPreviewImage.AssetPathName.Text);
         output.Add("PreviewLength", PreviewLength.ToString());
+        output.Add("bMovingEmote", bMovingEmote.ToString());
 
         return output;
     }
@@ -65,7 +67,97 @@ public class AddEmotes
             Icon = 
                 "https://fortnite-api.com/images/cosmetics/br/eid_boogiedown/smallicon.png",
             Rarity = "Epic"
-        }
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "EID_Laugh",
+            Name = "Laugh It Up",
+            Description = "What's so funny?", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/eid_laugh/smallicon.png",
+            Rarity = "Rare"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "EID_Saucer",
+            Name = "Lil' Saucer",
+            Description = "Close encounters of the lil' kind.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/eid_saucer/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "EID_Believer",
+            Name = "Ska-stra-terrestrial",
+            Description = "The invasion's fourth wave begins now!", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/eid_believer/smallicon.png",
+            Rarity = "Rare"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "EID_Custodial",
+            Name = "Clean Sweep",
+            Description = "Tidy as you go.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/eid_custodial/smallicon.png",
+            Rarity = "Uncommon"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "EID_Roving",
+            Name = "Lil' Rover",
+            Description = "Onward to lil' discoveries.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/eid_roving/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "EID_WatchThis",
+            Name = "Ready When You Are",
+            Description = "No go on. Take your time. I'll wait.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/eid_watchthis/smallicon.png",
+            Rarity = "Uncommon"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "EID_Division",
+            Name = "Nailed it",
+            Description = "I can only feign interest for so long.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/eid_division/smallicon.png",
+            Rarity = "Uncommon"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "EID_HighActivity",
+            Name = "Kick Back",
+            Description = "No sweat.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/eid_highactivity/smallicon.png",
+            Rarity = "Rare"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "EID_Terminal",
+            Name = "Vulcan Salute",
+            Description = "Live long and prosper.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/eid_terminal/smallicon.png",
+            Rarity = "Uncommon"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "EID_WIR",
+            Name = "Hot Marat",
+            Description = "Wreck the dance floor.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/eid_wir/smallicon.png",
+            Rarity = "Rare"
+        },
     };
     public async Task<Cosmetic> AddEmoteOptions(Cosmetic emote, ISwapperService swapperService,
         DefaultFileProvider _provider)
@@ -85,6 +177,13 @@ public class AddEmotes
             {
                 if (key == "PreviewLength")
                     if (float.Parse(value) > 1 && float.Parse(OGSwaps[key]) < 1)
+                    {
+                        bDontProceed = true;
+                        break;
+                    }
+                
+                if (key == "bMovingEmote")
+                    if (value.ToLower() == "true" && OGSwaps[key].ToLower() == "false")
                     {
                         bDontProceed = true;
                         break;

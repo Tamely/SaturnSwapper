@@ -131,7 +131,6 @@ public class AddSkins
     private Dictionary<string, FSkeletalMaterial[]> _lastMaterials = new Dictionary<string, FSkeletalMaterial[]>();
     public async Task<Cosmetic> AddSkinOptions(Cosmetic skin, ISwapperService swapperService, DefaultFileProvider _provider)
     {
-        Logger.Log(skin.Name);
         var characterParts = await Task.Run(() => swapperService.GetCharacterPartsById(skin.Id, skin));
 
         if (characterParts == new Dictionary<string, string>())

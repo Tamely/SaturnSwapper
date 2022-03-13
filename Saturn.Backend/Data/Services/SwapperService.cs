@@ -593,140 +593,6 @@ public sealed class SwapperService : ISwapperService
         }
     }
 
-    public async Task<Dictionary<string, string>> GetEmoteDataByItem(Cosmetic item)
-    {
-        Dictionary<string, string> data = new();
-
-        var strs = await FileUtil.GetStringsFromAsset(Constants.EidPath + item.Id, _provider);
-
-        string cmf = "";
-        string cmm = "";
-        string sIcon = "";
-        string lIcon = "";
-
-        foreach (var str in strs)
-        {
-            if (str.ToLower().Contains("cmf") && str.ToLower().Contains("animation"))
-                if (str.Contains('.'))
-                    cmf = str;
-            if (str.ToLower().Contains("cmm") && str.ToLower().Contains("animation"))
-                if (str.Contains('.'))
-                    cmm = str;
-            if (str.ToLower().Contains("icon"))
-                if (str.Contains('.') && !str.ToLower().Contains("-l"))
-                    sIcon = str;
-            if (str.ToLower().Contains("icon"))
-                if (str.Contains('.') && str.ToLower().Contains("-l"))
-                    lIcon = str;
-        }
-
-        if (cmm == "")
-            cmm = strs.FirstOrDefault(x => x.StartsWith("/Game/Animation/Game/MainPlayer/"));
-
-        data.Add("CMF", cmf);
-        data.Add("CMM", cmm);
-        data.Add("SmallIcon", sIcon);
-        data.Add("LargeIcon", lIcon);
-
-        data.Add("Name", item.Name);
-        data.Add("Description", item.Description);
-
-        if (data["CMF"] == "")
-        {
-            data.Remove("CMF");
-            data.Add("CMF", data["CMM"]);
-        }
-
-        if (data["LargeIcon"] != "") return data;
-        data.Remove("LargeIcon");
-        data.Add("LargeIcon", data["SmallIcon"]);
-
-        return data;
-    }
-    
-    public async Task<string> GetBackblingCharacterPart(Cosmetic item)
-    {
-        string characterPart = "";
-        await Task.Run(() =>
-        {
-            if (_provider.TryLoadObject(Constants.BidPath + item.Id, out var BID))
-            {
-                BID.TryGetValue(out UObject[] BackblingCharacterPart, "CharacterParts");
-                if (BackblingCharacterPart.Length > 0)
-                    characterPart = BackblingCharacterPart[0].GetPathName();
-                
-            }
-            else
-            {
-                Logger.Log("There was no backbling character part found!", LogLevel.Error);
-                characterPart = "No character part found!";
-            }
-        });
-
-        return characterPart;
-    }
-
-    private async Task<Dictionary<string, string>> GetDataFromBackblingCharacterPart(string backblingCharacterPart)
-    {
-        var output = new Dictionary<string, string>();
-
-        await Task.Run(() =>
-        {
-            if (_provider.TryLoadObject(backblingCharacterPart.Split('.')[0], out var bCP))
-            {
-                output.Add("Mesh",
-                    bCP.TryGetValue(out FSoftObjectPath SkeletalMesh, "SkeletalMesh") 
-                        ? SkeletalMesh.AssetPathName.Text 
-                        : "/");
-
-                output.Add("FX",
-                    bCP.TryGetValue(out FSoftObjectPath IdleEffectNiagara, "IdleEffectNiagara")
-                        ? IdleEffectNiagara.AssetPathName.Text 
-                        : "/");
-                
-                if (output["FX"] == "/")
-                {
-                    output.Remove("FX");
-                    output.Add("FX",
-                        bCP.TryGetValue(out FSoftObjectPath IdleEffect, "IdleEffect")
-                            ? IdleEffect.AssetPathName.Text 
-                            : "/");
-                }
-
-                output.Add("PartModifierBP",
-                    bCP.TryGetValue(out FSoftObjectPath PartModifierBlueprint, "PartModifierBlueprint")
-                        ? PartModifierBlueprint.AssetPathName.Text 
-                        : "/");
-
-                if (bCP.TryGetValue(out FStructFallback[] MaterialOverrides, "MaterialOverrides"))
-                {
-                    foreach (var materialOverride in MaterialOverrides)
-                    {
-                        if (materialOverride.Get<int>("MaterialOverrideIndex") != 0)
-                            continue;
-                        output.Add("Material", materialOverride.Get<FSoftObjectPath>("OverrideMaterial").AssetPathName.Text);
-                    }
-                }
-                else
-                    output.Add("Material", "/");
-
-                if (bCP.TryGetValue(out UObject AdditonalData, "AdditionalData"))
-                    output.Add("ABP",
-                        AdditonalData.TryGetValue(out FSoftObjectPath AnimClass, "AnimClass") 
-                            ? AnimClass.AssetPathName.Text 
-                            : null);
-            }
-            else
-                Logger.Log($"Couldn't process backbling character part! {backblingCharacterPart.Split('.')[0]}", LogLevel.Error);
-        });
-
-
-        foreach (var input in output)
-            Logger.Log($"{input.Key}: {input.Value}", LogLevel.Debug);
-        
-        return output;
-    }
-
     /// <summary>
     /// Gets the WID from the pickaxes ID
     /// </summary>
@@ -1046,8 +912,7 @@ public sealed class SwapperService : ISwapperService
     #region GenerateEmoteSwaps
     private async Task<SaturnOption> GenerateMeshEmote(Cosmetic item, SaturnItem option)
     {
-        var swaps = await GetEmoteDataByItem(item);
-        if (swaps == new Dictionary<string, string>())
+        if (option.Swaps == new Dictionary<string, string>())
         {
             await ItemUtil.UpdateStatus(item, option, $"Failed to find data for \"{item.Id}\"!",
                 Colors.C_YELLOW);
@@ -1059,18 +924,59 @@ public sealed class SwapperService : ISwapperService
             "If you are going to use it in-game, favorite the emote and select it from your favorites! Fortnite will kick you if it's in your 6 selections!",
             "warning");
 
-        Logger.Log("CMM: " + swaps["CMM"]);
+        Logger.Log("CMM: " + option.Swaps["CMM"]);
+        Logger.Log("CMF: " + option.Swaps["CMF"]);
 
         return option.ItemDefinition switch
         {
             "EID_DanceMoves" => new DanceMovesEmoteSwap(item.Name,
                                                         item.Rarity.BackendValue,
                                                         item.Images.SmallIcon,
-                                                        swaps).ToSaturnOption(),
+                                                        option.Swaps).ToSaturnOption(),
             "EID_BoogieDown" => new BoogieDownEmoteSwap(item.Name,
                                                         item.Rarity.BackendValue,
                                                         item.Images.SmallIcon,
-                                                        swaps).ToSaturnOption(),
+                                                        option.Swaps).ToSaturnOption(),
+            "EID_Roving" => new LilRoverEmoteSwap(item.Name,
+                                                  item.Rarity.BackendValue,
+                                                  item.Images.SmallIcon,
+                                                  option.Swaps).ToSaturnOption(),
+            "EID_Laugh" => new LaughItUpEmoteSwap(item.Name,
+                                                  item.Rarity.BackendValue,
+                                                  item.Images.SmallIcon,
+                                                  option.Swaps).ToSaturnOption(),
+            "EID_Saucer" => new LilSaucerEmoteSwap(item.Name,
+                                                   item.Rarity.BackendValue,
+                                                   item.Images.SmallIcon,
+                                                   option.Swaps).ToSaturnOption(),
+            "EID_Believer" => new Ska_stra_terrestrialEmoteSwap(item.Name,
+                                                                item.Rarity.BackendValue,
+                                                                item.Images.SmallIcon,
+                                                                option.Swaps).ToSaturnOption(),
+            "EID_Custodial" => new CleanSweepEmoteSwap(item.Name,
+                                                       item.Rarity.BackendValue,
+                                                       item.Images.SmallIcon,
+                                                       option.Swaps).ToSaturnOption(),
+            "EID_WatchThis" => new ReadyWhenYouAreEmoteSwap(item.Name,
+                                                            item.Rarity.BackendValue,
+                                                            item.Images.SmallIcon,
+                                                            option.Swaps).ToSaturnOption(),
+            "EID_Division" => new NailedItEmoteSwap(item.Name,
+                                                    item.Rarity.BackendValue,
+                                                    item.Images.SmallIcon,
+                                                    option.Swaps).ToSaturnOption(),
+            "EID_HighActivity" => new KickBackEmoteSwap(item.Name,
+                                                        item.Rarity.BackendValue,
+                                                        item.Images.SmallIcon,
+                                                        option.Swaps).ToSaturnOption(),
+            "EID_Terminal" => new VulcanSaluteEmoteSwap(item.Name,
+                                                        item.Rarity.BackendValue,
+                                                        item.Images.SmallIcon,
+                                                        option.Swaps).ToSaturnOption(),
+            "EID_WIR" => new HotMaratEmoteSwap(item.Name,
+                                               item.Rarity.BackendValue,
+                                               item.Images.SmallIcon,
+                                               option.Swaps).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
