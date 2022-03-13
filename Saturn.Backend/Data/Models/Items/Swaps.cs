@@ -20,12 +20,10 @@ namespace Saturn.Backend.Data.Models.Items
         public List<SaturnOption> Options { get; set; }
         public string? Series { get; set; }
         public bool IsConverted { get; set; }
-        public string Path { get; set; }
         public Colors PrintColor { get; set; } = Colors.C_WHITE;
         public string? Status { get; set; } = null;
         public MeshDefaultModel SwapModel { get; set; }
         public Dictionary<string, string> Swaps { get; set; }
-        public Dictionary<string, string> OGSwaps { get; set; }
     }
 
     public class SaturnOption

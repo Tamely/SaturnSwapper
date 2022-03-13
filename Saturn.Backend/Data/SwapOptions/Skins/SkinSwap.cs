@@ -34,15 +34,6 @@ public class AddSkins
     {
         new SaturnItem
         {
-            ItemDefinition = "CID_A_272_Athena_Commando_F_Prime",
-            Name = "Default",
-            Description = "Standard issue Island combatant.",
-            Icon =
-                "https://fortnite-api.com/images/cosmetics/br/CID_A_272_Athena_Commando_F_Prime/smallicon.png",
-            Rarity = "Common"
-        },
-        new SaturnItem
-        {
             ItemDefinition = "CID_970_Athena_Commando_F_RenegadeRaiderHoliday",
             Name = "Gingerbread Raider",
             Description = "Let the festivities begin.",
@@ -124,7 +115,45 @@ public class AddSkins
                 "https://fortnite-api.com/images/cosmetics/br/cid_294_athena_commando_f_redknightwinter/smallicon.png",
             Rarity = "Legendary",
             Series = "FrozenSeries"
-        }
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "CID_231_Athena_Commando_F_RedRiding",
+            Name = "Fable",
+            Description = "The forest isn't safe... from her.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/cid_231_athena_commando_f_redriding/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "CID_082_Athena_Commando_M_Scavenger",
+            Name = "Rust Lord",
+            Description = "King of the scrap heap.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/cid_082_athena_commando_m_scavenger/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "CID_A_132_Athena_Commando_M_ScavengerFire",
+            Name = "Roast Lord",
+            Description = "King of the burning scrap heap.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/cid_a_132_athena_commando_m_scavengerfire/smallicon.png",
+            Rarity = "Epic",
+            Series = "LavaSeries"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "CID_380_Athena_Commando_F_DarkViking_Fire",
+            Name = "Molten Valkyrie",
+            Description = "A fiery revelation.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/cid_380_athena_commando_f_darkviking_fire/smallicon.png",
+            Rarity = "Legendary",
+            Series = "LavaSeries"
+        },
     };
 
     private string _lastID = "";
