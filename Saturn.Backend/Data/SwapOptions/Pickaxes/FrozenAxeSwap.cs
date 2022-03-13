@@ -16,7 +16,7 @@ internal class FrozenAxeSwap : PickaxeSwap
         {
             new SaturnAsset()
             {
-                ParentAsset = "FortniteGame/Content/Athena/Items/Weapons/WID_Harvest_Pickaxe_MastermindShadow",
+                ParentAsset = "FortniteGame/Content/Athena/Items/Weapons/WID_Harvest_Pickaxe_FlintlockWinter",
                 Swaps = new List<SaturnSwap>()
                 {
                     new SaturnSwap()

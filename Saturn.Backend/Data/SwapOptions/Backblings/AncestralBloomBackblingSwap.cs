@@ -46,12 +46,6 @@ internal sealed class AncestralBloomBackblingSwap : BackblingSwap
                             "/Game/Accessories/FORT_Backpacks/Backpack_F_MED_ExoSuit_Cape/Meshes/F_MED_ExoSuit_Cape_Pack_Cloth_AnimBP.F_MED_ExoSuit_Cape_Pack_Cloth_AnimBP_C",
                         Replace = Data["ABP"] ?? "/Game/Accessories/FORT_Backpacks/Backpack_F_MED_ExoSuit_Cape/Meshes/F_MED_ExoSuit_Cape_Pack_Cloth_AnimBP.F_MED_ExoSuit_Cape_Pack_Cloth_AnimBP_C",
                         Type = SwapType.BackblingAnim
-                    },
-                    new SaturnSwap()
-                    {
-                        Search = "Y2FwZQ==",
-                        Replace = "QmFja3BhY2tfQlI=",
-                        Type = SwapType.Property
                     }
                 }
             }
