@@ -169,7 +169,54 @@ public class AddBackblings
             Icon = 
                 "https://fortnite-api.com/images/cosmetics/br/bid_073_darkviking/smallicon.png",
             Rarity = "Legendary"
-        }
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_167_RedKnightWinterFemale",
+            Name = "Frozen Red Shield",
+            Description = "The Red Knight's legendary frozen shield.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/bid_167_redknightwinterfemale/smallicon.png",
+            Rarity = "Legendary",
+            Series = "FrozenSeries"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_003_RedKnight",
+            Name = "Red Shield",
+            Description = "The Red Knight's legendary shield.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/bid_003_redknight/smallicon.png",
+            Rarity = "Legendary"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_343_CubeRedKnight",
+            Name = "Dark Shield",
+            Description = "Timeless.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/bid_343_cuberedknight/smallicon.png",
+            Rarity = "Epic",
+            Series = "CUBESeries"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_388_DevilRockMale",
+            Name = "Flame Sigil",
+            Description = "The underworld beckons.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/bid_388_devilrockmale/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_319_StreetRacerDriftRemix",
+            Name = "Atmosphere",
+            Description = "Resonating with energy.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/bid_319_streetracerdriftremix/smallicon.png",
+            Rarity = "Legendary"
+        },
     };
     
     public async Task<Cosmetic> AddBackblingOptions(Cosmetic backBling, ISwapperService swapperService,
