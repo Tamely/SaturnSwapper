@@ -105,15 +105,6 @@ public class AddBackblings
                 "https://fortnite-api.com/images/cosmetics/br/bid_430_galileospeedboat_9rxe3/smallicon.png",
             Rarity = "Epic",
             Series = "ColumbusSeries"
-        },
-        new SaturnItem
-        {
-            ItemDefinition = "BID_915_ExoSuitFemale",
-            Name = "Ancestral Bloom",
-            Description = "May your memory blossom across eternity.", 
-            Icon = 
-                "https://fortnite-api.com/images/cosmetics/br/bid_915_exosuitfemale/smallicon.png",
-            Rarity = "Epic"
         }
     };
     

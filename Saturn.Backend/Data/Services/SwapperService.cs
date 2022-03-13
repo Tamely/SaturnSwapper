@@ -876,10 +876,6 @@ public sealed class SwapperService : ISwapperService
                                                                          item.Images.SmallIcon,
                                                                          item.Rarity.BackendValue,
                                                                          option.Swaps).ToSaturnOption(),
-            "BID_915_ExoSuitFemale" => new AncestralBloomBackblingSwap(item.Name,
-                                                                item.Images.SmallIcon,
-                                                                item.Rarity.BackendValue,
-                                                                option.Swaps).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
