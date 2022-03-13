@@ -49,10 +49,9 @@ internal sealed class AncestralBloomBackblingSwap : BackblingSwap
                     },
                     new SaturnSwap()
                     {
-                        Search =
-                            "Y2FwZQ==",
+                        Search = "Y2FwZQ==",
                         Replace = "QmFja3BhY2tfQlI=",
-                        Type = SwapType.Base64
+                        Type = SwapType.Property
                     }
                 }
             }

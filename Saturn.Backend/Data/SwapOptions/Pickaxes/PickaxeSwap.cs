@@ -125,6 +125,16 @@ public class AddPickaxes
             Icon =
                 "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_713_gumballmale/smallicon.png",
             Rarity = "Rare"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_143_FlintlockWinter",
+            Name = "Frozen Axe",
+            Description = "Once crimson, now coated in permafrost.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_143_flintlockwinter/smallicon.png",
+            Rarity = "Rare",
+            Series = "FrozenSeries"
         }
     };
 
