@@ -41,8 +41,10 @@ public interface ISwapperService
     public Task<bool> Revert(Cosmetic item, SaturnItem option, ItemType itemType);
     public Task<Dictionary<string, string>> GetCharacterPartsById(string id, Cosmetic? item = null);
     public Task<UObject> GetWIDByID(string id);
+    public Task<UObject> GetBackblingCP(string id);
     public Task<List<Cosmetic>> GetSaturnSkins();
     public Task<List<Cosmetic>> GetSaturnPickaxes();
+    public Task<List<Cosmetic>> GetSaturnBackblings();
     public Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = true);
     public DefaultFileProvider Provider { get; }
 }
@@ -117,6 +119,23 @@ public sealed class SwapperService : ISwapperService
         _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
 
         return skins;
+    }
+    
+    public async Task<List<Cosmetic>> GetSaturnBackblings()
+    {
+        var backblings = new List<Cosmetic>();
+
+        AbstractGeneration Generation = new BackblingGeneration(backblings, _provider, _configService, this);
+
+        backblings = await Generation.Generate();
+
+        Generation.WriteItems(backblings);
+
+        Trace.WriteLine($"Deserialized {backblings.Count} objects");
+
+        _discordRPCService.UpdatePresence($"Looking at {backblings.Count} different backblings");
+
+        return backblings;
     }
     
     public async Task<List<Cosmetic>> GetSaturnPickaxes()
@@ -710,6 +729,38 @@ public sealed class SwapperService : ISwapperService
 
         return export; // Return the WID
     }
+    
+    /// <summary>
+    /// Gets the CP from the BID
+    /// </summary>
+    /// <param name="id">The backbling's ID</param>
+    /// <returns>UObject: The CP of the backbling ID specified in the arguments.</returns>
+    public async Task<UObject> GetBackblingCP(string id)
+    {
+        UObject[] export = Array.Empty<UObject>(); // Create a new UObject to hold the export
+        await Task.Run(() => // Run the following code on a separate thread because mappings hang on the main one
+        {
+            if (_provider.TryLoadObject(Constants.BidPath + id, out UObject BID))
+                BID.TryGetValue(out export, "CharacterParts"); // Get the CPs from the BID
+            else if (_provider.TryLoadObject(Constants.NewBidPath + id, out BID))
+                BID.TryGetValue(out export, "CharacterParts"); // Get the CPs from the BID
+            else if (_provider.TryLoadObject(Constants.ConstructorBidPath + id, out BID))
+                BID.TryGetValue(out export, "CharacterParts"); // Get the CPs from the BID
+            else if (_provider.TryLoadObject(Constants.OutlanderBidPath + id, out BID))
+                BID.TryGetValue(out export, "CharacterParts"); // Get the CPs from the BID
+            else if (_provider.TryLoadObject(Constants.NinjaBidPath + id, out BID))
+                BID.TryGetValue(out export, "CharacterParts"); // Get the CPs from the BID
+            else if (_provider.TryLoadObject(Constants.CommandoBidPath + id, out BID))
+                BID.TryGetValue(out export, "CharacterParts"); // Get the CPs from the BID
+
+        });
+
+        if (export.Length > 0)
+            return export[0]; // Return the base CP
+        
+        Logger.Log("Unable to find backbling character part for " + id, LogLevel.Error);
+        return new UObject(); // Return an empty UObject
+    }
 
     public async Task<Dictionary<string, string>> GetCharacterPartsById(string id, Cosmetic? item = null)
     {
@@ -807,65 +858,28 @@ public sealed class SwapperService : ISwapperService
     #region GenerateBackbling
     private async Task<SaturnOption> GenerateMeshBackbling(Cosmetic item, SaturnItem option)
     {
-        Logger.Log($"Getting cp for {item.Name}");
-        var characterPart = await GetBackblingCharacterPart(item);
-        Logger.Log("Backbling character part: " + characterPart);
-
-        try
-        {
-            var changes = _cloudStorageService.GetChanges(item.Id, "CharacterPartReplacements");
-            var cloudChanges = _cloudStorageService.DecodeChanges(changes);
-
-            characterPart = cloudChanges.CharacterPartsReplace[0];
-        }
-        catch
-        {
-            // Ignored
-        }
-
-        var data = await GetDataFromBackblingCharacterPart(characterPart);
-
-        Logger.Log("Generating swaps");
-
-        switch (option.ItemDefinition)
-        {
-            case "BID_430_GalileoSpeedBoat_9RXE3":
-                if (data["Material"] != "/")
-                    option.Status = "This item might not be perfect!";
-                break;
-            case "BID_678_CardboardCrewHolidayMale":
-                if (data["Material"] != "/" || data["FX"] != "/")
-                    option.Status = "This item might not be perfect!";
-                break;
-            case "BID_695_StreetFashionEclipse":
-                if (data["FX"] != "/")
-                    option.Status = "This item might not be perfect!";
-                break;
-        }
-
-
         return option.ItemDefinition switch
         {
             "BID_695_StreetFashionEclipse" => new BlackoutBagBackblingSwap(item.Name,
                                                                            item.Images.SmallIcon,
                                                                            item.Rarity.BackendValue,
-                                                                           data).ToSaturnOption(),
+                                                                           option.Swaps).ToSaturnOption(),
             "BID_600_HightowerTapas" => new ThorsCloakBackblingSwap(item.Name,
                                                                     item.Images.SmallIcon,
                                                                     item.Rarity.BackendValue,
-                                                                    data).ToSaturnOption(),
+                                                                    option.Swaps).ToSaturnOption(),
             "BID_678_CardboardCrewHolidayMale" => new WrappingCaperBackblingSwap(item.Name,
                                                                                  item.Images.SmallIcon,
                                                                                  item.Rarity.BackendValue,
-                                                                                 data).ToSaturnOption(),
+                                                                                 option.Swaps).ToSaturnOption(),
             "BID_430_GalileoSpeedBoat_9RXE3" => new TheSithBackblingSwap(item.Name,
                                                                          item.Images.SmallIcon,
                                                                          item.Rarity.BackendValue,
-                                                                         data).ToSaturnOption(),
+                                                                         option.Swaps).ToSaturnOption(),
             "BID_915_ExoSuitFemale" => new AncestralBloomBackblingSwap(item.Name,
                                                                 item.Images.SmallIcon,
                                                                 item.Rarity.BackendValue,
-                                                                data).ToSaturnOption(),
+                                                                option.Swaps).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }

@@ -17,6 +17,7 @@
 @using Saturn.Backend.Data.Utils
 @using System.Diagnostics
 @using System.Globalization
+@using System.Runtime.ExceptionServices
 @using System.Text.RegularExpressions
 @using MudBlazor
 @using Newtonsoft.Json
@@ -1369,59 +1370,16 @@
         saturnState = SaturnState.S_Misc;
     }
 
+    /// <summary>
+    /// Generates, loads, and displays backblings on the screen.
+    /// </summary>
     private async Task GetSaturnBackblings()
     {
-        saturnState = SaturnState.S_Loading;
-        Items = await _fortniteAPIService.GetSaturnBackblings();
-        
-        foreach (var item in Items.Where(item => !item.IsCloudAdded))
-        {
-            item.CosmeticOptions = new()
-            {
-                new SaturnItem
-                {
-                    ItemDefinition = "BID_695_StreetFashionEclipse",
-                    Name = "Blackout Bag",
-                    Description = "They'll never know what's up.", 
-                    Icon = 
-                        "https://fortnite-api.com/images/cosmetics/br/bid_695_streetfashioneclipse/smallicon.png",
-                    Rarity = "Epic",
-                    Series = "ShadowSeries"
-                },
-                new SaturnItem
-                {
-                    ItemDefinition = "BID_600_HightowerTapas",
-                    Name = "Thor's Cloak",
-                    Description = "Thor's Herald Cloak.", 
-                    Icon = 
-                        "https://fortnite-api.com/images/cosmetics/br/bid_600_hightowertapas/smallicon.png",
-                    Rarity = "Epic"
-                },
-                new SaturnItem
-                {
-                    ItemDefinition = "BID_678_CardboardCrewHolidayMale",
-                    Name = "Wrapping Caper",
-                    Description = "Crinkling gracefully in the winter wind.", 
-                    Icon = 
-                        "https://fortnite-api.com/images/cosmetics/br/BID_678_CardboardCrewHolidayMale/smallicon.png",
-                    Rarity = "Rare"
-                },
-                new SaturnItem
-                {
-                    ItemDefinition = "BID_430_GalileoSpeedBoat_9RXE3",
-                    Name = "The Sith",
-                    Description = "Force-wielders devoted to the dark side.", 
-                    Icon = 
-                        "https://fortnite-api.com/images/cosmetics/br/bid_430_galileospeedboat_9rxe3/smallicon.png",
-                    Rarity = "Epic",
-                    Series = "ColumbusSeries"
-                }
-            };
-        }
-        
-        BackupItems = new List<Cosmetic>(Items);
-        currentType = ItemType.IT_Backbling;
-        saturnState = SaturnState.S_Items;
+        saturnState = SaturnState.S_Loading; // Set the screens state to loading
+        Items = await _swapperService.GetSaturnBackblings(); // Generates the list of backblings
+        BackupItems = new List<Cosmetic>(Items); // Creates a backup of the list (used for searching)
+        currentType = ItemType.IT_Backbling; // Sets the current type of item to backbling
+        saturnState = SaturnState.S_Items; // Sets the screens state to items
     }
 
     private async Task GetSaturnEmotes()
