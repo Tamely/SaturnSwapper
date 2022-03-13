@@ -34,6 +34,15 @@ public class AddSkins
     {
         new SaturnItem
         {
+            ItemDefinition = "CID_A_272_Athena_Commando_F_Prime",
+            Name = "Default",
+            Description = "Standard issue Island combatant.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/CID_A_272_Athena_Commando_F_Prime/smallicon.png",
+            Rarity = "Common"
+        },
+        new SaturnItem
+        {
             ItemDefinition = "CID_970_Athena_Commando_F_RenegadeRaiderHoliday",
             Name = "Gingerbread Raider",
             Description = "Let the festivities begin.",
@@ -115,15 +124,6 @@ public class AddSkins
                 "https://fortnite-api.com/images/cosmetics/br/cid_294_athena_commando_f_redknightwinter/smallicon.png",
             Rarity = "Legendary",
             Series = "FrozenSeries"
-        },
-        new SaturnItem
-        {
-            ItemDefinition = "CID_162_Athena_Commando_F_StreetRacer",
-            Name = "Redline",
-            Description = "Revving beyond the limit.",
-            Icon =
-                "https://fortnite-api.com/images/cosmetics/br/cid_162_athena_commando_f_streetracer/smallicon.png",
-            Rarity = "Epic"
         }
     };
 
@@ -534,6 +534,7 @@ public class AddSkins
                                     swapModel.HatType = ECustomHatType.ECustomHatType_None;
                                     return;
                                 }
+
                                 if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
                                 {
                                     swapModel.FaceACCABP = AdditionalData.GetOrDefault("AnimClass",
@@ -548,21 +549,18 @@ public class AddSkins
                                         bool bAttachToSocket = part.GetOrDefault("bAttachToSocket", true);
 
                                         if ((bAttachToSocket && AttachSocketName.Text.ToLower() != "face") &&
-                                            OGHatSocket.ToLower() == "face" || !OGbAttachToSocket)
+                                            OGHatSocket.ToLower() == "face")
+                                            bDontProceed = true;
+                                        else if ((bAttachToSocket && AttachSocketName.Text.ToLower() != "face") &&
+                                                 OGHatSocket.ToLower() == "face")
                                             bDontProceed = true;
                                         else if ((OGbAttachToSocket && OGHatSocket.ToLower() == "hat") &&
                                                  AttachSocketName.Text.ToLower() != "hat")
                                             bDontProceed = true;
 
+                                        AdditionalData.TryGetValue(out HatMorphTargets, "HatMorphTargets");
+
                                     }
-                                    else if (!(string.IsNullOrEmpty(OGHatSocket) 
-                                             || OGHatSocket.ToLower().Equals("none"))
-                                             && (OGbAttachToSocket && OGHatSocket.ToLower() != "face"))
-                                    {
-                                        bDontProceed = true;
-                                    }
-                                    
-                                    AdditionalData.TryGetValue(out HatMorphTargets, "HatMorphTargets");
                                 }
 
                                 if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
@@ -659,6 +657,37 @@ public class AddSkins
             if (swapModel.HatType != ECustomHatType.ECustomHatType_None)
                 if (OGHatType == ECustomHatType.ECustomHatType_None)
                     bDontProceed = true;
+
+            if ((swapModel.HeadMesh.ToLower().Contains("ramirez")) &&
+                !swapModel.HeadMesh.ToLower().Contains("/parts/"))
+            {
+                foreach (var material in swapModel.HeadMaterials)
+                {
+                    if (!material.Value.ToLower().Contains("hair") ||
+                        !OGHeadMaterials[material.Key].ToLower().Contains("hair") ||
+                        material.Value.ToLower().Contains("hide")) continue;
+                    foreach (var ogMaterial in OGHeadMaterials.Where(ogMaterial
+                                 => ogMaterial.Value.ToLower().Contains("hair")))
+                    {
+                        (swapModel.HeadMaterials[material.Key], swapModel.HeadMaterials[ogMaterial.Key]) = (
+                            swapModel.HeadMaterials[ogMaterial.Key], swapModel.HeadMaterials[material.Key]);
+                    }
+                }
+            }
+
+            if (option.Name == "Blizzabelle")
+            {
+                if (swapModel.HeadMaterials.Count > 1 && swapModel.FaceACCMaterials.Count < 2)
+                {
+                    (swapModel.FaceACCMesh, swapModel.HeadMesh) = (swapModel.HeadMesh, swapModel.FaceACCMesh);
+                    (swapModel.FaceACCABP, swapModel.HeadABP) = (swapModel.HeadABP, swapModel.FaceACCABP);
+                    (swapModel.FaceACCMaterials, swapModel.HeadMaterials) =
+                        (swapModel.HeadMaterials, swapModel.FaceACCMaterials);
+                    (swapModel.HeadFX, swapModel.FaceACCFX) = (swapModel.FaceACCFX, swapModel.HeadFX);
+                    (swapModel.HeadPartModifierBP, swapModel.FaceACCPartModifierBP) = (swapModel.FaceACCPartModifierBP,
+                        swapModel.HeadPartModifierBP);
+                }
+            }
             
             if (OGHeadMaterials.Count < swapModel.HeadMaterials.Count || swapModel.FaceACCMaterials.Count > OGFaceACCMaterials.Count)
                 bDontProceed = true;
@@ -688,37 +717,6 @@ public class AddSkins
                     while (swapModel.FaceACCMaterials.ContainsKey(i)) i++;
                     swapModel.FaceACCMaterials.Add(i, "/");
                 }
-
-            if ((swapModel.HeadMesh.ToLower().Contains("ramirez")) &&
-                !swapModel.HeadMesh.ToLower().Contains("/parts/"))
-            {
-                foreach (var material in swapModel.HeadMaterials)
-                {
-                    if (material.Value.ToLower().Contains("hair") && !material.Value.ToLower().Contains("hide"))
-                    {
-                        foreach (var ogMaterial in OGHeadMaterials.Where(ogMaterial
-                                     => ogMaterial.Value.ToLower().Contains("hair")))
-                        {
-                            (swapModel.HeadMaterials[material.Key], swapModel.HeadMaterials[ogMaterial.Key]) = (
-                                swapModel.HeadMaterials[ogMaterial.Key], swapModel.HeadMaterials[material.Key]);
-                        }
-                    }
-                }
-            }
-
-            if (option.Name == "Blizzabelle")
-            {
-                if (swapModel.HeadMaterials.Count > 1 && swapModel.FaceACCMaterials.Count < 2)
-                {
-                    (swapModel.FaceACCMesh, swapModel.HeadMesh) = (swapModel.HeadMesh, swapModel.FaceACCMesh);
-                    (swapModel.FaceACCABP, swapModel.HeadABP) = (swapModel.HeadABP, swapModel.FaceACCABP);
-                    (swapModel.FaceACCMaterials, swapModel.HeadMaterials) =
-                        (swapModel.HeadMaterials, swapModel.FaceACCMaterials);
-                    (swapModel.HeadFX, swapModel.FaceACCFX) = (swapModel.FaceACCFX, swapModel.HeadFX);
-                    (swapModel.HeadPartModifierBP, swapModel.FaceACCPartModifierBP) = (swapModel.FaceACCPartModifierBP,
-                        swapModel.HeadPartModifierBP);
-                }
-            }
 
             if (swapModel.FaceACCABP == "None")
                 swapModel.FaceACCABP = null;

@@ -31,6 +31,7 @@ using Saturn.Backend.Data.SwapOptions.Backblings;
 using Saturn.Backend.Data.SwapOptions.Emotes;
 using Saturn.Backend.Data.Utils.Swaps;
 using Saturn.Backend.Data.Utils.Swaps.Generation;
+using System.IO.Compression;
 
 namespace Saturn.Backend.Data.Services;
 
@@ -320,6 +321,43 @@ public sealed class SwapperService : ISwapperService
             if (item.IsCloudAdded)
                 itemSwap = option.Options[0];
 
+            if (option.ItemDefinition == "CID_A_272_Athena_Commando_F_Prime")
+            {
+                var search = "/Game/Athena/Items/Cosmetics/Characters/CID_A_272_Athena_Commando_F_Prime.CID_A_272_Athena_Commando_F_Prime";
+                SaturnData.SearchString = search;
+
+                if (!TryExportAsset("FortniteGame/AssetRegistry.bin", out _))
+                {
+                    Logger.Log("Failed to export asset registry!", LogLevel.Error);
+                    return false;
+                }
+
+                if (SaturnData.Block.Data == null)
+                {
+                    Logger.Log("Failed to find string in asset registry!", LogLevel.Error);
+                    return false;
+                }
+
+                byte[] uncompressed = SaturnData.Block.Data;
+                if (!AnyLength.SwapNormally(new List<byte[]>() { Encoding.ASCII.GetBytes(search) }, 
+                    new List<byte[]>() { Encoding.ASCII.GetBytes(search.Replace("CID_A_272_Athena_Commando_F_Prime", "CID_A_272_AthenaOWEN_IS_SO_SMART")) },
+                    ref uncompressed))
+                {
+                    Logger.Log("Failed to swap in uncompressed registry block!", LogLevel.Error);
+                    return false;
+                }
+
+                var mem = new MemoryStream();
+                using (ZLibStream zLibStream = new ZLibStream(mem, CompressionMode.Compress))
+                {
+                    zLibStream.Write(uncompressed, 0, uncompressed.Length);
+                }
+
+                byte[] compressed = mem.ToArray();
+
+                await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, "pakchunk0-WindowsClient.pak"), SaturnData.Block.Offset, FillEnd(compressed, SaturnData.Block.CompressedLength));
+            }
+
             Logger.Log($"There are {itemSwap.Assets.Count} assets to swap...", LogLevel.Info);
             foreach (var asset in itemSwap.Assets)
             {
@@ -426,8 +464,7 @@ public sealed class SwapperService : ISwapperService
             Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
 
             if (await _configService.GetConvertedFileCount() > 2)
-                // Don't know why this wasn't awaited
-                await _jsRuntime.InvokeVoidAsync("MessageBox", "You might want to revert the last item you swapped!", "If you go ingame with your currently swapped items, you will be kicked from Fortnite.", "warning");
+                _jsRuntime.InvokeVoidAsync("MessageBox", "You might want to revert the last item you swapped!", "If you go ingame with your currently swapped items, you will be kicked from Fortnite.", "warning");
 
 
             return true;
@@ -825,6 +862,10 @@ public sealed class SwapperService : ISwapperService
                                                                          item.Images.SmallIcon,
                                                                          item.Rarity.BackendValue,
                                                                          data).ToSaturnOption(),
+            "BID_915_ExoSuitFemale" => new AncestralBloomBackblingSwap(item.Name,
+                                                                item.Images.SmallIcon,
+                                                                item.Rarity.BackendValue,
+                                                                data).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
@@ -913,14 +954,14 @@ public sealed class SwapperService : ISwapperService
                                                                                           item.Rarity.BackendValue,
                                                                                           item.Images.SmallIcon,
                                                                                           option.SwapModel).ToSaturnOption(),
-            "CID_A_310_Athena_Commando_F_ScholarFestive" => new KrisabelleSkinSwap(item.Name,
-                                                                                         item.Rarity.BackendValue,
-                                                                                         item.Images.SmallIcon,
-                                                                                         option.SwapModel).ToSaturnOption(),
             "CID_294_Athena_Commando_F_RedKnightWinter" => new FrozenRedKnightSkinSwap(item.Name,
                                                                                        item.Rarity.BackendValue,
                                                                                        item.Images.SmallIcon,
                                                                                        option.SwapModel).ToSaturnOption(),
+            "CID_A_272_Athena_Commando_F_Prime" => new NewDefaultSkinSwap(item.Name,
+                                                                               item.Rarity.BackendValue,
+                                                                               item.Images.SmallIcon,
+                                                                               option.SwapModel).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
@@ -1543,5 +1584,12 @@ public sealed class SwapperService : ISwapperService
             Logger.Log($"Failed to swap asset in file {Path.GetFileName(path)}! Reason: {e.Message}",
                 LogLevel.Error);
         }
+    }
+
+    private byte[] FillEnd(byte[] buffer, int len)
+    {
+        List<byte> result = new List<byte>(buffer);
+        result.AddRange(Enumerable.Repeat((byte)0, len - buffer.Length));
+        return result.ToArray();
     }
 }
