@@ -730,7 +730,7 @@
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        AppDomain.CurrentDomain.FirstChanceException += UnhandledException; // Catch unhandled exceptions
+        AppDomain.CurrentDomain.UnhandledException += UnhandledException; // Catch unhandled exceptions
 
         if (!CheckForInternetConnection()) // Check for internet connection
             throw new WebException("No internet connection"); // Throw exception if no internet connection
@@ -780,7 +780,7 @@
     /// <summary>
     /// On an unhandled exception, this will log the exception and set the error state.
     /// </summary>
-    private void UnhandledException(object sender, FirstChanceExceptionEventArgs e)
+    private void UnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         if (_halted) // If the app is already halted, don't do anything.
             return; // This is to prevent the app opening inf log tabs.
@@ -791,7 +791,7 @@
 
         var stackTrace = "\n" + e.ToString().Split("--- ")[0]; // Get the stack trace.
 
-        Logger.Log($"Unhandled exception occurred. {e.Exception.ToString().GetType().Name}: {e.Exception.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.
+        Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.
 
         Items = new List<Cosmetic>(); // Clear the items.
         saturnState = SaturnState.S_Error; // Set the state to error.

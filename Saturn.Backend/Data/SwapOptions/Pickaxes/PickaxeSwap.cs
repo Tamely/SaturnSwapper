@@ -33,7 +33,7 @@ public class AddPickaxes
     private async Task<Dictionary<string, string>> GetAssetsFromWID(string wid, DefaultFileProvider _provider)
     {
         var output = new Dictionary<string, string>();
-        
+
         UObject export = await _provider.TryLoadObjectAsync(wid.Split('.')[0]) ?? new UObject();
 
         export.TryGetValue(out FSoftObjectPath Mesh, "WeaponMeshOverride");
@@ -41,6 +41,7 @@ public class AddPickaxes
         export.TryGetValue(out FSoftObjectPath SmallIcon, "SmallPreviewImage");
         export.TryGetValue(out FSoftObjectPath LargeIcon, "LargePreviewImage");
         export.TryGetValue(out FSoftObjectPath FX, "IdleEffect");
+        export.TryGetValue(out FSoftObjectPath NFX, "IdleEffectNiagara");
         export.TryGetValue(out FSoftObjectPath SwingFX, "SwingEffect");
         export.TryGetValue(out FSoftObjectPath OffhandSwingFX, "SwingEffectOffhandNiagara");
         FPropertyTagType? ImpactCue = null;
@@ -53,7 +54,7 @@ public class AddPickaxes
         FPropertyTagType? SwingCue = null;
         if (export.TryGetValue(out UScriptMap PrimaryFireSoundMap, "PrimaryFireSoundMap"))
             PrimaryFireSoundMap.Properties.TryGetValue(PrimaryFireSoundMap.Properties.Keys.First(), out SwingCue);
-        export.TryGetValue(out FSoftObjectPath ActorClass, "WeaponActorClass");
+        export.TryGetValue(out FSoftObjectPath ActorClass, "PrimaryFireAbility");
         export.TryGetValue(out FSoftObjectPath Trail, "AnimTrails");
         export.TryGetValue(out FSoftObjectPath OffhandTrail, "AnimTrailsOffhand");
         output.Add("Rarity", export.TryGetValue(out EFortRarity Rarity, "Rarity")
@@ -74,6 +75,7 @@ public class AddPickaxes
         output.Add("OffhandSwingFX",
             string.IsNullOrWhiteSpace(OffhandSwingFX.AssetPathName.Text) || OffhandSwingFX.AssetPathName.Text == "None" ? "/" : OffhandSwingFX.AssetPathName.Text);
         output.Add("FX", string.IsNullOrWhiteSpace(FX.AssetPathName.Text) || FX.AssetPathName.Text == "None" ? "/" : FX.AssetPathName.Text);
+        output.Add("NFX", string.IsNullOrWhiteSpace(NFX.AssetPathName.Text) || NFX.AssetPathName.Text == "None" ? "/" : NFX.AssetPathName.Text);
         output.Add("SwingCue", SwingCue == null ? "/" : ((FSoftObjectPath)SwingCue.GenericValue).AssetPathName.Text);
         output.Add("EquipCue", EquipCue == null ? "/" : ((FSoftObjectPath)EquipCue.GenericValue).AssetPathName.Text);
         output.Add("ImpactCue", ImpactCue == null ? "/" : ((FSoftObjectPath)ImpactCue.GenericValue).AssetPathName.Text);
@@ -135,7 +137,119 @@ public class AddPickaxes
                 "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_143_flintlockwinter/smallicon.png",
             Rarity = "Rare",
             Series = "FrozenSeries"
-        }
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_616_InnovatorFemale",
+            Name = "IO Eradicator",
+            Description = "Glowing with top-secret IO technology.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_616_innovatorfemale/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_715_LoneWolfMale",
+            Name = "Blade of the Waning Moon",
+            Description = "A treasured artifact from a dangerous quest.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_715_lonewolfmale/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_671_GhostHunterFemale1H",
+            Name = "Torin's Lightblade",
+            Description = "A very light sword made with data AND fibres!",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_671_ghosthunterfemale1h/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_508_HistorianMale_6BQSW",
+            Name = "Leviathan Axe",
+            Description = "Forged by Brok and Sindri.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_508_historianmale_6bqsw/smallicon.png",
+            Rarity = "Epic",
+            Series = "PlatformSeries"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_542_TyphoonFemale1H_CTEVQ",
+            Name = "Combat Knife",
+            Description = "No fate.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_542_typhoonfemale1h_ctevq/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_457_HightowerSquash1H",
+            Name = "Hand of Lightning",
+            Description = "Harness the elements.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_457_hightowersquash1h/smallicon.png",
+            Rarity = "Epic",
+            Series = "MarvelSeries"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_463_Elastic1H",
+            Name = "Phantasmic Pulse",
+            Description = "Channeling energy from a far-off star.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_463_elastic1h/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_454_HightowerGrapeMale1H",
+            Name = "Groot's Sap Axes",
+            Description = "They are also Groot.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_454_hightowergrapemale1h/smallicon.png",
+            Rarity = "Epic",
+            Series = "MarvelSeries"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_361_HenchmanMale1H",
+            Name = "Hack & Smash",
+            Description = "Ready for the quick draw.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_361_henchmanmale1h/smallicon.png",
+            Rarity = "Rare"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_284_CrazyEight1H",
+            Name = "Bank Shots",
+            Description = "Run the table.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_284_crazyeight1h/smallicon.png",
+            Rarity = "Rare"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_334_SweaterWeatherMale",
+            Name = "Snowy",
+            Description = "Use your head.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_334_sweaterweathermale/smallicon.png",
+            Rarity = "Rare"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_568_ObsidianFemale",
+            Name = "Axe-tral Form",
+            Description = "Control your emotions - Don't let them control you.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_568_obsidianfemale/smallicon.png",
+            Rarity = "Epic",
+            Series = "DCUSeries"
+        },
     };
 
     public async Task<Cosmetic> AddPickaxeOptions(Cosmetic pickaxe, ISwapperService swapperService,
@@ -158,11 +272,12 @@ public class AddPickaxes
             foreach (var (key, value) in swaps)
             {
                 if (key == "ActorClass")
-                    if (value == "/" || value != OGSwaps[key])
+                    if (value != OGSwaps[key])
                     {
                         bDontProceed = true;
                         break;
                     }
+
 
                 if (key == "Material")
                     if (value != "/" && OGSwaps[key] == "/")
