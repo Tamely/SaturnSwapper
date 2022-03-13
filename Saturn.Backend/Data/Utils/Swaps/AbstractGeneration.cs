@@ -23,10 +23,13 @@ internal class AbstractGeneration
                 File.WriteAllText(Config.SkinsCache, JsonConvert.SerializeObject(items, Formatting.Indented)); // Write the items list to the skin cache file.
                 break; // Stop what you were doing.
             case ItemType.IT_Backbling: // If the item type is a backbling
+                File.WriteAllText(Config.BackblingCache, JsonConvert.SerializeObject(items, Formatting.Indented)); // Write the items list to the skin cache file.
                 break; // Stop what you were doing.
             case ItemType.IT_Pickaxe: // If the item type is a pickaxe
+                File.WriteAllText(Config.PickaxeCache, JsonConvert.SerializeObject(items, Formatting.Indented)); // Write the items list to the skin cache file.
                 break; // Stop what you were doing.
             case ItemType.IT_Dance: // If the item type is a dance
+                File.WriteAllText(Config.EmoteCache, JsonConvert.SerializeObject(items, Formatting.Indented)); // Write the items list to the skin cache file.
                 break; // Stop what you were doing.
             case ItemType.IT_Misc:  // If the item type is misc
             default: // Or if the item type is not specified
