@@ -105,6 +105,70 @@ public class AddBackblings
                 "https://fortnite-api.com/images/cosmetics/br/bid_430_galileospeedboat_9rxe3/smallicon.png",
             Rarity = "Epic",
             Series = "ColumbusSeries"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_545_RenegadeRaiderFire",
+            Name = "Firestarter",
+            Description = "Warning: Contents of firestarter may be hot.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/bid_545_renegaderaiderfire/smallicon.png",
+            Rarity = "Legendary",
+            Series = "LavaSeries"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_562_CelestialFemale",
+            Name = "Nucleus",
+            Description = "A whole galaxy to-go.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/bid_562_celestialfemale/smallicon.png",
+            Rarity = "Legendary"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_289_Banner",
+            Name = "Banner Cape",
+            Description = "Customize your look by choosing a Banner and color in your Locker.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/bid_289_banner/smallicon.png",
+            Rarity = "Rare"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_266_BunkerMan",
+            Name = "Nana Cape",
+            Description = "A Peely original.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/bid_266_bunkerman/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_121_RedRiding",
+            Name = "Fabled Cape",
+            Description = "Nothing lil' about it.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/bid_121_redriding/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_122_HalloweenTomato",
+            Name = "Night Cloak",
+            Description = "Stealthy and saucy.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/bid_122_halloweentomato/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_073_DarkViking",
+            Name = "Frozen Shroud",
+            Description = "A relic of the ancients.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/bid_073_darkviking/smallicon.png",
+            Rarity = "Legendary"
         }
     };
     

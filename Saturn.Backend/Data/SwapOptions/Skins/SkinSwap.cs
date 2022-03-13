@@ -684,7 +684,6 @@ public class AddSkins
                     while (swapModel.BodyMaterials.ContainsKey(i)) i++;
                     swapModel.BodyMaterials.Add(i, "/");
                 }
-            
 
             if (swapModel.HeadMaterials == new Dictionary<int, string>() || swapModel.HeadMaterials.Count < 5)
                 for (int i = swapModel.HeadMaterials.Count; i < 5; i++)
@@ -692,8 +691,7 @@ public class AddSkins
                     while (swapModel.HeadMaterials.ContainsKey(i)) i++;
                     swapModel.HeadMaterials.Add(i, "/");
                 }
-
-
+            
             if (swapModel.FaceACCMaterials == new Dictionary<int, string>() || swapModel.FaceACCMaterials.Count < 5)
                 for (int i = swapModel.FaceACCMaterials.Count; i < 5; i++)
                 {
@@ -701,7 +699,7 @@ public class AddSkins
                     swapModel.FaceACCMaterials.Add(i, "/");
                 }
             
-            if ((swapModel.HeadMesh.ToLower().Contains("ramirez")) &&
+            if (swapModel.HeadMesh.ToLower().Contains("ramirez") &&
                 !swapModel.HeadMesh.ToLower().Contains("/parts/"))
             {
                 foreach (var material in swapModel.HeadMaterials)
