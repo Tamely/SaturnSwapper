@@ -238,11 +238,11 @@ public class AddBackblings
 
         if (cp == new UObject())
             return null;
+        
+        Dictionary<string, string> swaps = await GetAssetsFromCP(cp.GetPathName(), _provider);
 
         foreach (var option in BackblingOptions)
         {
-            Dictionary<string, string> swaps = await GetAssetsFromCP(cp.GetPathName(), _provider);
-
             string OGCP = (await swapperService.GetBackblingCP(option.ItemDefinition)).GetPathName();
             Dictionary<string, string> OGSwaps = await GetAssetsFromCP(OGCP, _provider);
 

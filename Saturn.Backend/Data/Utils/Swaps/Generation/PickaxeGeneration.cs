@@ -39,11 +39,11 @@ internal class PickaxeGeneration : AbstractGeneration
             if (!assetPath.ToLower().Contains("items/cosmetics/pickaxes")) continue; // If the file is not a pickaxe, skip it
                 
             // doing a foreach instead of LINQ because LINQ is fucking stupid and slow
-            bool any = false; // Set the any variable to false because we will need to check if the skin was already added
+            bool any = false; // Set the any variable to false because we will need to check if the pickaxe was already added
             foreach (var x in pickaxes) // For every pickaxe in the pickaxes list from the cache file
             {
                 if (x.Id != FileUtil.SubstringFromLast(assetPath, '/').Split('.')[0]) continue; // If the pickaxe id is not the same as the file name, skip it
-                any = true; // Set the any variable to true because the skin was already added
+                any = true; // Set the any variable to true because the pickaxe was already added
                 break; // Break the loop
             }
             if (any) continue; // If the pickaxe was already added, skip it
@@ -55,7 +55,7 @@ internal class PickaxeGeneration : AbstractGeneration
                 pickaxe.Name = asset.TryGetValue(out FText DisplayName, "DisplayName") ? DisplayName.Text : "TBD"; // Get the display name
                 pickaxe.Description = asset.TryGetValue(out FText Description, "Description") ? Description.Text : "To be determined..."; // Get the description
 
-                pickaxe.Id = FileUtil.SubstringFromLast(assetPath, '/').Split('.')[0]; // Get the skin id
+                pickaxe.Id = FileUtil.SubstringFromLast(assetPath, '/').Split('.')[0]; // Get the pickaxe id
                     
                 if (pickaxe.Name.ToLower() is "null" or "tbd" or "hero") continue; // If the pickaxe name is null, skip it
 
@@ -99,7 +99,7 @@ internal class PickaxeGeneration : AbstractGeneration
                         if (!File.Exists(Path.Combine(Config.ApplicationPath, "wwwroot/pickaxes/" + pickaxe.Id + ".png"))) // If the pickaxe image doesn't exist in the wwwroot folder
                             await File.WriteAllBytesAsync(Path.Combine(Config.ApplicationPath, "wwwroot/pickaxes/" + pickaxe.Id + ".png"), ms.ToArray()); // Write the pickaxe image to the wwwroot folder
 
-                        pickaxe.Images.SmallIcon = "pickaxes/" + pickaxe.Id + ".png"; // Set the small icon to the skin image
+                        pickaxe.Images.SmallIcon = "pickaxes/" + pickaxe.Id + ".png"; // Set the small icon to the pickxe image
                     }
                     else // Otherwise
                     {
@@ -112,19 +112,19 @@ internal class PickaxeGeneration : AbstractGeneration
             }
             else // Otherwise
                 Logger.Log($"Failed to load {assetPath}"); // Log that the asset failed to load
-            
-            pickaxes = pickaxes.OrderBy(x => x.Id).ToList(); // sort pickaxes by alphabetical order
+        }
+        
+        pickaxes = pickaxes.OrderBy(x => x.Name).ToList(); // sort pickaxes by alphabetical order
 
-            // Remove items from the array that are duplicates
-            for (var i = 0; i < pickaxes.Count; i++) // For every item in the pickaxes list
-            for (var j = i + 1; j < pickaxes.Count; j++) // We want to loop through the pickaxes list again to get each pickaxe compared to each pickaxe
-            {
-                if (pickaxes[i].Name != pickaxes[j].Name ||  // If the pickaxes names are not the same
-                    pickaxes[i].Images.SmallIcon != pickaxes[j].Images.SmallIcon || // If the small icons are not the same
-                    pickaxes[i].Description != pickaxes[j].Description) continue; // If the descriptions are not the same, skip them
-                pickaxes.RemoveAt(j); // Remove the duplicate skin
-                j--; // Decrement the j value to fix the list
-            }
+        // Remove items from the array that are duplicates
+        for (var i = 0; i < pickaxes.Count; i++) // For every item in the pickaxes list
+        for (var j = i + 1; j < pickaxes.Count; j++) // We want to loop through the pickaxes list again to get each pickaxe compared to each pickaxe
+        {
+            if (pickaxes[i].Name != pickaxes[j].Name ||  // If the pickaxes names are not the same
+                pickaxes[i].Images.SmallIcon != pickaxes[j].Images.SmallIcon || // If the small icons are not the same
+                pickaxes[i].Description != pickaxes[j].Description) continue; // If the descriptions are not the same, skip them
+            pickaxes.RemoveAt(j); // Remove the duplicate pickaxe
+            j--; // Decrement the j value to fix the list
         }
 
         return pickaxes; // Return the pickaxes list

@@ -107,19 +107,19 @@ internal class BackblingGeneration : AbstractGeneration
             }
             else // Otherwise
                 Logger.Log($"Failed to load {assetPath}"); // Log that the asset failed to load
-            
-            backBlings = backBlings.OrderBy(x => x.Id).ToList(); // sort pickaxes by alphabetical order
+        }
+        
+        backBlings = backBlings.OrderBy(x => x.Id).ToList(); // sort pickaxes by alphabetical order
 
-            // Remove items from the array that are duplicates
-            for (var i = 0; i < backBlings.Count; i++) // For every item in the backbling list
-            for (var j = i + 1; j < backBlings.Count; j++) // We want to loop through the backblings list again to get each pickaxe compared to each backbling
-            {
-                if (backBlings[i].Name != backBlings[j].Name ||  // If the backblings names are not the same
-                    backBlings[i].Images.SmallIcon != backBlings[j].Images.SmallIcon || // If the small icons are not the same
-                    backBlings[i].Description != backBlings[j].Description) continue; // If the descriptions are not the same, skip them
-                backBlings.RemoveAt(j); // Remove the duplicate backbling
-                j--; // Decrement the j value to fix the list
-            }
+        // Remove items from the array that are duplicates
+        for (var i = 0; i < backBlings.Count; i++) // For every item in the backbling list
+        for (var j = i + 1; j < backBlings.Count; j++) // We want to loop through the backblings list again to get each pickaxe compared to each backbling
+        {
+            if (backBlings[i].Name != backBlings[j].Name ||  // If the backblings names are not the same
+                backBlings[i].Images.SmallIcon != backBlings[j].Images.SmallIcon || // If the small icons are not the same
+                backBlings[i].Description != backBlings[j].Description) continue; // If the descriptions are not the same, skip them
+            backBlings.RemoveAt(j); // Remove the duplicate backbling
+            j--; // Decrement the j value to fix the list
         }
 
         return backBlings; // Return the backblings list

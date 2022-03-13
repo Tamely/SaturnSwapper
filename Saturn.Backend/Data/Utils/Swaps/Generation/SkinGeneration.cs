@@ -203,19 +203,19 @@ internal sealed class SkinGeneration : AbstractGeneration
             }
             else // Otherwise
                 Logger.Log($"Failed to load {assetPath}"); // Log that the asset failed to load
-            
-            _skins = _skins.OrderBy(x => x.Id).ToList(); // sort skins by alphabetical order
+        }
+        
+        _skins = _skins.OrderBy(x => x.Id).ToList(); // sort skins by alphabetical order
 
-            // Remove items from the array that are duplicates
-            for (var i = 0; i < _skins.Count; i++) // For every item in the skins list
-            for (var j = i + 1; j < _skins.Count; j++) // We want to loop through the skins list again to get each skin compared to each skin
-            {
-                if (_skins[i].Name != _skins[j].Name ||  // If the skins names are not the same
-                    _skins[i].Images.SmallIcon != _skins[j].Images.SmallIcon || // If the small icons are not the same
-                    _skins[i].Description != _skins[j].Description) continue; // If the descriptions are not the same, skip them
-                _skins.RemoveAt(j); // Remove the duplicate skin
-                j--; // Decrement the j value to fix the list
-            }
+        // Remove items from the array that are duplicates
+        for (var i = 0; i < _skins.Count; i++) // For every item in the skins list
+        for (var j = i + 1; j < _skins.Count; j++) // We want to loop through the skins list again to get each skin compared to each skin
+        {
+            if (_skins[i].Name != _skins[j].Name ||  // If the skins names are not the same
+                _skins[i].Images.SmallIcon != _skins[j].Images.SmallIcon || // If the small icons are not the same
+                _skins[i].Description != _skins[j].Description) continue; // If the descriptions are not the same, skip them
+            _skins.RemoveAt(j); // Remove the duplicate skin
+            j--; // Decrement the j value to fix the list
         }
 
         return _skins; // Return the skins list

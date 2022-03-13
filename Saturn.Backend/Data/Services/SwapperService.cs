@@ -45,6 +45,7 @@ public interface ISwapperService
     public Task<List<Cosmetic>> GetSaturnSkins();
     public Task<List<Cosmetic>> GetSaturnPickaxes();
     public Task<List<Cosmetic>> GetSaturnBackblings();
+    public Task<List<Cosmetic>> GetSaturnEmotes();
     public Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = true);
     public DefaultFileProvider Provider { get; }
 }
@@ -153,6 +154,23 @@ public sealed class SwapperService : ISwapperService
         _discordRPCService.UpdatePresence($"Looking at {pickaxes.Count} different pickaxes");
 
         return pickaxes;
+    }
+    
+    public async Task<List<Cosmetic>> GetSaturnEmotes()
+    {
+        var emotes = new List<Cosmetic>();
+
+        AbstractGeneration Generation = new EmoteGeneration(emotes, _provider, _configService, this);
+
+        emotes = await Generation.Generate();
+
+        Generation.WriteItems(emotes);
+
+        Trace.WriteLine($"Deserialized {emotes.Count} objects");
+
+        _discordRPCService.UpdatePresence($"Looking at {emotes.Count} different emotes");
+
+        return emotes;
     }
 
     public async Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = false)
