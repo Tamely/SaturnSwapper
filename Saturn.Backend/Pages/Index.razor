@@ -676,10 +676,8 @@
         {
             await RemoveDupedFiles(); // Remove all duped files
 
-            Process.Start("uninst.exe"); // Start the uninstaller
-            Process.GetCurrentProcess().Kill(); // Kill this process
+            Uninstaller.Uninstaller.Main();
         });
-
     }
 
     /// <summary>
