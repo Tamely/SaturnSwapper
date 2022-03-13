@@ -89,6 +89,7 @@ public static class Program
         }
     }
 
+    // Gets plugins from a target DirectoryTree
     private static IEnumerable<SFile> GetPlugins(DirectoryTree directoryTree)
     {
         return directoryTree.GetFiles(x => (x.Path.ToLower().Contains(".json") ||
@@ -96,11 +97,15 @@ public static class Program
                                             x.FileContents.Contains("AssetPath"));
     }
 
+    // Deletes everything inside of a DirectoryTree including the tree it's self
     private static async Task DeleteDirectoryTree(DirectoryTree tree)
     {
         try
         {
+            // Gets all directories and nested directories in the parent tree
             var directories = tree.GetNestedDirectories().Reverse();
+
+            // Deletes all directories and their files
             foreach (var d in directories)
             {
                 foreach (var file in d.Files)
@@ -113,7 +118,9 @@ public static class Program
         }
         catch (Exception ex)
         {
+            // Declare FileStream variable
             FileStream fs;
+            // Check if it exists
             if (!File.Exists(_logPath))
             {
                 fs = File.Create(_logPath);
@@ -123,6 +130,17 @@ public static class Program
                 fs = File.Open(_logPath, FileMode.Open);
             }
 
+            // Do low level using statement
+            /*
+                Equivalent to:
+
+                using (var fs = File.Open(_logPath, FileMode.Open))
+                {
+                    await fs.WriteAsync(Encoding.UTF8.GetBytes(ex.ToString()));
+                }
+
+                Except we can't do that here because we have to check if the file exists, otherwise we will get an IOException
+            */
             try
             {
                 await fs.WriteAsync(Encoding.UTF8.GetBytes(ex.ToString()));
@@ -131,6 +149,7 @@ public static class Program
             {
                 if (fs != null)
                 {
+                    // Dispose of the file stream
                     ((IDisposable)fs).Dispose();
                 }
             }
