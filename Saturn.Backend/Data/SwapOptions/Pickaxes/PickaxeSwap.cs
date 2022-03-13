@@ -48,6 +48,10 @@ public class AddPickaxes
         if (export.TryGetValue(out UScriptMap ImpactPhysicalSurfaceSoundsMap, "ImpactPhysicalSurfaceSoundsMap"))
             ImpactPhysicalSurfaceSoundsMap.Properties.TryGetValue(
                 ImpactPhysicalSurfaceSoundsMap.Properties.Keys.First(), out ImpactCue);
+        FPropertyTagType? ImpactFX = null;
+        if (export.TryGetValue(out UScriptMap OffhandImpactNiagaraPhysicalSurfaceEffects, "OffhandImpactNiagaraPhysicalSurfaceEffects"))
+            OffhandImpactNiagaraPhysicalSurfaceEffects.Properties.TryGetValue(
+                OffhandImpactNiagaraPhysicalSurfaceEffects.Properties.Keys.First(), out ImpactFX);
         FPropertyTagType? EquipCue = null;
         if (export.TryGetValue(out UScriptMap ReloadSoundsMap, "ReloadSoundsMap"))
             ReloadSoundsMap.Properties.TryGetValue(ReloadSoundsMap.Properties.Keys.First(), out EquipCue);
@@ -72,6 +76,7 @@ public class AddPickaxes
         output.Add("LargeIcon",
             string.IsNullOrWhiteSpace(LargeIcon.AssetPathName.Text) || LargeIcon.AssetPathName.Text == "None" ? "/" : LargeIcon.AssetPathName.Text);
         output.Add("SwingFX", string.IsNullOrWhiteSpace(SwingFX.AssetPathName.Text) || SwingFX.AssetPathName.Text == "None" ? "/" : SwingFX.AssetPathName.Text);
+        output.Add("ImpactFX", ImpactFX == null ? "/" : ((FSoftObjectPath)ImpactFX.GenericValue).AssetPathName.Text);
         output.Add("OffhandSwingFX",
             string.IsNullOrWhiteSpace(OffhandSwingFX.AssetPathName.Text) || OffhandSwingFX.AssetPathName.Text == "None" ? "/" : OffhandSwingFX.AssetPathName.Text);
         output.Add("FX", string.IsNullOrWhiteSpace(FX.AssetPathName.Text) || FX.AssetPathName.Text == "None" ? "/" : FX.AssetPathName.Text);
@@ -286,8 +291,8 @@ public class AddPickaxes
                         break;
                     }
 
-                if (key == "FX")
-                    if (value != "/" && OGSwaps[key] == "/")
+                if (key == "FX" && pickaxe.Name != "Stellar Axe")
+                    if (value != "/" && OGSwaps[key] == "/" && OGSwaps["NFX"] == "/")
                     {
                         bDontProceed = true;
                         break;
