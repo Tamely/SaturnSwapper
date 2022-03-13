@@ -16,7 +16,7 @@ internal sealed class AtmosphereBackblingswap : BackblingSwap
         {
             new SaturnAsset()
             {
-                ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack_CubeRedKnight",
+                ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack_StreetRacerDriftRemix",
                 Swaps = new List<SaturnSwap>()
                 {
                     new SaturnSwap()
