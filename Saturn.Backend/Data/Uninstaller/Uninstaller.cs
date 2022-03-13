@@ -13,14 +13,8 @@ public static class Uninstaller
     // The uninitialized path for the log file, in case the uninstaller breaks.
     private static string _logPath;
 
-    public static void Main()
-    {
-        // C# doesn't like async main methods (At least not console applications) so we just do this
-        Uninstall().GetAwaiter().GetResult();
-    }
-
     // Uninstalls everything related to Saturn, including plugins, and all data.
-    private static async Task Uninstall()
+    public static async Task Uninstall()
     {
         // Try just in case we run into an error
         try

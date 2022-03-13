@@ -676,7 +676,9 @@
         {
             await RemoveDupedFiles(); // Remove all duped files
 
-            Uninstaller.Uninstaller.Main();
+            await Uninstaller.Uninstaller.Uninstall();
+            await Task.Delay(2000);
+            Process.GetCurrentProcess().Kill();
         }); 
     }
 
