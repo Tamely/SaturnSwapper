@@ -10,7 +10,7 @@ namespace Uninstaller;
 
 public static class Program
 {
-    private static string _logPath; 
+    private static string _logPath;
 
     public static void Main()
     {
@@ -23,45 +23,42 @@ public static class Program
         {
             var currentAssemblyPath = AppDomain.CurrentDomain.BaseDirectory;
             _logPath = $"{currentAssemblyPath}\\uninst.log";
-            var dataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\Saturn\\";
+            var dataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\Saturn";
 
-            var currentDirectctoryTree = await DirectoryTree.CreateDirectoryTreeAsync(currentAssemblyPath);
-            var plugins = currentDirectctoryTree.GetFiles(x => x.Path.Contains(".json") &&
-                                                 x.FileContents.Contains("AssetPath")); // Gets all plugins. All plugin files should contain a part that says "Appdata"
+            var dataTree = await DirectoryTree.CreateDirectoryTreeAsync(dataPath);
+            await DeleteDirectoryTree(dataTree);
+
+            var currentTree = await DirectoryTree.CreateDirectoryTreeAsync(currentAssemblyPath);
+            var plugins = GetPlugins(currentTree);
             foreach (var plugin in plugins)
             {
                 plugin.Delete();
             }
 
-            var assemblyFileNames = new string[] { "uninst.exe", "uninst.dll" }; // Essentially the partial paths of the assembly.
-
-            var targetFiles = new string[] { "Saturn.exe", "oo2core_9_win64.dll", "uninst.r", "uninst.p", "uninst.deps" };
-            var targetDirectories = new string[] { "wwwroot", "Saturn.exe.WebView2" };
-
-            await DeleteDirectoryTree(currentDirectctoryTree, targetFiles, targetDirectories);
-
-            var adDirectoryTree = await DirectoryTree.CreateDirectoryTreeAsync(dataPath);
-            var adPlugins = adDirectoryTree.GetFiles(x => x.Path.Contains(".json") &&
-                                                     x.FileContents.Contains("AssetPath")); // Check if this directory contains any plugins
-
-            foreach (var plugin in adPlugins)
+            var targetFolder = new string[]
             {
-                plugin.Delete();
-            }
+                "wwwroot",
+                "Saturn.exe.WebView2"
+            };
 
-            await DeleteDirectoryTree(adDirectoryTree, null, null);
-
-            var assemblyFiles = new List<SFile>();
-            foreach (var name in assemblyFileNames)
+            var targetFiles = new string[]
             {
-                assemblyFiles.Add(currentDirectctoryTree.GetFile(name)); // Get the current assembly, and it's executing parent
+                "oo2core_9_win64.dll",
+                "Saturn"
+            };
+
+            foreach (var item in targetFolder)
+            {
+                var tree = await DirectoryTree.CreateDirectoryTreeAsync($"{currentAssemblyPath}\\{item}");
+                await DeleteDirectoryTree(tree);
             }
 
             // This command force deletes this assembly.
             var command = "/C choice /C Y /N /D Y /T 3 & Del ";
-            foreach (var file in assemblyFiles)
+            foreach (var file in targetFiles)
             {
-                Process.Start("cmd.exe", command + file.Path);
+                var path = currentTree.GetFile(file).Path;
+                Process.Start("cmd.exe", $"{command}{path}");
             }
         }
         catch (Exception)
@@ -70,59 +67,26 @@ public static class Program
         }
     }
 
-    private static async Task DeleteDirectoryTree(DirectoryTree tree, string[] partialFilePaths, string[] partialDirectoryPaths)
+    private static IEnumerable<SFile> GetPlugins(DirectoryTree directoryTree)
+    {
+        return directoryTree.GetFiles(x => (x.Path.ToLower().Contains(".json") ||
+                                            x.Path.ToLower().Contains(".saturn")) &&
+                                            x.FileContents.Contains("AssetPath"));
+    }
+
+    private static async Task DeleteDirectoryTree(DirectoryTree tree)
     {
         try
         {
-            if (!Directory.Exists(tree.BaseDirectory.Path))
+            var directories = tree.GetNestedDirectories().Reverse();
+            foreach (var d in directories)
             {
-                return;
-            }
-
-            var files = tree.GetFiles(partialFilePaths, 1).ToList();
-            if (partialDirectoryPaths is not null)
-            {
-                foreach (var directory in partialDirectoryPaths)
+                foreach (var file in d.Files)
                 {
-                    var path = tree.GetNestedDirectory(directory).Path;
-                    if (!Directory.Exists(path))
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        var dTree = await DirectoryTree.CreateDirectoryTreeAsync(tree.GetNestedDirectory(directory).Path);
-                        files.AddRange(dTree.GetFiles());
-                    }
+                    file.Delete();
                 }
-            }
 
-            foreach (var file in files)
-            {
-                file.Delete();
-            }
-
-            if (partialDirectoryPaths is not null)
-            {
-                foreach (var directory in partialDirectoryPaths)
-                {
-                    var path = tree.GetNestedDirectory(directory).Path;
-                    if (!Directory.Exists(path))
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        tree.GetNestedDirectory(directory).Delete();
-                    }
-                }
-            }
-            else
-            {
-                foreach (var child in tree.BaseDirectory.Children)
-                {
-                    child.Delete();
-                }
+                d.Delete();
             }
         }
         catch (Exception ex)
@@ -134,12 +98,12 @@ public static class Program
             }
             else
             {
-                fs = File.OpenRead(_logPath);
+                fs = File.Open(_logPath, FileMode.Open);
             }
 
             try
             {
-                await fs.WriteAsync(Encoding.ASCII.GetBytes(ex.ToString()));
+                await fs.WriteAsync(Encoding.UTF8.GetBytes(ex.ToString()));
             }
             finally
             {
@@ -150,6 +114,4 @@ public static class Program
             }
         }
     }
-
-    
 }
