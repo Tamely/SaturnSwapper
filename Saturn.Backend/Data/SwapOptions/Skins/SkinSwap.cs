@@ -658,23 +658,6 @@ public class AddSkins
                 if (OGHatType == ECustomHatType.ECustomHatType_None)
                     bDontProceed = true;
 
-            if ((swapModel.HeadMesh.ToLower().Contains("ramirez")) &&
-                !swapModel.HeadMesh.ToLower().Contains("/parts/"))
-            {
-                foreach (var material in swapModel.HeadMaterials)
-                {
-                    if (!material.Value.ToLower().Contains("hair") ||
-                        !OGHeadMaterials[material.Key].ToLower().Contains("hair") ||
-                        material.Value.ToLower().Contains("hide")) continue;
-                    foreach (var ogMaterial in OGHeadMaterials.Where(ogMaterial
-                                 => ogMaterial.Value.ToLower().Contains("hair")))
-                    {
-                        (swapModel.HeadMaterials[material.Key], swapModel.HeadMaterials[ogMaterial.Key]) = (
-                            swapModel.HeadMaterials[ogMaterial.Key], swapModel.HeadMaterials[material.Key]);
-                    }
-                }
-            }
-
             if (option.Name == "Blizzabelle")
             {
                 if (swapModel.HeadMaterials.Count > 1 && swapModel.FaceACCMaterials.Count < 2)
@@ -717,6 +700,23 @@ public class AddSkins
                     while (swapModel.FaceACCMaterials.ContainsKey(i)) i++;
                     swapModel.FaceACCMaterials.Add(i, "/");
                 }
+            
+            if ((swapModel.HeadMesh.ToLower().Contains("ramirez")) &&
+                !swapModel.HeadMesh.ToLower().Contains("/parts/"))
+            {
+                foreach (var material in swapModel.HeadMaterials)
+                {
+                    if (!material.Value.ToLower().Contains("hair") ||
+                        !OGHeadMaterials[material.Key].ToLower().Contains("hair") ||
+                        material.Value.ToLower().Contains("hide")) continue;
+                    foreach (var ogMaterial in OGHeadMaterials.Where(ogMaterial
+                                 => ogMaterial.Value.ToLower().Contains("hair")))
+                    {
+                        (swapModel.HeadMaterials[material.Key], swapModel.HeadMaterials[ogMaterial.Key]) = (
+                            swapModel.HeadMaterials[ogMaterial.Key], swapModel.HeadMaterials[material.Key]);
+                    }
+                }
+            }
 
             if (swapModel.FaceACCABP == "None")
                 swapModel.FaceACCABP = null;
