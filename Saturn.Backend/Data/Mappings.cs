@@ -67,6 +67,7 @@ namespace Saturn.Backend.Data
                         Logger.Log("Local mappings folder doesn't contain mappings! Downloading them from Discord!", LogLevel.Warning);
                         var mappingPath = Path.Combine(Config.MappingsFolder, "++" + FileUtil.SubstringFromLast(Config.MappingsURL, '/'));
                         new WebClient().DownloadFile(Config.MappingsURL, mappingPath);
+                        latestUsmaps = new DirectoryInfo(Config.MappingsFolder).GetFiles("*_oo.usmap");
                     }
 
                     var latestUsmapInfo = latestUsmaps.OrderBy(f => f.LastWriteTime).Last();

@@ -32,6 +32,7 @@ using Saturn.Backend.Data.SwapOptions.Emotes;
 using Saturn.Backend.Data.Utils.Swaps;
 using Saturn.Backend.Data.Utils.Swaps.Generation;
 using System.IO.Compression;
+using Saturn.Backend.Data.Models.SaturnAPI;
 
 namespace Saturn.Backend.Data.Services;
 
@@ -82,6 +83,8 @@ public sealed class SwapperService : ISwapperService
         _provider.Initialize();
 
         Trace.WriteLine("Initialized provider");
+        
+        Config.MappingsURL = JsonConvert.DeserializeObject<IndexModel>(_saturnAPIService.ReturnEndpoint("/")).MappingsLink; // Get the mappings link
 
         CreateMappings(benBotApiService, fortniteAPIService, jsRuntime);
 
