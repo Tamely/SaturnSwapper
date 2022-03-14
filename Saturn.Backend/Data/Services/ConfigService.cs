@@ -28,6 +28,7 @@ namespace Saturn.Backend.Data.Services
         public Task<string> TryGetHeadOrHatCharacterPart();
         public Task<bool> TrySetHeadOrHatCharacterPart(string characterPart);
         public Task<int> GetConvertedFileCount();
+        public Task<string> TryGetSwapperVersion();
         public void SaveConfig();
     }
 
@@ -115,12 +116,34 @@ namespace Saturn.Backend.Data.Services
             }
         }
 
+        public async Task<string> TryGetSwapperVersion()
+        {
+            try
+            {
+                return ConfigFile.SwapperVersion;
+            }
+            catch
+            {
+                return "1.0.0";
+            }
+        }
+
         private bool TryGetConfig()
         {
             try
             {
                 ConfigFile =
                     JsonConvert.DeserializeObject<Configuration>(File.ReadAllText(Config.ConfigPath));
+                
+                /// Go through every method to make sure the config is valid
+                TryGetConvertedItems().GetAwaiter();
+                TryGetFortniteVersion().GetAwaiter();
+                TryGetShouldRarityConvert().GetAwaiter();
+                TryGetShouldSeriesConvert().GetAwaiter();
+                TryGetShouldShowStyles().GetAwaiter();
+                TryGetHeadOrHatCharacterPart().GetAwaiter();
+                TryGetSwapperVersion().GetAwaiter();
+                
                 return true;
             }
             catch

@@ -585,11 +585,11 @@ public class AddSkins
                                     {
                                         bool bAttachToSocket = part.GetOrDefault("bAttachToSocket", true);
 
-                                        if ((bAttachToSocket && AttachSocketName.Text.ToLower() != "face") &&
+                                        if (bAttachToSocket && AttachSocketName.Text.ToLower() != "face" &&
                                             OGHatSocket.ToLower() == "face" || !OGbAttachToSocket)
                                             bDontProceed = true;
-                                        else if ((OGbAttachToSocket && OGHatSocket != "face") &&
-                                                 AttachSocketName.Text.ToLower() == "face" || OGbAttachToSocket)
+                                        else if (OGbAttachToSocket && OGHatSocket != "face" &&
+                                                 AttachSocketName.Text.ToLower() == "face" || bAttachToSocket)
                                             bDontProceed = true;
                                         else if ((OGbAttachToSocket && OGHatSocket.ToLower() == "hat") &&
                                                  AttachSocketName.Text.ToLower() != "hat")

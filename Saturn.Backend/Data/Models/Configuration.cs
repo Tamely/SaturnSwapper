@@ -11,6 +11,7 @@ namespace Saturn.Backend.Data.Models
         {
             InstallLocation = FortniteUtil.GetFortnitePath();
             ConvertedItems = new List<ConvertedItem>();
+            SwapperVersion = Constants.UserVersion;
         }
 
         [JsonProperty("installLocation")] public string InstallLocation { get; set; }
@@ -22,6 +23,7 @@ namespace Saturn.Backend.Data.Models
         [JsonProperty("shouldShowStyles")] public bool ShouldShowStyles { get; set; } = true;
         [JsonProperty("isLobbyBackgroundConverted")] public bool IsLobbyBackgroundConverted { get; set; }
         [JsonProperty("headOrHatCharacterPart")] public string HeadOrHatCharacterPart { get; set; } = "Hat";
+        [JsonProperty("swapperVersion")] public string SwapperVersion { get; set; }
         [JsonProperty("key")] public string Key { get; set; }
     }
 }
