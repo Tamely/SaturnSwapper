@@ -585,16 +585,15 @@ public class AddSkins
                                     {
                                         bool bAttachToSocket = part.GetOrDefault("bAttachToSocket", true);
 
-                                        if (bAttachToSocket && AttachSocketName.Text.ToLower() != "face" &&
+                                        if ((bAttachToSocket && AttachSocketName.Text.ToLower() != "face") &&
                                             OGHatSocket.ToLower() == "face" || !OGbAttachToSocket)
                                             bDontProceed = true;
-                                        else
-                                            bDontProceed = OGbAttachToSocket switch
-                                            {
-                                                true when OGHatSocket.ToLower() == "hat" &&
-                                                          AttachSocketName.Text.ToLower() != "hat" => true,
-                                                _ => bDontProceed
-                                            };
+                                        else if ((OGbAttachToSocket && OGHatSocket != "face") &&
+                                                 AttachSocketName.Text.ToLower() == "face" || OGbAttachToSocket)
+                                            bDontProceed = true;
+                                        else if ((OGbAttachToSocket && OGHatSocket.ToLower() == "hat") &&
+                                                 AttachSocketName.Text.ToLower() != "hat")
+                                            bDontProceed = true;
 
                                         AdditionalData.TryGetValue(out HatMorphTargets, "HatMorphTargets");
 
