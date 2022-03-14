@@ -122,7 +122,7 @@ public sealed class SwapperService : ISwapperService
             if (skins[i].Description.Contains("style:") && !await _configService.TryGetShouldShowStyles())
             {
                 skins.RemoveAt(i);
-                i--;
+                i++;
             }
         }
 

@@ -560,6 +560,8 @@ public class AddSkins
                     case "Hat":
                         await Task.Run(() =>
                         {
+                            bool isOGRealHat = false;
+                            bool isRealHat = false;
                             if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
                             {
                                 swapModel.FaceACCMesh = part.Get<FSoftObjectPath>("SkeletalMesh").AssetPathName.Text;
@@ -584,21 +586,19 @@ public class AddSkins
                                     if (AdditionalData.TryGetValue(out FName AttachSocketName, "AttachSocketName"))
                                     {
                                         bool bAttachToSocket = part.GetOrDefault("bAttachToSocket", true);
-
-                                        if (bAttachToSocket && AttachSocketName.Text.ToLower() != "face" &&
-                                            OGHatSocket.ToLower() == "face" || !OGbAttachToSocket)
-                                            bDontProceed = true;
-                                        else if (OGbAttachToSocket && OGHatSocket != "face" &&
-                                                 AttachSocketName.Text.ToLower() == "face" || bAttachToSocket)
-                                            bDontProceed = true;
-                                        else if ((OGbAttachToSocket && OGHatSocket.ToLower() == "hat") &&
-                                                 AttachSocketName.Text.ToLower() != "hat")
-                                            bDontProceed = true;
-
-                                        AdditionalData.TryGetValue(out HatMorphTargets, "HatMorphTargets");
-
+                                        
+                                        if (bAttachToSocket && AttachSocketName.ToString().ToLower() != "face")
+                                            isRealHat = true;
                                     }
+                                    
+                                    AdditionalData.TryGetValue(out HatMorphTargets, "HatMorphTargets");
                                 }
+                                
+                                if (OGbAttachToSocket && OGHatSocket.ToLower() != "face")
+                                    isOGRealHat = true;
+
+                                if (isOGRealHat != isRealHat)
+                                    bDontProceed = true;
 
                                 if (part.TryGetValue(out FStructFallback[] MaterialOverride, "MaterialOverrides"))
                                 {
