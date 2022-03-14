@@ -35,6 +35,7 @@ namespace Saturn.Backend.Data
 
         public async Task Init()
         {
+            Directory.CreateDirectory(Config.MappingsFolder);
             await _restApiHelper.ThreadWorker.Begin(cancellationToken =>
             {
                 var mappings = _restApiHelper.BenbotApi.GetMappings(cancellationToken);
@@ -58,13 +59,6 @@ namespace Saturn.Backend.Data
                 else
                 {
                     Logger.Log("Couldn't get mappings from BenBot API, it's probably down. Falling back to local mappings!", LogLevel.Warning);
-
-                    if (!Directory.Exists(Config.MappingsFolder))
-                    {
-                        Logger.Log("Local mappings folder doesn't exist!", LogLevel.Error);
-                        _jsRuntime.InvokeVoidAsync("MessageBox", cancellationToken, "There was an error parsing the mappings!", "BenBot is not responding to the swapper's API requests and you don't have local mappings installed. Please wait for BenBot to go back up or ask for Support in Tamely's Discord server if you need help right away!");
-                        return;
-                    }
                     var latestUsmaps = new DirectoryInfo(Config.MappingsFolder).GetFiles("*_oo.usmap");
                     if (_provider.MappingsContainer != null || latestUsmaps.Length <= 0)
                     {

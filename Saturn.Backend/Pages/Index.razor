@@ -1006,6 +1006,8 @@
     {
         if (Constants.UserVersion != await _configService.TryGetSwapperVersion())
         {
+            await _configService.TrySetSwapperVersion();
+            
             Directory.Delete(Config.CachePath, true); // Delete the cache folder
             await _jsRuntime.InvokeVoidAsync("MessageBox", "Cleared the cache folder!", "You updated the swapper, so the cache folder has been cleared!", "success"); // Show a message confirming the cache files have been removed
         }

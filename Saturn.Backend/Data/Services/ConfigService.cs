@@ -29,6 +29,7 @@ namespace Saturn.Backend.Data.Services
         public Task<bool> TrySetHeadOrHatCharacterPart(string characterPart);
         public Task<int> GetConvertedFileCount();
         public Task<string> TryGetSwapperVersion();
+        public Task<bool> TrySetSwapperVersion();
         public void SaveConfig();
     }
 
@@ -125,6 +126,19 @@ namespace Saturn.Backend.Data.Services
             catch
             {
                 return "1.0.0";
+            }
+        }
+        
+        public async Task<bool> TrySetSwapperVersion()
+        {
+            try
+            {
+                ConfigFile.SwapperVersion = Constants.UserVersion;
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
