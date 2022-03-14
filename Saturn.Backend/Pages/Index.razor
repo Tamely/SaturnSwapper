@@ -45,6 +45,10 @@
         {
             <input type="text" class="key" placeholder="Enter key here" @oninput=@(async(e) => await CheckKey(e.Value.ToString()))>
         }
+        else if (saturnState == SaturnState.S_Lobby)
+        {
+            <input type="text" class="key" placeholder="Enter ID to search for" @oninput=@(async(e) => await CheckKey(e.Value.ToString()))>
+        }
         else
         {
             <section class="glass">

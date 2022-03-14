@@ -34,6 +34,7 @@
         <PackageReference Include="MudBlazor" Version="6.0.5" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
         <PackageReference Include="Oodle.NET" Version="1.0.1" />
+        <PackageReference Include="RestSharp" Version="106.15.0" />
         <PackageReference Include="SkiaSharp" Version="2.88.0-preview.187" />
     </ItemGroup>
 

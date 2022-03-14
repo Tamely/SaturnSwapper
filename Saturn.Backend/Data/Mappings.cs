@@ -8,7 +8,9 @@ using Saturn.Backend.Data.Utils;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Saturn.Backend.Data.Utils.BenBot;
 
 namespace Saturn.Backend.Data
 {
@@ -18,6 +20,8 @@ namespace Saturn.Backend.Data
         private readonly DefaultFileProvider _provider; 
         private readonly IFortniteAPIService _fortniteAPIService;
         private readonly IJSRuntime _jsRuntime;
+        
+        private readonly RestApiHelper _restApiHelper;
 
         public Mappings(DefaultFileProvider provider, IBenBotAPIService benbotAPIService, IFortniteAPIService fortniteApiService, IJSRuntime jsRuntime)
         {
@@ -25,92 +29,55 @@ namespace Saturn.Backend.Data
             _provider = provider;
             _fortniteAPIService = fortniteApiService;
             _jsRuntime = jsRuntime;
+
+            _restApiHelper = new RestApiHelper();
         }
 
         public async Task Init()
         {
-            try
+            await _restApiHelper.ThreadWorker.Begin(cancellationToken =>
             {
-                if (await _benBotAPIService.IsBenAlive())
+                var mappings = _restApiHelper.BenbotApi.GetMappings(cancellationToken);
+                if (mappings is { Length: > 0 })
                 {
-                    string json = await _benBotAPIService.ReturnEndpointAsync("mappings?version=" + _fortniteAPIService.GetAES().Build);
-                    Logger.Log("Grabbed mappings, preparing to parse.");
-                    JArray parsed = JArray.Parse(json);
-
-                    if (parsed.Count == 0)
+                    foreach (var mapping in mappings)
                     {
-                        Logger.Log("No mappings found, BenBot is probably down. Trying to load old mappings...");
+                        if (mapping.Meta.CompressionMethod != "Oodle") continue;
 
-                        Directory.CreateDirectory(Config.MappingsFolder);
-                        string newestFile = Directory.GetFiles(Config.MappingsFolder).OrderByDescending(f => new FileInfo(f).LastWriteTime).First();
-                        _provider.MappingsContainer = new FileUsmapTypeMappingsProvider(newestFile);
-                    }
-                    else
-                    {
-                        foreach (var token in parsed)
+                        var mappingPath = Path.Combine(Config.MappingsFolder, mapping.FileName);
+                        if (!File.Exists(mappingPath))
                         {
-                            if (token["meta"]["compressionMethod"].ToString() != "Oodle") continue;
-                    
-                            Logger.Log("Downloading mappings...");
-                    
-                            Directory.CreateDirectory(Config.MappingsFolder);
-                            if (!File.Exists(Config.MappingsFolder + token["fileName"]))
-                                await File.WriteAllBytesAsync(Config.MappingsFolder + token["fileName"],
-                                    await _benBotAPIService.ReturnBytesAsync(token["url"].ToString()));
-
-                            _provider.MappingsContainer =
-                                new FileUsmapTypeMappingsProvider(Config.MappingsFolder + token["fileName"]);
-                    
-                            Logger.Log("Mappings downloaded. Cleaning up the folder...");
-
-                            foreach (var file in new DirectoryInfo(Config.MappingsFolder).GetFiles()
-                                         .OrderByDescending(x => x.LastWriteTime).Skip(5))
-                                file.Delete();
+                            _restApiHelper.BenbotApi.DownloadFile(mapping.Url, mappingPath);
                         }
-                        Logger.Log("Loaded mappings!");
+
+                        _provider.MappingsContainer = new FileUsmapTypeMappingsProvider(mappingPath);
+                        Logger.Log($"Mappings pulled from '{mapping.FileName}'");
+                        break;
                     }
                 }
                 else
                 {
-                    Logger.Log("BenBot is not alive, trying to load old mappings...");
-                    if (Directory.Exists(Config.MappingsFolder))
-                    {
-                        _provider.MappingsContainer =
-                            new FileUsmapTypeMappingsProvider(Config.MappingsFolder + _fortniteAPIService.GetAES().Build + "_oo.usmap");
-                    
-                        Logger.Log("Mappings Loaded. Cleaning up the folder...");
+                    Logger.Log("Couldn't get mappings from BenBot API, it's probably down. Falling back to local mappings!", LogLevel.Warning);
 
-                        foreach (var file in new DirectoryInfo(Config.MappingsFolder).GetFiles()
-                                     .OrderByDescending(x => x.LastWriteTime).Skip(5))
-                            file.Delete();
-                    }
-                    else
+                    if (!Directory.Exists(Config.MappingsFolder))
                     {
-                        await _jsRuntime.InvokeVoidAsync("MessageBox", "There was an error with BenBot mappings!",
-                            "Unable to connect to BenBot and you don't have a mappings folder. Please contact support in Tamely's Discord to get this fixed right away, or wait until BenBot is back!");
+                        Logger.Log("Local mappings folder doesn't exist!", LogLevel.Error);
+                        _jsRuntime.InvokeVoidAsync("MessageBox", cancellationToken, "There was an error parsing the mappings!", "BenBot is not responding to the swapper's API requests and you don't have local mappings installed. Please wait for BenBot to go back up or ask for Support in Tamely's Discord server if you need help right away!");
+                        return;
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Log("There was an error loading mappings. We will try to load from old files.");
-                if (Directory.Exists(Config.MappingsFolder))
-                {
-                    _provider.MappingsContainer =
-                        new FileUsmapTypeMappingsProvider(Config.MappingsFolder + _fortniteAPIService.GetAES().Build + "_oo.usmap");
-                    
-                    Logger.Log("Mappings Loaded. Cleaning up the folder...");
+                    var latestUsmaps = new DirectoryInfo(Config.MappingsFolder).GetFiles("*_oo.usmap");
+                    if (_provider.MappingsContainer != null || latestUsmaps.Length <= 0)
+                    {
+                        Logger.Log("Local mappings folder doesn't contain mappings!", LogLevel.Error);
+                        _jsRuntime.InvokeVoidAsync("MessageBox", cancellationToken, "There was an error parsing the mappings!", "BenBot is not responding to the swapper's API requests and you don't have local mappings installed. Please wait for BenBot to go back up or ask for Support in Tamely's Discord server if you need help right away!");
+                        return;
+                    }
 
-                    foreach (var file in new DirectoryInfo(Config.MappingsFolder).GetFiles()
-                                 .OrderByDescending(x => x.LastWriteTime).Skip(5))
-                        file.Delete();
+                    var latestUsmapInfo = latestUsmaps.OrderBy(f => f.LastWriteTime).Last();
+                    _provider.MappingsContainer = new FileUsmapTypeMappingsProvider(latestUsmapInfo.FullName);
+                    Logger.Log($"Mappings pulled from '{latestUsmapInfo.Name}'", LogLevel.Warning);
                 }
-                else
-                {
-                    await _jsRuntime.InvokeVoidAsync("MessageBox", "Please restart the swapper", "There was an error while loading mappings. Please try again or contact support in Tamely's Discord.");
-                    Logger.Log("Unable to parse/load mappings, please contact support! " + ex, LogLevel.Fatal);
-                }
-            }
+            });
         }
     }
 }

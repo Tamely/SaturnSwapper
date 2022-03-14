@@ -11,6 +11,7 @@
         S_Error,
         S_Update,
         S_Misc,
-        S_Key
+        S_Key,
+        S_Lobby
     }
 }
