@@ -45,10 +45,6 @@
         {
             <input type="text" class="key" placeholder="Enter key here" @oninput=@(async(e) => await CheckKey(e.Value.ToString()))>
         }
-        else if (saturnState == SaturnState.S_Lobby)
-        {
-            <input type="text" class="key" placeholder="Enter ID to search for" @oninput=@(async(e) => await CheckKey(e.Value.ToString()))>
-        }
         else
         {
             <section class="glass">
@@ -614,13 +610,6 @@
                         <div class="card-info">
                             <h2>Remove item cache</h2>
                             <p style="color:white">Removes all generated swaps from items</p>
-                        </div>
-                    </div>
-                    <div class="card" @onclick=@(async () => await Uninstall())>
-                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
-                        <div class="card-info">
-                            <h2>Uninstall</h2>
-                            <p style="color:white">Uninstalls every asset related to Saturn.</p>
                         </div>
                     </div>
 
