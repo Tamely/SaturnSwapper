@@ -116,11 +116,14 @@ public sealed class SwapperService : ISwapperService
         Generation.WriteItems(skins);
 
         Trace.WriteLine($"Deserialized {skins.Count} objects");
-
-        foreach (var skin in skins)
+        
+        for (int i = skins.Count - 1; i >= 0; i--)
         {
-            if (skin.Description.Contains("style:") && !await _configService.TryGetShouldShowStyles())
-                skins.Remove(skin);
+            if (skins[i].Description.Contains("style:") && !await _configService.TryGetShouldShowStyles())
+            {
+                skins.RemoveAt(i);
+                i--;
+            }
         }
 
         _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
