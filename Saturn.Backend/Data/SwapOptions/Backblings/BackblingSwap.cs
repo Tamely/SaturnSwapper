@@ -7,6 +7,7 @@ using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.UObject;
+using Microsoft.JSInterop;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
@@ -232,7 +233,7 @@ public class AddBackblings
     };
     
     public async Task<Cosmetic> AddBackblingOptions(Cosmetic backBling, ISwapperService swapperService,
-        DefaultFileProvider _provider)
+        DefaultFileProvider _provider, IJSRuntime _jsRuntime)
     {
         var cp = await swapperService.GetBackblingCP(backBling.Id);
 
@@ -243,7 +244,17 @@ public class AddBackblings
 
         foreach (var option in BackblingOptions)
         {
-            string OGCP = (await swapperService.GetBackblingCP(option.ItemDefinition)).GetPathName();
+            var uobj = await swapperService.GetBackblingCP(option.ItemDefinition);
+            string OGCP = uobj == new UObject()
+                ? "ERROR"
+                : uobj.GetPathName();
+
+            if (OGCP == "ERROR")
+            {
+                await _jsRuntime.InvokeVoidAsync("MessageBox", "There was an error getting the backbling option " + option.Name, "Could not get the character part for this option. This might mean your files are corrupt!");
+                throw new Exception("Couldn't get character part for backbling option " + option.Name);
+            }
+            
             Dictionary<string, string> OGSwaps = await GetAssetsFromCP(OGCP, _provider);
 
             bool bDontProceed = false;

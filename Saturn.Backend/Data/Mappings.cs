@@ -8,6 +8,8 @@ using Saturn.Backend.Data.Utils;
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Saturn.Backend.Data.Utils.BenBot;
@@ -62,9 +64,9 @@ namespace Saturn.Backend.Data
                     var latestUsmaps = new DirectoryInfo(Config.MappingsFolder).GetFiles("*_oo.usmap");
                     if (_provider.MappingsContainer != null || latestUsmaps.Length <= 0)
                     {
-                        Logger.Log("Local mappings folder doesn't contain mappings!", LogLevel.Error);
-                        _jsRuntime.InvokeVoidAsync("MessageBox", cancellationToken, "There was an error parsing the mappings!", "BenBot is not responding to the swapper's API requests and you don't have local mappings installed. Please wait for BenBot to go back up or ask for Support in Tamely's Discord server if you need help right away!");
-                        return;
+                        Logger.Log("Local mappings folder doesn't contain mappings! Downloading them from Discord!", LogLevel.Warning);
+                        var mappingPath = Path.Combine(Config.MappingsFolder, "++" + FileUtil.SubstringFromLast(Config.MappingsURL, '/'));
+                        new WebClient().DownloadFile(Config.MappingsURL, mappingPath);
                     }
 
                     var latestUsmapInfo = latestUsmaps.OrderBy(f => f.LastWriteTime).Last();

@@ -26,6 +26,8 @@ namespace Saturn.Backend.Data.Utils
         public static readonly string CloudStoragePath = BasePath + "CloudStorage.ini";
 
         public static readonly string ApplicationPath = AppDomain.CurrentDomain.BaseDirectory;
+
+        public static string MappingsURL = "";
         
         public static bool isBeta = false;
         

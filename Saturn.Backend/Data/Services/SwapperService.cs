@@ -135,7 +135,7 @@ public sealed class SwapperService : ISwapperService
     {
         var backblings = new List<Cosmetic>();
 
-        AbstractGeneration Generation = new BackblingGeneration(backblings, _provider, _configService, this);
+        AbstractGeneration Generation = new BackblingGeneration(backblings, _provider, _configService, this, _jsRuntime);
 
         backblings = await Generation.Generate();
 
@@ -650,7 +650,7 @@ public sealed class SwapperService : ISwapperService
 
         if (export.Length > 0)
             return export[0]; // Return the base CP
-        
+
         Logger.Log("Unable to find backbling character part for " + id, LogLevel.Error);
         return new UObject(); // Return an empty UObject
     }

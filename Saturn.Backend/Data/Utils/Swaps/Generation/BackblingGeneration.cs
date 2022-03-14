@@ -7,6 +7,7 @@ using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Objects.Core.i18N;
 using CUE4Parse_Conversion.Textures;
+using Microsoft.JSInterop;
 using Newtonsoft.Json;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.FortniteAPI;
@@ -21,12 +22,14 @@ internal class BackblingGeneration : AbstractGeneration
     public BackblingGeneration(List<Cosmetic> backBlings,
                             DefaultFileProvider _provider,
                             IConfigService _configService,
-                            ISwapperService _swapperService) : base(ItemType.IT_Backbling)
+                            ISwapperService _swapperService,
+                            IJSRuntime _jsRuntime) : base(ItemType.IT_Backbling)
     {
         this.backBlings = backBlings;
         this._provider = _provider;
         this._configService = _configService;
         this._swapperService = _swapperService;
+        this._jsRuntime = _jsRuntime;
     }
 
     public override async Task<List<Cosmetic>> Generate()
@@ -100,7 +103,7 @@ internal class BackblingGeneration : AbstractGeneration
                     }
                 }
 
-                var addedBack = await new AddBackblings().AddBackblingOptions(backbling, _swapperService, _provider); // Set the backbling to a variable so we can check if it's null;
+                var addedBack = await new AddBackblings().AddBackblingOptions(backbling, _swapperService, _provider, _jsRuntime); // Set the backbling to a variable so we can check if it's null;
                 
                 if (addedBack is null) continue; // If the backbling is null, skip it
                 backBlings.Add(addedBack); // Add the backbling to the list
@@ -129,4 +132,5 @@ internal class BackblingGeneration : AbstractGeneration
     private DefaultFileProvider _provider { get; set; }
     private IConfigService _configService { get; set; }
     private ISwapperService _swapperService { get; set; }
+    private IJSRuntime _jsRuntime { get; set; }
 }

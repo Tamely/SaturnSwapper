@@ -119,13 +119,11 @@ internal sealed class SkinGeneration : AbstractGeneration
                         }
                         else // Otherwise
                         {
-                            Logger.Log("Cannot parse the small icon for " + skin.Id); // Log the error
                             continue; // Skip the skin
                         }
                     }
                     else // Otherwise
                     {
-                        Logger.Log("Cannot parse the HID for " + skin.Id); // Log the error
                         continue; // Skip the skin
                     }
                 }

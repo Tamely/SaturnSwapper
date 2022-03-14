@@ -11,4 +11,5 @@ public class IndexModel
     public string DiscordServer { get; set; }
     public string swapperVersion { get; set; }
     [JsonProperty("keyLink")] public string KeyLink { get; set; }
+    [JsonProperty("mappingsLink")] public string MappingsLink { get; set; }
 }
