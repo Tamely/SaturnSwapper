@@ -107,8 +107,6 @@ internal class PickaxeGeneration : AbstractGeneration
                         continue; // Skip the pickaxe
                     }
                 }
-
-                pickaxes.Add(await new AddPickaxes().AddPickaxeOptions(pickaxe, _swapperService, _provider)); // Add the pickaxe to the list
             }
             else // Otherwise
                 Logger.Log($"Failed to load {assetPath}"); // Log that the asset failed to load

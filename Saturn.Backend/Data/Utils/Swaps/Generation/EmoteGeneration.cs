@@ -99,8 +99,6 @@ internal class EmoteGeneration : AbstractGeneration
                         continue; // Skip the emote
                     }
                 }
-                
-                emotes.Add(await new AddEmotes().AddEmoteOptions(emote, _swapperService, _provider));
             }
             else // Otherwise
                 Logger.Log($"Failed to load {assetPath}"); // Log that the asset failed to load

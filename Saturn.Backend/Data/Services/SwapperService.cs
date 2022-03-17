@@ -44,6 +44,10 @@ public interface ISwapperService
     public Task<UObject> GetWIDByID(string id);
     public Task<UObject> GetBackblingCP(string id);
     public Task<List<Cosmetic>> GetSaturnSkins();
+    public Task<List<SaturnItem>> GetSkinOptions(Cosmetic item);
+    public Task<List<SaturnItem>> GetPickaxeOptions(Cosmetic item);
+    public Task<List<SaturnItem>> GetBackblingOptions(Cosmetic item);
+    public Task<List<SaturnItem>> GetEmoteOptions(Cosmetic item);
     public Task<List<Cosmetic>> GetSaturnPickaxes();
     public Task<List<Cosmetic>> GetSaturnBackblings();
     public Task<List<Cosmetic>> GetSaturnEmotes();
@@ -80,6 +84,7 @@ public sealed class SwapperService : ISwapperService
         Trace.WriteLine("Got AES");
 
         _provider = new DefaultFileProvider(FortniteUtil.PakPath, SearchOption.TopDirectoryOnly, false, new CUE4Parse.UE4.Versions.VersionContainer(CUE4Parse.UE4.Versions.EGame.GAME_UE5_1));
+
         _provider.Initialize();
 
         Trace.WriteLine("Initialized provider");
@@ -126,12 +131,36 @@ public sealed class SwapperService : ISwapperService
             {
                 skins.RemoveAt(i);
                 i++;
+                continue;
             }
+            
+            if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, skins[i].Name) && string.Equals(x.ItemDefinition, skins[i].Id)))
+                skins[i].IsConverted = true;
         }
 
         _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
 
         return skins;
+    }
+
+    public async Task<List<SaturnItem>> GetSkinOptions(Cosmetic item)
+    {
+        return (await new AddSkins().AddSkinOptions(item, this, _provider)).CosmeticOptions;
+    }
+    
+    public async Task<List<SaturnItem>> GetBackblingOptions(Cosmetic item)
+    {
+        return (await new AddBackblings().AddBackblingOptions(item, this, _provider, _jsRuntime)).CosmeticOptions;
+    }
+    
+    public async Task<List<SaturnItem>> GetPickaxeOptions(Cosmetic item)
+    {
+        return (await new AddPickaxes().AddPickaxeOptions(item, this, _provider)).CosmeticOptions;
+    }
+    
+    public async Task<List<SaturnItem>> GetEmoteOptions(Cosmetic item)
+    {
+        return (await new AddEmotes().AddEmoteOptions(item, this, _provider)).CosmeticOptions;
     }
     
     public async Task<List<Cosmetic>> GetSaturnBackblings()
@@ -145,6 +174,12 @@ public sealed class SwapperService : ISwapperService
         Generation.WriteItems(backblings);
 
         Trace.WriteLine($"Deserialized {backblings.Count} objects");
+        
+        foreach (var item in backblings)
+        {
+            if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, item.Name) && string.Equals(x.ItemDefinition, item.Id)))
+                item.IsConverted = true;
+        }
 
         _discordRPCService.UpdatePresence($"Looking at {backblings.Count} different backblings");
 
@@ -162,6 +197,12 @@ public sealed class SwapperService : ISwapperService
         Generation.WriteItems(pickaxes);
 
         Trace.WriteLine($"Deserialized {pickaxes.Count} objects");
+        
+        foreach (var item in pickaxes)
+        {
+            if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, item.Name) && string.Equals(x.ItemDefinition, item.Id)))
+                item.IsConverted = true;
+        }
 
         _discordRPCService.UpdatePresence($"Looking at {pickaxes.Count} different pickaxes");
 
@@ -179,6 +220,12 @@ public sealed class SwapperService : ISwapperService
         Generation.WriteItems(emotes);
 
         Trace.WriteLine($"Deserialized {emotes.Count} objects");
+        
+        foreach (var item in emotes)
+        {
+            if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, item.Name) && string.Equals(x.ItemDefinition, item.Id)))
+                item.IsConverted = true;
+        }
 
         _discordRPCService.UpdatePresence($"Looking at {emotes.Count} different emotes");
 

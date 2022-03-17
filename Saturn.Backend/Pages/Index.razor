@@ -149,7 +149,7 @@
                     {
                         if (!item.IsPickingStyles)
                         {
-                            <div class="card" id="item-@item.Id" @onclick=@(async () => await SwitchItemStyleChoice(item))>
+                            <div class="card" id="item-@item.Id" @onclick=@(async () => { await SwitchItemStyleChoice(item); await SetCosmeticOptions(item);})>
                                 @if (item.Series != null && item.Series != new Series() && !string.IsNullOrEmpty(item.Series.BackendValue))
                                 {
                                     <img class="base" src="img/Series/@(item.Series.BackendValue).png" alt=""/>
@@ -229,7 +229,7 @@
                                     }
                                 </div>
 
-                                @foreach (var option in item.CosmeticOptions)
+                                @foreach (var option in SkinOptions)
                                 {
                                     <div style="cursor: help" @onclick=@(async () => await _swapperService.Swap(item, option, currentType, Items, false))>
                                         @if (option.Series != null)
@@ -632,6 +632,8 @@
     private List<Cosmetic> Items;
     private List<Cosmetic> BackupItems;
 
+    private List<SaturnItem> SkinOptions = new List<SaturnItem>();
+
     private bool _halted;
 
     private string Avatar { get; set; }
@@ -673,6 +675,18 @@
             await Task.Delay(2000);
             Process.GetCurrentProcess().Kill();
         }); 
+    }
+
+    private async Task SetCosmeticOptions(Cosmetic item)
+    {
+        if (item.Id.Contains("CID_"))
+            SkinOptions = await _swapperService.GetSkinOptions(item);
+        else if (item.Id.Contains("BID_"))
+            SkinOptions = await _swapperService.GetBackblingOptions(item);
+        else if (item.Id.Contains("EID_"))
+            SkinOptions = await _swapperService.GetEmoteOptions(item);
+        else
+            SkinOptions = await _swapperService.GetPickaxeOptions(item);
     }
 
     /// <summary>

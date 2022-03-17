@@ -193,11 +193,11 @@ internal sealed class SkinGeneration : AbstractGeneration
                         }
                     }
                 }
-                    
-                foreach (var value in CosmeticsToInsert) // For each cosmetic to insert
-                    _skins.Add(await new AddSkins().AddSkinOptions(value, _swapperService, _provider)); // Add the cosmetic to the skins list
 
-                _skins.Add(await new AddSkins().AddSkinOptions(skin, _swapperService, _provider));  // Add the skin to the skins list
+                foreach (var value in CosmeticsToInsert) // For each cosmetic to insert
+                    _skins.Add(value); // Add the cosmetic to the skins list
+
+                _skins.Add(skin);  // Add the skin to the skins list
             }
             else // Otherwise
                 Logger.Log($"Failed to load {assetPath}"); // Log that the asset failed to load

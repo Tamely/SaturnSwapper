@@ -102,11 +102,6 @@ internal class BackblingGeneration : AbstractGeneration
                         continue; // Skip the backbling
                     }
                 }
-
-                var addedBack = await new AddBackblings().AddBackblingOptions(backbling, _swapperService, _provider, _jsRuntime); // Set the backbling to a variable so we can check if it's null;
-                
-                if (addedBack is null) continue; // If the backbling is null, skip it
-                backBlings.Add(addedBack); // Add the backbling to the list
             }
             else // Otherwise
                 Logger.Log($"Failed to load {assetPath}"); // Log that the asset failed to load
