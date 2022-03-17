@@ -102,6 +102,8 @@ internal class BackblingGeneration : AbstractGeneration
                         continue; // Skip the backbling
                     }
                 }
+                
+                backBlings.Add(backbling); // Add the backbling to the list
             }
             else // Otherwise
                 Logger.Log($"Failed to load {assetPath}"); // Log that the asset failed to load
