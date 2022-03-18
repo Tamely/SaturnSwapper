@@ -168,7 +168,7 @@
                                     }
                                     else
                                     {
-                                        <h2 style="font-size: @GetTextSize(item.Name, true)">@item.Name</h2>
+                                        <h2 style="font-size: @GetTextSize(item.Name, true);">@item.Name</h2>
                                         switch (item.PrintColor)
                                         {
                                             case Colors.C_WHITE:
@@ -209,7 +209,7 @@
                                     }
                                     else
                                     {
-                                        <h2 style="font-size: @GetTextSize(item.Name, true)">@item.Name</h2>
+                                        <h2 style="font-size: @GetTextSize(item.Name, true);">@item.Name</h2>
                                         switch (item.PrintColor)
                                         {
                                             case Colors.C_WHITE:
@@ -303,7 +303,7 @@
                     <div class="card" @onclick=@(() => saturnState = SaturnState.S_Plugins)>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2 style="color: white;">Add plugin</h2>
+                            <h2 style="color: white">Add plugin</h2>
                             <p style="color:white">Be able to use your own swaps.</p>
                         </div>
                     </div>
@@ -331,7 +331,7 @@
                                     }
                                     else
                                     {
-                                        <h2>@item.Name</h2>
+                                        <h2 style="font-size: @GetTextSize(item.Name);">@item.Name</h2>
                                         switch (item.PrintColor)
                                         {
                                             case Colors.C_WHITE:
@@ -386,7 +386,7 @@
                                                 <p style="color:white; font-size: @GetTextSize(item.Description);">@item.Description</p>
                                                 break;
                                             case Colors.C_YELLOW:
-                                                <p style="color:yellow"; font-size: @GetTextSize(item.Description);>@item.Description</p>
+                                                <p style="color:yellow; font-size: @GetTextSize(item.Description);">@item.Description</p>
                                                 break;
                                             case Colors.C_RED:
                                                 <p style="color:red; font-size: @GetTextSize(item.Description);">@item.Description</p>

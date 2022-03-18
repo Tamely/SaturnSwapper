@@ -162,6 +162,10 @@ public class AddEmotes
     public async Task<Cosmetic> AddEmoteOptions(Cosmetic emote, ISwapperService swapperService,
         DefaultFileProvider _provider)
     {
+        if (emote.CosmeticOptions.Count > 0)
+            return emote;
+        
+        
         Dictionary<string, string> swaps = await GetEmoteData(emote.Id, _provider);
 
         if (swaps.Count == 0)

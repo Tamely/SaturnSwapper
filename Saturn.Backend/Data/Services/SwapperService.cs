@@ -482,6 +482,10 @@ public sealed class SwapperService : ISwapperService
                 else
                     await BackupFile(file, item, option);
 
+                foreach (var swwaps in asset.Swaps)
+                {
+                    Logger.Log(swwaps.Search + " :: " + swwaps.Replace);
+                }
 
                 if (!TryIsB64(ref data, asset))
                     Logger.Log($"Cannot swap/determine if '{asset.ParentAsset}' is Base64 or not!",

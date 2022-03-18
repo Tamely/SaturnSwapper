@@ -260,6 +260,9 @@ public class AddPickaxes
     public async Task<Cosmetic> AddPickaxeOptions(Cosmetic pickaxe, ISwapperService swapperService,
         DefaultFileProvider _provider)
     {
+        if (pickaxe.CosmeticOptions.Count > 0)
+            return pickaxe;
+        
         var WID = await swapperService.GetWIDByID(pickaxe.Id);
 
         if (WID == new UObject())

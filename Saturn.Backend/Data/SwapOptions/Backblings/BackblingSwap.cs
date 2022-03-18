@@ -235,6 +235,9 @@ public class AddBackblings
     public async Task<Cosmetic> AddBackblingOptions(Cosmetic backBling, ISwapperService swapperService,
         DefaultFileProvider _provider, IJSRuntime _jsRuntime)
     {
+        if (backBling.CosmeticOptions.Count > 0)
+            return backBling;
+        
         var cp = await swapperService.GetBackblingCP(backBling.Id);
 
         if (cp == new UObject())
