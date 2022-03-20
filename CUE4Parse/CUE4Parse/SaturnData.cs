@@ -6,6 +6,7 @@ public class SaturnData
     public static byte[] CompressedData { get; set; }
     public static long Offset { get; set; }
     public static string Path { get; set; }
+    public static int Parition { get; set; } = 0;
     public static string UAssetPath { get; set; }
 
     // ZLib nonsense
