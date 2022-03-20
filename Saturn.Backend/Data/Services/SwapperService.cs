@@ -1562,17 +1562,49 @@ public sealed class SwapperService : ISwapperService
                 Logger.Log($"File \"{fileName + fileExt}\" doesn't exist!", LogLevel.Warning);
                 return;
             }
-            
-            var newPath = SaturnData.Parition != 0 ? path.Replace("WindowsClient", "SaturnClient_Part" + SaturnData.Parition) : path.Replace("WindowsClient", "SaturnClient");
-            if (File.Exists(newPath))
-            {
-                Logger.Log($"Duplicate for \"{fileName + fileExt}\" already exists!", LogLevel.Warning);
-                continue;
-            }
 
-            await using var source = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            await using var destination = File.Create(newPath);
-            await source.CopyToAsync(destination);
+            if (fileExt is ".ucas")
+            {
+                for (int i = 0; i < 20; i++)
+                {
+                    try
+                    {
+                        var paritionPath = i > 0 ? string.Concat(fileName, "_s", i, ".ucas") : string.Concat(fileName, ".ucas");
+                        paritionPath = Path.Combine(FortniteUtil.PakPath, paritionPath);
+                        
+                        if (!File.Exists(paritionPath))
+                            break;
+                        
+                        if (File.Exists(paritionPath.Replace("WindowsClient", "SaturnClient")))
+                        {
+                            Logger.Log($"File \"{paritionPath}\" already exists!", LogLevel.Warning);
+                            continue;
+                        }
+                        
+                        await using var paritionSource = File.Open(paritionPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                        await using var paritionDestination = File.Create(paritionPath.Replace("WindowsClient", "SaturnClient"));
+                        await paritionSource.CopyToAsync(paritionDestination);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Log($"There was an error copying container part {i} for {fileName}: " + e.ToString(), LogLevel.Error);
+                        throw new FileLoadException($"Failed to open container partition {i} for {fileName}", e);
+                    }
+                }
+            }
+            else
+            {
+                var newPath = path.Replace("WindowsClient", "SaturnClient");
+                if (File.Exists(newPath))
+                {
+                    Logger.Log($"Duplicate for \"{fileName + fileExt}\" already exists!", LogLevel.Warning);
+                    continue;
+                }
+
+                await using var source = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                await using var destination = File.Create(newPath);
+                await source.CopyToAsync(destination);
+            }
             Logger.Log($"Duplicated file \"{fileName + fileExt}\"");
         }
     }
