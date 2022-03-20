@@ -1563,7 +1563,7 @@ public sealed class SwapperService : ISwapperService
                 return;
             }
             
-            var newPath = SaturnData.Parition != 0 ? path.Replace("WindowsClient", "SaturnClient_s" + SaturnData.Parition) : path.Replace("WindowsClient", "SaturnClient");
+            var newPath = SaturnData.Parition != 0 ? path.Replace("WindowsClient", "SaturnClient_Part" + SaturnData.Parition) : path.Replace("WindowsClient", "SaturnClient");
             if (File.Exists(newPath))
             {
                 Logger.Log($"Duplicate for \"{fileName + fileExt}\" already exists!", LogLevel.Warning);
