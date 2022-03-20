@@ -16,13 +16,8 @@ The source on the swapper is 100% complete which means you can build it without 
 1. Turn off your antivirus because the swapper is flagged as a virus due to false positives with WebView2 (You have the source so you know it isn't a virus).
 2. Clone the repository
     ```
-    git clone https://github.com/Tamely/SaturnSwapper
+    git clone https://github.com/Tamely/SaturnSwapper --recursive
     cd SaturnSwapper
-    ```
-3. Remove 'SaturnBot' project from the .sln by deleting the lines:
-    ```
-    Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SaturnBot", "SaturnBot\SaturnBot.csproj", "{9B658498-B58B-4DB5-B275-4BFB59FAD1AD}"
-    EndProject
     ```
 3. Build the solution
     ``` 
