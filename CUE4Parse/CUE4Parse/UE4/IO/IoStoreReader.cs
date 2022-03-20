@@ -52,6 +52,7 @@ namespace CUE4Parse.UE4.IO
             List<FArchive> containerStreams;
             if (TocResource.Header.PartitionCount <= 1)
             {
+                SaturnData.Parition = 0;
                 containerStreams = new List<FArchive>(1);
                 try
                 {
@@ -68,6 +69,7 @@ namespace CUE4Parse.UE4.IO
                 var environmentPath = tocStream.Name.SubstringBeforeLast('.');
                 for (int i = 0; i < TocResource.Header.PartitionCount; i++)
                 {
+                    SaturnData.Parition = i;
                     try
                     {
                         var path = i > 0 ? string.Concat(environmentPath, "_s", i, ".ucas") : string.Concat(environmentPath, ".ucas");
