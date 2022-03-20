@@ -1562,16 +1562,16 @@ public sealed class SwapperService : ISwapperService
                 Logger.Log($"File \"{fileName + fileExt}\" doesn't exist!", LogLevel.Warning);
                 return;
             }
-
-            var newPath = path.Replace("WindowsClient", "SaturnClient");
+            
+            var newPath = SaturnData.Parition != 0 ? path.Replace("WindowsClient", "SaturnClient_s" + SaturnData.Parition) : path.Replace("WindowsClient", "SaturnClient");
             if (File.Exists(newPath))
             {
                 Logger.Log($"Duplicate for \"{fileName + fileExt}\" already exists!", LogLevel.Warning);
                 continue;
             }
 
-            using var source = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            using var destination = File.Create(newPath);
+            await using var source = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            await using var destination = File.Create(newPath);
             await source.CopyToAsync(destination);
             Logger.Log($"Duplicated file \"{fileName + fileExt}\"");
         }
