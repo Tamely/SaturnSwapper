@@ -277,7 +277,7 @@ namespace CUE4Parse.UE4.IO
 
                 SaturnData.Offset = partitionOffset;
 
-                SaturnData.Path = Path;
+                SaturnData.Path = reader.Name;;
 
                 SaturnData.UAssetPath = AbstractFileProvider.uassetPath;
             }
