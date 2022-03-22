@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -57,6 +57,9 @@ namespace CUE4Parse.FileProvider
 
         private void RegisterFile(string file, Stream[] stream = null!, Func<string, FArchive>? openContainerStreamFunc = null)
         {
+            if (file.Contains("Saturn"))
+                return;
+            
             var ext = file.SubstringAfterLast('.');
             if (ext.Equals("pak", StringComparison.OrdinalIgnoreCase))
             {
@@ -96,6 +99,9 @@ namespace CUE4Parse.FileProvider
 
         private void RegisterFile(FileInfo file)
         {
+            if (file.Name.Contains("Saturn"))
+                return;
+            
             var ext = file.FullName.SubstringAfterLast('.');
             if (ext.Equals("pak", StringComparison.OrdinalIgnoreCase))
             {
