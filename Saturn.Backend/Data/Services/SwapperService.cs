@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1416, SYSLIB0014 // Disable the warning that says something is deprecated and obsolete
+#pragma warning disable CA1416, SYSLIB0014 // Disable the warning that says something is deprecated and obsolete
 
 using CUE4Parse;
 using CUE4Parse.Encryption.Aes;
@@ -511,7 +511,7 @@ public sealed class SwapperService : ISwapperService
                     compressed);
 
                 if (file.Contains("ient_s")) // Check if it's partitioned
-                    file = file.Split("ient_s")[0]; // Remove the partition from the name because they don't get utocs
+                    file = file.Split("ient_s")[0] + "ient"; // Remove the partition from the name because they don't get utocs
                 
                 file = file.Replace("ucas", "utoc");
 
@@ -1564,7 +1564,7 @@ public sealed class SwapperService : ISwapperService
         };
         
         if (fileName.Contains("ient_s")) // Check if it's partitioned
-            fileName = fileName.Split("ient_s")[0]; // Remove the partition from the name because they don't get utocs
+            fileName = fileName.Split("ient_s")[0] + "ient"; // Remove the partition from the name because they don't get utocs
 
         foreach (var (fileExt, path) in from fileExt in fileExts
                                         let path = Path.Combine(FortniteUtil.PakPath, fileName + fileExt)
