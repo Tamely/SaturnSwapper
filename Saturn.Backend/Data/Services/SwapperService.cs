@@ -473,9 +473,9 @@ public sealed class SwapperService : ISwapperService
                     data = new WebClient().DownloadData(
                         "https://cdn.discordapp.com/attachments/770991313490280478/943307827357823007/TamelysDefaultGameData.uasset");
                 Logger.Log("Asset exported");
-                Logger.Log($"Starting backup of {SaturnData.Path}");
+                Logger.Log($"Starting backup of {Path.GetFileName(SaturnData.Path)}");
 
-                var file = SaturnData.Path.Replace("utoc", "ucas");
+                var file = SaturnData.Path;
 
                 if (isRandom)
                     await BackupFile(file, random, option);
@@ -500,7 +500,7 @@ public sealed class SwapperService : ISwapperService
                     Config.DecompressedDataPath + Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset", data);
 
 
-                file = file.Replace("WindowsClient", "SaturnClient");
+                file = Path.GetFileName(file.Replace("WindowsClient", "SaturnClient"));
 
                 if (isRandom)
                     await ItemUtil.UpdateStatus(random, option, "Adding asset to UCAS", Colors.C_YELLOW);
@@ -510,6 +510,9 @@ public sealed class SwapperService : ISwapperService
                 await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, file), SaturnData.Offset,
                     compressed);
 
+                if (file.Contains("ient_s")) // Check if it's partitioned
+                    file = file.Split("ient_s")[0]; // Remove the partition from the name because they don't get utocs
+                
                 file = file.Replace("ucas", "utoc");
 
                 Dictionary<long, byte[]> lengths = new();
@@ -1559,6 +1562,9 @@ public sealed class SwapperService : ISwapperService
             ".utoc",
             ".ucas"
         };
+        
+        if (fileName.Contains("ient_s")) // Check if it's partitioned
+            fileName = fileName.Split("ient_s")[0]; // Remove the partition from the name because they don't get utocs
 
         foreach (var (fileExt, path) in from fileExt in fileExts
                                         let path = Path.Combine(FortniteUtil.PakPath, fileName + fileExt)
