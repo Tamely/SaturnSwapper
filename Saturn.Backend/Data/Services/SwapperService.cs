@@ -545,8 +545,15 @@ public sealed class SwapperService : ISwapperService
                 Logger.Log($"Added {item.Name} to converted items list in config.");
 
             _configService.SaveConfig();
-
-            if (sw.Elapsed.Seconds > 1)
+            
+            if (sw.Elapsed.Minutes > 1)
+                if (isRandom)
+                    await ItemUtil.UpdateStatus(random, option, $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
+                        Colors.C_GREEN);
+                else
+                    await ItemUtil.UpdateStatus(item, option, $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
+                        Colors.C_GREEN);
+            else if (sw.Elapsed.Seconds > 1)
                 if (isRandom)
                     await ItemUtil.UpdateStatus(random, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
                         Colors.C_GREEN);
@@ -564,7 +571,7 @@ public sealed class SwapperService : ISwapperService
             Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
 
             if (await _configService.GetConvertedFileCount() > 2)
-                _jsRuntime.InvokeVoidAsync("MessageBox", "You might want to revert the last item you swapped!", "If you go ingame with your currently swapped items, you will be kicked from Fortnite.", "warning");
+                await _jsRuntime.InvokeVoidAsync("MessageBox", "You might want to revert the last item you swapped!", "If you go ingame with your currently swapped items, you will be kicked from Fortnite.", "warning");
 
 
             return true;
@@ -1584,6 +1591,7 @@ public sealed class SwapperService : ISwapperService
                         await using var paritionSource = File.Open(paritionPath, FileMode.Open, FileAccess.Read, FileShare.Read);
                         await using var paritionDestination = File.Create(paritionPath.Replace("WindowsClient", "SaturnClient"));
                         await paritionSource.CopyToAsync(paritionDestination);
+                        Logger.Log($"Successfully copied container part {i} for {fileName}");
                     }
                     catch (Exception e)
                     {
