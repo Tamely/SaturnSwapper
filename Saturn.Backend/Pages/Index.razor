@@ -26,6 +26,7 @@
 @using Colors = Saturn.Backend.Data.Enums.Colors
 @using System.Windows
 @using System.Windows.Media
+@using Newtonsoft.Json.Linq
 @inherits LayoutComponentBase
 
 <body>
@@ -286,7 +287,7 @@
                             <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                             <div class="card-info">
                                 <h2 style="color: green;">Lobby BG</h2>
-                                <p style="color:green">Changes your Fortnite lobby background to specified picture.</p>
+                                <p style="color:green">MAKE SURE YOU HAVE AN IMAGE TO REPACE THE BACKGROUND WITH IN THE SATURN EXE DIRECTORY</p>
                             </div>
                         </div>
                     }
@@ -296,7 +297,7 @@
                             <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                             <div class="card-info">
                                 <h2 style="color: white;">Lobby BG</h2>
-                                <p style="color:white">Changes your Fortnite lobby background to specified picture.</p>
+                                <p style="color:white">MAKE SURE YOU HAVE AN IMAGE TO REPACE THE BACKGROUND WITH IN THE SATURN EXE DIRECTORY</p>
                             </div>
                         </div>
                     }
@@ -736,7 +737,7 @@
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        AppDomain.CurrentDomain.UnhandledException += UnhandledException; // Catch unhandled exceptions
+        AppDomain.CurrentDomain.FirstChanceException += UnhandledException; // Catch unhandled exceptions
 
         if (!CheckForInternetConnection()) // Check for internet connection
             throw new WebException("No internet connection"); // Throw exception if no internet connection
@@ -786,7 +787,7 @@
     /// <summary>
     /// On an unhandled exception, this will log the exception and set the error state.
     /// </summary>
-    private void UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    private void UnhandledException(object sender, FirstChanceExceptionEventArgs e)
     {
         if (_halted) // If the app is already halted, don't do anything.
             return; // This is to prevent the app opening inf log tabs.
@@ -797,7 +798,7 @@
 
         var stackTrace = "\n" + e.ToString().Split("--- ")[0]; // Get the stack trace.
 
-        Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.
+        Logger.Log($"Unhandled exception occurred. {e.Exception.ToString().GetType().Name}: {e.Exception.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.
 
         Items = new List<Cosmetic>(); // Clear the items.
         saturnState = SaturnState.S_Error; // Set the state to error.
@@ -1421,14 +1422,124 @@
         saturnState = SaturnState.S_Items; // Sets the screens state to items
     }
 
+    /// <summary>
+    /// Switches the Fortnite lobby background to a selected image
+    /// </summary>
     private async Task SwapLobbyBG()
     {
-        await _jsRuntime.InvokeVoidAsync("MessageBox", "This feature is not yet implemented!", "This button is here to remind Tamely to add it, so look forward to it being here soon!", "warning");
-    }
+        // Set an empty file path
+        string filePath = "";
+        
+        // Loop through each cache file Fortnite uses
+        foreach (var cacheFile in JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(JsonConvert.SerializeObject(JObject.Parse(File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "//FortniteGame/Saved/PersistentDownloadDir/CMS/DownloadCache.json"))["cache"])).Values)
+        {
+            // If the cache file is a lobby background
+            if (!cacheFile["sourceUrl"].Contains("landscapev4")) continue;
 
+            // Set the file path to the cache file
+            filePath = cacheFile["filePath"].ToString();
+        }
+
+        // If the file path is empty
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            // Display an error message
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Could not find the background file!", "Could not find the background file! Contact support on Discord to get this resolved!", "error");
+            Logger.Log("Could not find the background file!", LogLevel.Error); // Log the error
+            return; // Return
+        }
+        
+        Logger.Log("Found the background file!"); // Log the success
+
+        Logger.Log("Searching for images..."); // Log the search for images
+        
+        // Get every image in the current directory and check if it ends with png or jpg, return a list of them
+        var images = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory).Where(x => x.EndsWith(".png") || x.EndsWith(".jpg"));
+        
+        Logger.Log("Found " + images.Count() + " images!"); // Log the number of images found
+        
+        Logger.Log("Setting images to a string array");
+        var enumerable = images as string[] ?? images.ToArray(); // Set images to a string array
+        
+        // If there are no images, return
+        if (!enumerable.Any())
+        {
+            // Display an error message
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Could not find any images!", "You don't have any '.jpg' or '.png' files in the current Saturn program directory.", "error");
+            Logger.Log("Could not find any images to replace with!", LogLevel.Error); // Log the error
+            return; // Return
+        }
+        
+        // If there is more than one image, return
+        if (enumerable.Count() > 1)
+        {
+            // Display an error message
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Too many images!", "You have more than one '.jpg' or '.png' file in the current Saturn program directory. Please only have one image in the directory.", "error");
+            Logger.Log("Too many images to replace with!", LogLevel.Error); // Log the error
+            return; // Return
+        }
+        
+        Logger.Log("Moving the original image to Saturn cache..."); // Log the move to cache
+        
+        File.Move(filePath, Config.LobbyBackgroundPath); // Move the original image to the cache
+        
+        Logger.Log("Moving the new image to Fortnite's directory."); // Log the move to Fortnite's directory
+        
+        File.Move(enumerable.First(), filePath); // Move the new image to the Fortnite's directory
+        
+        _configService.ConfigFile.IsLobbyBackgroundConverted = true; // Set the config file to converted
+        _configService.SaveConfig(); // Save the config file
+        
+        await _jsRuntime.InvokeVoidAsync("MessageBox", "Success!", "The background has been replaced!", "success"); // Display a success message
+        Logger.Log("Successfully replaced the background!"); // Log the success
+    }
+    
+    /// <summary>
+    /// Reverts the background to the original
+    /// </summary>
     private async Task RevertLobbyBG()
     {
+        string filePath = ""; // Set the file path to null
+
+        // Loop through each cache file Fortnite uses
+        foreach (var cacheFile in JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(JsonConvert.SerializeObject(JObject.Parse(File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "//FortniteGame/Saved/PersistentDownloadDir/CMS/DownloadCache.json"))["cache"])).Values)
+        {
+            if (!cacheFile["sourceUrl"].Contains("landscapev4")) continue; // If the source URL doesn't contain landscapev4, continue
+
+            filePath = cacheFile["filePath"].ToString(); // Set the file path to the current cache file
+        }
+
+        // If the file path is empty
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            // Display an error message
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Could not find the background file!", "Could not find the background file! Contact support on Discord to get this resolved!", "error");
+            Logger.Log("Could not find the background file!", LogLevel.Error); // Log the error
+            return; // Return
+        }
+        Logger.Log("Found the background file!"); // Log the success
+
+        Logger.Log("Searching for images..."); // Log the search for images
+        if (!File.Exists(Config.LobbyBackgroundPath)) // If the original image doesn't exist
+        {
+            // Display an error message
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Could not find the original image!", "Could not find the original image! Contact support on Discord to get this resolved!", "error");
+            Logger.Log("Could not find the original image!", LogLevel.Error); // Log the error
+            return; // Return
+        }
+
+        Logger.Log("Deleting the current image..."); // Log the delete the current image
+        File.Delete(filePath); // Delete the current image
         
+        Logger.Log("Moving the original image to Fortnite's directory."); // Log the move to Fortnite's directory
+        
+        File.Move(Config.LobbyBackgroundPath, filePath); // Move the original image to the Fortnite's directory
+
+        _configService.ConfigFile.IsLobbyBackgroundConverted = false; // Set the config file to not converted
+        _configService.SaveConfig(); // Save the config file
+        
+        await _jsRuntime.InvokeVoidAsync("MessageBox", "Success!", "The background has been reverted to its original state!", "success"); // Display a success message
+        Logger.Log("Successfully reverted the background!"); // Log the success
     }
     
     /// <summary>
