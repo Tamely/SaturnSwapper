@@ -510,6 +510,8 @@ public sealed class SwapperService : ISwapperService
 
                 file = Path.GetFileName(file.Replace("WindowsClient", "SaturnClient"));
 
+                var ucas = file;
+
                 if (isRandom)
                     await ItemUtil.UpdateStatus(random, option, "Adding asset to UCAS", Colors.C_YELLOW);
                 else
@@ -535,7 +537,7 @@ public sealed class SwapperService : ISwapperService
                     await ItemUtil.UpdateStatus(item, option, "Adding swap to item's config", Colors.C_YELLOW);
                 convItem.Swaps.Add(new ActiveSwap
                 {
-                    File = file.Replace("utoc", "ucas"),
+                    File = ucas,
                     Offset = SaturnData.Offset,
                     ParentAsset = asset.ParentAsset,
                     IsCompressed = SaturnData.isCompressed,
@@ -629,10 +631,15 @@ public sealed class SwapperService : ISwapperService
 
                     ItemUtil.UpdateStatus(item, option, "Checking for customs", Colors.C_YELLOW).GetAwaiter()
                         .GetResult();
+
+                    string file = asset.File;
+                    if (file.Contains("ient_s")) // Check if it's partitioned
+                        file = file.Split("ient_s")[0] + "ient.ucas"; // Remove the partition from the name because they don't get utocs
+                    
                     if (asset.Lengths != new Dictionary<long, byte[]>())
                         foreach (var (key, value) in asset.Lengths)
                             TrySwapAsset(
-                                Path.Combine(FortniteUtil.PakPath, asset.File.Replace("ucas", "utoc")),
+                                Path.Combine(FortniteUtil.PakPath, file.Replace("ucas", "utoc")),
                                 key, value).GetAwaiter().GetResult();
 
                     ItemUtil.UpdateStatus(item, option, "Deleting compressed data", Colors.C_YELLOW).GetAwaiter()
