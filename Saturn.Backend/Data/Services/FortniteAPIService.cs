@@ -25,9 +25,7 @@ namespace Saturn.Backend.Data.Services
     public interface IFortniteAPIService
     {
         public Task<List<Cosmetic>> GetSaturnMisc();
-        public Task<List<Cosmetic>> GetSaturnBackblings();
-        public Task<List<Cosmetic>> GetSaturnPickaxes();
-        public Task<List<Cosmetic>> GetSaturnDances();
+        public Task<List<Cosmetic>> RemoveItems(List<Cosmetic> items);
         public Models.FortniteAPI.Data GetAES();
         public Task<List<Cosmetic>> AreItemsConverted(List<Cosmetic> items);
     }
@@ -58,72 +56,12 @@ namespace Saturn.Backend.Data.Services
             return JsonConvert.DeserializeObject<AES>(data).Data;
         }
 
-        public async Task<List<Cosmetic>> GetSaturnDances()
-        {
-            var data = await GetDataAsync(CosmeticsByType("AthenaDance"));
-            var Emotes = JsonConvert.DeserializeObject<CosmeticList>(data);
-
-            Emotes.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
-
-            foreach (var item in Emotes.Data.Where(item => item.Name.ToLower() == "random"))
-            {
-                item.IsRandom = true;
-            }
-
-            Trace.WriteLine($"Deserialized {Emotes.Data.Count} objects");
-
-            _discordRPCService.UpdatePresence($"Looking at {Emotes.Data.Count} different emotes");
-            return await AreItemsConverted(await AddExtraItems(await RemoveItems(Emotes.Data), ItemType.IT_Dance));
-        }
-
-        public async Task<List<Cosmetic>> GetSaturnBackblings()
-        {
-            var data = await GetDataAsync(CosmeticsByType("AthenaBackpack"));
-            var Backs = JsonConvert.DeserializeObject<CosmeticList>(data);
-
-            Backs.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
-
-            foreach (var item in Backs.Data.Where(item => item.Name.ToLower() == "random"))
-            {
-                item.IsRandom = true;
-            }
-
-            Trace.WriteLine($"Deserialized {Backs.Data.Count} objects");
-
-            _discordRPCService.UpdatePresence($"Looking at {Backs.Data.Count} different backpacks");
-            return await AreItemsConverted(await AddExtraItems(await RemoveItems(Backs.Data), ItemType.IT_Backbling));
-        }
-
-        public async Task<List<Cosmetic>> GetSaturnPickaxes()
-        {
-            var data = await GetDataAsync(CosmeticsByType("AthenaPickaxe"));
-            var Picks = JsonConvert.DeserializeObject<CosmeticList>(data);
-
-            Picks.Data.RemoveAll(x => x.Name.ToLower() is "null" or "tbd" or "hero");
-
-            foreach (var item in Picks.Data.Where(item => item.Name.ToLower() == "random"))
-            {
-                item.IsRandom = true;
-            }
-
-            Trace.WriteLine($"Deserialized {Picks.Data.Count} objects");
-
-            _discordRPCService.UpdatePresence($"Looking at {Picks.Data.Count} different pickaxes");
-            return await AreItemsConverted(await AddExtraItems(await RemoveItems(Picks.Data), ItemType.IT_Pickaxe));
-        }
-
-        /*public async Task<List<Cosmetic>> GetSaturnSkins(DefaultFileProvider _provider)
-        {
-            return await AreItemsConverted(await AddExtraItems(await RemoveItems(await IsHatTypeDifferent(Skins)),
-                ItemType.IT_Skin));
-        }*/
-
         public async Task<List<Cosmetic>> GetSaturnMisc()
         {
             return await AreItemsConverted(await AddExtraItems(new List<Cosmetic>(), ItemType.IT_Misc));
         }
 
-        private async Task<List<Cosmetic>> RemoveItems(List<Cosmetic> items)
+        public async Task<List<Cosmetic>> RemoveItems(List<Cosmetic> items)
         {
             Logger.Log("Removing items");
             foreach (var section in _cloudStorageService.GetSections())
