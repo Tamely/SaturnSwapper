@@ -1566,10 +1566,9 @@ public sealed class SwapperService : ISwapperService
         if (fileName.Contains("ient_s")) // Check if it's partitioned
             fileName = fileName.Split("ient_s")[0] + "ient"; // Remove the partition from the name because they don't get utocs
 
-        foreach (var (fileExt, path) in from fileExt in fileExts
-                                        let path = Path.Combine(FortniteUtil.PakPath, fileName + fileExt)
-                                        select (fileExt, path))
+        foreach (var fileExt in fileExts)
         {
+            var path = Path.Combine(FortniteUtil.PakPath, fileName + fileExt);
             if (!File.Exists(path))
             {
                 Logger.Log($"File \"{fileName + fileExt}\" doesn't exist!", LogLevel.Warning);
@@ -1578,22 +1577,25 @@ public sealed class SwapperService : ISwapperService
 
             if (fileExt is ".ucas")
             {
-                for (int i = 0; i < 20; i++)
+                Parallel.For(0, 20, async (i, state) =>
                 {
                     try
                     {
                         var paritionPath = i > 0 ? string.Concat(fileName, "_s", i, ".ucas") : string.Concat(fileName, ".ucas");
                         paritionPath = Path.Combine(FortniteUtil.PakPath, paritionPath);
-                        
+
                         if (!File.Exists(paritionPath))
-                            break;
-                        
+                        {
+                            state.Break();
+                            return;
+                        }
+
                         if (File.Exists(paritionPath.Replace("WindowsClient", "SaturnClient")))
                         {
                             Logger.Log($"File \"{paritionPath}\" already exists!", LogLevel.Warning);
-                            continue;
+                            return;
                         }
-                        
+
                         await using var paritionSource = File.Open(paritionPath, FileMode.Open, FileAccess.Read, FileShare.Read);
                         await using var paritionDestination = File.Create(paritionPath.Replace("WindowsClient", "SaturnClient"));
                         await paritionSource.CopyToAsync(paritionDestination);
@@ -1604,7 +1606,7 @@ public sealed class SwapperService : ISwapperService
                         Logger.Log($"There was an error copying container part {i} for {fileName}: " + e.ToString(), LogLevel.Error);
                         throw new FileLoadException($"Failed to open container partition {i} for {fileName}", e);
                     }
-                }
+                });
             }
             else
             {
