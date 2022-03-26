@@ -525,6 +525,9 @@ public sealed class SwapperService : ISwapperService
                 
                 file = file.Replace("ucas", "utoc");
 
+                if (!file.Contains("utoc")) // Check if it contains utoc
+                    file += ".utoc"; // If not, add it
+                
                 Dictionary<long, byte[]> lengths = new();
                 if (!await CustomAssets.TryHandleOffsets(asset, compressed.Length, data.Length, lengths, file, _saturnAPIService))
                     Logger.Log(
