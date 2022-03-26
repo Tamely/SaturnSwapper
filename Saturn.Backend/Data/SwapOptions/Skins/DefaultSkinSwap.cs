@@ -27,16 +27,37 @@ internal sealed class DefaultSkinSwap : SkinSwap
                     new SaturnSwap()
                     {
                         Search =
-                            "/Game/Athena/Heroes/Mesh/Wslt/Will/Skid/This/From/Tamely/Because/He/Always/Does/BodyCharacterPartWithExtraLongLength.BodyCharacterPartWithExtraLongLengthTamelyTamelyTamelyTamelyTamelyTamelyTamelyTamelyTamelyTamelyTamelyTamelyTamelyW",
+                            "/Game/Wslt/Says/We/Didn't/Make/UAssets/But/We/Made/This/One/Which/He/Will/Probably/Steal/Like/He/Always/Does/Cough/Flare/Cough/Also/Solar/Swapper/Is/Literally/Galaxy/But/Wslt/Bans/Me/And/Not/Him??/Ok/I/See/Owen1.Owen1",
                         Replace = _cps["Body"],
                         Type = SwapType.BodyCharacterPart
                     },
                     new SaturnSwap()
                     {
                         Search =
-                            "/Game/Characters/CharacterParts/Hopefully/Wslt/Doesnt/Skid/This/From/Me/Like/He/Usually/Does/Because/That/Would/Just/Prove/So/Much/Like/When/He/Said/That/I/Dont/Own/Uassets.ICreateMyOwn.ICreateMyOwnThoughL",
-                        Replace = _cps[_headOrHat],
+                            "/Game/Wslt/Says/We/Didn't/Make/UAssets/But/We/Made/This/One/Which/He/Will/Probably/Steal/Like/He/Always/Does/Cough/Flare/Cough/Also/Solar/Swapper/Is/Literally/Galaxy/But/Wslt/Bans/Me/And/Not/Him??/Ok/I/See/Owen2.Owen2",
+                        Replace = _cps["Head"],
                         Type = SwapType.HeadCharacterPart
+                    },
+                    new SaturnSwap()
+                    {
+                        Search =
+                            "/Game/Wslt/Says/We/Didn't/Make/UAssets/But/We/Made/This/One/Which/He/Will/Probably/Steal/Like/He/Always/Does/Cough/Flare/Cough/Also/Solar/Swapper/Is/Literally/Galaxy/But/Wslt/Bans/Me/And/Not/Him??/Ok/I/See/Owen3.Owen3",
+                        Replace = _cps["Face"],
+                        Type = SwapType.HatCharacterPart
+                    },
+                    new SaturnSwap()
+                    {
+                        Search =
+                            "/Game/Wslt/Says/We/Didn't/Make/UAssets/But/We/Made/This/One/Which/He/Will/Probably/Steal/Like/He/Always/Does/Cough/Flare/Cough/Also/Solar/Swapper/Is/Literally/Galaxy/But/Wslt/Bans/Me/And/Not/Him??/Ok/I/See/Owen4.Owen4",
+                        Replace = "/",
+                        Type = SwapType.OtherCharacterPart
+                    },
+                    new SaturnSwap()
+                    {
+                        Search =
+                            "/Game/Wslt/Says/We/Didn't/Make/UAssets/But/We/Made/This/One/Which/He/Will/Probably/Steal/Like/He/Always/Does/Cough/Flare/Cough/Also/Solar/Swapper/Is/Literally/Galaxy/But/Wslt/Bans/Me/And/Not/Him??/Ok/I/See/Owen5.Owen5",
+                        Replace = "/",
+                        Type = SwapType.OtherCharacterPart
                     }
                 }
             },
