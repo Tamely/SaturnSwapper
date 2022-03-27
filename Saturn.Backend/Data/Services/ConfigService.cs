@@ -30,6 +30,8 @@ namespace Saturn.Backend.Data.Services
         public Task<int> GetConvertedFileCount();
         public Task<string> TryGetSwapperVersion();
         public Task<bool> TrySetSwapperVersion();
+        public Task<bool> TryGetIsDefaultSwapped();
+        public Task<bool> TrySetIsDefaultSwapped(bool isSwapped);
         public void SaveConfig();
     }
 
@@ -157,6 +159,7 @@ namespace Saturn.Backend.Data.Services
                 TryGetShouldShowStyles().GetAwaiter();
                 TryGetHeadOrHatCharacterPart().GetAwaiter();
                 TryGetSwapperVersion().GetAwaiter();
+                TryGetIsDefaultSwapped().GetAwaiter();
                 
                 return true;
             }
@@ -304,6 +307,33 @@ namespace Saturn.Backend.Data.Services
             try
             {
                 ConfigFile.ShouldShowStyles = shouldShow;
+                SaveConfig();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        
+        public async Task<bool> TryGetIsDefaultSwapped()
+        {
+            try
+            {
+                return ConfigFile.IsDefaultSkinSwapped;
+            }
+            catch
+            {
+                ConfigFile.IsDefaultSkinSwapped = false;
+                return true;
+            }
+        }
+        
+        public async Task<bool> TrySetIsDefaultSwapped(bool isSwapped)
+        {
+            try
+            {
+                ConfigFile.IsDefaultSkinSwapped = isSwapped;
                 SaveConfig();
                 return true;
             }

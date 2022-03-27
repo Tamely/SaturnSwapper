@@ -32,6 +32,7 @@ using Saturn.Backend.Data.SwapOptions.Emotes;
 using Saturn.Backend.Data.Utils.Swaps;
 using Saturn.Backend.Data.Utils.Swaps.Generation;
 using System.IO.Compression;
+using System.Threading;
 using Saturn.Backend.Data.Models.SaturnAPI;
 
 namespace Saturn.Backend.Data.Services;
@@ -309,13 +310,28 @@ public sealed class SwapperService : ISwapperService
                 {
                     if (Config.isBeta)
                     {
-                        if (!await Convert(item, option, itemType, true))
+                        if (option.Name.Contains("No backbling") && !await _configService.TryGetIsDefaultSwapped())
                         {
                             await ItemUtil.UpdateStatus(item, option,
                                 $"There was an error converting {item.Name}!",
                                 Colors.C_RED);
-                            Logger.Log($"There was an error converting {item.Name}!", LogLevel.Error);
-                            Process.Start("notepad.exe", Config.LogFile);
+                            await _jsRuntime.InvokeVoidAsync("MessageBox", "You haven't swapped a skin from default!",
+                                "To add a backbling to default skins (from no backbling), you must swap a skin from default first!");
+                        }
+                        else
+                        {
+                            if (!await Convert(item, option, itemType, true))
+                            {
+                                await ItemUtil.UpdateStatus(item, option,
+                                    $"There was an error converting {item.Name}!",
+                                    Colors.C_RED);
+                                Logger.Log($"There was an error converting {item.Name}!", LogLevel.Error);
+                                Process.Start("notepad.exe", Config.LogFile);
+                            }
+                            else
+                            {
+                                await _configService.TrySetIsDefaultSwapped(true);
+                            }
                         }
                     }
                     else
@@ -1569,9 +1585,34 @@ public sealed class SwapperService : ISwapperService
                             continue;
                         }
                         
-                        await using var paritionSource = File.Open(paritionPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                        await using var paritionDestination = File.Create(paritionPath.Replace("WindowsClient", "SaturnClient"));
-                        await paritionSource.CopyToAsync(paritionDestination);
+                        var bufferLength = 262144;
+                        var readBuffer = new Byte[bufferLength];
+                        var writeBuffer = new Byte[bufferLength];
+                        var readSize = -1;
+
+                        IAsyncResult writeResult;
+                        IAsyncResult readResult;
+
+                        await using var sourceStream = new FileStream(paritionPath, FileMode.Open, FileAccess.Read);
+                        await using (var destinationStream = new FileStream(paritionPath.Replace("WindowsClient", "SaturnClient"), FileMode.Create, FileAccess.Write, FileShare.None, 8, FileOptions.Asynchronous | FileOptions.SequentialScan))
+                        {
+                            destinationStream.SetLength(sourceStream.Length);
+                            readSize = sourceStream.Read(readBuffer, 0, readBuffer.Length);
+                            readBuffer = Interlocked.Exchange(ref writeBuffer, readBuffer);
+
+                            while (readSize > 0)
+                            {
+                                writeResult = destinationStream.BeginWrite(writeBuffer, 0, readSize, null, null);
+                                readResult = sourceStream.BeginRead(readBuffer, 0, readBuffer.Length, null, null);
+                                destinationStream.EndWrite(writeResult);
+                                readSize = sourceStream.EndRead(readResult);
+                                readBuffer = Interlocked.Exchange(ref writeBuffer, readBuffer);
+                            }
+
+                            sourceStream.Close();
+                            destinationStream.Close();
+                        }
+
                         Logger.Log($"Successfully copied container part {i} for {fileName}");
                     }
                     catch (Exception e)
@@ -1723,12 +1764,5 @@ public sealed class SwapperService : ISwapperService
             Logger.Log($"Failed to swap asset in file {Path.GetFileName(path)}! Reason: {e.Message}",
                 LogLevel.Error);
         }
-    }
-
-    private byte[] FillEnd(byte[] buffer, int len)
-    {
-        List<byte> result = new List<byte>(buffer);
-        result.AddRange(Enumerable.Repeat((byte)0, len - buffer.Length));
-        return result.ToArray();
     }
 }
