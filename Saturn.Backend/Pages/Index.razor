@@ -580,15 +580,7 @@
                             <p style="color:white">@ShowStyles</p>
                         </div>
                     </div>
-                    
-                    <div class="card" @onclick=@(async () => await ToggleCharacterParts())>
-                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
-                        <div class="card-info">
-                            <h2>Head or Hat?</h2>
-                            <p style="color:white">@FlipCharacterPart</p>
-                        </div>
-                    </div>
-                    
+
                     <div class="card" @onclick=@(async () => { if (Directory.Exists(Config.PluginsPath)) Directory.Delete(Config.PluginsPath, true); await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished removing all plugins!", "success"); })>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
@@ -647,7 +639,6 @@
     private string FlipRarity = "";
     private string ShowStyles = "";
     private string FlipSeries = "";
-    private string FlipCharacterPart = "";
 
     private SaturnState saturnState = SaturnState.S_Key;
 
@@ -1164,24 +1155,6 @@
             true => "Currently set to 'pickaxes WILL swap series'", // If true, set pickaxes will swap series
             false => "Currently set to 'pickaxes WILL NOT swap series'" // If false, set pickaxes will not swap series
         };
-    }
-
-    /// <summary>
-    /// Toggles which character part the swapper should use when swapping.
-    /// </summary>
-    private async Task ToggleCharacterParts()
-    {
-        switch (await _configService.TryGetHeadOrHatCharacterPart()) // Gets the config value
-        {
-            case "Head": // If it's head
-                await _configService.TrySetHeadOrHatCharacterPart("Hat"); // Set it to hat
-                break;
-            case "Hat": // If it's hat
-                await _configService.TrySetHeadOrHatCharacterPart("Head"); // Set it to head
-                break;
-        }
-
-        FlipCharacterPart = "Currently set to 'Default swaps will use a " + await _configService.TryGetHeadOrHatCharacterPart() + " character part'"; // Set the text to the new value
     }
 
     /// <summary>
