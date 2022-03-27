@@ -146,7 +146,7 @@ public class DotSaturn
     {
         var pluginModel = new PluginModel
         {
-            Name = galaxyPlugin.Name.Replace(" To ", " to").Replace(" TO ", " to").Replace(" tO ", " to"),
+            Name = galaxyPlugin.Name.Replace(" To ", " to ").Replace(" TO ", " to ").Replace(" tO ", " to "),
             Icon = galaxyPlugin.Icon,
             SwapIcon = galaxyPlugin.swappedIcon,
             Message = galaxyPlugin.Message
