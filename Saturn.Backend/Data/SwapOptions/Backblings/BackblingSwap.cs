@@ -245,6 +245,16 @@ public class AddBackblings
         
         Dictionary<string, string> swaps = await GetAssetsFromCP(cp.GetPathName(), _provider);
 
+        backBling.CosmeticOptions.Add(new SaturnItem()
+        {
+            ItemDefinition = "BID_Athena_Commando_F_Prime", // Cool custom BID ikr
+            Name = "No backbling",
+            Description = "MUST BE SWAPPED WITH A NO SKIN!",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/CID_A_272_Athena_Commando_F_Prime/smallicon.png",
+            Rarity = "Common"
+        });
+
         foreach (var option in BackblingOptions)
         {
             var uobj = await swapperService.GetBackblingCP(option.ItemDefinition);
@@ -297,17 +307,6 @@ public class AddBackblings
             
             option.Swaps = swaps;
             backBling.CosmeticOptions.Add(option);
-        }
-        
-        if (backBling.CosmeticOptions.Count == 0)
-        {
-            backBling.CosmeticOptions.Add(new SaturnItem()
-            {
-                Name = "No options!",
-                Description = "Send a picture of this to Tamely on Discord and tell him to add an option for this!",
-                Rarity = "Epic",
-                Icon = "img/Saturn.png"
-            });
         }
 
         return backBling;
