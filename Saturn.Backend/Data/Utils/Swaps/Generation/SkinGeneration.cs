@@ -137,7 +137,54 @@ internal sealed class SkinGeneration : AbstractGeneration
                                     continue; // Skip the variant
                                     
                                     
-                                if (variants.TryGetValue(out FStructFallback[] MaterialOptions, "MaterialOptions")) // If the material options are readable
+                                if (variants.TryGetValue(out FStructFallback[] PartOptions, "PartOptions")) // If the material options are readable
+                                    foreach (var partOption in PartOptions) // For every material option in material options
+                                    {
+                                        if (partOption.TryGetValue(out FStructFallback[] MaterialParams, "VariantMaterialParams") && MaterialParams.Length != 0) // If the material params are readable and not empty
+                                            continue; // Skip the material option because those won't be perfect
+
+                                        if (partOption.TryGetValue(out FText VariantName, "VariantName")) // If the variant name is readable
+                                        {
+                                            FName TagName = new FName(); // Create a new FName
+
+                                            if (partOption.TryGetValue(out FStructFallback CustomizationVariantTag,
+                                                    "CustomizationVariantTag")) // If the customization variant tag is readable
+                                                CustomizationVariantTag.TryGetValue(out TagName, "TagName"); // Get the customization variant tag name
+
+                                            if (string.IsNullOrWhiteSpace(VariantName.Text) || VariantName.Text.ToLower() == "default" || VariantName.Text.ToLower() == skin.Name.ToLower()) // If the variant name is empty or is the same as the skin name or is the same as the skin name in lowercase
+                                                continue; // Skip the variant
+                                                
+                                            if (!File.Exists(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + "_" + VariantName.Text.Replace(" ","_").Replace("\\","").Replace("/","") + ".png") + ".png")) // If the skin image doesn't exist
+                                            {
+                                                if (partOption.TryGetValue(out UTexture2D PreviewImage,
+                                                        "PreviewImage")) // If the preview image for the variant is readable
+                                                {
+                                                    await using var ms = new MemoryStream(); // Create a new memory stream
+                                                    PreviewImage.Decode()?.Encode(ms, SKEncodedImageFormat.Png, 30); // Encode the preview image to the memory stream
+                            
+                                                    Directory.CreateDirectory(Path.Combine(Config.ApplicationPath, "wwwroot/skins/")); // Create the skin directory if it doesn't exist
+                                                    if (!File.Exists(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + "_" + VariantName.Text.Replace(" ","_").Replace("\\","").Replace("/","") + ".png") + ".png")) // If the skin image doesn't exist
+                                                        await File.WriteAllBytesAsync(Path.Combine(Config.ApplicationPath, "wwwroot/skins/" + skin.Id + "_" + VariantName.Text.Replace(" ","_").Replace("\\","").Replace("/","") + ".png"), ms.ToArray()); // Write the skin image to the wwwroot/skins directory
+                                                }
+                                            }
+
+                                            CosmeticsToInsert.Add(new Cosmetic() // Create a new cosmetic instance
+                                            {
+                                                Name = VariantName.Text, // Set the cosmetic name
+                                                Description = skin.Name + " style: " + skin.Description, // Set the cosmetic description with the name of the skin it is a style of in the first part
+                                                Id = skin.Id, // Set the cosmetic id
+                                                Rarity = skin.Rarity, // Set the cosmetic rarity
+                                                Series = skin.Series, // Set the cosmetic series
+                                                Images = new Images() // Create a new images instance
+                                                {
+                                                    SmallIcon = "skins/" + skin.Id  + "_" + VariantName.Text.Replace(" ","_").Replace("\\","").Replace("/","") + ".png" // Set the small icon image
+                                                }, // End the images instance
+                                                VariantChannel = VariantChannelTag.Text, // Set the variant channel
+                                                VariantTag = TagName.Text // Set the variant tag
+                                            });
+                                        }
+                                    }
+                                else if (variants.TryGetValue(out FStructFallback[] MaterialOptions, "MaterialOptions")) // If the material options are readable
                                     foreach (var MaterialOption in MaterialOptions) // For every material option in material options
                                     {
                                         if (MaterialOption.TryGetValue(out FStructFallback[] MaterialParams, "VariantMaterialParams") && MaterialParams.Length != 0) // If the material params are readable and not empty

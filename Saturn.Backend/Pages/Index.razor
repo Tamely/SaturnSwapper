@@ -1013,8 +1013,7 @@
         {
             await _configService.TrySetSwapperVersion();
         }
-        
-        
+
         if (Constants.UserVersion != await GetSwapperVersion()) // If the user's version is not the latest version
             saturnState = SaturnState.S_Update; // Set the state to update
     }
