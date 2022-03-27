@@ -192,7 +192,14 @@ public class AddSkins
         {
             MeshDefaultModel swapModel = new()
             {
-                HeadMaterials = new Dictionary<int, string>(),
+                HeadMaterials = new Dictionary<int, string>()
+                {
+                    {0,"/"},
+                    {1,"/"},
+                    {2,"/"},
+                    {3,"/"},
+                    {4,"/"}
+                },
                 HeadHairColor = "/Game/Tamely",
                 HeadFX = "/Game/Tamely",
                 HeadSkinColor = "/Game/Tamely",
@@ -203,9 +210,21 @@ public class AddSkins
                 BodyPartModifierBP = "/Game/Tamely",
                 BodyABP = null,
                 BodyMesh = "/Game/Tamely",
-                BodyMaterials = new Dictionary<int, string>(),
+                BodyMaterials = new Dictionary<int, string>(){
+                    {0,"/"},
+                    {1,"/"},
+                    {2,"/"},
+                    {3,"/"},
+                    {4,"/"}
+                },
                 BodySkeleton = "/Game/Tamely",
-                FaceACCMaterials = new Dictionary<int, string>(),
+                FaceACCMaterials = new Dictionary<int, string>(){
+                    {0,"/"},
+                    {1,"/"},
+                    {2,"/"},
+                    {3,"/"},
+                    {4,"/"}
+                },
                 FaceACCMesh = "/Game/Tamely",
                 FaceACCABP = null,
                 FaceACCFX = "/Game/Tamely",
@@ -413,7 +432,7 @@ public class AddSkins
 
                                         var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
                                         if (!swapModel.BodyMaterials.ContainsKey(matIndex))
-                                            swapModel.BodyMaterials.Add(matIndex, material);
+                                            swapModel.BodyMaterials[matIndex] = material;
                                     }
                                 }
 
@@ -431,7 +450,7 @@ public class AddSkins
                                                 
                                                 
                                                 if (!swapModel.BodyMaterials.ContainsKey(_lastMaterials["Body"].ToList().IndexOf(material)))
-                                                    swapModel.BodyMaterials.Add(_lastMaterials["Body"].ToList().IndexOf(material), mat);
+                                                    swapModel.BodyMaterials[_lastMaterials["Body"].ToList().IndexOf(material)] = mat;
                                             }
                                     }
                                     else if (part.TryGetValue(out USkeletalMesh skeletalMesh, "SkeletalMesh"))
@@ -447,13 +466,15 @@ public class AddSkins
                                                     
                                                     
                                                 if (!swapModel.BodyMaterials.ContainsKey(skeletalMesh.Materials.ToList().IndexOf(material)))
-                                                    swapModel.BodyMaterials.Add(skeletalMesh.Materials.ToList().IndexOf(material), mat);
+                                                    swapModel.BodyMaterials[skeletalMesh.Materials.ToList().IndexOf(material)] =  mat;
                                             }
                                         _lastMaterials.Add("Body", skeletalMesh.Materials);
                                     }
                                 }
                                 
-                                if (swapModel.BodyMaterials.Count > OGBodyMaterials.Count)
+                                int bodyCount = swapModel.BodyMaterials.Count(x => x.Value != "/");
+                                
+                                if (bodyCount > OGBodyMaterials.Count)
                                     bDontProceed = true;
 
                                 swapModel.BodyFX =
@@ -514,7 +535,7 @@ public class AddSkins
 
                                         var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
                                         if (!swapModel.HeadMaterials.ContainsKey(matIndex))
-                                            swapModel.HeadMaterials.Add(matIndex, material);
+                                            swapModel.HeadMaterials[matIndex] = material;
                                     }
                                 }
                                 
@@ -532,7 +553,7 @@ public class AddSkins
                                                 
                                                 
                                                 if (!swapModel.HeadMaterials.ContainsKey(_lastMaterials["Head"].ToList().IndexOf(material)))
-                                                    swapModel.HeadMaterials.Add(_lastMaterials["Head"].ToList().IndexOf(material), mat);
+                                                    swapModel.HeadMaterials[_lastMaterials["Head"].ToList().IndexOf(material)] = mat;
                                             }
                                     }
                                     else if (part.TryGetValue(out USkeletalMesh skeletalMesh, "SkeletalMesh"))
@@ -547,7 +568,7 @@ public class AddSkins
                                                     
                                                     
                                                 if (!swapModel.HeadMaterials.ContainsKey(skeletalMesh.Materials.ToList().IndexOf(material)))
-                                                    swapModel.HeadMaterials.Add(skeletalMesh.Materials.ToList().IndexOf(material), mat);
+                                                    swapModel.HeadMaterials[skeletalMesh.Materials.ToList().IndexOf(material)] = mat;
                                             }
                                         if (_lastMaterials.ContainsKey("Head"))
                                             _lastMaterials.Remove("Head");
@@ -631,7 +652,7 @@ public class AddSkins
                                         var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
                                         
                                         if (!swapModel.FaceACCMaterials.ContainsKey(matIndex))
-                                            swapModel.FaceACCMaterials.Add(matIndex, material);
+                                            swapModel.FaceACCMaterials[matIndex]  = material;
                                     }
                                 }
                                 
@@ -649,7 +670,7 @@ public class AddSkins
                                                 
                                                 
                                                 if (!swapModel.FaceACCMaterials.ContainsKey(_lastMaterials["Hat"].ToList().IndexOf(material)))
-                                                    swapModel.FaceACCMaterials.Add(_lastMaterials["Hat"].ToList().IndexOf(material), mat);
+                                                    swapModel.FaceACCMaterials[_lastMaterials["Hat"].ToList().IndexOf(material)] =  mat;
                                             }
                                     }
                                     else if (part.TryGetValue(out USkeletalMesh skeletalMesh, "SkeletalMesh"))
@@ -664,7 +685,7 @@ public class AddSkins
                                                     
                                                     
                                                 if (!swapModel.FaceACCMaterials.ContainsKey(skeletalMesh.Materials.ToList().IndexOf(material)))
-                                                    swapModel.FaceACCMaterials.Add(skeletalMesh.Materials.ToList().IndexOf(material), mat);
+                                                    swapModel.FaceACCMaterials[skeletalMesh.Materials.ToList().IndexOf(material)] = mat;
                                             }
                                         if (_lastMaterials.ContainsKey("Hat"))
                                             _lastMaterials.Remove("Hat");
@@ -709,33 +730,15 @@ public class AddSkins
                 if (OGHatType == ECustomHatType.ECustomHatType_None)
                     bDontProceed = true;
 
-            if (OGHeadMaterials.Count < swapModel.HeadMaterials.Count || swapModel.FaceACCMaterials.Count > OGFaceACCMaterials.Count)
+            int headCount = swapModel.HeadMaterials.Count(x => x.Value != "/");
+            int faceCount = swapModel.FaceACCMaterials.Count(x => x.Value != "/");
+
+            if (OGHeadMaterials.Count < headCount || faceCount > OGFaceACCMaterials.Count)
                 bDontProceed = true;
             
             if (bDontProceed)
                 continue;
 
-            if (swapModel.BodyMaterials == new Dictionary<int, string>() || swapModel.BodyMaterials.Count < 5)
-                for (int i = swapModel.BodyMaterials.Count; i < 5; i++)
-                {
-                    while (swapModel.BodyMaterials.ContainsKey(i)) i++;
-                    swapModel.BodyMaterials.Add(i, "/");
-                }
-
-            if (swapModel.HeadMaterials == new Dictionary<int, string>() || swapModel.HeadMaterials.Count < 5)
-                for (int i = swapModel.HeadMaterials.Count; i < 5; i++)
-                {
-                    while (swapModel.HeadMaterials.ContainsKey(i)) i++;
-                    swapModel.HeadMaterials.Add(i, "/");
-                }
-            
-            if (swapModel.FaceACCMaterials == new Dictionary<int, string>() || swapModel.FaceACCMaterials.Count < 5)
-                for (int i = swapModel.FaceACCMaterials.Count; i < 5; i++)
-                {
-                    while (swapModel.FaceACCMaterials.ContainsKey(i)) i++;
-                    swapModel.FaceACCMaterials.Add(i, "/");
-                }
-            
             if ((swapModel.HeadMesh.ToLower().Contains("ramirez")) &&
                 !swapModel.HeadMesh.ToLower().Contains("/parts/"))
             {
@@ -755,7 +758,7 @@ public class AddSkins
             
             if (option.Name == "Blizzabelle")
             {
-                if (swapModel.HeadMaterials.Count > 1 && swapModel.FaceACCMaterials.Count < 2)
+                if (headCount > 1 && faceCount < 2)
                 {
                     (swapModel.FaceACCMesh, swapModel.HeadMesh) = (swapModel.HeadMesh, swapModel.FaceACCMesh);
                     (swapModel.FaceACCABP, swapModel.HeadABP) = (swapModel.HeadABP, swapModel.FaceACCABP);
