@@ -1545,98 +1545,103 @@ public sealed class SwapperService : ISwapperService
     private async Task BackupFile(string sourceFile, Cosmetic item, SaturnItem option)
     {
         await ItemUtil.UpdateStatus(item, option, "Backing up files", Colors.C_YELLOW);
-        var fileName = Path.GetFileNameWithoutExtension(sourceFile);
-        var fileExts = new[]
-        {
-            ".pak",
-            ".sig",
-            ".utoc",
-            ".ucas"
-        };
         
-        if (fileName.Contains("ient_s")) // Check if it's partitioned
-            fileName = fileName.Split("ient_s")[0] + "ient"; // Remove the partition from the name because they don't get utocs
-
-        foreach (var (fileExt, path) in from fileExt in fileExts
-                                        let path = Path.Combine(FortniteUtil.PakPath, fileName + fileExt)
-                                        select (fileExt, path))
+        await Task.Run(async () =>
         {
-            if (!File.Exists(path))
+            var fileName = Path.GetFileNameWithoutExtension(sourceFile);
+            var fileExts = new[]
             {
-                Logger.Log($"File \"{fileName + fileExt}\" doesn't exist!", LogLevel.Warning);
-                return;
-            }
-
-            if (fileExt is ".ucas")
+                ".pak",
+                ".sig",
+                ".utoc",
+                ".ucas"
+            };
+            
+            if (fileName.Contains("ient_s")) // Check if it's partitioned
+                        fileName = fileName.Split("ient_s")[0] + "ient"; // Remove the partition from the name because they don't get utocs
+            
+            foreach (var (fileExt, path) in from fileExt in fileExts
+                     let path = Path.Combine(FortniteUtil.PakPath, fileName + fileExt)
+                     select (fileExt, path))
             {
-                for (int i = 0; i < 20; i++)
+                if (!File.Exists(path))
                 {
-                    try
+                    Logger.Log($"File \"{fileName + fileExt}\" doesn't exist!", LogLevel.Warning);
+                    return;
+                }
+            
+                if (fileExt is ".ucas")
+                {
+                    for (int i = 0; i < 20; i++)
                     {
-                        var paritionPath = i > 0 ? string.Concat(fileName, "_s", i, ".ucas") : string.Concat(fileName, ".ucas");
-                        paritionPath = Path.Combine(FortniteUtil.PakPath, paritionPath);
-                        
-                        if (!File.Exists(paritionPath))
-                            break;
-                        
-                        if (File.Exists(paritionPath.Replace("WindowsClient", "SaturnClient")))
+                        try
                         {
-                            Logger.Log($"File \"{paritionPath}\" already exists!", LogLevel.Warning);
-                            continue;
-                        }
-                        
-                        var bufferLength = 262144;
-                        var readBuffer = new Byte[bufferLength];
-                        var writeBuffer = new Byte[bufferLength];
-                        var readSize = -1;
-
-                        IAsyncResult writeResult;
-                        IAsyncResult readResult;
-
-                        await using var sourceStream = new FileStream(paritionPath, FileMode.Open, FileAccess.Read);
-                        await using (var destinationStream = new FileStream(paritionPath.Replace("WindowsClient", "SaturnClient"), FileMode.Create, FileAccess.Write, FileShare.None, 8, FileOptions.Asynchronous | FileOptions.SequentialScan))
-                        {
-                            destinationStream.SetLength(sourceStream.Length);
-                            readSize = sourceStream.Read(readBuffer, 0, readBuffer.Length);
-                            readBuffer = Interlocked.Exchange(ref writeBuffer, readBuffer);
-
-                            while (readSize > 0)
+                            var paritionPath = i > 0 ? string.Concat(fileName, "_s", i, ".ucas") : string.Concat(fileName, ".ucas");
+                            paritionPath = Path.Combine(FortniteUtil.PakPath, paritionPath);
+                                    
+                            if (!File.Exists(paritionPath))
+                                break;
+                                    
+                            if (File.Exists(paritionPath.Replace("WindowsClient", "SaturnClient")))
                             {
-                                writeResult = destinationStream.BeginWrite(writeBuffer, 0, readSize, null, null);
-                                readResult = sourceStream.BeginRead(readBuffer, 0, readBuffer.Length, null, null);
-                                destinationStream.EndWrite(writeResult);
-                                readSize = sourceStream.EndRead(readResult);
-                                readBuffer = Interlocked.Exchange(ref writeBuffer, readBuffer);
+                                Logger.Log($"File \"{paritionPath}\" already exists!", LogLevel.Warning);
+                                continue;
                             }
-
-                            sourceStream.Close();
-                            destinationStream.Close();
+                                    
+                            var bufferLength = 262144;
+                            var readBuffer = new Byte[bufferLength];
+                            var writeBuffer = new Byte[bufferLength];
+                            var readSize = -1;
+            
+                            IAsyncResult writeResult;
+                            IAsyncResult readResult;
+            
+                            await using var sourceStream = new FileStream(paritionPath, FileMode.Open, FileAccess.Read);
+                            await using (var destinationStream = new FileStream(paritionPath.Replace("WindowsClient", "SaturnClient"), FileMode.Create, FileAccess.Write, FileShare.None, 8, FileOptions.Asynchronous | FileOptions.SequentialScan))
+                            {
+                                destinationStream.SetLength(sourceStream.Length);
+                                readSize = sourceStream.Read(readBuffer, 0, readBuffer.Length);
+                                readBuffer = Interlocked.Exchange(ref writeBuffer, readBuffer);
+            
+                                while (readSize > 0)
+                                {
+                                    writeResult = destinationStream.BeginWrite(writeBuffer, 0, readSize, null, null);
+                                    readResult = sourceStream.BeginRead(readBuffer, 0, readBuffer.Length, null, null);
+                                    destinationStream.EndWrite(writeResult);
+                                    readSize = sourceStream.EndRead(readResult);
+                                    readBuffer = Interlocked.Exchange(ref writeBuffer, readBuffer);
+                                }
+            
+                                sourceStream.Close();
+                                destinationStream.Close();
+                            }
+            
+                            Logger.Log($"Successfully copied container part {i} for {fileName}");
                         }
-
-                        Logger.Log($"Successfully copied container part {i} for {fileName}");
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.Log($"There was an error copying container part {i} for {fileName}: " + e.ToString(), LogLevel.Error);
-                        throw new FileLoadException($"Failed to open container partition {i} for {fileName}", e);
+                        catch (Exception e)
+                        {
+                            Logger.Log($"There was an error copying container part {i} for {fileName}: " + e.ToString(), LogLevel.Error);
+                            throw new FileLoadException($"Failed to open container partition {i} for {fileName}", e);
+                        }
                     }
                 }
-            }
-            else
-            {
-                var newPath = path.Replace("WindowsClient", "SaturnClient");
-                if (File.Exists(newPath))
+                else
                 {
-                    Logger.Log($"Duplicate for \"{fileName + fileExt}\" already exists!", LogLevel.Warning);
-                    continue;
+                    var newPath = path.Replace("WindowsClient", "SaturnClient");
+                    if (File.Exists(newPath))
+                    {
+                        Logger.Log($"Duplicate for \"{fileName + fileExt}\" already exists!", LogLevel.Warning);
+                        continue;
+                    }
+            
+                    await using var source = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    await using var destination = File.Create(newPath);
+                    await source.CopyToAsync(destination);
                 }
-
-                await using var source = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                await using var destination = File.Create(newPath);
-                await source.CopyToAsync(destination);
+                Logger.Log($"Duplicated file \"{fileName + fileExt}\"");
             }
-            Logger.Log($"Duplicated file \"{fileName + fileExt}\"");
-        }
+        });
+       
     }
 
     private bool TryIsB64(ref byte[] data, SaturnAsset asset)
