@@ -95,12 +95,12 @@ internal sealed class RedlineSkinSwap : SkinSwap
                     },
                     new SaturnSwap()
                     {
-                        Search = "/Game/Accessories/Hats/Mesh/Female_Outlander_06.Female_Outlander_06",
+                        Search = System.Convert.ToBase64String(new byte[] {47,71,97,109,101,47,65,99,99,101,115,115,111,114,105,101,115,47,72,97,116,115,47,77,101,115,104,47,70,101,109,97,108,101,95,79,117,116,108,97,110,100,101,114,95,48,54,46,70,101,109,97,108,101,95,79,117,116,108,97,110,100,101,114,95,48,54}),
                         Replace = SwapModel.FaceACCMesh,
-                        Type = SwapType.FaceAccessoryMesh
+                        Type = SwapType.Base64
                     },
                     new SaturnSwap()
-                    {
+                    {   
                         Search = "/Game/Accessories/Hats/Materials/Hat_F_StreetRacerBlack.Hat_F_StreetRacerBlack",
                         Replace = SwapModel.FaceACCMaterials[0],
                         Type = SwapType.FaceAccessoryMaterial
