@@ -86,7 +86,7 @@ public class DotSaturn
         Cosmetic item = new Cosmetic();
         try
         {
-            item.Name = plugin.Name.ToLower().Split(" to ")[1].CapitalizeFirstLetter();
+            item.Name = plugin.Name.Split(" to ")[1];
             item.Id = plugin.Name;
             item.Description = plugin.Message ?? "No message provided.";
             item.Images = new Images()
@@ -99,7 +99,7 @@ public class DotSaturn
             };
             SaturnItem saturnItem = new SaturnItem
             {
-                Name = plugin.Name.ToLower().Split(" to ")[0].CapitalizeFirstLetter(),
+                Name = plugin.Name.Split(" to ")[0],
                 ItemDefinition = plugin.Name,
                 Description = plugin.Message ?? "No message provided.",
                 Icon = plugin.SwapIcon,
@@ -146,7 +146,7 @@ public class DotSaturn
     {
         var pluginModel = new PluginModel
         {
-            Name = galaxyPlugin.Name,
+            Name = galaxyPlugin.Name.Replace(" To ", " to").Replace(" TO ", " to").Replace(" tO ", " to"),
             Icon = galaxyPlugin.Icon,
             SwapIcon = galaxyPlugin.swappedIcon,
             Message = galaxyPlugin.Message
