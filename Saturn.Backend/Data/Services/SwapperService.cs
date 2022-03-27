@@ -69,7 +69,7 @@ public sealed class SwapperService : ISwapperService
     private bool _halted;
     private readonly DefaultFileProvider _provider;
 
-    private readonly IAssetRegistryService _assetRegService;
+    private readonly AssetRegistryUtils _assetRegistryUtils;
 
     public SwapperService(IFortniteAPIService fortniteAPIService, ISaturnAPIService saturnAPIService,
         IConfigService configService, ICloudStorageService cloudStorageService, IJSRuntime jsRuntime, IBenBotAPIService benBotApiService, IDiscordRPCService discordRPCService)
@@ -108,7 +108,7 @@ public sealed class SwapperService : ISwapperService
         Trace.WriteLine("Submitted Keys");
         Trace.WriteLine($"File provider initialized with {_provider.Keys.Count} keys");
 
-        _assetRegService = new AssetRegistryService(_provider);
+        _assetRegistryUtils = new AssetRegistryUtils(_provider);
     }
 
     public DefaultFileProvider Provider { get => _provider; }
@@ -885,12 +885,12 @@ public sealed class SwapperService : ISwapperService
             foreach (var _item in await _configService.TryGetConvertedItems())
             {
                 if (!_item.Swaps[0].ParentAsset.Contains("DefaultGameDataCosmetics")) continue;
-                cps = await _assetRegService.ReturnCPsForSkin(_item.ItemDefinition);
+                cps = await _assetRegistryUtils.ReturnCPsForSkin(_item.ItemDefinition);
                 break;
             }
         }
 
-        var characterParts = isBackblingSwap ? cps : await _assetRegService.ReturnCPsForSkin(item.Id);
+        var characterParts = isBackblingSwap ? cps : await _assetRegistryUtils.ReturnCPsForSkin(item.Id);
 
         return new DefaultSkinSwap(item.Name,
                                    item.Rarity.BackendValue,
