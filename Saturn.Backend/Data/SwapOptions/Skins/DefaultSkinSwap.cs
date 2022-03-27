@@ -6,14 +6,14 @@ namespace Saturn.Backend.Data.SwapOptions.Skins;
 
 internal sealed class DefaultSkinSwap : SkinSwap
 {
-    private readonly Dictionary<string, string> _cps;
-    private readonly string _headOrHat;
+    private readonly List<string> _cps;
+    private readonly string _backblingCp;
 
-    public DefaultSkinSwap(string name, string rarity, string icon, Dictionary<string, string> cps, string headOrHat) 
+    public DefaultSkinSwap(string name, string rarity, string icon, List<string> cps, string backblingCp)
         : base(name, rarity, icon, new MeshDefaultModel())
     {
         _cps = cps;
-        _headOrHat = headOrHat;
+        _backblingCp = backblingCp;
     }
 
     public override List<SaturnAsset> Assets =>
@@ -28,37 +28,38 @@ internal sealed class DefaultSkinSwap : SkinSwap
                     {
                         Search =
                             "/Game/Wslt/Says/We/Didn't/Make/UAssets/But/We/Made/This/One/Which/He/Will/Probably/Steal/Like/He/Always/Does/Cough/Flare/Cough/Also/Solar/Swapper/Is/Literally/Galaxy/But/Wslt/Bans/Me/And/Not/Him??/Ok/I/See/Owen1.Owen1",
-                        Replace = _cps["Body"],
+                        Replace = _cps.Count > 0 ? _cps[0] : "/",
                         Type = SwapType.BodyCharacterPart
                     },
                     new SaturnSwap()
                     {
                         Search =
                             "/Game/Wslt/Says/We/Didn't/Make/UAssets/But/We/Made/This/One/Which/He/Will/Probably/Steal/Like/He/Always/Does/Cough/Flare/Cough/Also/Solar/Swapper/Is/Literally/Galaxy/But/Wslt/Bans/Me/And/Not/Him??/Ok/I/See/Owen2.Owen2",
-                        Replace = _cps["Head"],
+                        Replace = _cps.Count > 1 ? _cps[1] : "/",
                         Type = SwapType.HeadCharacterPart
                     },
                     new SaturnSwap()
                     {
                         Search =
                             "/Game/Wslt/Says/We/Didn't/Make/UAssets/But/We/Made/This/One/Which/He/Will/Probably/Steal/Like/He/Always/Does/Cough/Flare/Cough/Also/Solar/Swapper/Is/Literally/Galaxy/But/Wslt/Bans/Me/And/Not/Him??/Ok/I/See/Owen3.Owen3",
-                        Replace = _cps["Face"],
+                        Replace = _cps.Count > 2 ? _cps[2] : "/",
                         Type = SwapType.HatCharacterPart
                     },
                     new SaturnSwap()
                     {
                         Search =
                             "/Game/Wslt/Says/We/Didn't/Make/UAssets/But/We/Made/This/One/Which/He/Will/Probably/Steal/Like/He/Always/Does/Cough/Flare/Cough/Also/Solar/Swapper/Is/Literally/Galaxy/But/Wslt/Bans/Me/And/Not/Him??/Ok/I/See/Owen4.Owen4",
-                        Replace = "/",
-                        Type = SwapType.OtherCharacterPart
+                        Replace = _cps.Count > 3 ? _cps[3] : "/",
+                        Type = SwapType.FaceAccessoryCharacterPart
                     },
                     new SaturnSwap()
                     {
                         Search =
                             "/Game/Wslt/Says/We/Didn't/Make/UAssets/But/We/Made/This/One/Which/He/Will/Probably/Steal/Like/He/Always/Does/Cough/Flare/Cough/Also/Solar/Swapper/Is/Literally/Galaxy/But/Wslt/Bans/Me/And/Not/Him??/Ok/I/See/Owen5.Owen5",
-                        Replace = "/",
-                        Type = SwapType.OtherCharacterPart
+                        Replace = _backblingCp,
+                        Type = SwapType.BackblingCharacterPart
                     }
+
                 }
             },
             new SaturnAsset()

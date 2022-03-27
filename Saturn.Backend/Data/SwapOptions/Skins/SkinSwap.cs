@@ -177,6 +177,16 @@ public class AddSkins
         if (characterParts == new Dictionary<string, string>())
             return null;
 
+        skin.CosmeticOptions.Add(new SaturnItem()
+        {
+            ItemDefinition = "CID_A_272_Athena_Commando_F_Prime",
+            Name = "No skin/All Defaults",
+            Description = "To swap/use a backbling you must convert this swap first!",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/CID_A_272_Athena_Commando_F_Prime/smallicon.png",
+            Rarity = "Common"
+        });
+
         foreach (var option in SkinOptions)
         {
             MeshDefaultModel swapModel = new()
@@ -772,18 +782,6 @@ public class AddSkins
 
             option.SwapModel = swapModel;
             skin.CosmeticOptions.Add(option);
-        }
-
-
-        if (skin.CosmeticOptions.Count == 0)
-        {
-            skin.CosmeticOptions.Add(new SaturnItem()
-            {
-                Name = "No options!",
-                Description = "Send a picture of this to Tamely on Discord and tell him to add an option for this!",
-                Rarity = "Epic",
-                Icon = "img/Saturn.png"
-            });
         }
         
         _lastID = skin.Id;
