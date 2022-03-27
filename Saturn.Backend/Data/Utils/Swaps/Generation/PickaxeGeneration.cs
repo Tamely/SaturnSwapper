@@ -31,9 +31,6 @@ internal class PickaxeGeneration : AbstractGeneration
 
     public override async Task<List<Cosmetic>> Generate()
     {
-        if (File.Exists(Config.PickaxeCache)) // If the cache file exists
-            pickaxes = JsonConvert.DeserializeObject<List<Cosmetic>>(await File.ReadAllTextAsync(Config.PickaxeCache)); // Deserialize the cache file
-
         foreach (var (assetPath, _) in _provider.Files) // For every file in Fortnite
         {
             if (!assetPath.ToLower().Contains("items/cosmetics/pickaxes")) continue; // If the file is not a pickaxe, skip it

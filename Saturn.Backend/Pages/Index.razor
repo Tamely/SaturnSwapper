@@ -604,15 +604,6 @@
                             <p style="color:white">Returns your currently converted items in a list</p>
                         </div>
                     </div>
-                    
-                    <div class="card" @onclick=@(async () => { if (Directory.Exists(Config.CachePath)) Directory.Delete(Config.CachePath, true); await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished removing all cache files!", "success"); })>
-                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
-                        <div class="card-info">
-                            <h2>Remove item cache</h2>
-                            <p style="color:white">Removes all generated swaps from items</p>
-                        </div>
-                    </div>
-
                 </div>
             }
             else
@@ -1021,9 +1012,6 @@
         if (Constants.UserVersion != await _configService.TryGetSwapperVersion())
         {
             await _configService.TrySetSwapperVersion();
-            
-            Directory.Delete(Config.CachePath, true); // Delete the cache folder
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Cleared the cache folder!", "You updated the swapper, so the cache folder has been cleared!", "success"); // Show a message confirming the cache files have been removed
         }
         
         

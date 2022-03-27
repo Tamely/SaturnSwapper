@@ -126,8 +126,6 @@ public sealed class SwapperService : ISwapperService
 
         skins = await Generation.Generate();
 
-        Generation.WriteItems(skins);
-
         Trace.WriteLine($"Deserialized {skins.Count} objects");
         
         for (int i = skins.Count - 1; i >= 0; i--)
@@ -178,8 +176,6 @@ public sealed class SwapperService : ISwapperService
 
         backblings = await Generation.Generate();
 
-        Generation.WriteItems(backblings);
-
         Trace.WriteLine($"Deserialized {backblings.Count} objects");
         
         foreach (var item in backblings)
@@ -203,8 +199,6 @@ public sealed class SwapperService : ISwapperService
 
         pickaxes = await Generation.Generate();
 
-        Generation.WriteItems(pickaxes);
-
         Trace.WriteLine($"Deserialized {pickaxes.Count} objects");
         
         foreach (var item in pickaxes)
@@ -227,8 +221,6 @@ public sealed class SwapperService : ISwapperService
         AbstractGeneration Generation = new EmoteGeneration(emotes, _provider, _configService, this);
 
         emotes = await Generation.Generate();
-
-        Generation.WriteItems(emotes);
 
         Trace.WriteLine($"Deserialized {emotes.Count} objects");
         

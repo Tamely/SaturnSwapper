@@ -31,9 +31,6 @@ internal class EmoteGeneration : AbstractGeneration
 
     public override async Task<List<Cosmetic>> Generate()
     {
-        if (File.Exists(Config.EmoteCache)) // If the cache file exists
-            emotes = JsonConvert.DeserializeObject<List<Cosmetic>>(await File.ReadAllTextAsync(Config.EmoteCache)); // Deserialize the cache file
-
         foreach (var (assetPath, _) in _provider.Files) // For every file in Fortnite
         {
             if (!assetPath.Contains("Dances/EID_")) continue; // If the file is not an emote, skip it

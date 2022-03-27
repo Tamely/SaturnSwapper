@@ -34,9 +34,6 @@ internal class BackblingGeneration : AbstractGeneration
 
     public override async Task<List<Cosmetic>> Generate()
     {
-        if (File.Exists(Config.BackblingCache)) // If the cache file exists
-            backBlings = JsonConvert.DeserializeObject<List<Cosmetic>>(await File.ReadAllTextAsync(Config.BackblingCache)); // Deserialize the cache file
-
         foreach (var (assetPath, _) in _provider.Files) // For every file in Fortnite
         {
             if (!assetPath.Contains("/BID_")) continue; // If the file is not a backbling, skip it

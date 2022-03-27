@@ -49,11 +49,6 @@ internal sealed class SkinGeneration : AbstractGeneration
     /// <returns>List of Cosmetic: Fully generated skins (with swaps)</returns>
     public override async Task<List<Cosmetic>> Generate()
     {
-        bool shouldShowStyles = await _configService.TryGetShouldShowStyles(); // Get the config value for showing styles
-
-        if (File.Exists(Config.SkinsCache)) // If the cache file exists
-                _skins = JsonConvert.DeserializeObject<List<Cosmetic>>(await File.ReadAllTextAsync(Config.SkinsCache)); // Deserialize the cache file
-
         foreach (var (assetPath, _) in _provider.Files) // For every file in Fortnite
         {
             if (!assetPath.Contains("/CID_")) continue; // If the file is not a skin, skip it
