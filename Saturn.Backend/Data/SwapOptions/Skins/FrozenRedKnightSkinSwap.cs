@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.Items;
 
@@ -82,9 +83,9 @@ internal sealed class FrozenRedKnightSkinSwap : SkinSwap
                     },
                     new SaturnSwap()
                     {
-                        Search = "/Game/Characters/Player/Female/Medium/Heads/F_Med_Head_01/Materials/F_MED_Commando_No_Hair.F_MED_Commando_No_Hair",
-                        Replace = SwapModel.HeadMaterials[0] ?? "/Game/Owen",
-                        Type = SwapType.HairMaterial
+                        Search = Convert.ToBase64String(new byte[] {47,71,97,109,101,47,67,104,97,114,97,99,116,101,114,115,47,80,108,97,121,101,114,47,70,101,109,97,108,101,47,77,101,100,105,117,109,47,72,101,97,100,115,47,70,95,77,101,100,95,72,101,97,100,95,48,49,47,77,97,116,101,114,105,97,108,115,47,70,95,77,69,68,95,67,111,109,109,97,110,100,111,95,78,111,95,72,97,105,114,46,70,95,77,69,68,95,67,111,109,109,97,110,100,111,95,78,111,95,72,97,105,114}),
+                        Replace = SwapModel.HeadMaterials[0] ?? "/",
+                        Type = SwapType.Base64
                     }
                 }
             },
