@@ -730,23 +730,6 @@ public class AddSkins
             if (bDontProceed)
                 continue;
 
-            if ((swapModel.HeadMesh.ToLower().Contains("ramirez")) &&
-                !swapModel.HeadMesh.ToLower().Contains("/parts/"))
-            {
-                foreach (var material in swapModel.HeadMaterials)
-                {
-                    if (material.Value.ToLower().Contains("hair") && !material.Value.ToLower().Contains("hide"))
-                    {
-                        foreach (var ogMaterial in OGHeadMaterials.Where(ogMaterial
-                                     => ogMaterial.Value.ToLower().Contains("hair")))
-                        {
-                            (swapModel.HeadMaterials[material.Key], swapModel.HeadMaterials[ogMaterial.Key]) = (
-                                swapModel.HeadMaterials[ogMaterial.Key], swapModel.HeadMaterials[material.Key]);
-                        }
-                    }
-                }
-            }
-            
             if (option.Name == "Blizzabelle")
             {
                 if (headCount > 1 && faceCount < 2)
