@@ -177,15 +177,16 @@ public class AddSkins
         if (characterParts == new Dictionary<string, string>())
             return null;
 
-        skin.CosmeticOptions.Add(new SaturnItem()
-        {
-            ItemDefinition = "CID_A_272_Athena_Commando_F_Prime",
-            Name = "No skin/All Defaults",
-            Description = "To swap/use a backbling you must convert this swap first!",
-            Icon =
-                "https://fortnite-api.com/images/cosmetics/br/CID_A_272_Athena_Commando_F_Prime/smallicon.png",
-            Rarity = "Common"
-        });
+        if (!skin.Description.Contains("style:"))
+            skin.CosmeticOptions.Add(new SaturnItem()
+            {
+                ItemDefinition = "CID_A_272_Athena_Commando_F_Prime",
+                Name = "No skin/All Defaults",
+                Description = "To swap/use a backbling you must convert this swap first!",
+                Icon =
+                    "https://fortnite-api.com/images/cosmetics/br/CID_A_272_Athena_Commando_F_Prime/smallicon.png",
+                Rarity = "Common"
+            });
 
         foreach (var option in SkinOptions)
         {
