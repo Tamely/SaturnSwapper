@@ -699,12 +699,6 @@
             : "Currently set to 'WILL NOT show item styles.' This could cause performance issues on low-end PCs!";
 
     /// <summary>
-    /// Sets the Character Part button text
-    /// </summary>
-    private async Task ShouldFlipCharacterParts()
-        => FlipCharacterPart = "Currently set to 'Default swaps will use a " + await _configService.TryGetHeadOrHatCharacterPart() + " character part'";
-
-    /// <summary>
     /// This will get the currently swapped items and return them in a message box.
     /// </summary>
     private async Task GetCurrentlySwapped()
@@ -729,8 +723,6 @@
         await ShouldConvertSeries(); // Get the current series setting
 
         await ShouldShowStyles(); // Get the current style setting
-
-        await ShouldFlipCharacterParts(); // Get the current character part setting
 
         var currentUser = _discordRPCService.Client.CurrentUser; // Get the current user
 
