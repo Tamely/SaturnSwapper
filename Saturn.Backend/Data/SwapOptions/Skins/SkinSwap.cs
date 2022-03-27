@@ -431,8 +431,7 @@ public class AddSkins
                                         }
 
                                         var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
-                                        if (!swapModel.BodyMaterials.ContainsKey(matIndex))
-                                            swapModel.BodyMaterials[matIndex] = material;
+                                        swapModel.BodyMaterials[matIndex] = material;
                                     }
                                 }
 
@@ -449,8 +448,7 @@ public class AddSkins
                                                 MaterialReplacements.Remove(temp);
                                                 
                                                 
-                                                if (!swapModel.BodyMaterials.ContainsKey(_lastMaterials["Body"].ToList().IndexOf(material)))
-                                                    swapModel.BodyMaterials[_lastMaterials["Body"].ToList().IndexOf(material)] = mat;
+                                                swapModel.BodyMaterials[_lastMaterials["Body"].ToList().IndexOf(material)] = mat;
                                             }
                                     }
                                     else if (part.TryGetValue(out USkeletalMesh skeletalMesh, "SkeletalMesh"))
@@ -464,9 +462,8 @@ public class AddSkins
                                                 mat = MaterialReplacements[mat];
                                                 MaterialReplacements.Remove(temp);
                                                     
-                                                    
-                                                if (!swapModel.BodyMaterials.ContainsKey(skeletalMesh.Materials.ToList().IndexOf(material)))
-                                                    swapModel.BodyMaterials[skeletalMesh.Materials.ToList().IndexOf(material)] =  mat;
+                                                
+                                                swapModel.BodyMaterials[skeletalMesh.Materials.ToList().IndexOf(material)] = mat;
                                             }
                                         _lastMaterials.Add("Body", skeletalMesh.Materials);
                                     }
@@ -534,8 +531,7 @@ public class AddSkins
                                         }
 
                                         var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
-                                        if (!swapModel.HeadMaterials.ContainsKey(matIndex))
-                                            swapModel.HeadMaterials[matIndex] = material;
+                                        swapModel.HeadMaterials[matIndex] = material;
                                     }
                                 }
                                 
@@ -552,8 +548,7 @@ public class AddSkins
                                                 MaterialReplacements.Remove(temp);
                                                 
                                                 
-                                                if (!swapModel.HeadMaterials.ContainsKey(_lastMaterials["Head"].ToList().IndexOf(material)))
-                                                    swapModel.HeadMaterials[_lastMaterials["Head"].ToList().IndexOf(material)] = mat;
+                                                swapModel.HeadMaterials[_lastMaterials["Head"].ToList().IndexOf(material)] = mat;
                                             }
                                     }
                                     else if (part.TryGetValue(out USkeletalMesh skeletalMesh, "SkeletalMesh"))
@@ -566,9 +561,8 @@ public class AddSkins
                                                 mat = MaterialReplacements[mat];
                                                 MaterialReplacements.Remove(temp);
                                                     
-                                                    
-                                                if (!swapModel.HeadMaterials.ContainsKey(skeletalMesh.Materials.ToList().IndexOf(material)))
-                                                    swapModel.HeadMaterials[skeletalMesh.Materials.ToList().IndexOf(material)] = mat;
+                                                
+                                                swapModel.HeadMaterials[skeletalMesh.Materials.ToList().IndexOf(material)] = mat;
                                             }
                                         if (_lastMaterials.ContainsKey("Head"))
                                             _lastMaterials.Remove("Head");
@@ -651,8 +645,7 @@ public class AddSkins
 
                                         var matIndex = materialOverride.Get<int>("MaterialOverrideIndex");
                                         
-                                        if (!swapModel.FaceACCMaterials.ContainsKey(matIndex))
-                                            swapModel.FaceACCMaterials[matIndex]  = material;
+                                        swapModel.FaceACCMaterials[matIndex]  = material;
                                     }
                                 }
                                 
@@ -669,8 +662,7 @@ public class AddSkins
                                                 MaterialReplacements.Remove(temp);
                                                 
                                                 
-                                                if (!swapModel.FaceACCMaterials.ContainsKey(_lastMaterials["Hat"].ToList().IndexOf(material)))
-                                                    swapModel.FaceACCMaterials[_lastMaterials["Hat"].ToList().IndexOf(material)] =  mat;
+                                                swapModel.FaceACCMaterials[_lastMaterials["Hat"].ToList().IndexOf(material)] =  mat;
                                             }
                                     }
                                     else if (part.TryGetValue(out USkeletalMesh skeletalMesh, "SkeletalMesh"))
@@ -683,9 +675,8 @@ public class AddSkins
                                                 mat = MaterialReplacements[mat];
                                                 MaterialReplacements.Remove(temp);
                                                     
-                                                    
-                                                if (!swapModel.FaceACCMaterials.ContainsKey(skeletalMesh.Materials.ToList().IndexOf(material)))
-                                                    swapModel.FaceACCMaterials[skeletalMesh.Materials.ToList().IndexOf(material)] = mat;
+                                                
+                                                swapModel.FaceACCMaterials[skeletalMesh.Materials.ToList().IndexOf(material)] = mat;
                                             }
                                         if (_lastMaterials.ContainsKey("Hat"))
                                             _lastMaterials.Remove("Hat");
