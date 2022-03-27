@@ -494,7 +494,7 @@
                     <div class="card" @onclick=@(async () => await ResetConfiguration())>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2>Reset swapped items</h2>
+                            <h2>Reset config</h2>
                             @switch (ResetConfigColor)
                             {
                                 case Colors.C_WHITE:
@@ -1319,25 +1319,34 @@
     /// </summary>
     private async Task RemoveDupedFiles()
     {
-        foreach (var file in Directory.EnumerateFiles(FortniteUtil.PakPath)) // Enumerates through the files in the paks folder
-            if (file.Contains("Saturn")) // If the file contains 'Saturn' in its name
-                File.Delete(file); // Delete the file
+        try
+        {
+            foreach (var file in Directory.EnumerateFiles(FortniteUtil.PakPath)) // Enumerates through the files in the paks folder
+                if (file.Contains("Saturn")) // If the file contains 'Saturn' in its name
+                    File.Delete(file); // Delete the file
+            
+            if (!Directory.Exists(Config.CompressedDataPath)) // If the compressed data folder doesn't exist
+                Logger.Log("Compressed data path was not found! Did you not swap anything?", LogLevel.Fatal); // Log it
+            else // Otherwise
+                Directory.Delete(Config.CompressedDataPath, true); // Delete the folder
 
-        if (!Directory.Exists(Config.CompressedDataPath)) // If the compressed data folder doesn't exist
-            Logger.Log("Compressed data path was not found! Did you not swap anything?", LogLevel.Fatal); // Log it
-        else // Otherwise
-            Directory.Delete(Config.CompressedDataPath, true); // Delete the folder
+            if (!Directory.Exists(Config.DecompressedDataPath)) // If the decompressed data folder doesn't exist
+                Logger.Log("Decompressed data path was not found! Did you not swap anything?", LogLevel.Fatal); // Log it
+            else // Otherwise
+                Directory.Delete(Config.DecompressedDataPath, true); // Delete the folder
 
-        if (!Directory.Exists(Config.DecompressedDataPath)) // If the decompressed data folder doesn't exist
-            Logger.Log("Decompressed data path was not found! Did you not swap anything?", LogLevel.Fatal); // Log it
-        else // Otherwise
-            Directory.Delete(Config.DecompressedDataPath, true); // Delete the folder
+            _configService.ConfigFile = new Saturn.Backend.Data.Models.Configuration(); // Reset the config
+            _configService.SaveConfig(); // Save the config
 
-        _configService.ConfigFile = new Saturn.Backend.Data.Models.Configuration(); // Reset the config
-        _configService.SaveConfig(); // Save the config
-
-        RemoveDuped = "Removed all duplicated files from Fortnite!"; // Set the message on the settings button
-        RemoveDupedColor = Colors.C_GREEN; // Set the color of the settings button
+            RemoveDuped = "Removed all duplicated files from Fortnite!"; // Set the message on the settings button
+            RemoveDupedColor = Colors.C_GREEN; // Set the color of the settings button
+        }
+        catch (Exception e)
+        {
+            Logger.Log("There was an error removing duped ucas! " + e.Message, LogLevel.Fatal); // Log it
+            RemoveDuped = "There was an error removing duped ucas send your Saturn log in the support channel! Is Fortnite open?"; // Set the message on the settings button
+            RemoveDupedColor = Colors.C_RED; // Set the color of the settings button
+        }
 
         await Task.Delay(5000); // Wait 5 seconds
 
