@@ -69,6 +69,8 @@ public sealed class SwapperService : ISwapperService
     private bool _halted;
     private readonly DefaultFileProvider _provider;
 
+    private readonly IAssetRegistryService _assetRegService;
+
     public SwapperService(IFortniteAPIService fortniteAPIService, ISaturnAPIService saturnAPIService,
         IConfigService configService, ICloudStorageService cloudStorageService, IJSRuntime jsRuntime, IBenBotAPIService benBotApiService, IDiscordRPCService discordRPCService)
     {
@@ -105,6 +107,8 @@ public sealed class SwapperService : ISwapperService
         _provider.SubmitKeys(keys);
         Trace.WriteLine("Submitted Keys");
         Trace.WriteLine($"File provider initialized with {_provider.Keys.Count} keys");
+
+        _assetRegService = new AssetRegistryService(_provider);
     }
 
     public DefaultFileProvider Provider { get => _provider; }
@@ -301,7 +305,7 @@ public sealed class SwapperService : ISwapperService
                         $"There are no options for {item.Name}! Can you not read the name and description?",
                         "warning");
                 }
-                else if (option.Name == "Default")
+                else if (option.Name.Contains("Default") || option.Name.Contains("No skin") || option.Name.Contains("No backbling"))
                 {
                     if (Config.isBeta)
                     {
@@ -395,7 +399,7 @@ public sealed class SwapperService : ISwapperService
             SaturnOption itemSwap = new();
             if (isDefault)
             {
-                itemSwap = await GenerateDefaultSkins(item, option);
+                itemSwap = await GenerateDefaultSkins(item);
             }
             else if (option.Options != null)
                 itemSwap = option.Options[0];
@@ -425,43 +429,6 @@ public sealed class SwapperService : ISwapperService
             if (item.IsCloudAdded)
                 itemSwap = option.Options[0];
 
-            if (option.ItemDefinition == "CID_A_272_Athena_Commando_F_Prime")
-            {
-                var search = "/Game/Athena/Items/Cosmetics/Characters/CID_A_272_Athena_Commando_F_Prime.CID_A_272_Athena_Commando_F_Prime";
-                SaturnData.SearchString = search;
-
-                if (!TryExportAsset("FortniteGame/AssetRegistry.bin", out _))
-                {
-                    Logger.Log("Failed to export asset registry!", LogLevel.Error);
-                    return false;
-                }
-
-                if (SaturnData.Block.Data == null)
-                {
-                    Logger.Log("Failed to find string in asset registry!", LogLevel.Error);
-                    return false;
-                }
-
-                byte[] uncompressed = SaturnData.Block.Data;
-                if (!AnyLength.SwapNormally(new List<byte[]>() { Encoding.ASCII.GetBytes(search) }, 
-                    new List<byte[]>() { Encoding.ASCII.GetBytes(search.Replace("CID_A_272_Athena_Commando_F_Prime", "CID_A_272_AthenaOWEN_IS_SO_SMART")) },
-                    ref uncompressed))
-                {
-                    Logger.Log("Failed to swap in uncompressed registry block!", LogLevel.Error);
-                    return false;
-                }
-
-                var mem = new MemoryStream();
-                using (ZLibStream zLibStream = new ZLibStream(mem, CompressionMode.Compress))
-                {
-                    zLibStream.Write(uncompressed, 0, uncompressed.Length);
-                }
-
-                byte[] compressed = mem.ToArray();
-
-                await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, "pakchunk0-WindowsClient.pak"), SaturnData.Block.Offset, FillEnd(compressed, SaturnData.Block.CompressedLength));
-            }
-
             Logger.Log($"There are {itemSwap.Assets.Count} assets to swap...", LogLevel.Info);
             foreach (var asset in itemSwap.Assets)
             {
@@ -479,7 +446,7 @@ public sealed class SwapperService : ISwapperService
                 }
                 if (isDefault && asset.ParentAsset.Contains("DefaultGameDataCosmetics"))
                     data = new WebClient().DownloadData(
-                        "https://cdn.discordapp.com/attachments/770991313490280478/943307827357823007/TamelysDefaultGameData.uasset");
+                        "https://cdn.discordapp.com/attachments/754879989614379042/957082482560364694/DefaultGameDataCosmetics.uasset");
                 Logger.Log("Asset exported");
                 Logger.Log($"Starting backup of {Path.GetFileName(SaturnData.Path)}");
 
@@ -905,47 +872,33 @@ public sealed class SwapperService : ISwapperService
     #endregion
 
     #region GenerateMeshDefaults
-    private async Task<SaturnOption> GenerateDefaultSkins(Cosmetic item, SaturnItem option)
+    private async Task<SaturnOption> GenerateDefaultSkins(Cosmetic item)
     {
         Logger.Log($"Getting character parts for {item.Name}");
-        Logger.Log(Constants.CidPath + item.Id);
-        
-        var characterParts = Task.Run(() => GetCharacterPartsById(item.Id)).GetAwaiter().GetResult();
+        Logger.Log(item.Id);
 
-        if (characterParts == new Dictionary<string, string>())
-            return null;
+        bool isBackblingSwap = item.Id.StartsWith("BID_");
+        var cps = new List<string>();
 
-        string headOrHat = _configService.ConfigFile.HeadOrHatCharacterPart;
-        Logger.Log("Hat or head is set to: " + headOrHat);
-        if (headOrHat == "Hat" && !characterParts.ContainsKey("Hat"))
-            headOrHat = "Face";
+        if (isBackblingSwap)
+        {
+            foreach (var _item in await _configService.TryGetConvertedItems())
+            {
+                if (!_item.Swaps[0].ParentAsset.Contains("DefaultGameDataCosmetics")) continue;
+                cps = await _assetRegService.ReturnCPsForSkin(_item.ItemDefinition);
+                break;
+            }
+        }
 
-        if (headOrHat == "Face" && !characterParts.ContainsKey("Face"))
-            headOrHat = "Head";
-
-        if (headOrHat == "Head" && !characterParts.ContainsKey("Head"))
-            headOrHat = "Hat";
-
-        if (headOrHat == "Hat" && !characterParts.ContainsKey("Hat"))
-            headOrHat = "Face";
-
-        // Fallback, 2 body cps so nothing goes invalid because there isnt a head or hat
-        if (headOrHat == "Face" && !characterParts.ContainsKey("Face"))
-            headOrHat = "Body";
-
-
-        Logger.Log("Hat or head is swapping as: " + headOrHat);
-
-        if (characterParts.Count > 2)
-            option.Status = "This item might not be perfect!";
+        var characterParts = isBackblingSwap ? cps : await _assetRegService.ReturnCPsForSkin(item.Id);
 
         return new DefaultSkinSwap(item.Name,
                                    item.Rarity.BackendValue,
                                    item.Images.SmallIcon,
                                    characterParts,
-                                   headOrHat).ToSaturnOption();
+                                   item.Id.StartsWith("BID_") ? (await GetBackblingCP(item.Id)).GetPathName() : "/").ToSaturnOption();
     }
-    
+
     private async Task<SaturnOption> GenerateMeshSkins(Cosmetic item, SaturnItem option)
     {
         Logger.Log($"Getting character parts for {item.Name}");
