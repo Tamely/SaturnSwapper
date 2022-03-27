@@ -1700,7 +1700,27 @@ public sealed class SwapperService : ISwapperService
                 AnyLength.SwapNormally(Searches, Replaces, ref data);
             else
                 AnyLength.TrySwap(ref data, Searches, Replaces);
-            return true;
+
+
+            var ClassNames = new List<byte[]>()
+            {
+                new byte[] { 67,117,115,116,111,109,67,104,97,114,97,99,116,101,114,72,101,97,100,68,97,116,97 },
+                new byte[] { 67,117,115,116,111,109,67,104,97,114,97,99,116,101,114,72,97,116,68,97,116,97 },
+                new byte[] { 70,97,99,101,67,117,115,116,111,109,67,104,97,114,97,99,116,101,114,72,97,116,68,97,116,97 },
+                new byte[] { 67,117,115,116,111,109,67,104,97,114,97,99,116,101,114,66,111,100,121,80,97,114,116,68,97,116,97 }
+            };
+
+            var NullBytes = new List<byte[]>()
+            {
+                new byte[] { 0 },
+                new byte[] { 0 },
+                new byte[] { 0 },
+                new byte[] { 0 }
+            };
+
+            AnyLength.SwapNormally(ClassNames, NullBytes, ref data);
+
+                return true;
         }
         catch (Exception ex)
         {
