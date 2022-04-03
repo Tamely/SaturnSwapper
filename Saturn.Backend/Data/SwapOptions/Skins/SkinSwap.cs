@@ -469,9 +469,8 @@ public class AddSkins
                                     }
                                 }
                                 
-                                int bodyCount = swapModel.BodyMaterials.Count(x => x.Value != "/");
-                                
-                                if (bodyCount > OGBodyMaterials.Count)
+                                foreach (var material in swapModel.BodyMaterials.Where(material => 
+                                             material.Value != "/").Where(material => !OGBodyMaterials.ContainsKey(material.Key)))
                                     bDontProceed = true;
 
                                 swapModel.BodyFX =
@@ -721,14 +720,19 @@ public class AddSkins
                 if (OGHatType == ECustomHatType.ECustomHatType_None)
                     bDontProceed = true;
 
-            int headCount = swapModel.HeadMaterials.Count(x => x.Value != "/");
-            int faceCount = swapModel.FaceACCMaterials.Count(x => x.Value != "/");
-
-            if (OGHeadMaterials.Count < headCount || faceCount > OGFaceACCMaterials.Count)
+            foreach (var material in swapModel.FaceACCMaterials.Where(material => 
+                         material.Value != "/").Where(material => !OGFaceACCMaterials.ContainsKey(material.Key)))
                 bDontProceed = true;
             
+            foreach (var material in swapModel.HeadMaterials.Where(material => 
+                         material.Value != "/").Where(material => !OGHeadMaterials.ContainsKey(material.Key)))
+                bDontProceed = true;
+
             if (bDontProceed)
                 continue;
+            
+            var headCount = swapModel.HeadMaterials.Count(x => x.Value != "/");
+            var faceCount = swapModel.FaceACCMaterials.Count(x => x.Value != "/");
 
             if (option.Name == "Blizzabelle")
             {

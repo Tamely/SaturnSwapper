@@ -1,4 +1,5 @@
-﻿using Saturn.Backend.Data.Enums;
+﻿using System;
+using Saturn.Backend.Data.Enums;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -52,9 +53,15 @@ public class Oodle
 
         var CompressedSize = CompressStream(Buffer, (uint)Buffer.Length, ref OutputBuffer, MaxLength,
             OodleFormat.Kraken, OodleCompressionLevel.Optimal5);
+        
+        Logger.Log("Compressed " + Buffer.Length + " bytes to " + CompressedSize + " bytes.");
+        
+        var tempBuffer = new byte[CompressedSize];
+        Array.Copy(OutputBuffer, tempBuffer, CompressedSize);
 
         if (CompressedSize > 0)
-            return OutputBuffer;
+            // Remove all bytes after the compressed size
+            return tempBuffer;
 
         throw new InvalidDataException("Unable to compress buffer.");
     }
