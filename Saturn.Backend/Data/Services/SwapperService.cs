@@ -294,7 +294,7 @@ public sealed class SwapperService : ISwapperService
                         $"There are no options for {item.Name}! Can you not read the name and description?",
                         "warning");
                 }
-                else if (option.Name.Contains("Default") || option.Name.Contains("No skin") || option.Name.Contains("No backbling"))
+                else if (option.Name.Contains("No skin") || option.Name.Contains("No backbling"))
                 {
                     if (Config.isBeta)
                     {
@@ -461,16 +461,17 @@ public sealed class SwapperService : ISwapperService
                 else
                     await BackupFile(file, item, option);
 
-                foreach (var swwaps in asset.Swaps)
+                foreach (var swaps in asset.Swaps)
                 {
-                    Logger.Log(swwaps.Search + " :: " + swwaps.Replace);
+                    Logger.Log(swaps.Search + " :: " + swaps.Replace);
                 }
 
                 if (!TryIsB64(ref data, asset))
                     Logger.Log($"Cannot swap/determine if '{asset.ParentAsset}' is Base64 or not!",
                         LogLevel.Fatal);
 
-                var compressed = SaturnData.isCompressed ? Utils.Oodle.Compress(data) : data;
+                var Oodle = new Utils.Oodle(Config.BasePath);
+                var compressed = SaturnData.isCompressed ? Oodle.Compress(data) : data;
 
                 Directory.CreateDirectory(Config.DecompressedDataPath);
                 File.SetAttributes(Config.DecompressedDataPath,
@@ -568,7 +569,7 @@ public sealed class SwapperService : ISwapperService
             await ItemUtil.UpdateStatus(item, option,
                 $"There was an error converting {item.Name}. Please send the log to Tamely on Discord!",
                 Colors.C_RED);
-            Logger.Log($"There was an error converting {ex.StackTrace}");
+            Logger.Log($"There was an error converting {ex}");
 
             if (ex.StackTrace.Contains("CUE4Parse.UE4.Assets.Exports.PropertyUtil"))
                 await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a common error with CUE4Parse that occured.",
@@ -650,7 +651,7 @@ public sealed class SwapperService : ISwapperService
             await ItemUtil.UpdateStatus(item, option,
                 $"There was an error reverting {item.Name}. Please send the log to Tamely on Discord!",
                 Colors.C_RED);
-            Logger.Log($"There was an error reverting {ex.StackTrace}");
+            Logger.Log($"There was an error reverting {ex}");
             return false;
         }
     }
@@ -1720,7 +1721,7 @@ public sealed class SwapperService : ISwapperService
 
             AnyLength.SwapNormally(ClassNames, NullBytes, ref data);
 
-                return true;
+            return true;
         }
         catch (Exception ex)
         {
