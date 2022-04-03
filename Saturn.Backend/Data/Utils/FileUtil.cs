@@ -17,6 +17,12 @@ namespace Saturn.Backend.Data.Utils
     {
         private static MemoryStream? _stream;
 
+        public static bool CheckIfCppIsInstalled()
+        {
+            var log = Logger.WrittenText;
+            return !log.Any(line => line.Contains("CUE4Parse.Compression.Oodle.OodleLZ_Decompress"));
+        }
+
         // Hex to byte[]
         public static byte[] HexToByteArray(string hex)
         {

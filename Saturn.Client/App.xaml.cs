@@ -33,12 +33,30 @@ namespace Saturn.Client
             {
                 Logger.Log("There was an error in the application.\n" + error.ExceptionObject);
 
-                MessageBox.Show(
-                    error.ExceptionObject.ToString().ToLower().Contains("couldn't find a compatible webview2")
-                        ? "There was an error in the application, please press OK then report the log to Support! This is most likely caused by you not having WebView2 installed!"
-                        : "There was an error in the application, please press OK then report the log to Support!",
-                    "Ask for Support in Tamely's Discord Server!");
-                Process.Start("notepad.exe", Config.LogFile);
+                if (error.ExceptionObject.ToString().ToLower().Contains("couldn't find a compatible webview2"))
+                {
+                    string videoLink = "https://youtu.be/xuY3ddXBbsg";
+                    MessageBox.Show($"There was a problem connecting to WebView2 services. To fix this, press OK and watch the video, or type this link in your browser: {videoLink}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    FileUtil.OpenBrowser(videoLink);
+                }
+                else if (error.ExceptionObject.ToString().Contains("Saturn.Backend.Data.Utils.FortniteUtil.GetFortnitePath()") || error.ExceptionObject.ToString().Contains("System.ArgumentException: Given directory must exist (Parameter '_workingDirectory')"))
+                {
+                    string videoLink = "https://youtu.be/j8KQdmHtq4k";
+                    MessageBox.Show($"There was a problem getting Fortnite's path from the Epic Games Launcher. To fix this, press OK and watch the video, or type this link in your browser: {videoLink}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    FileUtil.OpenBrowser(videoLink);
+                }
+                else if (error.ExceptionObject.ToString().Contains("(tamelyapi.azurewebsites.net:443)"))
+                {
+                    string videoLink = "https://youtu.be/JCod7KudTtg";
+                    MessageBox.Show($"There was a problem connecting to the internet. If you are sure you have internet connection, to fix this, press OK and watch the video, or type this link in your browser: {videoLink}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    FileUtil.OpenBrowser(videoLink);
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "There was an error in the application, please press OK then report the log to Support!", "Ask for Support in Tamely's Discord Server!");
+                    Process.Start("notepad.exe", Config.LogFile);
+                }
             };
         }
 

@@ -715,9 +715,6 @@
     {
         AppDomain.CurrentDomain.UnhandledException += UnhandledException; // Catch unhandled exceptions
 
-        if (!CheckForInternetConnection()) // Check for internet connection
-            throw new WebException("No internet connection"); // Throw exception if no internet connection
-
         await ShouldConvertRarity(); // Get the current rarity setting
 
         await ShouldConvertSeries(); // Get the current series setting
@@ -746,6 +743,9 @@
         await CheckKey(); // Check if the key is valid
 
         await CheckUpdate(); // Check if there is an update
+
+        if (await IsFortniteOpen())
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Fortnite has been closed.", "Fortnite has been closed. You cannot use a swapper while Fortnite is running in the background!", "warning");
 
         await CheckMaintenance(); // Check if the swapper is in maintenance mode
 
@@ -1287,6 +1287,9 @@
             else // Otherwise
                 Directory.Delete(Config.DecompressedDataPath, true); // Delete the folder
 
+            if (_configService.ConfigFile.IsLobbyBackgroundConverted)
+                await RevertLobbyBG();
+
             _configService.ConfigFile = new Saturn.Backend.Data.Models.Configuration(); // Reset the config
             _configService.SaveConfig(); // Save the config
 
@@ -1454,6 +1457,25 @@
         await _jsRuntime.InvokeVoidAsync("MessageBox", "Success!", "The background has been replaced!", "success"); // Display a success message
         Logger.Log("Successfully replaced the background!"); // Log the success
     }
+
+    /// <summary>
+    /// Checks if Fortnite is currently running and closes it if it is
+    /// </summary>
+    /// returns: True if Fortnite is running, false if not
+    private async Task<bool> IsFortniteOpen()
+    {
+        var fortniteProcesses = Process.GetProcessesByName("FortniteClient-Win64-Shipping"); // Get the Fortnite process
+        if (fortniteProcesses.Length == 0) fortniteProcesses = Process.GetProcessesByName("FortniteClient-Win64-Shipping_EAC"); // If there are no processes, try to get the EAC process
+        if (fortniteProcesses.Length == 0) fortniteProcesses = Process.GetProcessesByName("FortniteClient-Win64-Shipping_BE"); // If there are no processes, try to get the BE process
+        if (fortniteProcesses.Length == 0) fortniteProcesses = Process.GetProcessesByName("FortniteLauncher"); // If there are no processes, try to get the launcher process
+        if (fortniteProcesses.Length == 0) return false; // If there are no processes, return false
+        
+        Logger.Log("Fortnite is running!"); // Log the process found
+        
+        foreach (var proc in fortniteProcesses) // For each process
+            proc.Kill(); // Kill the process
+        return true;
+    }
     
     /// <summary>
     /// Reverts the background to the original
@@ -1501,25 +1523,5 @@
         
         await _jsRuntime.InvokeVoidAsync("MessageBox", "Success!", "The background has been reverted to its original state!", "success"); // Display a success message
         Logger.Log("Successfully reverted the background!"); // Log the success
-    }
-    
-    /// <summary>
-    /// Sends a ping to google with a timeout of 5 seconds. Taken from CycloneFreeze on Twilight
-    /// </summary>
-    /// <returns>
-    /// True if the ping was successful, false if it timed out or an error occured.
-    /// </returns>
-    private static bool CheckForInternetConnection()
-    {
-        using var ping = new Ping(); // Initializes a new Ping instance.
-        try
-        {
-            var reply = ping.Send("google.com", 5000); // Sends a ping to 'google.com' and timesout in 5 seconds.
-            return reply.Status == IPStatus.Success; // Returns true if the status is 'success'.
-        }
-        catch
-        {
-            return false; // Returns false if error occured.
-        }
     }
 }

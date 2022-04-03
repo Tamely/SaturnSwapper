@@ -141,6 +141,14 @@ public sealed class SwapperService : ISwapperService
 
         _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
 
+        if (FileUtil.CheckIfCppIsInstalled()) return skins;
+        await _jsRuntime.InvokeVoidAsync("MessageBox",
+            "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this.",
+            "error");
+        await Task.Delay(2000);
+        await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
+
+
         return skins;
     }
 
@@ -184,6 +192,13 @@ public sealed class SwapperService : ISwapperService
 
         _discordRPCService.UpdatePresence($"Looking at {backblings.Count} different backblings");
 
+        if (FileUtil.CheckIfCppIsInstalled()) return backblings;
+        await _jsRuntime.InvokeVoidAsync("MessageBox",
+            "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this.",
+            "error");
+        await Task.Delay(2000);
+        await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
+
         return backblings;
     }
     
@@ -207,6 +222,13 @@ public sealed class SwapperService : ISwapperService
 
         _discordRPCService.UpdatePresence($"Looking at {pickaxes.Count} different pickaxes");
 
+        if (FileUtil.CheckIfCppIsInstalled()) return pickaxes;
+        await _jsRuntime.InvokeVoidAsync("MessageBox",
+            "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this.",
+            "error");
+        await Task.Delay(2000);
+        await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
+
         return pickaxes;
     }
     
@@ -229,6 +251,13 @@ public sealed class SwapperService : ISwapperService
         await _fortniteAPIService.RemoveItems(emotes);
 
         _discordRPCService.UpdatePresence($"Looking at {emotes.Count} different emotes");
+
+        if (!FileUtil.CheckIfCppIsInstalled()) return emotes;
+        await _jsRuntime.InvokeVoidAsync("MessageBox",
+            "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
+            "error");
+        await Task.Delay(2000);
+        await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
 
         return emotes;
     }
@@ -570,10 +599,17 @@ public sealed class SwapperService : ISwapperService
                 $"There was an error converting {item.Name}. Please send the log to Tamely on Discord!",
                 Colors.C_RED);
             Logger.Log($"There was an error converting {ex}");
-
-            if (ex.StackTrace.Contains("CUE4Parse.UE4.Assets.Exports.PropertyUtil"))
-                await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a common error with CUE4Parse that occured.",
-                    "Restart the swapper to fix it!", "error");
+            
+            if (ex.ToString()
+                .Contains(
+                    "Win32.SafeHandles.SafeFileHandle.CreateFile(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options)"))
+            {
+                await _jsRuntime.InvokeVoidAsync("MessageBox", "There was an error creating the file backups!",
+                    "There was a SafeFileHandle error creating Saturn's backups. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/YXXj31G7QKg",
+                    "error");
+                await Task.Delay(2000);
+                await FileUtil.OpenBrowser("https://youtu.be/YXXj31G7QKg");
+            }
             return false;
         }
     }

@@ -1,5 +1,6 @@
 ﻿using Saturn.Backend.Data.Enums;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -10,6 +11,7 @@ namespace Saturn.Backend.Data.Utils
     public static class Logger
     {
         private static TextWriter _writer;
+        public static List<string> WrittenText { get; set; } = new List<string>();
 
         public static void Start()
         {
@@ -76,6 +78,7 @@ namespace Saturn.Backend.Data.Utils
 
 
             _writer.WriteLine($"[{DateTime.Now}] [Log{typeName}::{methodName} {level.GetDescription()}] {message}");
+            WrittenText.Add($"[{DateTime.Now}] [Log{typeName}::{methodName} {level.GetDescription()}] {message}");
             _writer.Flush();
         }
 
