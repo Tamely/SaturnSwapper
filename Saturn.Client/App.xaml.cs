@@ -14,6 +14,13 @@ namespace Saturn.Client
     {
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            if (!Directory.Exists(AppDomain.CurrentDomain.BaseDirectory + "/wwwroot"))
+            {
+                string videoLink = "https://youtu.be/qEzkRXiHNBs";
+                MessageBox.Show($"There was a problem reaching the wwwroot directory. To fix this, press OK and watch the video, or type this link in your browser: {videoLink}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                FileUtil.OpenBrowser(videoLink);
+            }
+            
             Directory.CreateDirectory(Config.BasePath);
             Directory.CreateDirectory(Config.LogPath);
             Directory.CreateDirectory(Config.PluginsPath);
