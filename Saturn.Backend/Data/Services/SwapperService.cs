@@ -141,7 +141,7 @@ public sealed class SwapperService : ISwapperService
 
         _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
 
-        if (FileUtil.CheckIfCppIsInstalled())
+        if (!FileUtil.CheckIfCppIsInstalled())
         {
             await _jsRuntime.InvokeVoidAsync("MessageBox",
                 "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
@@ -198,7 +198,7 @@ public sealed class SwapperService : ISwapperService
 
         _discordRPCService.UpdatePresence($"Looking at {backblings.Count} different backblings");
         
-        if (FileUtil.CheckIfCppIsInstalled())
+        if (!FileUtil.CheckIfCppIsInstalled())
         {
             await _jsRuntime.InvokeVoidAsync("MessageBox",
                 "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
@@ -234,7 +234,7 @@ public sealed class SwapperService : ISwapperService
 
         _discordRPCService.UpdatePresence($"Looking at {pickaxes.Count} different pickaxes");
         
-        if (FileUtil.CheckIfCppIsInstalled())
+        if (!FileUtil.CheckIfCppIsInstalled())
         {
             await _jsRuntime.InvokeVoidAsync("MessageBox",
                 "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
@@ -270,7 +270,7 @@ public sealed class SwapperService : ISwapperService
 
         _discordRPCService.UpdatePresence($"Looking at {emotes.Count} different emotes");
 
-        if (FileUtil.CheckIfCppIsInstalled())
+        if (!FileUtil.CheckIfCppIsInstalled())
         {
             await _jsRuntime.InvokeVoidAsync("MessageBox",
                 "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
