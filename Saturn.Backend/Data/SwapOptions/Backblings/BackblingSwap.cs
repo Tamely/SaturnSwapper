@@ -248,7 +248,7 @@ public class AddBackblings
         backBling.CosmeticOptions.Add(new SaturnItem()
         {
             ItemDefinition = "BID_Athena_Commando_F_Prime", // Cool custom BID ikr
-            Name = "No backbling",
+            Name = "No Backbling",
             Description = "MUST BE SWAPPED WITH A NO SKIN!",
             Icon =
                 "https://fortnite-api.com/images/cosmetics/br/CID_A_272_Athena_Commando_F_Prime/smallicon.png",

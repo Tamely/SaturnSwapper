@@ -180,11 +180,11 @@ public class AddSkins
         if (skin.VariantChannel.ToLower().Contains("parts") || !skin.Description.ToLower().Contains("style:"))
             skin.CosmeticOptions.Add(new SaturnItem()
             {
-                ItemDefinition = "CID_A_272_Athena_Commando_F_Prime",
-                Name = "No skin/All Defaults",
+                ItemDefinition = "CID_A_275_Athena_Commando_F_Prime_D",
+                Name = "Default Skins",
                 Description = "To swap/use a backbling you must convert this swap first!",
                 Icon =
-                    "https://fortnite-api.com/images/cosmetics/br/CID_A_272_Athena_Commando_F_Prime/smallicon.png",
+                    "https://fortnite-api.com/images/cosmetics/br/CID_A_275_Athena_Commando_F_Prime_D/smallicon.png",
                 Rarity = "Common"
             });
 

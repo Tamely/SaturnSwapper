@@ -323,11 +323,11 @@ public sealed class SwapperService : ISwapperService
                         $"There are no options for {item.Name}! Can you not read the name and description?",
                         "warning");
                 }
-                else if (option.Name.Contains("No skin") || option.Name.Contains("No backbling"))
+                else if (option.Name.Contains("Default Skins") || option.Name.Contains("No Backbling"))
                 {
                     if (Config.isBeta)
                     {
-                        if (option.Name.Contains("No backbling") && !await _configService.TryGetIsDefaultSwapped())
+                        if (option.Name.Contains("No Backbling") && !await _configService.TryGetIsDefaultSwapped())
                         {
                             await ItemUtil.UpdateStatus(item, option,
                                 $"There was an error converting {item.Name}!",
