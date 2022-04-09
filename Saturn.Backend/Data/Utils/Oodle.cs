@@ -56,13 +56,13 @@ public class Oodle
         
         Logger.Log("Compressed " + Buffer.Length + " bytes to " + CompressedSize + " bytes.");
         
+        if (CompressedSize < 0)
+            throw new InvalidDataException("Unable to compress buffer.");
+        
         var tempBuffer = new byte[CompressedSize];
         Array.Copy(OutputBuffer, tempBuffer, CompressedSize);
-
-        if (CompressedSize > 0)
-            // Remove all bytes after the compressed size
-            return tempBuffer;
-
-        throw new InvalidDataException("Unable to compress buffer.");
+        
+        return tempBuffer;
+            
     }
 }

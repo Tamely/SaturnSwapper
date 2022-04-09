@@ -177,7 +177,7 @@ public class AddSkins
         if (characterParts == new Dictionary<string, string>())
             return null;
 
-        if (!skin.Description.Contains("style:"))
+        if (skin.VariantChannel.ToLower().Contains("parts") || !skin.Description.ToLower().Contains("style:"))
             skin.CosmeticOptions.Add(new SaturnItem()
             {
                 ItemDefinition = "CID_A_272_Athena_Commando_F_Prime",
