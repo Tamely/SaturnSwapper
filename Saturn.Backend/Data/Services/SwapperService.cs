@@ -141,6 +141,10 @@ public sealed class SwapperService : ISwapperService
 
         _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
 
+        if (skins.Count == 0)
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
+                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
+
         if (FileUtil.CheckIfCppIsInstalled()) return skins;
         await _jsRuntime.InvokeVoidAsync("MessageBox",
             "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this.",
@@ -191,6 +195,10 @@ public sealed class SwapperService : ISwapperService
         await _fortniteAPIService.RemoveItems(backblings);
 
         _discordRPCService.UpdatePresence($"Looking at {backblings.Count} different backblings");
+        
+        if (backblings.Count == 0)
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
+                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
 
         if (FileUtil.CheckIfCppIsInstalled()) return backblings;
         await _jsRuntime.InvokeVoidAsync("MessageBox",
@@ -221,6 +229,10 @@ public sealed class SwapperService : ISwapperService
         await _fortniteAPIService.RemoveItems(pickaxes);
 
         _discordRPCService.UpdatePresence($"Looking at {pickaxes.Count} different pickaxes");
+        
+        if (pickaxes.Count == 0)
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
+                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
 
         if (FileUtil.CheckIfCppIsInstalled()) return pickaxes;
         await _jsRuntime.InvokeVoidAsync("MessageBox",
@@ -251,6 +263,10 @@ public sealed class SwapperService : ISwapperService
         await _fortniteAPIService.RemoveItems(emotes);
 
         _discordRPCService.UpdatePresence($"Looking at {emotes.Count} different emotes");
+        
+        if (emotes.Count == 0)
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
+                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
 
         if (!FileUtil.CheckIfCppIsInstalled()) return emotes;
         await _jsRuntime.InvokeVoidAsync("MessageBox",
