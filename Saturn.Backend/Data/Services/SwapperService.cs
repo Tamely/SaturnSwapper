@@ -1001,10 +1001,6 @@ public sealed class SwapperService : ISwapperService
                                                                                           item.Rarity.BackendValue,
                                                                                           item.Images.SmallIcon,
                                                                                           option.SwapModel).ToSaturnOption(),
-            "CID_A_310_Athena_Commando_F_ScholarFestive" => new KrisabelleSkinSwap(item.Name,
-                                                                                   item.Rarity.BackendValue,
-                                                                                   item.Images.SmallIcon,
-                                                                                   option.SwapModel).ToSaturnOption(),
             "CID_294_Athena_Commando_F_RedKnightWinter" => new FrozenRedKnightSkinSwap(item.Name,
                                                                                        item.Rarity.BackendValue,
                                                                                        item.Images.SmallIcon,
@@ -1702,7 +1698,7 @@ public sealed class SwapperService : ISwapperService
                 && !asset.ParentAsset.ToLower().Contains("backpack") 
                 && !asset.ParentAsset.ToLower().Contains("gameplay")
                 && !asset.ParentAsset.ToLower().Contains("defaultgamedatacosmetics")
-                && !asset.ParentAsset.ToLower().Contains("prime"))
+                && !asset.ParentAsset.ToLower().Contains("prime")
             {
                 Searches.Add(Encoding.ASCII.GetBytes(asset.ParentAsset.Replace(".uasset", "").Replace("FortniteGame/Content/", "/Game/")));
                 Replaces.Add(Encoding.ASCII.GetBytes("/"));

@@ -81,14 +81,6 @@ public class AddSkins
         },
         new SaturnItem
         {
-            ItemDefinition = "CID_A_310_Athena_Commando_F_ScholarFestive",
-            Name = "Krisabelle",
-            Description = "Voted \"Most Festive Holiday Witch\" 3 years in a row.",
-            Icon = "https://fortnite-api.com/images/cosmetics/br/cid_a_310_athena_commando_f_scholarfestive/smallicon.png",
-            Rarity = "Rare"
-        },
-        new SaturnItem
-        {
             ItemDefinition = "CID_A_007_Athena_Commando_F_StreetFashionEclipse",
             Name = "Ruby Shadows",
             Description = "Sometimes you gotta go dark.",
@@ -177,7 +169,7 @@ public class AddSkins
         if (characterParts == new Dictionary<string, string>())
             return null;
 
-        if (skin.VariantChannel.ToLower().Contains("parts") || !skin.Description.ToLower().Contains("style:"))
+        if (string.IsNullOrWhiteSpace(skin.VariantChannel) || skin.VariantChannel.ToLower().Contains("parts") || !skin.Description.ToLower().Contains("style:"))
             skin.CosmeticOptions.Add(new SaturnItem()
             {
                 ItemDefinition = "CID_A_275_Athena_Commando_F_Prime_D",
