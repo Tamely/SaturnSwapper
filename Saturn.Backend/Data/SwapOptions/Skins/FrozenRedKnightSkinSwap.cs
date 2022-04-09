@@ -109,7 +109,7 @@ internal sealed class FrozenRedKnightSkinSwap : SkinSwap
                     new SaturnSwap()
                     {
                         Search = System.Convert.ToBase64String(new byte[] { 0, 5, 2, 2, 0 }),
-                        Replace = System.Convert.ToBase64String(new byte[] { 0, 5, 2, (byte)SwapModel.HatType, 0 }),
+                        Replace = System.Convert.ToBase64String(new byte[] { 0, 5, (byte)SwapModel.HatType, 2, 0 }),
                         Type = SwapType.Property
                     }
                 }

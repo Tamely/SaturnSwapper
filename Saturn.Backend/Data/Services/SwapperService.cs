@@ -1698,7 +1698,7 @@ public sealed class SwapperService : ISwapperService
                 && !asset.ParentAsset.ToLower().Contains("backpack") 
                 && !asset.ParentAsset.ToLower().Contains("gameplay")
                 && !asset.ParentAsset.ToLower().Contains("defaultgamedatacosmetics")
-                && !asset.ParentAsset.ToLower().Contains("prime")
+                && !asset.ParentAsset.ToLower().Contains("prime"))
             {
                 Searches.Add(Encoding.ASCII.GetBytes(asset.ParentAsset.Replace(".uasset", "").Replace("FortniteGame/Content/", "/Game/")));
                 Replaces.Add(Encoding.ASCII.GetBytes("/"));
