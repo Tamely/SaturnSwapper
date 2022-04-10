@@ -28,6 +28,7 @@ namespace Saturn.Backend.Data.Services
         public Task<List<Cosmetic>> RemoveItems(List<Cosmetic> items);
         public Models.FortniteAPI.Data GetAES();
         public Task<List<Cosmetic>> AreItemsConverted(List<Cosmetic> items);
+        public Task<List<Cosmetic>> AddExtraItems(List<Cosmetic> items, ItemType itemType);
     }
 
     public class FortniteAPIService : IFortniteAPIService
@@ -94,7 +95,7 @@ namespace Saturn.Backend.Data.Services
             return items;
         }
 
-        private async Task<List<Cosmetic>> AddExtraItems(List<Cosmetic> items, ItemType itemType)
+        public async Task<List<Cosmetic>> AddExtraItems(List<Cosmetic> items, ItemType itemType)
         {
             Logger.Log("Adding extra items");
 
@@ -181,8 +182,6 @@ namespace Saturn.Backend.Data.Services
             items.Reverse();
             items.AddRange(extraItems);
             items.Reverse();
-            return items;
-
             return items;
         }
 

@@ -124,6 +124,10 @@ public sealed class SwapperService : ISwapperService
 
         Trace.WriteLine($"Deserialized {skins.Count} objects");
         
+        await _fortniteAPIService.RemoveItems(skins);
+
+        await _fortniteAPIService.AddExtraItems(skins, ItemType.IT_Skin);
+        
         for (int i = skins.Count - 1; i >= 0; i--)
         {
             if (skins[i].Description.Contains("style:") && !await _configService.TryGetShouldShowStyles())
@@ -136,8 +140,6 @@ public sealed class SwapperService : ISwapperService
             if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, skins[i].Name) && string.Equals(x.ItemDefinition, skins[i].Id)))
                 skins[i].IsConverted = true;
         }
-
-        await _fortniteAPIService.RemoveItems(skins);
 
         _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
 
@@ -188,13 +190,15 @@ public sealed class SwapperService : ISwapperService
 
         Trace.WriteLine($"Deserialized {backblings.Count} objects");
         
+        await _fortniteAPIService.RemoveItems(backblings);
+        
+        await _fortniteAPIService.AddExtraItems(backblings, ItemType.IT_Backbling);
+        
         foreach (var item in backblings)
         {
             if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, item.Name) && string.Equals(x.ItemDefinition, item.Id)))
                 item.IsConverted = true;
         }
-        
-        await _fortniteAPIService.RemoveItems(backblings);
 
         _discordRPCService.UpdatePresence($"Looking at {backblings.Count} different backblings");
         
@@ -224,13 +228,15 @@ public sealed class SwapperService : ISwapperService
 
         Trace.WriteLine($"Deserialized {pickaxes.Count} objects");
         
+        await _fortniteAPIService.RemoveItems(pickaxes);
+        
+        await _fortniteAPIService.AddExtraItems(pickaxes, ItemType.IT_Pickaxe);
+        
         foreach (var item in pickaxes)
         {
             if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, item.Name) && string.Equals(x.ItemDefinition, item.Id)))
                 item.IsConverted = true;
         }
-        
-        await _fortniteAPIService.RemoveItems(pickaxes);
 
         _discordRPCService.UpdatePresence($"Looking at {pickaxes.Count} different pickaxes");
         
@@ -260,13 +266,15 @@ public sealed class SwapperService : ISwapperService
 
         Trace.WriteLine($"Deserialized {emotes.Count} objects");
         
+        await _fortniteAPIService.RemoveItems(emotes);
+        
+        await _fortniteAPIService.AddExtraItems(emotes, ItemType.IT_Dance);
+        
         foreach (var item in emotes)
         {
             if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, item.Name) && string.Equals(x.ItemDefinition, item.Id)))
                 item.IsConverted = true;
         }
-        
-        await _fortniteAPIService.RemoveItems(emotes);
 
         _discordRPCService.UpdatePresence($"Looking at {emotes.Count} different emotes");
 
