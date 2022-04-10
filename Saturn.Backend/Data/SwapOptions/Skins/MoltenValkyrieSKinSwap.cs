@@ -77,9 +77,9 @@ internal sealed class MoltenValkyrieSkinSwap : SkinSwap
                     new SaturnSwap()
                     {
                         Search =
-                            "Game/Characters/Player/Female/Medium/Bodies/F_MED_Dark_Viking_01/Meshes/F_MED_Commando_DarkViking_AnimBP.F_MED_Commando_DarkViking_AnimBP_C",
+                            "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Dark_Viking_01/Meshes/F_MED_Commando_DarkViking_AnimBP.F_MED_Commando_DarkViking_AnimBP_C",
                         Replace = SwapModel.BodyABP ??
-                                  "Game/Characters/Player/Female/Medium/Bodies/F_MED_Dark_Viking_01/Meshes/F_MED_Commando_DarkViking_AnimBP.F_MED_Commando_DarkViking_AnimBP_C",
+                                  "/Game/Characters/Player/Female/Medium/Bodies/F_MED_Dark_Viking_01/Meshes/F_MED_Commando_DarkViking_AnimBP.F_MED_Commando_DarkViking_AnimBP_C",
                         Type = SwapType.BodyAnim
                     },
                     new SaturnSwap()
@@ -162,8 +162,8 @@ internal sealed class MoltenValkyrieSkinSwap : SkinSwap
                     },
                     new SaturnSwap()
                     {
-                        Search = System.Convert.ToBase64String(new byte[] { 4, 4, 3, 2, 3 }),
-                        Replace = System.Convert.ToBase64String(new byte[] { 4, 4, 3, (byte)SwapModel.HatType, 3 }),
+                        Search = System.Convert.ToBase64String(new byte[] { 4, 3, 1, 2, 2 }),
+                        Replace = System.Convert.ToBase64String(new byte[] { 4, 3, 1, 2, (byte)SwapModel.HatType }),
                         Type = SwapType.Property
                     },
                     new SaturnSwap()
