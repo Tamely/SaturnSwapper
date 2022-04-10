@@ -95,7 +95,7 @@ internal sealed class RoastLordSkinSwap : SkinSwap
                 {
                     new SaturnSwap()
                     {
-                        Search = "/Game/Accessories/Hats/Mesh/Male_Commando_19.Male_Commando_19",
+                        Search = "/Game/Accessories/Hats/Mesh/Male_Commando_19.Male_Commando",
                         Replace = SwapModel.FaceACCMesh,
                         Type = SwapType.FaceAccessoryMesh
                     },

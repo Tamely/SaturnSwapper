@@ -71,9 +71,9 @@ internal sealed class RustLordSkinSwap : SkinSwap
                 {
                     new SaturnSwap()
                     {
-                        Search = System.Convert.ToBase64String(new byte[] {47,71,97,109,101,47,65,99,99,101,115,115,111,114,105,101,115,47,72,97,116,115,47,77,101,115,104,47,77,97,108,101,95,67,111,109,109,97,110,100,111,95,49,57,46,77,97,108,101,95,67,111,109,109,97,110,100,111,95,49,57}),
+                        Search = "/Game/Accessories/Hats/Mesh/Male_Commando_19.Male_Commando",
                         Replace = SwapModel.FaceACCMesh,
-                        Type = SwapType.Base64
+                        Type = SwapType.FaceAccessoryMesh
                     },
                     new SaturnSwap()
                     {
