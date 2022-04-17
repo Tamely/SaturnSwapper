@@ -1111,24 +1111,8 @@ public sealed class SwapperService : ISwapperService
     {
         Logger.Log("Generating swaps");
         EFortRarity Rarity = (EFortRarity)int.Parse(option.Swaps["Rarity"]);
-        
-        List<byte[]> SeriesBytes = new List<byte[]>();
 
-        switch (option.Name)
-        {
-            case "Default Pickaxe":
-                break;
-            default:
-                if (option.Swaps["Series"] != "/" && await _configService.TryGetShouldSeriesConvert())
-                {
-                    Logger.Log(option.Swaps["Series"]);
-                    Rarity = EFortRarity.Transcendent;
-                    SeriesBytes = await FileUtil.GetColorsFromSeries(option.Swaps["Series"], _provider);
-                }
-                break;
-        }
-
-         return option.ItemDefinition switch
+        return option.ItemDefinition switch
         {
             "Pickaxe_ID_408_MastermindShadow" => new MayhemScytheSwap(item.Name,
                                                                       item.Rarity.Value,
