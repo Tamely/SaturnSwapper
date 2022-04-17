@@ -596,6 +596,14 @@
                             <p style="color:white">Returns your currently converted items in a list</p>
                         </div>
                     </div>
+                    
+                    <div class="card" @onclick=@(async () => await Uninstall())>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2>Uninstall</h2>
+                            <p style="color:white">Deletes all Saturn files</p>
+                        </div>
+                    </div>
                 </div>
             }
             else
@@ -649,14 +657,7 @@
     /// </summary>
     internal async Task Uninstall()
     {
-        await Task.Run(async () => // Start a task to do this async
-        {
-            await RemoveDupedFiles(); // Remove all duped files
-
-            await Uninstaller.Uninstaller.Uninstall();
-            await Task.Delay(2000);
-            Process.GetCurrentProcess().Kill();
-        }); 
+        Uninstaller.Uninstall();
     }
 
     private async Task SetCosmeticOptions(Cosmetic item)
