@@ -107,8 +107,8 @@ internal sealed class RoastLordSkinSwap : SkinSwap
                     },
                     new SaturnSwap()
                     {
-                        Search = System.Convert.ToBase64String(new byte[] { 4, 4, 3, 2, 3 }),
-                        Replace = System.Convert.ToBase64String(new byte[] { 4, 4, 3, (byte)SwapModel.HatType, 3 }),
+                        Search = System.Convert.ToBase64String(new byte[] { 5, 2, 2, 0 }),
+                        Replace = System.Convert.ToBase64String(new byte[] { 5, (byte)SwapModel.HatType, 2, 0 }),
                         Type = SwapType.Property
                     }
                 }
