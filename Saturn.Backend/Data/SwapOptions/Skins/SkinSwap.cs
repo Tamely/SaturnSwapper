@@ -128,25 +128,6 @@ public class AddSkins
         },
         new SaturnItem
         {
-            ItemDefinition = "CID_082_Athena_Commando_M_Scavenger",
-            Name = "Rust Lord",
-            Description = "King of the scrap heap.",
-            Icon =
-                "https://fortnite-api.com/images/cosmetics/br/cid_082_athena_commando_m_scavenger/smallicon.png",
-            Rarity = "Epic"
-        },
-        new SaturnItem
-        {
-            ItemDefinition = "CID_A_132_Athena_Commando_M_ScavengerFire",
-            Name = "Roast Lord",
-            Description = "King of the burning scrap heap.",
-            Icon =
-                "https://fortnite-api.com/images/cosmetics/br/cid_a_132_athena_commando_m_scavengerfire/smallicon.png",
-            Rarity = "Epic",
-            Series = "LavaSeries"
-        },
-        new SaturnItem
-        {
             ItemDefinition = "CID_380_Athena_Commando_F_DarkViking_Fire",
             Name = "Molten Valkyrie",
             Description = "A fiery revelation.",
@@ -531,6 +512,12 @@ public class AddSkins
                                             "SkinColorSwatch")
                                             ? SkinColorSwatch.AssetPathName.Text
                                             : "/";
+
+                                    if (swapModel.HeadSkinColor ==
+                                        "/Game/Characters/CharacterColorSwatches/Skin/F_SkinColor_06.F_SkinColor_06")
+                                        swapModel.HeadSkinColor = "/";
+                                    if (swapModel.HeadHairColor == "/Game/Characters/CharacterColorSwatches/Hair/HairColor_01.HairColor_01")
+                                        swapModel.HeadHairColor = "/";
                                 }
 
 
