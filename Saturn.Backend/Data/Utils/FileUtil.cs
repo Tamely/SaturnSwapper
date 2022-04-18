@@ -22,6 +22,9 @@ namespace Saturn.Backend.Data.Utils
             var log = Logger.WrittenText;
             return !log.Any(line => line.Contains("CUE4Parse.Compression.Oodle.OodleLZ_Decompress"));
         }
+        
+        // Get HWID from PC
+        public static string GetHWID() => System.Security.Principal.WindowsIdentity.GetCurrent().User.Value;
 
         // Hex to byte[]
         public static byte[] HexToByteArray(string hex)

@@ -776,8 +776,16 @@
     {
         var keyToUse = key ?? _configService.ConfigFile.Key; // If the key is null, use the key from the config file
 
-        if (JsonConvert.DeserializeObject<bool>(await _saturnAPIService.ReturnEndpointAsync($"/api/v1/Saturn/ReturnKeyExists?key={keyToUse}"))) // Get the key info from the Saturn API, if it's valid continue
+        var keyData = JsonConvert.DeserializeObject<SearchModel>(await _saturnAPIService.ReturnEndpointAsync($"/api/v1/Saturn/ReturnKeyExists?key={keyToUse}")); // Get the key data
+        if (keyData.found) // Get the key info from the Saturn API, if it's valid continue
         {
+            if (keyData.hwid != FileUtil.GetHWID() && keyData.hwid != "NotSet")
+            {
+                await _jsRuntime.InvokeVoidAsync("MessageBox", "HWID Mismatch", "The key you entered is bound to a different HWID. Please generate a new key and don't share them!", "warning");
+                return;
+            }
+
+            await _saturnAPIService.ReturnEndpointAsync($"/api/v1/Saturn/SetHWID?key={keyToUse}&hwid={FileUtil.GetHWID()}"); // Set the HWID in the Saturn API
             _configService.ConfigFile.Key = keyToUse; // Set the key in the config file to the key the user is trying to use
             _configService.SaveConfig(); // Save the config file
             saturnState = SaturnState.S_Dash; // Set the saturn state to the dash
