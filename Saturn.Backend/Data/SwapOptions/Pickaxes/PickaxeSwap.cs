@@ -294,7 +294,7 @@ public class AddPickaxes
                         break;
                     }
 
-                if (key == "FX" && pickaxe.Name != "Stellar Axe")
+                if (key == "FX" && pickaxe.Name != "Stellar Axe" && pickaxe.Name != "The Axe of Champions")
                     if (value != "/" && OGSwaps[key] == "/" && OGSwaps["NFX"] == "/")
                     {
                         bDontProceed = true;

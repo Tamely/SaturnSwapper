@@ -1029,6 +1029,14 @@ public sealed class SwapperService : ISwapperService
                                                                                       item.Rarity.BackendValue,
                                                                                       item.Images.SmallIcon,
                                                                                       option.SwapModel).ToSaturnOption(),
+            "CID_029_Athena_Commando_F_Halloween" => new GhoulTrooperSwap(item.Name,
+                                                                          item.Rarity.BackendValue,
+                                                                          item.Images.SmallIcon,
+                                                                          option.SwapModel).ToSaturnOption(),
+            "CID_124_Athena_Commando_F_AuroraGlow" => new NiteliteSwap(item.Name,
+                                                                       item.Rarity.BackendValue,
+                                                                       item.Images.SmallIcon,
+                                                                       option.SwapModel).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }

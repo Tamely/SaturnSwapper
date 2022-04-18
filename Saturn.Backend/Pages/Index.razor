@@ -286,8 +286,8 @@
                         <div class="card" @onclick=@(async () => await RevertLobbyBG())>
                             <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                             <div class="card-info">
-                                <h2 style="color: green;">Lobby BG</h2>
-                                <p style="color:green">MAKE SURE YOU HAVE AN IMAGE TO REPACE THE BACKGROUND WITH IN THE SATURN EXE DIRECTORY</p>
+                                <h2 style="font-size: @GetTextSize("Lobby BG", true);">Lobby BG</h2>
+                                <p style="color:green; font-size: @GetTextSize("MAKE SURE YOU HAVE AN IMAGE TO REPLACE THE BACKGROUND WITH IN THE SATURN EXE DIRECTORY");">MAKE SURE YOU HAVE AN IMAGE TO REPLACE THE BACKGROUND WITH IN THE SATURN EXE DIRECTORY</p>
                             </div>
                         </div>
                     }
@@ -296,19 +296,20 @@
                         <div class="card" @onclick=@(async () => await SwapLobbyBG())>
                             <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                             <div class="card-info">
-                                <h2 style="color: white;">Lobby BG</h2>
-                                <p style="color:white">MAKE SURE YOU HAVE AN IMAGE TO REPACE THE BACKGROUND WITH IN THE SATURN EXE DIRECTORY</p>
+                                <h2 style="font-size: @GetTextSize("Lobby BG", true);">Lobby BG</h2>
+                                <p style="color:white; font-size: @GetTextSize("MAKE SURE YOU HAVE AN IMAGE TO REPLACE THE BACKGROUND WITH IN THE SATURN EXE DIRECTORY");">MAKE SURE YOU HAVE AN IMAGE TO REPLACE THE BACKGROUND WITH IN THE SATURN EXE DIRECTORY</p>
                             </div>
                         </div>
                     }
                     <div class="card" @onclick=@(() => saturnState = SaturnState.S_Plugins)>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2 style="color: white">Add plugin</h2>
-                            <p style="color:white">Be able to use your own swaps.</p>
+                            <h2 style="font-size: @GetTextSize("Add plugin", true);">Add plugin</h2>
+                            <p style="color:white; font-size: @GetTextSize("Be able to use your own swaps.")">Be able to use your own swaps.</p>
                         </div>
                     </div>
-                    
+
+
                     @foreach (var item in Items)
                     {
                         if (!item.IsPickingStyles)
@@ -472,20 +473,20 @@
                     <div class="card" @onclick=@(async () => await RemoveDupedFiles())>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2>Remove Duped UCAS</h2>
+                            <h2 style="font-size: @GetTextSize("Remove Duped UCAS", true);">Remove Duped UCAS</h2>
                             @switch (RemoveDupedColor)
                             {
                                 case Colors.C_WHITE:
-                                    <p style="color:white">@RemoveDuped</p>
+                                    <p style="color:white;font-size: @GetTextSize(RemoveDuped);">@RemoveDuped</p>
                                     break;
                                 case Colors.C_GREEN:
-                                    <p style="color:green">@RemoveDuped</p>
+                                    <p style="color:green;font-size: @GetTextSize(RemoveDuped);">@RemoveDuped</p>
                                     break;
                                 case Colors.C_YELLOW:
-                                    <p style="color:yellow">@RemoveDuped</p>
+                                    <p style="color:yellow;font-size: @GetTextSize(RemoveDuped);">@RemoveDuped</p>
                                     break;
                                 case Colors.C_RED:
-                                    <p style="color:red">@RemoveDuped</p>
+                                    <p style="color:red;font-size: @GetTextSize(RemoveDuped);">@RemoveDuped</p>
                                     break;
                             }
                         </div>
@@ -494,20 +495,20 @@
                     <div class="card" @onclick=@(async () => await ResetConfiguration())>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2>Reset config</h2>
+                            <h2 style="font-size: @GetTextSize("Reset config", true);">Reset config</h2>
                             @switch (ResetConfigColor)
                             {
                                 case Colors.C_WHITE:
-                                    <p style="color:white">@ResetConfig</p>
+                                    <p style="color:white;font-size: @GetTextSize(ResetConfig);">@ResetConfig</p>
                                     break;
                                 case Colors.C_GREEN:
-                                    <p style="color:green">@ResetConfig</p>
+                                    <p style="color:green;font-size: @GetTextSize(ResetConfig);">@ResetConfig</p>
                                     break;
                                 case Colors.C_YELLOW:
-                                    <p style="color:yellow">@ResetConfig</p>
+                                    <p style="color:yellow;font-size: @GetTextSize(ResetConfig);">@ResetConfig</p>
                                     break;
                                 case Colors.C_RED:
-                                    <p style="color:red">@ResetConfig</p>
+                                    <p style="color:red;font-size: @GetTextSize(ResetConfig);">@ResetConfig</p>
                                     break;
                             }
                         </div>
@@ -516,20 +517,20 @@
                     <div class="card" @onclick=@(async () => await Launch())>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2>Launch Fortnite</h2>
+                            <h2 style="font-size: @GetTextSize("Launch Fortnite", true);">Launch Fortnite</h2>
                             @switch (LaunchFortniteColor)
                             {
                                 case Colors.C_WHITE:
-                                    <p style="color:white">@LaunchFortnite</p>
+                                    <p style="color:white; font-size: @GetTextSize(LaunchFortnite);">@LaunchFortnite</p>
                                     break;
                                 case Colors.C_GREEN:
-                                    <p style="color:green">@LaunchFortnite</p>
+                                    <p style="color:green; font-size: @GetTextSize(LaunchFortnite);">@LaunchFortnite</p>
                                     break;
                                 case Colors.C_YELLOW:
-                                    <p style="color:yellow">@LaunchFortnite</p>
+                                    <p style="color:yellow; font-size: @GetTextSize(LaunchFortnite);">@LaunchFortnite</p>
                                     break;
                                 case Colors.C_RED:
-                                    <p style="color:red">@LaunchFortnite</p>
+                                    <p style="color:red; font-size: @GetTextSize(LaunchFortnite);">@LaunchFortnite</p>
                                     break;
                             }
                         </div>
@@ -538,70 +539,54 @@
                     <div class="card" @onclick=@(async () => await OpenLog())>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2>Open Newest Log</h2>
+                            <h2 style="font-size: @GetTextSize("Open Newest Log");">Open Newest Log</h2>
                             @switch (OpenLogColor)
                             {
                                 case Colors.C_WHITE:
-                                    <p style="color:white">@OpenLogFile</p>
+                                    <p style="color:white; font-size: @GetTextSize(OpenLogFile);">@OpenLogFile</p>
                                     break;
                                 case Colors.C_GREEN:
-                                    <p style="color:green">@OpenLogFile</p>
+                                    <p style="color:green; font-size: @GetTextSize(OpenLogFile);">@OpenLogFile</p>
                                     break;
                                 case Colors.C_YELLOW:
-                                    <p style="color:yellow">@OpenLogFile</p>
+                                    <p style="color:yellow; font-size: @GetTextSize(OpenLogFile);">@OpenLogFile</p>
                                     break;
                                 case Colors.C_RED:
-                                    <p style="color:red">@OpenLogFile</p>
+                                    <p style="color:red; font-size: @GetTextSize(OpenLogFile);">@OpenLogFile</p>
                                     break;
                             }
-                        </div>
-                    </div>
-                    
-                    <div class="card" @onclick=@(async () => await FlipRarityOption())>
-                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
-                        <div class="card-info">
-                            <h2>Change rarity</h2>
-                            <p style="color:white">@FlipRarity</p>
-                        </div>
-                    </div>
-                    
-                    <div class="card" @onclick=@(async () => await FlipSeriesOption())>
-                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
-                        <div class="card-info">
-                            <h2>Change series</h2>
-                            <p style="color:white">@FlipSeries</p>
                         </div>
                     </div>
 
                     <div class="card" @onclick=@(async () => await ToggleShowStyles())>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2>Show Styles</h2>
-                            <p style="color:white">@ShowStyles</p>
+                            <h2 style="font-size: @GetTextSize("Show Styles", true);">Show Styles</h2>
+                            <p style="color:white; font-size: @GetTextSize(ShowStyles);">@ShowStyles</p>
                         </div>
                     </div>
 
                     <div class="card" @onclick=@(async () => { if (Directory.Exists(Config.PluginsPath)) Directory.Delete(Config.PluginsPath, true); await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished removing all plugins!", "success"); })>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2>Remove plugins</h2>
-                            <p style="color:white">Removes all plugins</p>
+                            <h2 style="font-size: @GetTextSize("Removes plugins", true);">Remove plugins</h2>
+                            <p style="color:white; font-size: @GetTextSize("Removes all plugins");">Removes all plugins</p>
                         </div>
                     </div>
                     
                     <div class="card" @onclick=@(async () => await GetCurrentlySwapped())>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2>Get converted items</h2>
-                            <p style="color:white">Returns your currently converted items in a list</p>
+                            <h2 style="font-size: @GetTextSize("Get converted items", true);">Get converted items</h2>
+                            <p style="color:white; font-size: @GetTextSize("Returns your currently converted items in a list");">Returns your currently converted items in a list</p>
                         </div>
                     </div>
                     
                     <div class="card" @onclick=@(async () => await Uninstall())>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2>Uninstall</h2>
-                            <p style="color:white">Deletes all Saturn files</p>
+                            <h2 style="font-size: @GetTextSize("Uninstall", true);">Uninstall</h2>
+                            <p style="color:white; font-size: @GetTextSize("Deletes all Saturn files");">Deletes all Saturn files</p>
                         </div>
                     </div>
                 </div>
@@ -1288,7 +1273,7 @@
             else // Otherwise
                 Directory.Delete(Config.DecompressedDataPath, true); // Delete the folder
 
-            if (_configService.ConfigFile.IsLobbyBackgroundConverted)
+            if (File.Exists(Config.BasePath + "//" + "LobbyBackground.png"))
                 await RevertLobbyBG();
 
             _configService.ConfigFile = new Saturn.Backend.Data.Models.Configuration(); // Reset the config
@@ -1399,7 +1384,7 @@
         foreach (var cacheFile in JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(JsonConvert.SerializeObject(JObject.Parse(File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "//FortniteGame/Saved/PersistentDownloadDir/CMS/DownloadCache.json"))["cache"])).Values)
         {
             // If the cache file is a lobby background
-            if (!cacheFile["sourceUrl"].Contains("landscapev4") || !cacheFile["sourceUrl"].Contains("lobby")) continue;
+            if (!cacheFile["sourceUrl"].Contains("landscapev4") && !cacheFile["sourceUrl"].Contains("lobby")) continue;
 
             // Set the file path to the cache file
             filePath = cacheFile["filePath"].ToString();
@@ -1488,7 +1473,7 @@
         // Loop through each cache file Fortnite uses
         foreach (var cacheFile in JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(JsonConvert.SerializeObject(JObject.Parse(File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "//FortniteGame/Saved/PersistentDownloadDir/CMS/DownloadCache.json"))["cache"])).Values)
         {
-            if (!cacheFile["sourceUrl"].Contains("landscapev4")) continue; // If the source URL doesn't contain landscapev4, continue
+            if (!cacheFile["sourceUrl"].Contains("landscapev4") && !cacheFile["sourceUrl"].Contains("lobby")) continue; // If the source URL doesn't contain landscapev4, continue
 
             filePath = cacheFile["filePath"].ToString(); // Set the file path to the current cache file
         }

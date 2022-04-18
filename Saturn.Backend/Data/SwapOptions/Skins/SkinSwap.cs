@@ -155,6 +155,24 @@ public class AddSkins
             Rarity = "Legendary",
             Series = "LavaSeries"
         },
+        new SaturnItem
+        {
+            ItemDefinition = "CID_029_Athena_Commando_F_Halloween",
+            Name = "Ghoul Trooper",
+            Description = "Epic ghoul trooper outfit.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/CID_029_Athena_Commando_F_Halloween/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "CID_124_Athena_Commando_F_AuroraGlow",
+            Name = "Nitelite",
+            Description = "Never afraid of the dark.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/CID_124_Athena_Commando_F_AuroraGlow/smallicon.png",
+            Rarity = "Uncommon"
+        },
     };
 
     private string _lastID = "";
@@ -586,14 +604,6 @@ public class AddSkins
                             {
                                 swapModel.FaceACCMesh = part.Get<FSoftObjectPath>("SkeletalMesh").AssetPathName.Text;
 
-                                // This is for skins like ghoul trooper and maven
-                                if (swapModel.FaceACCMesh.ToLower().Contains("glasses"))
-                                {
-                                    swapModel.FaceACCMesh = "/";
-                                    swapModel.HatType = ECustomHatType.ECustomHatType_None;
-                                    return;
-                                }
-
                                 if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
                                 {
                                     swapModel.FaceACCABP = AdditionalData.GetOrDefault("AnimClass",
@@ -616,6 +626,14 @@ public class AddSkins
                                 
                                 if (OGbAttachToSocket && OGHatSocket.ToLower() != "face")
                                     isOGRealHat = true;
+                                
+                                // This is for skins like ghoul trooper and maven
+                                if (isOGRealHat != isRealHat && swapModel.FaceACCMesh.ToLower().Contains("glasses"))
+                                {
+                                    swapModel.FaceACCMesh = "/";
+                                    swapModel.HatType = ECustomHatType.ECustomHatType_None;
+                                    isRealHat = false;
+                                }
 
                                 if (isOGRealHat != isRealHat)
                                     bDontProceed = true;
