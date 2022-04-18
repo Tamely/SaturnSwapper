@@ -23,6 +23,6 @@
         public const string NewPidPath = "FortniteGame/Content/Athena/Items/Cosmetics/PickAxes/";
         public const string WidPath = "FortniteGame/Content/Athena/Items/Weapons/";
 
-        public const string UserVersion = "1.4.3";
+        public const string UserVersion = "1.4.4";
     }
 }
