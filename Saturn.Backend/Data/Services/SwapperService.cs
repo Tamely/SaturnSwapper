@@ -1029,6 +1029,10 @@ public sealed class SwapperService : ISwapperService
                                                                        item.Rarity.BackendValue,
                                                                        item.Images.SmallIcon,
                                                                        option.SwapModel).ToSaturnOption(),
+            "CID_242_Athena_Commando_F_Bullseye" => new BullseyeSwap(item.Name,
+                                                                     item.Rarity.BackendValue,
+                                                                     item.Images.SmallIcon,
+                                                                     option.SwapModel).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }

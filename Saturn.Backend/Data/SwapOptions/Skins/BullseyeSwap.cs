@@ -4,9 +4,9 @@ using Saturn.Backend.Data.Models.Items;
 
 namespace Saturn.Backend.Data.SwapOptions.Skins;
 
-internal sealed class NiteliteSwap : SkinSwap
+internal sealed class BullseyeSwap : SkinSwap
 {
-    public NiteliteSwap(string name, string rarity, string icon, MeshDefaultModel swapModel)
+    public BullseyeSwap(string name, string rarity, string icon, MeshDefaultModel swapModel)
         : base(name, rarity, icon, swapModel)
     {
     }
@@ -17,7 +17,7 @@ internal sealed class NiteliteSwap : SkinSwap
             new SaturnAsset()
             {
                 ParentAsset =
-                    "FortniteGame/Content/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_AuroraGlow",
+                    "FortniteGame/Content/Characters/CharacterParts/Female/Medium/Heads/CP_Head_F_Bullseye",
                 Swaps = new List<SaturnSwap>()
                 {
                     new SaturnSwap()
@@ -28,36 +28,30 @@ internal sealed class NiteliteSwap : SkinSwap
                     },
                     new SaturnSwap()
                     {
-                        Search = "/Game/Characters/CharacterColorSwatches/Skin/F_BLK_Luna.F_BLK_Luna",
-                        Replace = SwapModel.HeadSkinColor,
-                        Type = SwapType.SkinTone
-                    },
-                    new SaturnSwap()
-                    {
                         Search =
-                            "/Game/Characters/Player/Female/Medium/Heads/F_MED_HIS_Ramirez_Head_01/Mesh/F_MED_HIS_Ramirez_Head_01_AnimBP_Child.F_MED_HIS_Ramirez_Head_01_AnimBP_Child_C",
+                            "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01_AnimBP_Child.F_MED_ASN_Sarah_Head_01_AnimBP_Child_C",
                         Replace = SwapModel.HeadABP ??
-                                  "/Game/Characters/Player/Female/Medium/Heads/F_MED_HIS_Ramirez_Head_01/Mesh/F_MED_HIS_Ramirez_Head_01_AnimBP_Child.F_MED_HIS_Ramirez_Head_01_AnimBP_Child_C",
+                                  "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01_AnimBP_Child.F_MED_ASN_Sarah_Head_01_AnimBP_Child_C",
                         Type = SwapType.HeadAnim
                     },
                     new SaturnSwap()
                     {
                         Search =
-                            "/Game/Characters/Player/Female/Medium/Heads/F_MED_HIS_Ramirez_Head_01/Mesh/F_MED_HIS_Ramirez_Head_01.F_MED_HIS_Ramirez_Head_01",
+                            "/Game/Characters/Player/Female/Medium/Heads/F_MED_ASN_Sarah_Head_01/Meshes/F_MED_ASN_Sarah_Head_01.F_MED_ASN_Sarah_Head_01",
                         Replace = SwapModel.HeadMesh,
                         Type = SwapType.HeadMesh
                     },
                     new SaturnSwap()
                     {
                         Search =
-                            "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Skins/Aurora_Glow/Materials/F_MED_Commando_Hair_01_AuroraGlow.F_MED_Commando_Hair_01_AuroraGlow",
+                            "/Game/Characters/Player/Female/Medium/Heads/F_MED_Bullseye/Materials/F_MED_Bullseye_Head.F_MED_Bullseye_Head",
                         Replace = SwapModel.HeadMaterials[0],
                         Type = SwapType.HeadMaterial
                     },
                     new SaturnSwap()
                     {
                         Search =
-                            "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Skins/Aurora_Glow/Materials/F_MED_Commando_Head_01_AuroraGlow.F_MED_Commando_Head_01_AuroraGlow",
+                            "/Game/Characters/Player/Female/Medium/Heads/F_MED_Bullseye/Materials/F_MED_Bullseye_Hair.F_MED_Bullseye_Hair",
                         Replace = SwapModel.HeadMaterials[1],
                         Type = SwapType.HairMaterial
                     }
@@ -65,7 +59,7 @@ internal sealed class NiteliteSwap : SkinSwap
             },
             new SaturnAsset()
             {
-                ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_124_Body_F_AuroraGlow",
+                ParentAsset = "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_Bullseye",
                 Swaps = new List<SaturnSwap>()
                 {
                     new SaturnSwap()
@@ -93,7 +87,7 @@ internal sealed class NiteliteSwap : SkinSwap
                     new SaturnSwap()
                     {
                         Search =
-                            "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Skins/Aurora_Glow/Materials/M_F_Med_Soldier_01_AuroraGlow.M_F_Med_Soldier_01_AuroraGlow",
+                            "/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/F_MED_Bullseye/Materials/F_MED_Bullseye.F_MED_Bullseye",
                         Replace = SwapModel.BodyMaterials[0],
                         Type = SwapType.BodyMaterial
                     }
@@ -101,22 +95,30 @@ internal sealed class NiteliteSwap : SkinSwap
             },
             new SaturnAsset()
             {
-                ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Hats/CP_Hat_F_Commando_AuroraGlow",
+                ParentAsset =
+                    "FortniteGame/Content/Characters/CharacterParts/Hats/CP_Hat_F_Commando_Bullseye",
                 Swaps = new List<SaturnSwap>()
                 {
                     new SaturnSwap()
                     {
                         Search =
-                            "/Game/Accessories/Glasses/Materials/MI_AuroraGlow_Glasses.MI_AuroraGlow_Glasses",
-                        Replace = SwapModel.FaceACCMaterials[0],
-                        Type = SwapType.FaceAccessoryMaterial
+                            "/Game/Accessories/Hats/F_MED_Commando_Bullesye/Meshes/F_MED_Commando_Bullseye_Helmet_AnimBP.F_MED_Commando_Bullseye_Helmet_AnimBP_C",
+                        Replace = SwapModel.FaceACCABP ??
+                                  "/Game/Accessories/Hats/F_MED_Commando_Bullesye/Meshes/F_MED_Commando_Bullseye_Helmet_AnimBP.F_MED_Commando_Bullseye_Helmet_AnimBP_C",
+                        Type = SwapType.FaceAccessoryAnim
                     },
                     new SaturnSwap()
                     {
                         Search =
-                            "/Game/Accessories/Glasses/Meshes/Female_Commando_Shades.Female_Commando_Shades",
+                            "/Game/Accessories/Hats/F_MED_Commando_Bullesye/Meshes/F_MED_Commando_Bullseye_Helmet.F_MED_Commando_Bullseye_Helmet",
                         Replace = SwapModel.FaceACCMesh,
                         Type = SwapType.FaceAccessoryMesh
+                    },
+                    new SaturnSwap()
+                    {
+                        Search = System.Convert.ToBase64String(new byte[] { 2, 5, 3, 4, 1 }),
+                        Replace = System.Convert.ToBase64String(new byte[] { 2, 5, 3, (byte)SwapModel.HatType, 1 }),
+                        Type = SwapType.Property
                     }
                 }
             }

@@ -173,6 +173,15 @@ public class AddSkins
                 "https://fortnite-api.com/images/cosmetics/br/CID_124_Athena_Commando_F_AuroraGlow/smallicon.png",
             Rarity = "Uncommon"
         },
+        new SaturnItem
+        {
+            ItemDefinition = "CID_242_Athena_Commando_F_Bullseye",
+            Name = "Bullseye",
+            Description = "I never miss.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/CID_242_Athena_Commando_F_Bullseye/smallicon.png",
+            Rarity = "Uncommon"
+        },
     };
 
     private string _lastID = "";

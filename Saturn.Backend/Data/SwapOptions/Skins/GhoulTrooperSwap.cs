@@ -110,12 +110,6 @@ internal sealed class GhoulTrooperSwap : SkinSwap
                             "/Game/Accessories/Hats/Mesh/Ramirez_Glasses.Ramirez_Glasses",
                         Replace = SwapModel.FaceACCMesh,
                         Type = SwapType.FaceAccessoryMesh
-                    },
-                    new SaturnSwap()
-                    {
-                        Search = System.Convert.ToBase64String(new byte[] { 3, 3, 2, 1 }),
-                        Replace = System.Convert.ToBase64String(new byte[] { 3, 3, (byte)SwapModel.HatType, 1 }),
-                        Type = SwapType.Property
                     }
                 }
             }
