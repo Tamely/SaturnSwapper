@@ -511,7 +511,7 @@ public sealed class SwapperService : ISwapperService
                 }
                 if (isDefault && asset.ParentAsset.Contains("DefaultGameDataCosmetics"))
                     data = new WebClient().DownloadData(
-                        "https://cdn.discordapp.com/attachments/754879989614379042/957082482560364694/DefaultGameDataCosmetics.uasset");
+                        "https://cdn.discordapp.com/attachments/754879989614379042/966517115920195624/DefaultGameDataCosmetics.uasset");
                 Logger.Log("Asset exported");
                 Logger.Log($"Starting backup of {Path.GetFileName(SaturnData.Path)}");
 
