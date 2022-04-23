@@ -1,9 +1,9 @@
 ﻿using System;
-using Saturn.Backend.Data.Enums;
 using System.IO;
 using System.Runtime.InteropServices;
+using Saturn.Backend.Data.Enums;
 
-namespace Saturn.Backend.Data.Utils;
+namespace Saturn.Backend.Data.Utils.Compression;
 
 public class Oodle
 {

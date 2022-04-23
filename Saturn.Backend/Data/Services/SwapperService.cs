@@ -34,6 +34,9 @@ using Saturn.Backend.Data.Utils.Swaps.Generation;
 using System.IO.Compression;
 using System.Threading;
 using Saturn.Backend.Data.Models.SaturnAPI;
+using Saturn.Backend.Data.Utils.Compression;
+using Saturn.Backend.Data.Utils.Swaps.Generation.Lobby;
+using Index = Saturn.Backend.Pages.Index;
 
 namespace Saturn.Backend.Data.Services;
 
@@ -44,7 +47,9 @@ public interface ISwapperService
     public Task<Dictionary<string, string>> GetCharacterPartsById(string id, Cosmetic? item = null);
     public Task<UObject> GetWIDByID(string id);
     public Task<UObject> GetBackblingCP(string id);
+    public Task<bool> ConvertLobby(Cosmetic item, Cosmetic option);
     public Task<List<Cosmetic>> GetSaturnSkins();
+    public Task<List<Cosmetic>> GetLobbySkins(bool isOption = false);
     public Task<List<SaturnItem>> GetSkinOptions(Cosmetic item);
     public Task<List<SaturnItem>> GetPickaxeOptions(Cosmetic item);
     public Task<List<SaturnItem>> GetBackblingOptions(Cosmetic item);
@@ -142,6 +147,38 @@ public sealed class SwapperService : ISwapperService
         }
 
         _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
+
+        if (!FileUtil.CheckIfCppIsInstalled())
+        {
+            await _jsRuntime.InvokeVoidAsync("MessageBox",
+                "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
+                "error");
+            await Task.Delay(2000);
+            await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
+        }
+        
+        if (skins.Count == 0)
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
+                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
+
+
+        return skins;
+    }
+
+    public async Task<List<Cosmetic>> GetLobbySkins(bool isOption = false)
+    {
+        var skins = new List<Cosmetic>();
+
+        AbstractGeneration Generation = new LobbySkinGeneration(skins, _provider, _configService, this);
+
+        skins = await Generation.Generate();
+
+        Trace.WriteLine($"Deserialized {skins.Count} objects");
+
+        _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
+
+        if (isOption)
+            skins.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
 
         if (!FileUtil.CheckIfCppIsInstalled())
         {
@@ -413,6 +450,142 @@ public sealed class SwapperService : ISwapperService
         }
     }
 
+    public async Task<bool> RevertLobby(Cosmetic item, SaturnItem option)
+    {
+        try
+        {
+            await ItemUtil.UpdateStatus(item, option, "Starting...", Colors.C_YELLOW);
+            var id = item.Id;
+
+            var sw = Stopwatch.StartNew();
+
+            await ItemUtil.UpdateStatus(item, option, "Checking config file for item", Colors.C_YELLOW);
+            _configService.ConfigFile.ConvertedItems.Any(x =>
+            {
+                if (x.ItemDefinition != id) return false;
+                foreach (var asset in x.Swaps)
+                {
+                    ItemUtil.UpdateStatus(item, option, "Reading compressed data", Colors.C_YELLOW).GetAwaiter()
+                        .GetResult();
+                    var data = File.ReadAllBytes(Path.Combine(Config.CompressedDataPath,
+                        Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset"));
+
+                    ItemUtil.UpdateStatus(item, option, "Writing compressed data back to PAK", Colors.C_YELLOW)
+                        .GetAwaiter().GetResult();
+                    TrySwapAsset(Path.Combine(FortniteUtil.PakPath, asset.File), asset.Offset, data)
+                        .GetAwaiter()
+                        .GetResult();
+
+                    ItemUtil.UpdateStatus(item, option, "Checking for customs", Colors.C_YELLOW).GetAwaiter()
+                        .GetResult();
+
+                    ItemUtil.UpdateStatus(item, option, "Deleting compressed data", Colors.C_YELLOW).GetAwaiter()
+                        .GetResult();
+                    File.Delete(Path.Combine(Config.CompressedDataPath,
+                        Path.GetFileName(asset.ParentAsset)));
+                    File.Delete(Path.Combine(Config.DecompressedDataPath,
+                        Path.GetFileName(asset.ParentAsset)));
+                }
+
+                return true;
+            });
+
+
+            if (!await _configService.RemoveConvertedItem(id))
+                Logger.Log("There was an error removing the item from the config!", LogLevel.Error);
+            _configService.SaveConfig();
+
+            sw.Stop();
+
+            item.IsConverted = false;
+            if (sw.Elapsed.Seconds > 1)
+                await ItemUtil.UpdateStatus(item, option, $"Reverted in {sw.Elapsed.Seconds} seconds!", Colors.C_GREEN);
+            else
+                await ItemUtil.UpdateStatus(item, option, $"Reverted in {sw.Elapsed.Milliseconds} milliseconds!",
+                    Colors.C_GREEN);
+
+            Logger.Log($"Reverted in {sw.Elapsed.Seconds} seconds!");
+            Trace.WriteLine($"Reverted in {sw.Elapsed.Seconds} seconds!");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await ItemUtil.UpdateStatus(item, option,
+                $"There was an error reverting {item.Name}. Please send the log to Tamely on Discord!",
+                Colors.C_RED);
+            Logger.Log($"There was an error reverting {ex}");
+            return false;
+        }
+    }
+
+    public async Task<bool> ConvertLobby(Cosmetic item, Cosmetic option)
+    {
+        ConvertedItem convertedItem = new ConvertedItem()
+        {
+            Name = item.Name,
+            ItemDefinition = item.Id,
+            Type = "LobbySkin"
+        };
+        
+        await BackupFile("pakchunk0-WindowsClient", option);
+
+        SaturnData.SearchCID = item.Id + "." + item.Id;
+        byte[] Search = Encoding.ASCII.GetBytes(item.Id + "." + item.Id);
+        byte[] Replace = Encoding.ASCII.GetBytes(option.Id + "." + option.Id);
+        
+        Logger.Log("ID: " + item.Id);
+        
+        if (_provider.TrySaveAsset("FortniteGame/AssetRegistry.bin", out _))
+        {
+            if (SaturnData.Block != null)
+            {
+                if (Search.Length > Replace.Length)
+                {
+                    FillEnd(ref Replace, Search.Length);
+
+                    byte[] EditedAsset = SaturnData.Block.DecompressedData;
+                    
+                    AnyLength.SwapNormally(new List<byte[]> { Search }, new List<byte[]> { Replace }, ref EditedAsset);
+
+                    var compressedData = ZLIB.Compress(EditedAsset);
+                    FillEnd(ref compressedData, SaturnData.Block.CompressedData.Length);
+                    
+                    await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, "Saturn", "pakchunk0-SaturnClient.pak"), SaturnData.Block.Start, compressedData);
+
+                    List<ActiveSwap> swaps = new List<ActiveSwap>()
+                    {
+                        new ActiveSwap()
+                        {
+                            File = "pakchunk0-SaturnClient.pak",
+                            IsCompressed = true,
+                            Offset = SaturnData.Block.Start,
+                            Lengths = new Dictionary<long, byte[]>(),
+                            ParentAsset = "AssetRegistry.bin"
+                        }
+                    };
+                    
+                    convertedItem.Swaps = swaps;
+
+                    await _configService.AddConvertedItem(convertedItem);
+                    _configService.SaveConfig();
+
+                    await _jsRuntime.InvokeVoidAsync("MessageBox", "Converted!", "Successfully converted lobby skin!",
+                        "success");
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            Logger.Log("Could not find AssetRegistry.bin", LogLevel.Fatal);
+        }
+
+        await _jsRuntime.InvokeVoidAsync("MessageBox", "Failed", "Couldn't convert lobby skin!",
+            "error");
+        return false;
+    }
+    
+
     public async Task<bool> Convert(Cosmetic item, SaturnItem option, ItemType itemType, bool isDefault = false, bool isRandom = false, Cosmetic random = null)
     {
         try
@@ -531,7 +704,7 @@ public sealed class SwapperService : ISwapperService
                     Logger.Log($"Cannot swap/determine if '{asset.ParentAsset}' is Base64 or not!",
                         LogLevel.Fatal);
 
-                var Oodle = new Utils.Oodle(Config.BasePath);
+                var Oodle = new Utils.Compression.Oodle(Config.BasePath);
                 var compressed = SaturnData.isCompressed ? Oodle.Compress(data) : data;
 
                 Directory.CreateDirectory(Config.DecompressedDataPath);
@@ -1207,7 +1380,7 @@ public sealed class SwapperService : ISwapperService
         };
     }
 
-    private async Task BackupFile(string sourceFile, Cosmetic item, SaturnItem option)
+    private async Task BackupFile(string sourceFile, Cosmetic item, SaturnItem? option = null)
     {
         await ItemUtil.UpdateStatus(item, option, "Backing up files", Colors.C_YELLOW);
         
@@ -1229,6 +1402,9 @@ public sealed class SwapperService : ISwapperService
                      let path = Path.Combine(FortniteUtil.PakPath, fileName + fileExt)
                      select (fileExt, path))
             {
+                if (sourceFile == "pakchunk0-WindowsClient")
+                    Directory.CreateDirectory(Path.Combine(FortniteUtil.PakPath, "Saturn"));
+                
                 if (!File.Exists(path))
                 {
                     Logger.Log($"File \"{fileName + fileExt}\" doesn't exist!", LogLevel.Warning);
@@ -1241,15 +1417,15 @@ public sealed class SwapperService : ISwapperService
                     {
                         try
                         {
-                            var paritionPath = i > 0 ? string.Concat(fileName, "_s", i, ".ucas") : string.Concat(fileName, ".ucas");
-                            paritionPath = Path.Combine(FortniteUtil.PakPath, paritionPath);
+                            var partitionPath = i > 0 ? string.Concat(fileName, "_s", i, ".ucas") : string.Concat(fileName, ".ucas");
+                            partitionPath = Path.Combine(FortniteUtil.PakPath, partitionPath);
                                     
-                            if (!File.Exists(paritionPath))
+                            if (!File.Exists(partitionPath))
                                 break;
                                     
-                            if (File.Exists(paritionPath.Replace("WindowsClient", "SaturnClient")))
+                            if (File.Exists(partitionPath.Replace("WindowsClient", "SaturnClient")))
                             {
-                                Logger.Log($"File \"{paritionPath}\" already exists!", LogLevel.Warning);
+                                Logger.Log($"File \"{partitionPath}\" already exists!", LogLevel.Warning);
                                 continue;
                             }
                                     
@@ -1261,8 +1437,13 @@ public sealed class SwapperService : ISwapperService
                             IAsyncResult writeResult;
                             IAsyncResult readResult;
             
-                            await using var sourceStream = new FileStream(paritionPath, FileMode.Open, FileAccess.Read);
-                            await using (var destinationStream = new FileStream(paritionPath.Replace("WindowsClient", "SaturnClient"), FileMode.Create, FileAccess.Write, FileShare.None, 8, FileOptions.Asynchronous | FileOptions.SequentialScan))
+                            await using var sourceStream = new FileStream(partitionPath, FileMode.Open, FileAccess.Read);
+                            
+                            if (sourceFile == "pakchunk0-WindowsClient")
+                                partitionPath = Path.GetDirectoryName(partitionPath) + "//Saturn//" + Path.GetFileName(partitionPath);
+                            
+                            
+                            await using (var destinationStream = new FileStream(partitionPath.Replace("WindowsClient", "SaturnClient"), FileMode.Create, FileAccess.Write, FileShare.None, 8, FileOptions.Asynchronous | FileOptions.SequentialScan))
                             {
                                 destinationStream.SetLength(sourceStream.Length);
                                 readSize = sourceStream.Read(readBuffer, 0, readBuffer.Length);
@@ -1293,6 +1474,10 @@ public sealed class SwapperService : ISwapperService
                 else
                 {
                     var newPath = path.Replace("WindowsClient", "SaturnClient");
+                    
+                    if (sourceFile == "pakchunk0-WindowsClient")
+                        newPath = Path.GetDirectoryName(newPath) + "//Saturn//" + Path.GetFileName(newPath);
+                    
                     if (File.Exists(newPath))
                     {
                         Logger.Log($"Duplicate for \"{fileName + fileExt}\" already exists!", LogLevel.Warning);
@@ -1455,4 +1640,6 @@ public sealed class SwapperService : ISwapperService
                 LogLevel.Error);
         }
     }
+    
+    private static void FillEnd(ref byte[] buffer, int len) => Array.Resize(ref buffer, len);
 }

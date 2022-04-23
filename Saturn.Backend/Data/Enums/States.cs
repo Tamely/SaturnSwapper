@@ -12,6 +12,8 @@
         S_Update,
         S_Misc,
         S_Key,
-        S_Lobby
+        S_LobbyPick,
+        S_LobbyItem,
+        S_LobbyOption
     }
 }
