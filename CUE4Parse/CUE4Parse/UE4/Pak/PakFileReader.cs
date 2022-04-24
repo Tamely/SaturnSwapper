@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using CUE4Parse.Encryption.Aes;
@@ -75,6 +76,31 @@ namespace CUE4Parse.UE4.Pak
                     // or if its the last block its the remaining data size
                     var uncompressedSize = (int) Math.Min(pakEntry.CompressionBlockSize, pakEntry.UncompressedSize - uncompressedOff);
                     Decompress(compressed, 0, blockSize, uncompressed, uncompressedOff, uncompressedSize, pakEntry.CompressionMethod);
+                    
+                    
+                    byte[] DecompressedBlock = new byte[uncompressedSize];
+                    using (MemoryStream ms = new MemoryStream(uncompressed))
+                    {
+                        ms.Position = uncompressedOff;
+                        ms.Read(DecompressedBlock, 0, DecompressedBlock.Length);
+                        ms.Close();
+                        ms.Dispose();
+                    }
+
+
+                    if (SaturnData.SearchCID != "NOCID")
+                    {
+                        bool found = IndexOfSequence(DecompressedBlock, Encoding.UTF8.GetBytes(SaturnData.SearchCID)) > 0;
+
+                        if (pakEntry.CompressionMethod == Compression.CompressionMethod.Zlib && found)
+                        {
+                            SaturnData.Block = new ZLIBBlock(block.CompressedStart, block.CompressedEnd, DecompressedBlock, compressed);
+                           
+                            return new byte[] { 0 };
+                        }
+                    }
+
+
                     uncompressedOff += (int) pakEntry.CompressionBlockSize;
                 }
 
@@ -88,6 +114,22 @@ namespace CUE4Parse.UE4.Pak
             var size = (int) pakEntry.UncompressedSize.Align(pakEntry.IsEncrypted ? Aes.ALIGN : 1);
             var data = ReadAndDecrypt(size, reader, pakEntry.IsEncrypted);
             return size != pakEntry.UncompressedSize ? data.SubByteArray((int) pakEntry.UncompressedSize) : data;
+        }
+        
+        //Originally: https://stackoverflow.com/a/332667/12897035
+        private static int IndexOfSequence(byte[] buffer, byte[] pattern)
+        {
+            int i = Array.IndexOf(buffer, pattern[0], 0);
+            while (i >= 0 && i <= buffer.Length - pattern.Length)
+            {
+                byte[] segment = new byte[pattern.Length];
+                Buffer.BlockCopy(buffer, i, segment, 0, pattern.Length);
+                if (segment.SequenceEqual(pattern))
+                    return i;
+                i = Array.IndexOf(buffer, pattern[0], i + 1);
+            }
+
+            return -1;
         }
 
         public override IReadOnlyDictionary<string, GameFile> Mount(bool caseInsensitive = false)
