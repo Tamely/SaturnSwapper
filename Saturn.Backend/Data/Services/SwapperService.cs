@@ -47,7 +47,7 @@ public interface ISwapperService
     public Task<Dictionary<string, string>> GetCharacterPartsById(string id, Cosmetic? item = null);
     public Task<UObject> GetWIDByID(string id);
     public Task<UObject> GetBackblingCP(string id);
-    public Task<bool> ConvertLobby(Cosmetic item, Cosmetic option);
+    public Task SwapLobby(Cosmetic item, Cosmetic option);
     public Task<List<Cosmetic>> GetSaturnSkins();
     public Task<List<Cosmetic>> GetLobbySkins(bool isOption = false);
     public Task<List<SaturnItem>> GetSkinOptions(Cosmetic item);
@@ -179,6 +179,12 @@ public sealed class SwapperService : ISwapperService
 
         if (isOption)
             skins.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
+        
+        foreach (var item in skins)
+        {
+            if ((await _configService.TryGetConvertedItems()).Any(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("CID_")))
+                item.IsConverted = true;
+        }
 
         if (!FileUtil.CheckIfCppIsInstalled())
         {
@@ -449,37 +455,71 @@ public sealed class SwapperService : ISwapperService
             _halted = false;
         }
     }
+    
+    public async Task SwapLobby(Cosmetic item, Cosmetic option)
+    {
+        if (!_halted)
+        {
+            _halted = true;
+            Logger.Log("Checking if item is converted or not!");
+            if (item.IsConverted)
+            {
+                Logger.Log("Item is converted! Reverting!");
+                if (!await RevertLobby(item, option))
+                {
+                    await ItemUtil.UpdateStatus(option, null,
+                        $"There was an error reverting {option.Name}!",
+                        Colors.C_RED);
+                    Logger.Log($"There was an error reverting {option.Name}!", LogLevel.Error);
+                    Process.Start("notepad.exe", Config.LogFile);
+                }
+            }
+            else
+            {
+                Logger.Log("Item is not converted! Converting!");
 
-    public async Task<bool> RevertLobby(Cosmetic item, SaturnItem option)
+                if (!await ConvertLobby(item, option))
+                {
+                    await ItemUtil.UpdateStatus(option, null,
+                        $"There was an error converting {option.Name}!",
+                        Colors.C_RED);
+                    Logger.Log($"There was an error converting {option.Name}!", LogLevel.Error);
+                    Process.Start("notepad.exe", Config.LogFile);
+                }
+
+            }
+
+            _halted = false;
+        }
+    }
+
+    private async Task<bool> RevertLobby(Cosmetic item, Cosmetic option)
     {
         try
         {
-            await ItemUtil.UpdateStatus(item, option, "Starting...", Colors.C_YELLOW);
+            await ItemUtil.UpdateStatus(option, null, "Starting...", Colors.C_YELLOW);
             var id = item.Id;
 
             var sw = Stopwatch.StartNew();
 
-            await ItemUtil.UpdateStatus(item, option, "Checking config file for item", Colors.C_YELLOW);
+            await ItemUtil.UpdateStatus(option, null, "Checking config file for item", Colors.C_YELLOW);
             _configService.ConfigFile.ConvertedItems.Any(x =>
             {
-                if (x.ItemDefinition != id) return false;
+                if (!x.ItemDefinition.Contains("LOBBY")) return false;
                 foreach (var asset in x.Swaps)
                 {
-                    ItemUtil.UpdateStatus(item, option, "Reading compressed data", Colors.C_YELLOW).GetAwaiter()
+                    ItemUtil.UpdateStatus(item, null, "Reading compressed data", Colors.C_YELLOW).GetAwaiter()
                         .GetResult();
                     var data = File.ReadAllBytes(Path.Combine(Config.CompressedDataPath,
-                        Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset"));
+                        Path.GetFileName(asset.ParentAsset)));
 
-                    ItemUtil.UpdateStatus(item, option, "Writing compressed data back to PAK", Colors.C_YELLOW)
+                    ItemUtil.UpdateStatus(option, null, "Writing compressed data back to PAK", Colors.C_YELLOW)
                         .GetAwaiter().GetResult();
                     TrySwapAsset(Path.Combine(FortniteUtil.PakPath, asset.File), asset.Offset, data)
                         .GetAwaiter()
                         .GetResult();
 
-                    ItemUtil.UpdateStatus(item, option, "Checking for customs", Colors.C_YELLOW).GetAwaiter()
-                        .GetResult();
-
-                    ItemUtil.UpdateStatus(item, option, "Deleting compressed data", Colors.C_YELLOW).GetAwaiter()
+                    ItemUtil.UpdateStatus(option, null, "Deleting compressed data", Colors.C_YELLOW).GetAwaiter()
                         .GetResult();
                     File.Delete(Path.Combine(Config.CompressedDataPath,
                         Path.GetFileName(asset.ParentAsset)));
@@ -499,9 +539,9 @@ public sealed class SwapperService : ISwapperService
 
             item.IsConverted = false;
             if (sw.Elapsed.Seconds > 1)
-                await ItemUtil.UpdateStatus(item, option, $"Reverted in {sw.Elapsed.Seconds} seconds!", Colors.C_GREEN);
+                await ItemUtil.UpdateStatus(option, null, $"Reverted in {sw.Elapsed.Seconds} seconds!", Colors.C_GREEN);
             else
-                await ItemUtil.UpdateStatus(item, option, $"Reverted in {sw.Elapsed.Milliseconds} milliseconds!",
+                await ItemUtil.UpdateStatus(option, null, $"Reverted in {sw.Elapsed.Milliseconds} milliseconds!",
                     Colors.C_GREEN);
 
             Logger.Log($"Reverted in {sw.Elapsed.Seconds} seconds!");
@@ -510,7 +550,7 @@ public sealed class SwapperService : ISwapperService
         }
         catch (Exception ex)
         {
-            await ItemUtil.UpdateStatus(item, option,
+            await ItemUtil.UpdateStatus(option, null,
                 $"There was an error reverting {item.Name}. Please send the log to Tamely on Discord!",
                 Colors.C_RED);
             Logger.Log($"There was an error reverting {ex}");
@@ -518,71 +558,103 @@ public sealed class SwapperService : ISwapperService
         }
     }
 
-    public async Task<bool> ConvertLobby(Cosmetic item, Cosmetic option)
+    private async Task<bool> ConvertLobby(Cosmetic item, Cosmetic option)
     {
-        ConvertedItem convertedItem = new ConvertedItem()
+        try
         {
-            Name = item.Name,
-            ItemDefinition = item.Id,
-            Type = "LobbySkin"
-        };
-        
-        await BackupFile("pakchunk0-WindowsClient", option);
-
-        SaturnData.SearchCID = item.Id + "." + item.Id;
-        byte[] Search = Encoding.ASCII.GetBytes(item.Id + "." + item.Id);
-        byte[] Replace = Encoding.ASCII.GetBytes(option.Id + "." + option.Id);
-        
-        Logger.Log("ID: " + item.Id);
-        
-        if (_provider.TrySaveAsset("FortniteGame/AssetRegistry.bin", out _))
-        {
-            if (SaturnData.Block != null)
+            Directory.CreateDirectory(Config.DecompressedDataPath);
+            Directory.CreateDirectory(Config.CompressedDataPath);
+            
+            await ItemUtil.UpdateStatus(option, null, "Starting...", Colors.C_YELLOW);
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            
+            ConvertedItem convertedItem = new ConvertedItem()
             {
-                if (Search.Length > Replace.Length)
+                Name = item.Name,
+                ItemDefinition = item.Id + "LOBBY",
+                Type = "LobbySkin"
+            };
+            
+            await BackupFile("pakchunk0-WindowsClient", option);
+
+            SaturnData.SearchCID = item.Id + "." + item.Id;
+            byte[] Search = Encoding.ASCII.GetBytes(item.Id + "." + item.Id);
+            byte[] Replace = Encoding.ASCII.GetBytes(option.Id + "." + option.Id);
+            
+            Logger.Log("Searching ID: " + item.Id);
+            Logger.Log("Replacing ID: " + item.Id);
+            
+            if (_provider.TrySaveAsset("FortniteGame/AssetRegistry.bin", out _))
+            {
+                if (SaturnData.Block != null)
                 {
-                    FillEnd(ref Replace, Search.Length);
-
-                    byte[] EditedAsset = SaturnData.Block.DecompressedData;
-                    
-                    AnyLength.SwapNormally(new List<byte[]> { Search }, new List<byte[]> { Replace }, ref EditedAsset);
-
-                    var compressedData = ZLIB.Compress(EditedAsset);
-                    FillEnd(ref compressedData, SaturnData.Block.CompressedData.Length);
-                    
-                    await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, "Saturn", "pakchunk0-SaturnClient.pak"), SaturnData.Block.Start, compressedData);
-
-                    List<ActiveSwap> swaps = new List<ActiveSwap>()
+                    if (Search.Length > Replace.Length)
                     {
-                        new ActiveSwap()
+                        FillEnd(ref Replace, Search.Length);
+
+                        byte[] EditedAsset = SaturnData.Block.DecompressedData;
+                        
+                        AnyLength.SwapNormally(new List<byte[]> { Search }, new List<byte[]> { Replace }, ref EditedAsset);
+                        
+                        await File.WriteAllBytesAsync(Config.DecompressedDataPath + "//AssetRegistry.bin", EditedAsset);
+                        
+                        var compressedData = ZLIB.Compress(EditedAsset);
+                        FillEnd(ref compressedData, SaturnData.Block.CompressedData.Length);
+                        
+                        await File.WriteAllBytesAsync(Config.CompressedDataPath + "//AssetRegistry.bin",
+                            compressedData);
+
+                        await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, "Saturn", "pakchunk0-SaturnClient.pak"), SaturnData.Block.Start, compressedData);
+
+                        List<ActiveSwap> swaps = new List<ActiveSwap>()
                         {
-                            File = "pakchunk0-SaturnClient.pak",
-                            IsCompressed = true,
-                            Offset = SaturnData.Block.Start,
-                            Lengths = new Dictionary<long, byte[]>(),
-                            ParentAsset = "AssetRegistry.bin"
-                        }
-                    };
-                    
-                    convertedItem.Swaps = swaps;
+                            new ActiveSwap()
+                            {
+                                File = "pakchunk0-SaturnClient.pak",
+                                IsCompressed = true,
+                                Offset = SaturnData.Block.Start,
+                                Lengths = new Dictionary<long, byte[]>(),
+                                ParentAsset = "AssetRegistry.bin"
+                            }
+                        };
+                        
+                        sw.Stop();
+                        
+                        convertedItem.Swaps = swaps;
+                        item.IsConverted = true;
 
-                    await _configService.AddConvertedItem(convertedItem);
-                    _configService.SaveConfig();
-
-                    await _jsRuntime.InvokeVoidAsync("MessageBox", "Converted!", "Successfully converted lobby skin!",
-                        "success");
-                    return true;
+                        await _configService.AddConvertedItem(convertedItem);
+                        _configService.SaveConfig();
+                        
+                        if (sw.Elapsed.Minutes > 1)
+                            await ItemUtil.UpdateStatus(option, null, $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
+                                    Colors.C_GREEN);
+                        else if (sw.Elapsed.Seconds > 1)
+                            await ItemUtil.UpdateStatus(option, null, $"Converted in {sw.Elapsed.Seconds} seconds!",
+                                    Colors.C_GREEN);
+                        else
+                            await ItemUtil.UpdateStatus(option, null, $"Converted in {sw.Elapsed.Milliseconds} milliseconds!",
+                                    Colors.C_GREEN);
+                        
+                        return true;
+                    }
                 }
             }
-        }
-        else
-        {
-            Logger.Log("Could not find AssetRegistry.bin", LogLevel.Fatal);
-        }
+            else
+            {
+                Logger.Log("Could not find AssetRegistry.bin", LogLevel.Fatal);
+            }
 
-        await _jsRuntime.InvokeVoidAsync("MessageBox", "Failed", "Couldn't convert lobby skin!",
-            "error");
-        return false;
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "Failed", "Couldn't convert lobby skin!",
+                "error");
+            return false;
+        }
+        catch (Exception e)
+        {
+            Logger.Log("There was an error converting a lobby swap! The error was " + e, LogLevel.Fatal);
+            return false;
+        }
     }
     
 
