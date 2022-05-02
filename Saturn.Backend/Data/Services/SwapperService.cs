@@ -50,6 +50,9 @@ public interface ISwapperService
     public Task SwapLobby(Cosmetic item, Cosmetic option);
     public Task<List<Cosmetic>> GetSaturnSkins();
     public Task<List<Cosmetic>> GetLobbySkins(bool isOption = false);
+    public Task<List<Cosmetic>> GetLobbyBackblings(bool isOption = false);
+    public Task<List<Cosmetic>> GetLobbyPickaxes(bool isOption = false);
+    public Task<List<Cosmetic>> GetLobbyEmotes(bool isOption = false);
     public Task<List<SaturnItem>> GetSkinOptions(Cosmetic item);
     public Task<List<SaturnItem>> GetPickaxeOptions(Cosmetic item);
     public Task<List<SaturnItem>> GetBackblingOptions(Cosmetic item);
@@ -201,6 +204,117 @@ public sealed class SwapperService : ISwapperService
 
 
         return skins;
+    }
+    
+    public async Task<List<Cosmetic>> GetLobbyBackblings(bool isOption = false)
+    {
+        var backblings = new List<Cosmetic>();
+
+        AbstractGeneration Generation = new BackblingGeneration(backblings, _provider, _configService, this, _jsRuntime);
+
+        backblings = await Generation.Generate();
+
+        Trace.WriteLine($"Deserialized {backblings.Count} objects");
+        
+        if (isOption)
+            backblings.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
+
+        foreach (var item in backblings)
+        {
+            if ((await _configService.TryGetConvertedItems()).Any(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("BID_")))
+                item.IsConverted = true;
+        }
+
+        _discordRPCService.UpdatePresence($"Looking at {backblings.Count} different backblings");
+        
+        if (!FileUtil.CheckIfCppIsInstalled())
+        {
+            await _jsRuntime.InvokeVoidAsync("MessageBox",
+                "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
+                "error");
+            await Task.Delay(2000);
+            await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
+        }
+        
+        if (backblings.Count == 0)
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
+                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
+
+        return backblings;
+    }
+
+    public async Task<List<Cosmetic>> GetLobbyPickaxes(bool isOption = false)
+    {
+        var pickaxes = new List<Cosmetic>();
+
+        AbstractGeneration Generation = new PickaxeGeneration(pickaxes, _provider, _configService, this);
+
+        pickaxes = await Generation.Generate();
+
+        Trace.WriteLine($"Deserialized {pickaxes.Count} objects");
+        
+        if (isOption)
+            pickaxes.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
+
+        foreach (var item in pickaxes)
+        {
+            if ((await _configService.TryGetConvertedItems()).Any(x => x.ItemDefinition.Contains("LOBBY") && !x.ItemDefinition.Contains("BID_") && !x.ItemDefinition.Contains("CID_") && !x.ItemDefinition.Contains("EID_")))
+                item.IsConverted = true;
+        }
+
+        _discordRPCService.UpdatePresence($"Looking at {pickaxes.Count} different pickaxes");
+        
+        if (!FileUtil.CheckIfCppIsInstalled())
+        {
+            await _jsRuntime.InvokeVoidAsync("MessageBox",
+                "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
+                "error");
+            await Task.Delay(2000);
+            await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
+        }
+        
+        if (pickaxes.Count == 0)
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
+                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
+
+        return pickaxes;
+    }
+    
+    public async Task<List<Cosmetic>> GetLobbyEmotes(bool isOption = false)
+    {
+        var emotes = new List<Cosmetic>();
+
+        AbstractGeneration Generation = new EmoteGeneration(emotes, _provider, _configService, this);
+
+        emotes = await Generation.Generate();
+
+        Trace.WriteLine($"Deserialized {emotes.Count} objects");
+        
+        if (isOption)
+            emotes.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
+
+        foreach (var item in emotes)
+        {
+            if ((await _configService.TryGetConvertedItems()).Any(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("EID_")))
+                item.IsConverted = true;
+        }
+
+        _discordRPCService.UpdatePresence($"Looking at {emotes.Count} different emotes");
+
+        if (!FileUtil.CheckIfCppIsInstalled())
+        {
+            await _jsRuntime.InvokeVoidAsync("MessageBox",
+                "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
+                "error");
+            await Task.Delay(2000);
+            await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
+        }
+        
+        if (emotes.Count == 0)
+            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
+                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
+
+        return emotes;
     }
 
     public async Task<List<SaturnItem>> GetSkinOptions(Cosmetic item)
@@ -589,7 +703,7 @@ public sealed class SwapperService : ISwapperService
             {
                 if (SaturnData.Block != null)
                 {
-                    if (Search.Length > Replace.Length)
+                    if (Search.Length >= Replace.Length)
                     {
                         FillEnd(ref Replace, Search.Length);
 
@@ -639,6 +753,10 @@ public sealed class SwapperService : ISwapperService
                         
                         return true;
                     }
+                }
+                else
+                {
+                    Logger.Log("Block is null!", LogLevel.Fatal);
                 }
             }
             else

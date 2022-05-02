@@ -606,10 +606,34 @@
                     <div class="card" @onclick=@(async () => await GoToLobbyCosmetics(ItemType.IT_Skin))>
                         <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                         <div class="card-info">
-                            <h2 style="font-size: @GetTextSize("Swap Skins", true);">Swap Skins</h2>
+                            <h2 style="font-size: @GetTextSize("Lobby Skins", true);">Lobby Skins</h2>
                             <p style="color:white; font-size: @GetTextSize("This takes you to the page where you can choose which SKIN you want to swap.");">This takes you to the page where you can choose which SKIN you want to swap.</p>
                         </div>
                     </div>
+                    <div class="card" @onclick=@(async () => await GoToLobbyCosmetics(ItemType.IT_Backbling))>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2 style="font-size: @GetTextSize("Lobby Backblings", true);">Lobby Backblings</h2>
+                            <p style="color:white; font-size: @GetTextSize("This takes you to the page where you can choose which BACKBLING you want to swap.");">This takes you to the page where you can choose which BACKBLING you want to swap.</p>
+                        </div>
+                    </div>
+                    <div class="card" @onclick=@(async () => await GoToLobbyCosmetics(ItemType.IT_Pickaxe))>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2 style="font-size: @GetTextSize("Lobby Pickaxes", true);">Lobby Pickaxes</h2>
+                            <p style="color:white; font-size: @GetTextSize("This takes you to the page where you can choose which PICKAXE you want to swap.");">This takes you to the page where you can choose which PICKAXE you want to swap.</p>
+                        </div>
+                    </div>
+                    <div class="card" @onclick=@(async () => await GoToLobbyCosmetics(ItemType.IT_Dance))>
+                        <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                        <div class="card-info">
+                            <h2 style="font-size: @GetTextSize("Lobby Emotes", true);">Lobby Emotes</h2>
+                            <p style="color:white; font-size: @GetTextSize("This takes you to the page where you can choose which EMOTE you want to swap.");">This takes you to the page where you can choose which EMOTE you want to swap.</p>
+                        </div>
+                    </div>
+                    
+                    
+                    
                 </div>
             }
             else if (saturnState == SaturnState.S_LobbyItem)
@@ -729,10 +753,8 @@
 
     private string OpenLogFile = "This will open the log file that correlates to the current swapper session.";
     private Colors OpenLogColor = Colors.C_WHITE;
-
-    private string FlipRarity = "";
+    
     private string ShowStyles = "";
-    private string FlipSeries = "";
 
     private SaturnState saturnState = SaturnState.S_Key;
     
@@ -752,22 +774,31 @@
     private async Task GoToLobbyCosmetics(ItemType type)
     {
         currentType = type;
-        saturnState = SaturnState.S_LobbyItem;
+        saturnState = SaturnState.S_Loading;
 
         switch (type)
         {
             case ItemType.IT_Skin:
                 Items = await _swapperService.GetLobbySkins();
+                BackupItems = new List<Cosmetic>(Items);
                 break;
             case ItemType.IT_Backbling:
+                Items = await _swapperService.GetLobbyBackblings();
+                BackupItems = new List<Cosmetic>(Items);
                 break;
             case ItemType.IT_Pickaxe:
+                Items = await _swapperService.GetLobbyPickaxes();
+                BackupItems = new List<Cosmetic>(Items);
                 break;
             case ItemType.IT_Dance:
+                Items = await _swapperService.GetLobbyEmotes();
+                BackupItems = new List<Cosmetic>(Items);
                 break;
             case ItemType.IT_Misc:
                 break;
         }
+
+        saturnState = SaturnState.S_LobbyItem;
 
         await _jsRuntime.InvokeVoidAsync("MessageBox", "Pick the item you want to swap FROM", "Pick the item you have in your locker", "warning");
     }
@@ -775,22 +806,31 @@
     private async Task GoToLobbyOptions(Cosmetic item)
     {
         currentSkin = item;
-        saturnState = SaturnState.S_LobbyOption;
+        saturnState = SaturnState.S_Misc;
 
         switch (currentType)
         {
             case ItemType.IT_Skin:
                 Items = await _swapperService.GetLobbySkins(true);
+                BackupItems = new List<Cosmetic>(Items);
                 break;
             case ItemType.IT_Backbling:
+                Items = await _swapperService.GetLobbyBackblings(true);
+                BackupItems = new List<Cosmetic>(Items);
                 break;
             case ItemType.IT_Pickaxe:
+                Items = await _swapperService.GetLobbyPickaxes(true);
+                BackupItems = new List<Cosmetic>(Items);
                 break;
             case ItemType.IT_Dance:
+                Items = await _swapperService.GetLobbyEmotes(true);
+                BackupItems = new List<Cosmetic>(Items);
                 break;
             case ItemType.IT_Misc:
                 break;
         }
+        
+        saturnState = SaturnState.S_LobbyOption;
         
         await _jsRuntime.InvokeVoidAsync("MessageBox", "Pick the item you want to swap TO", "Pick the item you want", "warning");
     }
@@ -813,19 +853,7 @@
     /// <param name="item">The clicked item</param>
     private async Task SwitchItemStyleChoice(Cosmetic item)
         => item.IsPickingStyles = !item.IsPickingStyles;
-
-    /// <summary>
-    /// Sets the Series button text
-    /// </summary>
-    private async Task ShouldConvertSeries()
-        => FlipSeries = await _configService.TryGetShouldSeriesConvert() ? "Currently set to 'pickaxes WILL swap series'" : "Currently set to 'pickaxes WILL NOT swap series'";
-
-    /// <summary>
-    /// Sets the Rarity button text
-    /// </summary>
-    private async Task ShouldConvertRarity()
-        => FlipRarity = await _configService.TryGetShouldRarityConvert() ? "Currently set to 'pickaxes WILL swap rarity'" : "Currently set to 'pickaxes WILL NOT swap rarity'";
-
+    
     /// <summary>
     /// Sets the Show Styles button text
     /// </summary>
@@ -850,10 +878,6 @@
     protected override async Task OnInitializedAsync()
     {
         AppDomain.CurrentDomain.UnhandledException += UnhandledException; // Catch unhandled exceptions
-
-        await ShouldConvertRarity(); // Get the current rarity setting
-
-        await ShouldConvertSeries(); // Get the current series setting
 
         await ShouldShowStyles(); // Get the current style setting
 
@@ -1265,34 +1289,6 @@
     /// </summary>
     private string FilterString(string input)
         => Regex.Replace(input, @"[^0-9a-zA-Z]+", "");
-
-    /// <summary>
-    /// Toggles whether or not the user wants to swap pickaxe rarity
-    /// </summary>
-    private async Task FlipRarityOption()
-    {
-        await _configService.TrySetShouldRarityConvert(!await _configService.TryGetShouldRarityConvert()); // Toggle the value
-
-        FlipRarity = await _configService.TryGetShouldRarityConvert() switch // Set the text to the new value
-        {
-            true => "Currently set to 'pickaxes WILL swap rarity'", // If true, set pickaxes will swap rarity
-            false => "Currently set to 'pickaxes WILL NOT swap rarity'" // If false, set pickaxes will not swap rarity
-        };
-    }
-
-    /// <summary>
-    /// Toggles whether or not the user wants to swap pickaxe series
-    /// </summary>
-    private async Task FlipSeriesOption()
-    {
-        await _configService.TrySetShouldSeriesConvert(!await _configService.TryGetShouldSeriesConvert()); // Toggle the value
-
-        FlipSeries = await _configService.TryGetShouldSeriesConvert() switch // Set the text to the new value
-        {
-            true => "Currently set to 'pickaxes WILL swap series'", // If true, set pickaxes will swap series
-            false => "Currently set to 'pickaxes WILL NOT swap series'" // If false, set pickaxes will not swap series
-        };
-    }
 
     /// <summary>
     /// Toggles showing items styles in the item lists.
