@@ -8,6 +8,7 @@ using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.i18N;
 using CUE4Parse.UE4.Objects.UObject;
+using CUE4Parse_Conversion.Meshes;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.FortniteAPI;
 using Saturn.Backend.Data.Models.Items;
@@ -394,6 +395,7 @@ public class AddSkins
             
             foreach (var characterPart in characterParts)
             {
+                Logger.Log(characterPart.Key);
                 switch (characterPart.Key)
                 {
                     case "Body":
@@ -598,7 +600,7 @@ public class AddSkins
                             bool isRealHat = false;
                             if (_provider.TryLoadObject(characterPart.Value.Split('.')[0], out var part))
                             {
-                                swapModel.FaceACCMesh = part.Get<FSoftObjectPath>("SkeletalMesh").AssetPathName.Text;
+                                swapModel.FaceACCMesh = part.TryGetValue(out FSoftObjectPath Mesh, "SkeletalMesh") ? Mesh.AssetPathName.Text : "/";
 
                                 if (part.TryGetValue(out UObject AdditionalData, "AdditionalData"))
                                 {
