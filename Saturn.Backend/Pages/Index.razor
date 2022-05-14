@@ -770,9 +770,11 @@
     {
         Uninstaller.Uninstall();
     }
-
+    
     private async Task GoToLobbyCosmetics(ItemType type)
     {
+        if (_halted) return;
+        _halted = true;
         currentType = type;
         saturnState = SaturnState.S_Loading;
 
@@ -801,10 +803,13 @@
         saturnState = SaturnState.S_LobbyItem;
 
         await _jsRuntime.InvokeVoidAsync("MessageBox", "Pick the item you want to swap FROM", "Pick the item you have in your locker", "warning");
+        _halted = false;
     }
 
     private async Task GoToLobbyOptions(Cosmetic item)
     {
+        if (_halted) return;
+        _halted = true;
         currentSkin = item;
         saturnState = SaturnState.S_Misc;
 
@@ -833,6 +838,7 @@
         saturnState = SaturnState.S_LobbyOption;
         
         await _jsRuntime.InvokeVoidAsync("MessageBox", "Pick the item you want to swap TO", "Pick the item you want", "warning");
+        _halted = false;
     }
 
     private async Task SetCosmeticOptions(Cosmetic item)
