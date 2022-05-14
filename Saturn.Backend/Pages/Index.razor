@@ -877,7 +877,7 @@
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        AppDomain.CurrentDomain.UnhandledException += UnhandledException; // Catch unhandled exceptions
+        AppDomain.CurrentDomain.FirstChanceException += UnhandledException; // Catch unhandled exceptions
 
         await ShouldShowStyles(); // Get the current style setting
 
@@ -921,7 +921,7 @@
     /// <summary>
     /// On an unhandled exception, this will log the exception and set the error state.
     /// </summary>
-    private void UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    private void UnhandledException(object sender, FirstChanceExceptionEventArgs e)
     {
         if (_halted) // If the app is already halted, don't do anything.
             return; // This is to prevent the app opening inf log tabs.
@@ -930,13 +930,20 @@
         
         _halted = true; // Set the halted state to true.
 
-        var stackTrace = "\n" + e.ToString().Split("--- ")[0]; // Get the stack trace.
+        var stackTrace = "\n" + e.Exception.ToString().Split("--- ")[0]; // Get the stack trace.
+
+        if (stackTrace.Contains("The I/O operation has been aborted because of either a thread exit or an application request")) // This literally does not matter
+            return; // Ignore it
 
         Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.
 
         Items = new List<Cosmetic>(); // Clear the items.
         saturnState = SaturnState.S_Error; // Set the state to error.
+        
+        _jsRuntime.InvokeVoidAsync("MessageBox", "An Error Has Occured", "There has been an unhandled exception that occured in the program. Please send the log (now opening) to the support channel in Saturn's discord server!", "error").GetAwaiter(); // Show the error message.
 
+        Task.Delay(1000).GetAwaiter(); // Wait a second
+        OpenLog().GetAwaiter(); // Open the log.
     }
 
     // So the key only shows up once

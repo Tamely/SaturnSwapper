@@ -182,11 +182,15 @@ public sealed class SwapperService : ISwapperService
 
         if (isOption)
             skins.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
-        
+
+        ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("CID_")) ?? null;
         foreach (var item in skins)
         {
-            if ((await _configService.TryGetConvertedItems()).Any(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("CID_")))
+            if (convItem != null)
+            {
+                item.VariantChannel = convItem.ItemDefinition;
                 item.IsConverted = true;
+            }
         }
 
         if (!FileUtil.CheckIfCppIsInstalled())
@@ -219,10 +223,14 @@ public sealed class SwapperService : ISwapperService
         if (isOption)
             backblings.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
 
+        ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("BID_")) ?? null;
         foreach (var item in backblings)
         {
-            if ((await _configService.TryGetConvertedItems()).Any(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("BID_")))
+            if (convItem != null)
+            {
+                item.VariantChannel = convItem.ItemDefinition;
                 item.IsConverted = true;
+            }
         }
 
         _discordRPCService.UpdatePresence($"Looking at {backblings.Count} different backblings");
@@ -256,10 +264,14 @@ public sealed class SwapperService : ISwapperService
         if (isOption)
             pickaxes.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
 
+        ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && !x.ItemDefinition.Contains("BID_") && !x.ItemDefinition.Contains("CID_") && !x.ItemDefinition.Contains("EID_")) ?? null;
         foreach (var item in pickaxes)
         {
-            if ((await _configService.TryGetConvertedItems()).Any(x => x.ItemDefinition.Contains("LOBBY") && !x.ItemDefinition.Contains("BID_") && !x.ItemDefinition.Contains("CID_") && !x.ItemDefinition.Contains("EID_")))
+            if (convItem != null)
+            {
+                item.VariantChannel = convItem.ItemDefinition;
                 item.IsConverted = true;
+            }
         }
 
         _discordRPCService.UpdatePresence($"Looking at {pickaxes.Count} different pickaxes");
@@ -292,11 +304,15 @@ public sealed class SwapperService : ISwapperService
         
         if (isOption)
             emotes.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
-
+        
+        ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("EID_")) ?? null;
         foreach (var item in emotes)
         {
-            if ((await _configService.TryGetConvertedItems()).Any(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("EID_")))
+            if (convItem != null)
+            {
+                item.VariantChannel = convItem.ItemDefinition;
                 item.IsConverted = true;
+            }
         }
 
         _discordRPCService.UpdatePresence($"Looking at {emotes.Count} different emotes");
@@ -619,7 +635,7 @@ public sealed class SwapperService : ISwapperService
             await ItemUtil.UpdateStatus(option, null, "Checking config file for item", Colors.C_YELLOW);
             _configService.ConfigFile.ConvertedItems.Any(x =>
             {
-                if (!x.ItemDefinition.Contains("LOBBY")) return false;
+                if (x.ItemDefinition != id) return false;
                 foreach (var asset in x.Swaps)
                 {
                     ItemUtil.UpdateStatus(item, null, "Reading compressed data", Colors.C_YELLOW).GetAwaiter()
