@@ -182,16 +182,19 @@ public sealed class SwapperService : ISwapperService
 
         if (isOption)
             skins.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
-
+        
         ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("CID_")) ?? null;
         foreach (var item in skins)
         {
             if (convItem != null)
-            {
+            { 
                 item.VariantChannel = convItem.ItemDefinition;
                 item.IsConverted = true;
+                item.PrintColor = Colors.C_GREEN;
             }
         }
+
+
 
         if (!FileUtil.CheckIfCppIsInstalled())
         {
@@ -222,7 +225,7 @@ public sealed class SwapperService : ISwapperService
         
         if (isOption)
             backblings.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
-
+        
         ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("BID_")) ?? null;
         foreach (var item in backblings)
         {
@@ -230,6 +233,7 @@ public sealed class SwapperService : ISwapperService
             {
                 item.VariantChannel = convItem.ItemDefinition;
                 item.IsConverted = true;
+                item.PrintColor = Colors.C_GREEN;
             }
         }
 
@@ -271,6 +275,7 @@ public sealed class SwapperService : ISwapperService
             {
                 item.VariantChannel = convItem.ItemDefinition;
                 item.IsConverted = true;
+                item.PrintColor = Colors.C_GREEN;
             }
         }
 
@@ -312,6 +317,7 @@ public sealed class SwapperService : ISwapperService
             {
                 item.VariantChannel = convItem.ItemDefinition;
                 item.IsConverted = true;
+                item.PrintColor = Colors.C_GREEN;
             }
         }
 
@@ -628,7 +634,7 @@ public sealed class SwapperService : ISwapperService
         try
         {
             await ItemUtil.UpdateStatus(option, null, "Starting...", Colors.C_YELLOW);
-            var id = item.Id;
+            var id = item.VariantChannel;
 
             var sw = Stopwatch.StartNew();
 
@@ -640,21 +646,20 @@ public sealed class SwapperService : ISwapperService
                 {
                     ItemUtil.UpdateStatus(item, null, "Reading compressed data", Colors.C_YELLOW).GetAwaiter()
                         .GetResult();
-                    var data = File.ReadAllBytes(Path.Combine(Config.CompressedDataPath,
+                    var data = File.ReadAllBytes(Path.Combine(Config.CompressedDataPath, item.VariantChannel.Replace("LOBBY", ""),
                         Path.GetFileName(asset.ParentAsset)));
 
                     ItemUtil.UpdateStatus(option, null, "Writing compressed data back to PAK", Colors.C_YELLOW)
                         .GetAwaiter().GetResult();
-                    TrySwapAsset(Path.Combine(FortniteUtil.PakPath, asset.File), asset.Offset, data)
+                    TrySwapAsset(Path.Combine(FortniteUtil.PakPath, "Saturn", asset.File), asset.Offset, data)
                         .GetAwaiter()
                         .GetResult();
 
                     ItemUtil.UpdateStatus(option, null, "Deleting compressed data", Colors.C_YELLOW).GetAwaiter()
                         .GetResult();
-                    File.Delete(Path.Combine(Config.CompressedDataPath,
-                        Path.GetFileName(asset.ParentAsset)));
-                    File.Delete(Path.Combine(Config.DecompressedDataPath,
-                        Path.GetFileName(asset.ParentAsset)));
+
+                    Directory.Delete(Path.Combine(Config.CompressedDataPath, item.VariantChannel.Replace("LOBBY", "")), true);
+                    Directory.Delete(Path.Combine(Config.DecompressedDataPath, item.VariantChannel.Replace("LOBBY", "")), true);
                 }
 
                 return true;
@@ -713,7 +718,7 @@ public sealed class SwapperService : ISwapperService
             byte[] Replace = Encoding.ASCII.GetBytes(option.Id + "." + option.Id);
             
             Logger.Log("Searching ID: " + item.Id);
-            Logger.Log("Replacing ID: " + item.Id);
+            Logger.Log("Replacing ID: " + option.Id);
             
             if (_provider.TrySaveAsset("FortniteGame/AssetRegistry.bin", out _))
             {
@@ -726,13 +731,15 @@ public sealed class SwapperService : ISwapperService
                         byte[] EditedAsset = SaturnData.Block.DecompressedData;
                         
                         AnyLength.SwapNormally(new List<byte[]> { Search }, new List<byte[]> { Replace }, ref EditedAsset);
-                        
-                        await File.WriteAllBytesAsync(Config.DecompressedDataPath + "//AssetRegistry.bin", EditedAsset);
+
+                        Directory.CreateDirectory(Config.DecompressedDataPath + "//" + item.Id);
+                        await File.WriteAllBytesAsync(Config.DecompressedDataPath + "//" + item.Id + "//AssetRegistry.bin", EditedAsset);
                         
                         var compressedData = ZLIB.Compress(EditedAsset);
                         FillEnd(ref compressedData, SaturnData.Block.CompressedData.Length);
                         
-                        await File.WriteAllBytesAsync(Config.CompressedDataPath + "//AssetRegistry.bin",
+                        Directory.CreateDirectory(Config.CompressedDataPath + "//" + item.Id);
+                        await File.WriteAllBytesAsync(Config.CompressedDataPath + "//" + item.Id + "//AssetRegistry.bin",
                             compressedData);
 
                         await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, "Saturn", "pakchunk0-SaturnClient.pak"), SaturnData.Block.Start, compressedData);
