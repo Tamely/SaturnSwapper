@@ -778,28 +778,31 @@
         currentType = type;
         saturnState = SaturnState.S_Loading;
 
-        switch (type)
+        await Task.Run(async () =>
         {
-            case ItemType.IT_Skin:
-                Items = await _swapperService.GetLobbySkins();
-                BackupItems = new List<Cosmetic>(Items);
-                break;
-            case ItemType.IT_Backbling:
-                Items = await _swapperService.GetLobbyBackblings();
-                BackupItems = new List<Cosmetic>(Items);
-                break;
-            case ItemType.IT_Pickaxe:
-                Items = await _swapperService.GetLobbyPickaxes();
-                BackupItems = new List<Cosmetic>(Items);
-                break;
-            case ItemType.IT_Dance:
-                Items = await _swapperService.GetLobbyEmotes();
-                BackupItems = new List<Cosmetic>(Items);
-                break;
-            case ItemType.IT_Misc:
-                break;
-        }
-
+            switch (type)
+            {
+                case ItemType.IT_Skin:
+                    Items = await _swapperService.GetLobbySkins();
+                    BackupItems = new List<Cosmetic>(Items);
+                    break;
+                case ItemType.IT_Backbling:
+                    Items = await _swapperService.GetLobbyBackblings();
+                    BackupItems = new List<Cosmetic>(Items);
+                    break;
+                case ItemType.IT_Pickaxe:
+                    Items = await _swapperService.GetLobbyPickaxes();
+                    BackupItems = new List<Cosmetic>(Items);
+                    break;
+                case ItemType.IT_Dance:
+                    Items = await _swapperService.GetLobbyEmotes();
+                    BackupItems = new List<Cosmetic>(Items);
+                    break;
+                case ItemType.IT_Misc:
+                    break;
+            }
+        });
+        
         saturnState = SaturnState.S_LobbyItem;
 
         await _jsRuntime.InvokeVoidAsync("MessageBox", "Pick the item you want to swap FROM", "Pick the item you have in your locker", "warning");
@@ -813,27 +816,30 @@
         currentSkin = item;
         saturnState = SaturnState.S_Misc;
 
-        switch (currentType)
+        await Task.Run(async () =>
         {
-            case ItemType.IT_Skin:
-                Items = await _swapperService.GetLobbySkins(true);
-                BackupItems = new List<Cosmetic>(Items);
-                break;
-            case ItemType.IT_Backbling:
-                Items = await _swapperService.GetLobbyBackblings(true);
-                BackupItems = new List<Cosmetic>(Items);
-                break;
-            case ItemType.IT_Pickaxe:
-                Items = await _swapperService.GetLobbyPickaxes(true);
-                BackupItems = new List<Cosmetic>(Items);
-                break;
-            case ItemType.IT_Dance:
-                Items = await _swapperService.GetLobbyEmotes(true);
-                BackupItems = new List<Cosmetic>(Items);
-                break;
-            case ItemType.IT_Misc:
-                break;
-        }
+            switch (currentType)
+            {
+                case ItemType.IT_Skin:
+                    Items = await _swapperService.GetLobbySkins(true);
+                    BackupItems = new List<Cosmetic>(Items);
+                    break;
+                case ItemType.IT_Backbling:
+                    Items = await _swapperService.GetLobbyBackblings(true);
+                    BackupItems = new List<Cosmetic>(Items);
+                    break;
+                case ItemType.IT_Pickaxe:
+                    Items = await _swapperService.GetLobbyPickaxes(true);
+                    BackupItems = new List<Cosmetic>(Items);
+                    break;
+                case ItemType.IT_Dance:
+                    Items = await _swapperService.GetLobbyEmotes(true);
+                    BackupItems = new List<Cosmetic>(Items);
+                    break;
+                case ItemType.IT_Misc:
+                    break;
+            }
+        });
         
         saturnState = SaturnState.S_LobbyOption;
         
@@ -938,7 +944,7 @@
 
         var stackTrace = "\n" + e.Exception.ToString().Split("--- ")[0]; // Get the stack trace.
 
-        if (stackTrace.Contains("The I/O operation has been aborted because of either a thread exit or an application request") || stackTrace.Contains("An error occurred trying to start process")) // This literally does not matter
+        if (stackTrace.Contains("The I/O operation has been aborted because of either a thread exit or an application request") || stackTrace.Contains("An error occurred trying to start process") || stackTrace.Contains("Value cannot be null. (Parameter 'value')")) // This literally does not matter
             return; // Ignore it
 
         Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.

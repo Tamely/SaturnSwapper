@@ -395,7 +395,6 @@ public class AddSkins
             
             foreach (var characterPart in characterParts)
             {
-                Logger.Log(characterPart.Key);
                 switch (characterPart.Key)
                 {
                     case "Body":
