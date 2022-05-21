@@ -148,4 +148,8 @@
         </Content>
     </ItemGroup>
 
+    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+      <Exec Command="dotnet restore" />
+    </Target>
+
 </Project>
