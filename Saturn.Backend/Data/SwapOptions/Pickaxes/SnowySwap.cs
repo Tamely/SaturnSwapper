@@ -22,7 +22,7 @@ internal sealed class SnowySwap : PickaxeSwap
                     new SaturnSwap()
                     {
                         Search = System.Convert.ToBase64String(new byte[] { 255, 255, 255, 2 }),
-                        Replace = System.Convert.ToBase64String(new byte[] { 255, 255, 255, (byte)rarityEnum }),
+                        Replace = System.Convert.ToBase64String(new byte[] { 255, 255, 255, (byte)RarityEnum }),
                         Type = SwapType.Property
                     },
                     new SaturnSwap()

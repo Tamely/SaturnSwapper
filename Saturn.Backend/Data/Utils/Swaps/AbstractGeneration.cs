@@ -8,7 +8,7 @@ using Saturn.Backend.Data.Models.FortniteAPI;
 
 namespace Saturn.Backend.Data.Utils.Swaps;
 
-internal class AbstractGeneration
+internal abstract class AbstractGeneration
 {
     /// <summary>
     /// Sets the item type the class will use and creates the base configuration directory.
