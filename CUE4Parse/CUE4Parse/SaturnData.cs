@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using CUE4Parse.UE4.Assets.Objects;
+
 namespace CUE4Parse;
 
 public class SaturnData
@@ -10,6 +13,8 @@ public class SaturnData
     public static ZLIBBlock? Block { get; set; } = null;
     public static string SearchCID { get; set; } = "NOCID";
     public static int Parition { get; set; } = 0;
+    public static Dictionary<long, ArrayProperty> ChildArrayAssets = new Dictionary<long, ArrayProperty>();
+    public static Dictionary<long, string> ChildSoftAssets = new Dictionary<long, string>();
 }
 
 public class ZLIBBlock
