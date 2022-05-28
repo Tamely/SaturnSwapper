@@ -22,7 +22,7 @@ internal sealed class IOIradicatorSwap : PickaxeSwap
                     new SaturnSwap()
                     {
                         Search = System.Convert.ToBase64String(new byte[] { 255, 255, 255, 3 }),
-                        Replace = System.Convert.ToBase64String(new byte[] { 255, 255, 255, (byte)rarityEnum }),
+                        Replace = System.Convert.ToBase64String(new byte[] { 255, 255, 255, (byte)RarityEnum }),
                         Type = SwapType.Property
                     },
                     new SaturnSwap()

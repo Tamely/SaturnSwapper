@@ -9,6 +9,7 @@ public class SaturnData
     public static string UAssetPath { get; set; }
     public static ZLIBBlock? Block { get; set; } = null;
     public static string SearchCID { get; set; } = "NOCID";
+    public static int Parition { get; set; } = 0;
 }
 
 public class ZLIBBlock
