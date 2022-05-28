@@ -783,19 +783,19 @@
             switch (type)
             {
                 case ItemType.IT_Skin:
-                    Items = await _swapperService.GetLobbySkins();
+                    Items = await _swapperService.GetSaturnSkins(true);
                     BackupItems = new List<Cosmetic>(Items);
                     break;
                 case ItemType.IT_Backbling:
-                    Items = await _swapperService.GetLobbyBackblings();
+                    Items = await _swapperService.GetSaturnBackblings(true);
                     BackupItems = new List<Cosmetic>(Items);
                     break;
                 case ItemType.IT_Pickaxe:
-                    Items = await _swapperService.GetLobbyPickaxes();
+                    Items = await _swapperService.GetSaturnPickaxes(true);
                     BackupItems = new List<Cosmetic>(Items);
                     break;
                 case ItemType.IT_Dance:
-                    Items = await _swapperService.GetLobbyEmotes();
+                    Items = await _swapperService.GetSaturnEmotes(true);
                     BackupItems = new List<Cosmetic>(Items);
                     break;
                 case ItemType.IT_Misc:
@@ -814,26 +814,26 @@
         if (_halted) return;
         _halted = true;
         currentSkin = item;
-        saturnState = SaturnState.S_Misc;
+        saturnState = SaturnState.S_Loading;
 
         await Task.Run(async () =>
         {
             switch (currentType)
             {
                 case ItemType.IT_Skin:
-                    Items = await _swapperService.GetLobbySkins(true);
+                    Items = await _swapperService.GetSaturnSkins(true, true);
                     BackupItems = new List<Cosmetic>(Items);
                     break;
                 case ItemType.IT_Backbling:
-                    Items = await _swapperService.GetLobbyBackblings(true);
+                    Items = await _swapperService.GetSaturnBackblings(true, true);
                     BackupItems = new List<Cosmetic>(Items);
                     break;
                 case ItemType.IT_Pickaxe:
-                    Items = await _swapperService.GetLobbyPickaxes(true);
+                    Items = await _swapperService.GetSaturnPickaxes(true, true);
                     BackupItems = new List<Cosmetic>(Items);
                     break;
                 case ItemType.IT_Dance:
-                    Items = await _swapperService.GetLobbyEmotes(true);
+                    Items = await _swapperService.GetSaturnEmotes(true, true);
                     BackupItems = new List<Cosmetic>(Items);
                     break;
                 case ItemType.IT_Misc:

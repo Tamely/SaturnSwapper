@@ -48,18 +48,14 @@ public interface ISwapperService
     public Task<UObject> GetWIDByID(string id);
     public Task<UObject> GetBackblingCP(string id);
     public Task SwapLobby(Cosmetic item, Cosmetic option);
-    public Task<List<Cosmetic>> GetSaturnSkins();
-    public Task<List<Cosmetic>> GetLobbySkins(bool isOption = false);
-    public Task<List<Cosmetic>> GetLobbyBackblings(bool isOption = false);
-    public Task<List<Cosmetic>> GetLobbyPickaxes(bool isOption = false);
-    public Task<List<Cosmetic>> GetLobbyEmotes(bool isOption = false);
+    public Task<List<Cosmetic>> GetSaturnSkins(bool isLobby = false, bool isOption = false);
     public Task<List<SaturnItem>> GetSkinOptions(Cosmetic item);
     public Task<List<SaturnItem>> GetPickaxeOptions(Cosmetic item);
     public Task<List<SaturnItem>> GetBackblingOptions(Cosmetic item);
     public Task<List<SaturnItem>> GetEmoteOptions(Cosmetic item);
-    public Task<List<Cosmetic>> GetSaturnPickaxes();
-    public Task<List<Cosmetic>> GetSaturnBackblings();
-    public Task<List<Cosmetic>> GetSaturnEmotes();
+    public Task<List<Cosmetic>> GetSaturnPickaxes(bool isLobby = false, bool isOption = false);
+    public Task<List<Cosmetic>> GetSaturnBackblings(bool isLobby = false, bool isOption = false);
+    public Task<List<Cosmetic>> GetSaturnEmotes(bool isLobby = false, bool isOption = false);
     public Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = true);
     public DefaultFileProvider Provider { get; }
 }
@@ -122,7 +118,7 @@ public sealed class SwapperService : ISwapperService
                                       IJSRuntime jsRuntime) =>
         await new Mappings(_provider, benBotApiService, fortniteAPIService, jsRuntime).Init();
 
-    public async Task<List<Cosmetic>> GetSaturnSkins()
+    public async Task<List<Cosmetic>> GetSaturnSkins(bool isLobby = false, bool isOption = false)
     {
         var skins = new List<Cosmetic>();
 
@@ -131,70 +127,48 @@ public sealed class SwapperService : ISwapperService
         skins = await Generation.Generate();
 
         Trace.WriteLine($"Deserialized {skins.Count} objects");
-        
-        await _fortniteAPIService.RemoveItems(skins);
 
-        await _fortniteAPIService.AddExtraItems(skins, ItemType.IT_Skin);
-        
-        for (int i = skins.Count - 1; i >= 0; i--)
+        if (isLobby)
         {
-            if (skins[i].Description.Contains("style:") && !await _configService.TryGetShouldShowStyles())
+            ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("CID_")) ?? null;
+            for (int i = skins.Count - 1; i >= 0; i--)
             {
+                if (convItem != null)
+                { 
+                    skins[i].VariantChannel = convItem.ItemDefinition;
+                    skins[i].IsConverted = true;
+                    skins[i].PrintColor = Colors.C_GREEN;
+                }
+
+                if (!skins[i].Description.Contains("style:")) continue;
                 skins.RemoveAt(i);
                 i++;
-                continue;
             }
-            
-            if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, skins[i].Name) && string.Equals(x.ItemDefinition, skins[i].Id)))
-                skins[i].IsConverted = true;
         }
-
-        _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
-
-        if (!FileUtil.CheckIfCppIsInstalled())
+        else
         {
-            await _jsRuntime.InvokeVoidAsync("MessageBox",
-                "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
-                "error");
-            await Task.Delay(2000);
-            await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
+            await _fortniteAPIService.RemoveItems(skins);
+
+            await _fortniteAPIService.AddExtraItems(skins, ItemType.IT_Skin);
+            
+            for (int i = skins.Count - 1; i >= 0; i--)
+            {
+                if (skins[i].Description.Contains("style:") && !await _configService.TryGetShouldShowStyles())
+                {
+                    skins.RemoveAt(i);
+                    i++;
+                    continue;
+                }
+            
+                if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, skins[i].Name) && string.Equals(x.ItemDefinition, skins[i].Id)))
+                    skins[i].IsConverted = true;
+            }
         }
         
-        if (skins.Count == 0)
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
-                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
-
-
-        return skins;
-    }
-
-    public async Task<List<Cosmetic>> GetLobbySkins(bool isOption = false)
-    {
-        var skins = new List<Cosmetic>();
-
-        AbstractGeneration Generation = new LobbySkinGeneration(skins, _provider, _configService, this);
-
-        skins = await Generation.Generate();
-
-        Trace.WriteLine($"Deserialized {skins.Count} objects");
-
-        _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
-
         if (isOption)
             skins.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
-        
-        ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("CID_")) ?? null;
-        foreach (var item in skins)
-        {
-            if (convItem != null)
-            { 
-                item.VariantChannel = convItem.ItemDefinition;
-                item.IsConverted = true;
-                item.PrintColor = Colors.C_GREEN;
-            }
-        }
 
-
+        _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
 
         if (!FileUtil.CheckIfCppIsInstalled())
         {
@@ -211,132 +185,6 @@ public sealed class SwapperService : ISwapperService
 
 
         return skins;
-    }
-    
-    public async Task<List<Cosmetic>> GetLobbyBackblings(bool isOption = false)
-    {
-        var backblings = new List<Cosmetic>();
-
-        AbstractGeneration Generation = new BackblingGeneration(backblings, _provider, _configService, this, _jsRuntime);
-
-        backblings = await Generation.Generate();
-
-        Trace.WriteLine($"Deserialized {backblings.Count} objects");
-        
-        if (isOption)
-            backblings.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
-        
-        ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("BID_")) ?? null;
-        foreach (var item in backblings)
-        {
-            if (convItem != null)
-            {
-                item.VariantChannel = convItem.ItemDefinition;
-                item.IsConverted = true;
-                item.PrintColor = Colors.C_GREEN;
-            }
-        }
-
-        _discordRPCService.UpdatePresence($"Looking at {backblings.Count} different backblings");
-        
-        if (!FileUtil.CheckIfCppIsInstalled())
-        {
-            await _jsRuntime.InvokeVoidAsync("MessageBox",
-                "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
-                "error");
-            await Task.Delay(2000);
-            await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
-        }
-        
-        if (backblings.Count == 0)
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
-                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
-
-        return backblings;
-    }
-
-    public async Task<List<Cosmetic>> GetLobbyPickaxes(bool isOption = false)
-    {
-        var pickaxes = new List<Cosmetic>();
-
-        AbstractGeneration Generation = new PickaxeGeneration(pickaxes, _provider, _configService, this);
-
-        pickaxes = await Generation.Generate();
-
-        Trace.WriteLine($"Deserialized {pickaxes.Count} objects");
-        
-        if (isOption)
-            pickaxes.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
-
-        ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && !x.ItemDefinition.Contains("BID_") && !x.ItemDefinition.Contains("CID_") && !x.ItemDefinition.Contains("EID_")) ?? null;
-        foreach (var item in pickaxes)
-        {
-            if (convItem != null)
-            {
-                item.VariantChannel = convItem.ItemDefinition;
-                item.IsConverted = true;
-                item.PrintColor = Colors.C_GREEN;
-            }
-        }
-
-        _discordRPCService.UpdatePresence($"Looking at {pickaxes.Count} different pickaxes");
-        
-        if (!FileUtil.CheckIfCppIsInstalled())
-        {
-            await _jsRuntime.InvokeVoidAsync("MessageBox",
-                "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
-                "error");
-            await Task.Delay(2000);
-            await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
-        }
-        
-        if (pickaxes.Count == 0)
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
-                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
-
-        return pickaxes;
-    }
-    
-    public async Task<List<Cosmetic>> GetLobbyEmotes(bool isOption = false)
-    {
-        var emotes = new List<Cosmetic>();
-
-        AbstractGeneration Generation = new EmoteGeneration(emotes, _provider, _configService, this);
-
-        emotes = await Generation.Generate();
-
-        Trace.WriteLine($"Deserialized {emotes.Count} objects");
-        
-        if (isOption)
-            emotes.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
-        
-        ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("EID_")) ?? null;
-        foreach (var item in emotes)
-        {
-            if (convItem != null)
-            {
-                item.VariantChannel = convItem.ItemDefinition;
-                item.IsConverted = true;
-                item.PrintColor = Colors.C_GREEN;
-            }
-        }
-
-        _discordRPCService.UpdatePresence($"Looking at {emotes.Count} different emotes");
-
-        if (!FileUtil.CheckIfCppIsInstalled())
-        {
-            await _jsRuntime.InvokeVoidAsync("MessageBox",
-                "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
-                "error");
-            await Task.Delay(2000);
-            await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
-        }
-        
-        if (emotes.Count == 0)
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
-                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
-
-        return emotes;
     }
 
     public async Task<List<SaturnItem>> GetSkinOptions(Cosmetic item)
@@ -359,7 +207,7 @@ public sealed class SwapperService : ISwapperService
         return (await new AddEmotes().AddEmoteOptions(item, this, _provider)).CosmeticOptions;
     }
     
-    public async Task<List<Cosmetic>> GetSaturnBackblings()
+    public async Task<List<Cosmetic>> GetSaturnBackblings(bool isLobby = false, bool isOption = false)
     {
         var backblings = new List<Cosmetic>();
 
@@ -368,19 +216,49 @@ public sealed class SwapperService : ISwapperService
         backblings = await Generation.Generate();
 
         Trace.WriteLine($"Deserialized {backblings.Count} objects");
-        
-        await _fortniteAPIService.RemoveItems(backblings);
-        
-        await _fortniteAPIService.AddExtraItems(backblings, ItemType.IT_Backbling);
-        
-        foreach (var item in backblings)
+
+        if (isLobby)
         {
-            if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, item.Name) && string.Equals(x.ItemDefinition, item.Id)))
-                item.IsConverted = true;
+            ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("BID_")) ?? null;
+            for (int i = backblings.Count - 1; i >= 0; i--)
+            {
+                if (convItem != null)
+                { 
+                    backblings[i].VariantChannel = convItem.ItemDefinition;
+                    backblings[i].IsConverted = true;
+                    backblings[i].PrintColor = Colors.C_GREEN;
+                }
+
+                if (!backblings[i].Description.Contains("style:")) continue;
+                backblings.RemoveAt(i);
+                i++;
+            }
         }
+        else
+        {
+            await _fortniteAPIService.RemoveItems(backblings);
+
+            await _fortniteAPIService.AddExtraItems(backblings, ItemType.IT_Backbling);
+            
+            for (int i = backblings.Count - 1; i >= 0; i--)
+            {
+                if (backblings[i].Description.Contains("style:") && !await _configService.TryGetShouldShowStyles())
+                {
+                    backblings.RemoveAt(i);
+                    i++;
+                    continue;
+                }
+                
+                if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, backblings[i].Name) && string.Equals(x.ItemDefinition, backblings[i].Id)))
+                    backblings[i].IsConverted = true;
+            }
+        }
+        
+        if (isOption)
+            backblings.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
 
         _discordRPCService.UpdatePresence($"Looking at {backblings.Count} different backblings");
-        
+
         if (!FileUtil.CheckIfCppIsInstalled())
         {
             await _jsRuntime.InvokeVoidAsync("MessageBox",
@@ -394,10 +272,11 @@ public sealed class SwapperService : ISwapperService
             await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
                 "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
 
+
         return backblings;
     }
     
-    public async Task<List<Cosmetic>> GetSaturnPickaxes()
+    public async Task<List<Cosmetic>> GetSaturnPickaxes(bool isLobby = false, bool isOption = false)
     {
         var pickaxes = new List<Cosmetic>();
 
@@ -406,19 +285,49 @@ public sealed class SwapperService : ISwapperService
         pickaxes = await Generation.Generate();
 
         Trace.WriteLine($"Deserialized {pickaxes.Count} objects");
-        
-        await _fortniteAPIService.RemoveItems(pickaxes);
-        
-        await _fortniteAPIService.AddExtraItems(pickaxes, ItemType.IT_Pickaxe);
-        
-        foreach (var item in pickaxes)
+
+        if (isLobby)
         {
-            if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, item.Name) && string.Equals(x.ItemDefinition, item.Id)))
-                item.IsConverted = true;
+            ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && !x.ItemDefinition.Contains("CID_") && !x.ItemDefinition.Contains("BID_") && !x.ItemDefinition.Contains("EID_")) ?? null;
+            for (int i = pickaxes.Count - 1; i >= 0; i--)
+            {
+                if (convItem != null)
+                { 
+                    pickaxes[i].VariantChannel = convItem.ItemDefinition;
+                    pickaxes[i].IsConverted = true;
+                    pickaxes[i].PrintColor = Colors.C_GREEN;
+                }
+
+                if (!pickaxes[i].Description.Contains("style:") || await _configService.TryGetShouldShowStyles()) continue;
+                pickaxes.RemoveAt(i);
+                i++;
+            }
         }
+        else
+        {
+            await _fortniteAPIService.RemoveItems(pickaxes);
+
+            await _fortniteAPIService.AddExtraItems(pickaxes, ItemType.IT_Pickaxe);
+            
+            for (int i = pickaxes.Count - 1; i >= 0; i--)
+            {
+                if (pickaxes[i].Description.Contains("style:") && !await _configService.TryGetShouldShowStyles())
+                {
+                    pickaxes.RemoveAt(i);
+                    i++;
+                    continue;
+                }
+                
+                if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, pickaxes[i].Name) && string.Equals(x.ItemDefinition, pickaxes[i].Id)))
+                    pickaxes[i].IsConverted = true;
+            }
+        }
+        
+        if (isOption)
+            pickaxes.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
 
         _discordRPCService.UpdatePresence($"Looking at {pickaxes.Count} different pickaxes");
-        
+
         if (!FileUtil.CheckIfCppIsInstalled())
         {
             await _jsRuntime.InvokeVoidAsync("MessageBox",
@@ -432,10 +341,11 @@ public sealed class SwapperService : ISwapperService
             await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
                 "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
 
+
         return pickaxes;
     }
     
-    public async Task<List<Cosmetic>> GetSaturnEmotes()
+    public async Task<List<Cosmetic>> GetSaturnEmotes(bool isLobby = false, bool isOption = false)
     {
         var emotes = new List<Cosmetic>();
 
@@ -444,16 +354,46 @@ public sealed class SwapperService : ISwapperService
         emotes = await Generation.Generate();
 
         Trace.WriteLine($"Deserialized {emotes.Count} objects");
-        
-        await _fortniteAPIService.RemoveItems(emotes);
-        
-        await _fortniteAPIService.AddExtraItems(emotes, ItemType.IT_Dance);
-        
-        foreach (var item in emotes)
+
+        if (isLobby)
         {
-            if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, item.Name) && string.Equals(x.ItemDefinition, item.Id)))
-                item.IsConverted = true;
+            ConvertedItem? convItem = (await _configService.TryGetConvertedItems()).FirstOrDefault(x => x.ItemDefinition.Contains("LOBBY") && x.ItemDefinition.Contains("EID_")) ?? null;
+            for (int i = emotes.Count - 1; i >= 0; i--)
+            {
+                if (convItem != null)
+                { 
+                    emotes[i].VariantChannel = convItem.ItemDefinition;
+                    emotes[i].IsConverted = true;
+                    emotes[i].PrintColor = Colors.C_GREEN;
+                }
+
+                if (!emotes[i].Description.Contains("style:") || await _configService.TryGetShouldShowStyles()) continue;
+                emotes.RemoveAt(i);
+                i++;
+            }
         }
+        else
+        {
+            await _fortniteAPIService.RemoveItems(emotes);
+
+            await _fortniteAPIService.AddExtraItems(emotes, ItemType.IT_Dance);
+            
+            for (int i = emotes.Count - 1; i >= 0; i--)
+            {
+                if (emotes[i].Description.Contains("style:") && !await _configService.TryGetShouldShowStyles())
+                {
+                    emotes.RemoveAt(i);
+                    i++;
+                    continue;
+                }
+                
+                if ((await _configService.TryGetConvertedItems()).Any(x => string.Equals(x.Name, emotes[i].Name) && string.Equals(x.ItemDefinition, emotes[i].Id)))
+                    emotes[i].IsConverted = true;
+            }
+        }
+        
+        if (isOption)
+            emotes.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
 
         _discordRPCService.UpdatePresence($"Looking at {emotes.Count} different emotes");
 
@@ -469,6 +409,7 @@ public sealed class SwapperService : ISwapperService
         if (emotes.Count == 0)
             await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
                 "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
+
 
         return emotes;
     }
