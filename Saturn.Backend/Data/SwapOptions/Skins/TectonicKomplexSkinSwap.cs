@@ -44,14 +44,14 @@ internal sealed class TectonicSwap : SkinSwap
                     new SaturnSwap()
                     {
                         Search =
-                            "/Game/Characters/Player/Female/Medium/Heads/F_Med_Head_01/Materials/F_MED_Commando_No_Hair.F_MED_Commando_No_Hair",
+                            "/Game/Characters/Player/Female/Medium/Heads/F_MED_BLK_Red_Head_01/Skins/Neon_Graffiti_Lava/Materials/F_Neon_Graffiti_Lava_Head.F_Neon_Graffiti_Lava_Head",
                         Replace = SwapModel.HeadMaterials[0],
                         Type = SwapType.HeadMaterial
                     },
                     new SaturnSwap()
                     {
                         Search =
-                            "/Game/Characters/Player/Female/Medium/Heads/F_MED_BLK_Red_Head_01/Skins/Neon_Graffiti_Lava/Materials/F_Neon_Graffiti_Lava_Head.F_Neon_Graffiti_Lava_Head",
+                            "/Game/Characters/Player/Female/Medium/Heads/F_Med_Head_01/Materials/F_MED_Commando_No_Hair.F_MED_Commando_No_Hair",
                         Replace = SwapModel.HeadMaterials[1],
                         Type = SwapType.HairMaterial
                     }
