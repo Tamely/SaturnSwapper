@@ -174,6 +174,15 @@ public class AddSkins
                 "https://fortnite-api.com/images/cosmetics/br/CID_242_Athena_Commando_F_Bullseye/smallicon.png",
             Rarity = "Uncommon"
         },
+        new SaturnItem
+        {
+            ItemDefinition = "CID_397_Athena_Commando_F_TreasureHunterFashion",
+            Name = "Aura",
+            Description = "Get the goods in style",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/CID_397_Athena_Commando_F_TreasureHunterFashion/smallicon.png",
+            Rarity = "Uncommon"
+        },
     };
 
     private string _lastID = "";
