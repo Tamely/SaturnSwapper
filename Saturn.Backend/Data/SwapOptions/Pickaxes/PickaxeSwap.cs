@@ -272,7 +272,7 @@ public class AddPickaxes
             Description = "This way to the hottest drop around.",
             Icon =
                 "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_807_NeonGraffitiLavaFemale/smallicon.png",
-            Rarity = "Epic"
+            Rarity = "Epic",
             Series = "LavaSeries"
         },
     };
