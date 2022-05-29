@@ -6,7 +6,6 @@ using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.Misc;
-using CUE4Parse.UE4.Objects.UObject;
 using Microsoft.JSInterop;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.CloudStorage;
@@ -31,11 +30,9 @@ using Saturn.Backend.Data.SwapOptions.Backblings;
 using Saturn.Backend.Data.SwapOptions.Emotes;
 using Saturn.Backend.Data.Utils.Swaps;
 using Saturn.Backend.Data.Utils.Swaps.Generation;
-using System.IO.Compression;
 using System.Threading;
 using Saturn.Backend.Data.Models.SaturnAPI;
 using Saturn.Backend.Data.Utils.Compression;
-using Saturn.Backend.Data.Utils.Swaps.Generation.Lobby;
 using Index = Saturn.Backend.Pages.Index;
 
 namespace Saturn.Backend.Data.Services;
@@ -1360,6 +1357,10 @@ public sealed class SwapperService : ISwapperService
                                                                      item.Rarity.BackendValue,
                                                                      item.Images.SmallIcon,
                                                                      option.SwapModel).ToSaturnOption(),
+            "CID_A_420_Athena_Commando_F_NeonGraffitiLava" => new TectonicKomplexSkinSwap(item.Name,
+                                                                                          item.Rarity.BackendValue,
+                                                                                          item.Images.SmallIcon,
+                                                                                          option.SwapModel).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }

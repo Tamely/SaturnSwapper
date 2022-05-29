@@ -164,6 +164,16 @@ public class AddSkins
                 "https://fortnite-api.com/images/cosmetics/br/CID_242_Athena_Commando_F_Bullseye/smallicon.png",
             Rarity = "Uncommon"
         },
+        new SaturnItem
+        {
+            ItemDefinition = "CID_A_420_Athena_Commando_F_NeonGraffitiLava",
+            Name = "Tectonic Komplex",
+            Description = "The world is waiting. Make your move.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/CID_A_420_Athena_Commando_F_NeonGraffitiLava/smallicon.png",
+            Rarity = "Epic",
+            Series = "LavaSeries"
+        },
     };
 
     private string _lastID = "";
