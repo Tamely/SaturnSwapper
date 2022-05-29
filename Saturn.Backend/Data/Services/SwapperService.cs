@@ -1535,11 +1535,6 @@ public sealed class SwapperService : ISwapperService
                                                                item.Images.SmallIcon,
                                                                option.Swaps,
                                                                Rarity).ToSaturnOption(),
-            "Pickaxe_ID_807_NeonGraffitiLavaFemale" => new SulfuricSwap(item.Name,
-                                                               item.Rarity.Value,
-                                                               item.Images.SmallIcon,
-                                                               option.Swaps,
-                                                               Rarity).ToSaturnOption(),
             _ => new SaturnOption()
             
         };
