@@ -19,10 +19,10 @@ internal sealed class SulfuricSwap : PickaxeSwap
                 ParentAsset = "FortniteGame/Athena/Items/Weapons/WID_Harvest_Pickaxe_NeonGraffitiLavaFemale",
                 Swaps = new List<SaturnSwap>()
                 {
-                    new SaturnSwap()
+                     new SaturnSwap()
                     {
-                        Search = System.Convert.ToBase64String(new byte[] { 255, 255, 255, (byte)EFortRarity.Rare }),
-                        Replace = System.Convert.ToBase64String(new byte[] { 255, 255, 255, (byte)RarityEnum }),
+                        Search = System.Convert.ToBase64String(new byte[] { 252, 255, 255, 255 }),
+                        Replace = System.Convert.ToBase64String(new byte[] { 0, 0, 0, 0 }),
                         Type = SwapType.Property
                     },
                     new SaturnSwap()
