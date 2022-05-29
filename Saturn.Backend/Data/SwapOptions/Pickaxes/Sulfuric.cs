@@ -21,7 +21,7 @@ internal sealed class SulfuricSwap : PickaxeSwap
                 {
                     new SaturnSwap()
                     {
-                        Search = System.Convert.ToBase64String(new byte[] { 255, 255, 255, 3 }),
+                        Search = System.Convert.ToBase64String(new byte[] { 255, 255, 255, (byte)EFortRarity.Rare }),
                         Replace = System.Convert.ToBase64String(new byte[] { 255, 255, 255, (byte)RarityEnum }),
                         Type = SwapType.Property
                     },
