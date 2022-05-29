@@ -254,6 +254,24 @@ public class AddPickaxes
                 "https://fortnite-api.com/images/cosmetics/br/pickaxe_id_568_obsidianfemale/smallicon.png",
             Rarity = "Epic",
             Series = "DCUSeries"
+            },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_313_ShiitakeShaolinMale",
+            Name = "Crescent Shroom",
+            Description = "Fit for a mushroom king.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_313_ShiitakeShaolinMale/smallicon.png",
+            Rarity = "Rare"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_807_NeonGraffitiLavaFemale",
+            Name = "Sulfuric Street Shine",
+            Description = "This way to the hottest drop around.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_807_NeonGraffitiLavaFemale/smallicon.png",
+            Rarity = "Epic"
         },
     };
 
