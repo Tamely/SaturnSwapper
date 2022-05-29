@@ -73,6 +73,18 @@ internal sealed class CrescentShroomSwap : PickaxeSwap
                             "/Game/Weapons/FORT_Melee/Pickaxe_Shiitake_Shaolin_Male/FX/NS_Pickaxe_Shiitake_Shaolin_Trail.NS_Pickaxe_Shiitake_Shaolin_Trail",
                         Replace = Swaps["Trail"],
                         Type = SwapType.WeaponTrail
+                    },
+                    new SaturnSwap()
+                    {
+                        Search = "/Game/Weapons/FORT_Melee/Pickaxe_Shiitake_Shaolin_Male/FX/NS_Pickaxe_Shiitake_Shaolin_Idle.NS_Pickaxe_Shiitake_Shaolin_Idle",
+                        Replace = Swaps["NFX"],
+                        Type = SwapType.WeaponFx
+                    },
+                    new SaturnSwap()
+                    {
+                        Search = "/Game/Weapons/FORT_Melee/Pickaxe_Shiitake_Shaolin_Male/FX/NS_Pickaxe_Shiitake_Shaolin_Impact.NS_Pickaxe_Shiitake_Shaolin_Impact",
+                        Replace = Swaps["ImpactFX"],
+                        Type = SwapType.WeaponFx
                     }
                 }
             }
