@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -89,6 +89,16 @@ public class AddSkins
                 "https://fortnite-api.com/images/cosmetics/br/cid_a_007_athena_commando_f_streetfashioneclipse/smallicon.png",
             Rarity = "Epic",
             Series = "ShadowSeries"
+        },
+                new SaturnItem
+        {
+            ItemDefinition = "CID_A_420_Athena_Commando_F_NeonGraffitiLava",
+            Name = "Tectonic Komplex",
+            Description = "The world is waiting. Make your move.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/cid_a_420_athena_commando_f_neongraffitilava/smallicon.png",
+            Rarity = "Epic",
+            Series = "LavaSeries"
         },
         new SaturnItem
         {
