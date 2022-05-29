@@ -265,16 +265,6 @@ public class AddPickaxes
                 "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_313_ShiitakeShaolinMale/smallicon.png",
             Rarity = "Rare"
         },
-        new SaturnItem
-        {
-            ItemDefinition = "Pickaxe_ID_807_NeonGraffitiLavaFemale",
-            Name = "Sulfuric Street Shine",
-            Description = "This way to the hottest drop around.",
-            Icon =
-                "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_807_NeonGraffitiLavaFemale/smallicon.png",
-            Rarity = "Epic",
-            Series = "LavaSeries"
-        },
     };
 
     public async Task<Cosmetic> AddPickaxeOptions(Cosmetic pickaxe, ISwapperService swapperService,
