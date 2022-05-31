@@ -41,7 +41,7 @@ We use and recommend the following workflow:
     - Name the branch so that it clearly indicates your intentions, such as `broken-beta-detection-1`.
     - Branches are useful since they isolate your work from incoming changes from upstream. They also enable you to create multiple pull requests from the same fork.
 4. Make and commit your changes to the branch.
-    - [Workflow Instructions](docs/contributing/BuildingAndRunning.md) explains how to build and test your changes.
+    - [Workflow Instructions](../../docs/contributing/BuildingAndRunning.md) explains how to build and test your changes.
 5. Build the repository with your changes.
     - Make sure that the builds are clean.
     - Make sure that everything implemented works as expected.
