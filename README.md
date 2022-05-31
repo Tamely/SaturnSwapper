@@ -1,51 +1,30 @@
-# SaturnSwapper
-Most advanced Fortnite Skin Swapper to this date. UI made in HTML and Backend made in C#
+# Saturn
+This repo contains the code to build the Saturn Backend and Client for all supported platforms, as well as the source to the file provider [(`CUE4Parse`)](https://github.com/FabianFG/CUE4Parse).
 
-## Prerequisites
-- [.NET 6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.0-windows-x64-installer)
-- [.NET 6 SDK (if you are building yourself)](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-6.0.101-windows-x64-installer)
-- [WebView2 Runtime (comes with Windows 11 and you need the x64 Evergreen Bootstrapper)](https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download-section)
-- [CMake (if you are building yourself)](https://github.com/Kitware/CMake/releases/download/v3.23.0-rc2/cmake-3.23.0-rc2-windows-x86_64.msi)
-- [Windows SDK (if you are building yourself)](https://go.microsoft.com/fwlink/?linkid=2173743)
+## What is Saturn?
+Saturn is the most advanced Fortnite Skin Changer on the market right now and it is completely free! Items get automatically added when EPIC adds them to Fortnite allowing you to change skins without having to wait for a contributor to add them to the program. The UI is also made in HTML, CSS, and JavaScript combining the smooth navigation of a website with the benefits of a native app.
 
-## Usage
-<details>
-<summary>Building from source</summary>
+Official Get-Started Page: https://github.com/Tamely/SaturnSwapper/docs/using/GetStarted.md
 
-The source on the swapper is 100% complete which means you can build it without any extra steps. To do this:
-1. Turn off your antivirus because the swapper is flagged as a virus due to false positives with WebView2 (You have the source so you know it isn't a virus).
-2. Clone the repository
-    ```
-    git clone https://github.com/Tamely/SaturnSwapper --recursive
-    cd SaturnSwapper
-    ```
-3. Build the solution
-    ``` 
-    dotnet build
-    ```
-4. Make sure you have all the prerequisites installed.
-5. Navigate to Saturn.Client\bin\Debug\net6.0-windows\Saturn.exe and open it.
-6. Get your key to access the swapper [here](https://linkvertise.com/88495/saturn-swapper-key/) (they expire every 48 hours).
-7. You're all set!
-</details>
+## How can I contribute?
+We welcome all kinds of contributions! Many people, listed or not, have bettered this project, and without them, it wouldn't be where it is today.
 
-<details>
-<summary>Downloading (prefered method)</summary>
+* [Contributing](docs/contributing/GetStarted.md) explains what kind of contributions we welcome
+* [Workflow Instructions](docs/contributing/BuildingAndRunning.md) explains how to build and run the project
+* [Fortnite's File Documentation](docs/contributing/FortniteFiles.md) gives a quick overview of where everything is located in Fortnite's files and how Saturn takes advantage of it
 
-1. Head to the [releases](https://github.com/Tamely/SaturnSwapper/releases) tab on the right side of the Saturn GitHub page.
-2. Under the topmost release, click the file labled "Saturn.zip"
-3. Turn off your antivirus because the swapper is flagged as a virus due to false positives with WebView2 (It's open source so you know it isn't a virus).
-4. Make sure you have all the prerequisites installed.
-5. Launch Saturn.exe
-6. Get your key to access the swapper [here](https://linkvertise.com/88495/saturn-swapper-key/) (they expire every 48 hours).
-7. You're all set!
-</details>
+## Reporting security issues and security bugs
 
-## Contributing
+Security issues and bugs should be reported privately, via DM on Discord, to any Admin/Contributor role holder in [Saturn's Discord](https://discord.gg/Saturn). You should receive a response within 24 hours. If - for whatever reason - you do not, please DM Tamely#6469 directly. You may be entitled to financial compensation for your report depending on the severity of the issue.
 
-Contributions are always welcome as it helps keep the project working!
-- To make a contribution, fork the repository, make your change to the code, then submit a pull request on this repo.
-- Let me (Tamely#6469) know when you make a pull request so I can give you the contributor role on Saturn's Discord server.
+## Filing issues
+
+This repo should contain issues that are tied to the actual codebase of the project. If a feature of the project is not working as intended, please use the `Support` channel in [Saturn's Discord](https://discord.gg/Saturn) to resolve your issue.
+
+## Useful Links
+* [Saturn's Discord](https://discord.gg/Saturn)
+* [.NET 6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.0-windows-x64-installer) - Needed for running the project
+* [WebView2 Runtime (comes with Windows 11, you need the x64 Evergreen Bootstrapper)](https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download-section) - Needed to run the website the project hosts as a native program
 
 ## Unlisted Contributors
 
@@ -55,3 +34,7 @@ Contributions are always welcome as it helps keep the project working!
 | [cyclonefreeze](https://github.com/cyclonefreeze)   | Developed base which Saturn built upon |
 | [jakedothow](https://github.com/jakedothow)   | Developed base which Saturn built upon |
 | [All CUE4Parse contributors](https://github.com/FabianFG/CUE4Parse/graphs/contributors)   | CUE4Parse is the main part of the swapper |
+
+## License
+
+Saturn is license under the [GNU General Public License v3.0](LICENSE)
