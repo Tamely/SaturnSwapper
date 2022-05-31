@@ -14,6 +14,14 @@
         <NeutralLanguage>en</NeutralLanguage>
         <Product>Saturn</Product>
         <AssemblyName>Saturn</AssemblyName>
+        <PackageVersion>1.4.6</PackageVersion>
+        <Title>Saturn</Title>
+        <Description>The most advanced fortnite skin swapper</Description>
+        <AssemblyVersion>1.4</AssemblyVersion>
+        <FileVersion>1.4.6</FileVersion>
+        <SignAssembly>true</SignAssembly>
+        <AssemblyOriginatorKeyFile>Tamely.snk</AssemblyOriginatorKeyFile>
+        <PublicSign>true</PublicSign>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
