@@ -18,7 +18,7 @@ Contributions must also satisfy the other publish guidelines defined in this doc
 ### DOs and DON'Ts
 
 Do:
-* **DO** follow our [coding style](docs/contributing/CodingStyle.md)
+* **DO** follow our [coding style](https://github.com/Tamely/SaturnSwapper/blob/master/docs/contributing/CodingStyle.md)
 * **DO** test your implementation before making a pull request
 * **DO** mark an line with `// TODO: ` or `// FIXME: ` to indicate a task that needs to be done and you weren't able to finish it then let us know in the pull request thread
 * **DO** post in [Saturn's Discord](https://discord.gg/Saturn) about your contribution and how it helps the project as we might be able to share insight with you on how to improve or better align your idea with the current project
@@ -41,7 +41,7 @@ We use and recommend the following workflow:
     - Name the branch so that it clearly indicates your intentions, such as `broken-beta-detection-1`.
     - Branches are useful since they isolate your work from incoming changes from upstream. They also enable you to create multiple pull requests from the same fork.
 4. Make and commit your changes to the branch.
-    - [Workflow Instructions](../../docs/contributing/BuildingAndRunning.md) explains how to build and test your changes.
+    - [Workflow Instructions](https://github.com/Tamely/SaturnSwapper/blob/master/docs/contributing/BuildingAndRunning.md) explains how to build and test your changes.
 5. Build the repository with your changes.
     - Make sure that the builds are clean.
     - Make sure that everything implemented works as expected.
