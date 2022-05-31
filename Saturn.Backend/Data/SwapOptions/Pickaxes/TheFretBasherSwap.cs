@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Models.Items;
 
@@ -19,12 +19,6 @@ internal sealed class TheFretBasherSwap : PickaxeSwap
                 ParentAsset = "FortniteGame/Content/Athena/Items/Weapons/WID_Harvest_Pickaxe_BelieverFemale",
                 Swaps = new List<SaturnSwap>()
                 {
-                    new SaturnSwap()
-                    {
-                        Search = System.Convert.ToBase64String(new byte[] { 252, 255, 255, 255 }),
-                        Replace = System.Convert.ToBase64String(new byte[] { 0, 0, 0, 0 }),
-                        Type = SwapType.Property
-                    },
                     new SaturnSwap()
                     {
                         Search = System.Convert.ToBase64String(new byte[] { 255, 255, 255, 3 }),
