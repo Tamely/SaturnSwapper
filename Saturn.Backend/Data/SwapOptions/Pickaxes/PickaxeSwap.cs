@@ -256,6 +256,15 @@ public class AddPickaxes
             Rarity = "Epic",
             Series = "DCUSeries"
         },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_313_ShiitakeShaolinMale",
+            Name = "Crescent Shroom",
+            Description = "Fit for a mushroom king.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_313_ShiitakeShaolinMale/smallicon.png",
+            Rarity = "Rare"
+        },
     };
 
     public async Task<Cosmetic> AddPickaxeOptions(Cosmetic pickaxe, ISwapperService swapperService,

@@ -1530,6 +1530,11 @@ public sealed class SwapperService : ISwapperService
                                                                    item.Images.SmallIcon,
                                                                    option.Swaps,
                                                                    Rarity).ToSaturnOption(),
+            "Pickaxe_ID_313_ShiitakeShaolinMale" => new CrescentShroomSwap(item.Name,
+                                                               item.Rarity.Value,
+                                                               item.Images.SmallIcon,
+                                                               option.Swaps,
+                                                               Rarity).ToSaturnOption(),
             _ => new SaturnOption()
             
         };
