@@ -4,7 +4,7 @@ This repo contains the code to build the Saturn Backend and Client for all suppo
 ## What is Saturn?
 Saturn is the most advanced Fortnite Skin Changer on the market right now and it is completely free! Items get automatically added when EPIC adds them to Fortnite allowing you to change skins without having to wait for a contributor to add them to the program. The UI is also made in HTML, CSS, and JavaScript combining the smooth navigation of a website with the benefits of a native app.
 
-Official Get-Started Page: https://github.com/Tamely/SaturnSwapper/docs/using/GetStarted.md
+Official Get-Started Page: https://github.com/Tamely/SaturnSwapper/blob/master/docs/using/GetStarted.md
 
 ## How can I contribute?
 We welcome all kinds of contributions! Many people, listed or not, have bettered this project, and without them, it wouldn't be where it is today.
