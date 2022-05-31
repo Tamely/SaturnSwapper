@@ -107,6 +107,9 @@ public sealed class SwapperService : ISwapperService
         _provider.SubmitKeys(keys);
         Trace.WriteLine("Submitted Keys");
         Trace.WriteLine($"File provider initialized with {_provider.Keys.Count} keys");
+        
+        foreach (var file in _provider.MountedVfs)
+            Logger.Log($"Mounted file: {file.Name}");
     }
 
     public DefaultFileProvider Provider { get => _provider; }
