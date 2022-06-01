@@ -1262,6 +1262,10 @@ public sealed class SwapperService : ISwapperService
                                                                         item.Images.SmallIcon,
                                                                         item.Rarity.BackendValue,
                                                                         option.Swaps).ToSaturnOption(),
+            "BID_537_TacticalScuba" => new DeepDiveBackblingswap(item.Name,
+                                                                        item.Images.SmallIcon,
+                                                                        item.Rarity.BackendValue,
+                                                                        option.Swaps).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
