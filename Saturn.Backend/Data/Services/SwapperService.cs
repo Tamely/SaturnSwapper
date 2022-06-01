@@ -1364,6 +1364,10 @@ public sealed class SwapperService : ISwapperService
                                                                                           item.Rarity.BackendValue,
                                                                                           item.Images.SmallIcon,
                                                                                           option.SwapModel).ToSaturnOption(),
+            "CID_A_203_Athena_Commando_F_PunkKoi" => new CharlotteSkinSwap(item.Name,
+                                                                           item.Rarity.BackendValue,
+                                                                           item.Images.SmallIcon,
+                                                                           option.SwapModel).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
