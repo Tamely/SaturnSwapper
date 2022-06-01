@@ -274,6 +274,15 @@ public class AddPickaxes
                 "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_612_AntiqueMale/smallicon.png",
             Rarity = "Rare"
         },
+        new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_766_BinaryFemale",
+            Name = "The Imagined Blade",
+            Description = "This thing cuts everything. Armor, comms wires, sandwiches...",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_766_BinaryFemale/smallicon.png",
+            Rarity = "Rare"
+        },
     };
 
     public async Task<Cosmetic> AddPickaxeOptions(Cosmetic pickaxe, ISwapperService swapperService,
