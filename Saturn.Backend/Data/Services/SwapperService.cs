@@ -1364,6 +1364,10 @@ public sealed class SwapperService : ISwapperService
                                                                                           item.Rarity.BackendValue,
                                                                                           item.Images.SmallIcon,
                                                                                           option.SwapModel).ToSaturnOption(),
+            "CID_A_203_Athena_Commando_F_PunkKoi" => new CharlotteSkinSwap(item.Name,
+                                                                           item.Rarity.BackendValue,
+                                                                           item.Images.SmallIcon,
+                                                                           option.SwapModel).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
@@ -1538,6 +1542,41 @@ public sealed class SwapperService : ISwapperService
                                                                item.Images.SmallIcon,
                                                                option.Swaps,
                                                                Rarity).ToSaturnOption(),
+            "Pickaxe_ID_545_CrushFemale1H" => new LovestruckStrikerSwap(item.Name,
+                                                               item.Rarity.Value,
+                                                               item.Images.SmallIcon,
+                                                               option.Swaps,
+                                                               Rarity).ToSaturnOption(),
+            "Pickaxe_ID_480_PoisonFemale" => new ForsakenStrikeSwap(item.Name,
+                                                               item.Rarity.Value,
+                                                               item.Images.SmallIcon,
+                                                               option.Swaps,
+                                                               Rarity).ToSaturnOption(),
+            "Pickaxe_ID_690_RelishFemale_DC74M" => new HotDoggerSwap(item.Name,
+                                                                item.Rarity.Value,
+                                                                item.Images.SmallIcon,
+                                                                option.Swaps,
+                                                                Rarity).ToSaturnOption(),
+            "Pickaxe_ID_721_RustyBoltSliceMale_V3A4N" => new ButcherCleaverSwap(item.Name,
+                                                                item.Rarity.Value,
+                                                                item.Images.SmallIcon,
+                                                                option.Swaps,
+                                                                Rarity).ToSaturnOption(), 
+           /* "807_NeonGraffitiLavaFemale" => new SulfuricStreetShineSwap(item.Name,
+                                                                item.Rarity.Value,
+                                                                item.Images.SmallIcon,
+                                                                option.Swaps,
+                                                                Rarity).ToSaturnOption(), */ //Removed, waiting for a fix
+            "Pickaxe_ID_612_AntiqueMale" => new ChopChopSwap(item.Name,
+                                                             item.Rarity.Value,
+                                                             item.Images.SmallIcon,
+                                                             option.Swaps,
+                                                             Rarity).ToSaturnOption(),
+            "Pickaxe_ID_766_BinaryFemale" => new TheImaginedBladePickaxeSwap(item.Name,
+                                                                      item.Rarity.Value,
+                                                                      item.Images.SmallIcon,
+                                                                      option.Swaps,
+                                                                      Rarity).ToSaturnOption(),
             "Pickaxe_ID_613_BelieverFemale" => new TheFretBasherSwap(item.Name,
                                                                item.Rarity.Value,
                                                                item.Images.SmallIcon,
@@ -1547,6 +1586,7 @@ public sealed class SwapperService : ISwapperService
             
         };
     }
+
 
     private async Task BackupFile(string sourceFile, Cosmetic item, SaturnItem? option = null)
     {
