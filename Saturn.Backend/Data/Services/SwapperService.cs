@@ -1538,6 +1538,32 @@ public sealed class SwapperService : ISwapperService
                                                                item.Images.SmallIcon,
                                                                option.Swaps,
                                                                Rarity).ToSaturnOption(),
+            "Pickaxe_ID_545_CrushFemale1H" => new LovestruckStrikerSwap(item.Name,
+                                                               item.Rarity.Value,
+                                                               item.Images.SmallIcon,
+                                                               option.Swaps,
+                                                               Rarity).ToSaturnOption(),
+            "Pickaxe_ID_480_PoisonFemale" => new ForsakenStrikeSwap(item.Name,
+                                                               item.Rarity.Value,
+                                                               item.Images.SmallIcon,
+                                                               option.Swaps,
+                                                               Rarity).ToSaturnOption(),
+            "Pickaxe_ID_690_RelishFemale_DC74M" => new HotDoggerSwap(item.Name,
+                                                                item.Rarity.Value,
+                                                                item.Images.SmallIcon,
+                                                                option.Swaps,
+                                                                Rarity).ToSaturnOption(),
+            "Pickaxe_ID_721_RustyBoltSliceMale_V3A4N" => new ButcherCleaverSwap(item.Name,
+                                                                item.Rarity.Value,
+                                                                item.Images.SmallIcon,
+                                                                option.Swaps,
+                                                                Rarity).ToSaturnOption(), 
+           /* "807_NeonGraffitiLavaFemale" => new SulfuricStreetShineSwap(item.Name,
+                                                                item.Rarity.Value,
+                                                                item.Images.SmallIcon,
+                                                                option.Swaps,
+                                                                Rarity).ToSaturnOption(), */ //Removed, waiting for a fix
+
             _ => new SaturnOption()
             
         };
