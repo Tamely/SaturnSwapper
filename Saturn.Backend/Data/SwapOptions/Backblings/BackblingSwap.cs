@@ -230,6 +230,15 @@ public class AddBackblings
                 "https://fortnite-api.com/images/cosmetics/br/bid_319_streetracerdriftremix/smallicon.png",
             Rarity = "Legendary"
         },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_537_TacticalScuba",
+            Name = "Deep Dive",
+            Description = "Dual blade protection so you can breathe easy.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/BID_537_TacticalScuba/smallicon.png",
+            Rarity = "Epic"
+        },
     };
     
     public async Task<Cosmetic> AddBackblingOptions(Cosmetic backBling, ISwapperService swapperService,
