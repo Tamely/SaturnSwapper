@@ -16,7 +16,7 @@ internal sealed class VenturionCapeBackblingSwap : BackblingSwap
         {
             new SaturnAsset()
             {
-                ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack_DecoFemale",
+                ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Backpacks/CP_Backpack_DecoMale",
                 Swaps = new List<SaturnSwap>()
                 {
                     new SaturnSwap()
