@@ -238,14 +238,14 @@ public class DotSaturn
         return pluginModel;
     }
 
-
+    // Method seems to be useless; disabled compilation of this method, instead of removing it, just in case it is used.
+#if false
     public static void Write(string filePath, string json)
     {
         
     }
+#endif
 
     public static ulong GenerateSecurityCheck(uint compressedSize, uint decompressedSize)
-        => (ulong) compressedSize ^ (ulong) decompressedSize;
-
-
+        => (ulong) compressedSize ^ decompressedSize; // No need to cast both, more IL instructions; the conversion is implicit: ulong.operator ^(ulong left, ulong right); The conversion is automatic :)
 }
