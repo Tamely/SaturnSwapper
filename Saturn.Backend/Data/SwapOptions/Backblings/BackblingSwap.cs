@@ -232,11 +232,20 @@ public class AddBackblings
         },
         new SaturnItem
         {
-            ItemDefinition = "BID_537_TacticalScuba",
-            Name = "Deep Dive",
-            Description = "Dual blade protection so you can breathe easy.", 
+            ItemDefinition = "BID_069_DecoMale",
+            Name = "Venturion Cape",
+            Description = "Take action.", 
             Icon = 
-                "https://fortnite-api.com/images/cosmetics/br/BID_537_TacticalScuba/smallicon.png",
+                "https://fortnite-api.com/images/cosmetics/br/BID_069_DecoMale/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_070_DecoFemale",
+            Name = "Ventura Cape",
+            Description = "Take initiative.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/BID_070_DecoFemale/smallicon.png",
             Rarity = "Epic"
         },
     };
