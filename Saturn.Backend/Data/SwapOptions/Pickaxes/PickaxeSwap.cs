@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Utils.Swaps;
 using System.Collections.Generic;
@@ -328,6 +328,15 @@ public class AddPickaxes
               Icon =
                   "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_766_BinaryFemale/smallicon.png",
               Rarity = "Rare"
+          },
+          new SaturnItem
+          {
+              ItemDefinition = "Pickaxe_ID_613_BelieverFemale",
+              Name = "The Fret Basher",
+              Description = "Pitch perfect six-string striker.",
+              Icon =
+                  "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_613_BelieverFemale/smallicon.png",
+              Rarity = "Epic"
           },
     };
 

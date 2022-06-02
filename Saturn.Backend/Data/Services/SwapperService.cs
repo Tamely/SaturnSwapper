@@ -1577,6 +1577,11 @@ public sealed class SwapperService : ISwapperService
                                                                       item.Images.SmallIcon,
                                                                       option.Swaps,
                                                                       Rarity).ToSaturnOption(),
+            "Pickaxe_ID_613_BelieverFemale" => new TheFretBasherSwap(item.Name,
+                                                               item.Rarity.Value,
+                                                               item.Images.SmallIcon,
+                                                               option.Swaps,
+                                                               Rarity).ToSaturnOption(),
             _ => new SaturnOption()
             
         };
