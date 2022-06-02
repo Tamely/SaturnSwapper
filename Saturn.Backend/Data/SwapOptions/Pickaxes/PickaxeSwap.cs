@@ -265,24 +265,70 @@ public class AddPickaxes
                 "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_313_ShiitakeShaolinMale/smallicon.png",
             Rarity = "Rare"
         },
-        new SaturnItem
+        new SaturnItem()
         {
-            ItemDefinition = "Pickaxe_ID_612_AntiqueMale",
-            Name = "Chop Chop",
-            Description = "Drip chop, who's next?",
-            Icon =
-                "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_612_AntiqueMale/smallicon.png",
+            ItemDefinition = "Pickaxe_ID_545_CrushFemale1H",
+            Name = "Lovestruck Striker",
+            Description = "More than just a crush.",
+            Icon = "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_545_CrushFemale1H/smallicon.png",
             Rarity = "Rare"
         },
-        new SaturnItem
+        new SaturnItem()
         {
-            ItemDefinition = "Pickaxe_ID_766_BinaryFemale",
-            Name = "The Imagined Blade",
-            Description = "This thing cuts everything. Armor, comms wires, sandwiches...",
-            Icon =
-                "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_766_BinaryFemale/smallicon.png",
+            ItemDefinition = "Pickaxe_ID_480_PoisonFemale",
+            Name = "Forsaken Strike",
+            Description = "The latest in reaper style.",
+            Icon = "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_480_PoisonFemale/smallicon.png",
             Rarity = "Rare"
         },
+               new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_690_RelishFemale_DC74M",
+            Name = "Hot Dogger",
+            Description = "Umbrella-developed anti-bioweapon knife, used by those that like to show off.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_690_RelishFemale_DC74M/smallicon.png",
+            Rarity = "Epic",
+            Series = "PlatformSeries"
+          },
+                new SaturnItem
+        {
+            ItemDefinition = "Pickaxe_ID_721_RustyBoltSliceMale_V3A4N",
+            Name = "Butcher Cleaver",
+            Description = "A tool for cutting Rockworm meat but also cutting down the COG.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_721_RustyBoltSliceMale_V3A4N/smallicon.png",
+            Rarity = "Epic",
+            Series = "PlatformSeries"
+          }, 
+                /*new SaturnItem
+        {
+            ItemDefinition = "807_NeonGraffitiLavaFemale",
+            Name = "Sulfuric Street Shine",
+            Description = "This way to the hottest drop around.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/807_NeonGraffitiLavaFemale/smallicon.png",
+            Rarity = "Epic",
+            Series = "LavaSeries"
+          },*/ //Removed, waiting for a fix
+          new SaturnItem
+          {
+              ItemDefinition = "Pickaxe_ID_612_AntiqueMale",
+              Name = "Chop Chop",
+              Description = "Drip chop, who's next?",
+              Icon =
+                  "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_612_AntiqueMale/smallicon.png",
+              Rarity = "Rare"
+          },
+          new SaturnItem
+          {
+              ItemDefinition = "Pickaxe_ID_766_BinaryFemale",
+              Name = "The Imagined Blade",
+              Description = "This thing cuts everything. Armor, comms wires, sandwiches...",
+              Icon =
+                  "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_766_BinaryFemale/smallicon.png",
+              Rarity = "Rare"
+          },
     };
 
     public async Task<Cosmetic> AddPickaxeOptions(Cosmetic pickaxe, ISwapperService swapperService,
