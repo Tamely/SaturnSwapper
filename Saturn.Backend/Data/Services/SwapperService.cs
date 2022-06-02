@@ -1266,14 +1266,14 @@ public sealed class SwapperService : ISwapperService
                                                                         item.Images.SmallIcon,
                                                                         item.Rarity.BackendValue,
                                                                         option.Swaps).ToSaturnOption(),
-            "BID_069_DecoMale" => new VenturionBackblingswap(item.Name,
-                                                             item.Images.SmallIcon,
-                                                             item.Rarity.BackendValue,
-                                                             option.Swaps).ToSaturnOption(),
-            "BID_070_DecoFemale" => new VenturaBackblingswap(item.Name,
-                                                             item.Images.SmallIcon,
-                                                             item.Rarity.BackendValue,
-                                                             option.Swaps).ToSaturnOption(),
+            "BID_069_DecoMale" => new VenturionCapeBackblingswap(item.Name,
+                                                                 item.Images.SmallIcon,
+                                                                 item.Rarity.BackendValue,
+                                                                 option.Swaps).ToSaturnOption(),
+            "BID_070_DecoFemale" => new VenturaCapeBackblingswap(item.Name,
+                                                                 item.Images.SmallIcon,
+                                                                 item.Rarity.BackendValue,
+                                                                 option.Swaps).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
