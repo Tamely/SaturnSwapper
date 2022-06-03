@@ -1270,10 +1270,6 @@ public sealed class SwapperService : ISwapperService
                                                                         item.Images.SmallIcon,
                                                                         item.Rarity.BackendValue,
                                                                         option.Swaps).ToSaturnOption(),
-            "BID_724_BananaLeader" => new CapeOfPotassiusBackblingswap(item.Name,
-                                                                       item.Images.SmallIcon,
-                                                                       item.Rarity.BackendValue,
-                                                                       option.Swaps).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
@@ -1380,10 +1376,6 @@ public sealed class SwapperService : ISwapperService
                                                                            item.Rarity.BackendValue,
                                                                            item.Images.SmallIcon,
                                                                            option.SwapModel).ToSaturnOption(),
-            "CID_A_045_Athena_Commando_M_BananaLeader" => new PotassiusPeelsSkinSwap(item.Name,
-                                                                                     item.Rarity.BackendValue,
-                                                                                     item.Images.SmallIcon,
-                                                                                     option.SwapModel).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
@@ -1573,11 +1565,6 @@ public sealed class SwapperService : ISwapperService
                                                                 item.Images.SmallIcon,
                                                                 option.Swaps,
                                                                 Rarity).ToSaturnOption(),
-            "Pickaxe_ID_562_BananaLeader" => new GladiusOfPotassiusSwap(item.Name,
-                                                                        item.Rarity.Value,
-                                                                        item.Images.SmallIcon,
-                                                                        option.Swaps,
-                                                                       Rarity).ToSaturnOption(),
             "Pickaxe_ID_721_RustyBoltSliceMale_V3A4N" => new ButcherCleaverSwap(item.Name,
                                                                 item.Rarity.Value,
                                                                 item.Images.SmallIcon,
