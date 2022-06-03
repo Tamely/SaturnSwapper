@@ -1361,6 +1361,10 @@ public sealed class SwapperService : ISwapperService
                                                                                           item.Rarity.BackendValue,
                                                                                           item.Images.SmallIcon,
                                                                                           option.SwapModel).ToSaturnOption(),
+            "CID_A_210_Athena_Commando_F_RenegadeSkull" => new SkeletaraSkinSwap(item.Name,
+                                                                                          item.Rarity.BackendValue,
+                                                                                          item.Images.SmallIcon,
+                                                                                          option.SwapModel).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
