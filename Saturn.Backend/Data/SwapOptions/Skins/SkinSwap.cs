@@ -186,7 +186,7 @@ public class AddSkins
         new SaturnItem
         {
             ItemDefinition = "CID_A_045_Athena_Commando_M_BananaLeader",
-            Name = "Potassium Peels",
+            Name = "Potassius Peels",
             Description = "Et tu, Fruitus?",
             Icon =
                 "https://fortnite-api.com/images/cosmetics/br/CID_A_045_Athena_Commando_M_BananaLeader/smallicon.png",
