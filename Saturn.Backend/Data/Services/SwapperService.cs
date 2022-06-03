@@ -107,6 +107,9 @@ public sealed class SwapperService : ISwapperService
         _provider.SubmitKeys(keys);
         Trace.WriteLine("Submitted Keys");
         Trace.WriteLine($"File provider initialized with {_provider.Keys.Count} keys");
+        
+        foreach (var file in _provider.MountedVfs)
+            Logger.Log($"Mounted file: {file.Name}");
     }
 
     public DefaultFileProvider Provider { get => _provider; }
@@ -1254,7 +1257,15 @@ public sealed class SwapperService : ISwapperService
             "BID_388_DevilRockMale" => new FlameSigilBackblingSwap(item.Name,
                                                                 item.Images.SmallIcon,
                                                                 item.Rarity.BackendValue,
-                                                                option.Swaps).ToSaturnOption(),
+                                                                option.Swaps).ToSaturnOption(),   
+            "BID_069_DecoMale" => new VenturionCapeBackblingSwap(item.Name,
+                                                               item.Images.SmallIcon,
+                                                               item.Rarity.BackendValue,
+                                                               option.Swaps).ToSaturnOption(),
+            "BID_070_DecoFemale" => new VenturaCapeBackblingSwap(item.Name,
+                                                                 item.Images.SmallIcon,
+                                                                 item.Rarity.BackendValue,
+                                                                 option.Swaps).ToSaturnOption(),
             "BID_319_StreetRacerDriftRemix" => new AtmosphereBackblingswap(item.Name,
                                                                         item.Images.SmallIcon,
                                                                         item.Rarity.BackendValue,
@@ -1568,11 +1579,26 @@ public sealed class SwapperService : ISwapperService
                                                                 item.Images.SmallIcon,
                                                                 option.Swaps,
                                                                 Rarity).ToSaturnOption(), */ //Removed, waiting for a fix
-
+            "Pickaxe_ID_612_AntiqueMale" => new ChopChopSwap(item.Name,
+                                                             item.Rarity.Value,
+                                                             item.Images.SmallIcon,
+                                                             option.Swaps,
+                                                             Rarity).ToSaturnOption(),
+            "Pickaxe_ID_766_BinaryFemale" => new TheImaginedBladePickaxeSwap(item.Name,
+                                                                      item.Rarity.Value,
+                                                                      item.Images.SmallIcon,
+                                                                      option.Swaps,
+                                                                      Rarity).ToSaturnOption(),
+            "Pickaxe_ID_613_BelieverFemale" => new TheFretBasherSwap(item.Name,
+                                                               item.Rarity.Value,
+                                                               item.Images.SmallIcon,
+                                                               option.Swaps,
+                                                               Rarity).ToSaturnOption(),
             _ => new SaturnOption()
             
         };
     }
+
 
     private async Task BackupFile(string sourceFile, Cosmetic item, SaturnItem? option = null)
     {
