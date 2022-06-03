@@ -318,16 +318,7 @@ public class AddPickaxes
               Description = "Drip chop, who's next?",
               Icon =
                   "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_612_AntiqueMale/smallicon.png",
-              Rarity = "Rare"
-          },
-          new SaturnItem
-          {
-              ItemDefinition = "Pickaxe_ID_562_BananaLeader",
-              Name = "Gladius Of Potassius",
-              Description = "The valiant never taste of pudding but once.",
-              Icon =
-                  "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_562_BananaLeader/smallicon.png",
-              Rarity = "Uncommon"            
+              Rarity = "Rare"         
           },
           new SaturnItem
           {
