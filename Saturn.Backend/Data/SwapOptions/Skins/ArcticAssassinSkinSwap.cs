@@ -17,7 +17,7 @@ internal sealed class ArcticAssassinSkinSwap : SkinSwap
             new SaturnAsset()
             {
                 ParentAsset =
-                    "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_Wintact_F",
+                    "FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_Body_Commando_F_Wintact_F.CP_Body_Commande_F_Wintact",
                 Swaps = new()
                 {
                     new()
