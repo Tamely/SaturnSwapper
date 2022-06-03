@@ -1270,7 +1270,7 @@ public sealed class SwapperService : ISwapperService
                                                                         item.Images.SmallIcon,
                                                                         item.Rarity.BackendValue,
                                                                         option.Swaps).ToSaturnOption(),
-            "BID_724_BananaLeader" => new CapeOfPotassiumBackblingswap(item.Name,
+            "BID_724_BananaLeader" => new CapeOfPotassiusBackblingswap(item.Name,
                                                                        item.Images.SmallIcon,
                                                                        item.Rarity.BackendValue,
                                                                        option.Swaps).ToSaturnOption(),
@@ -1380,6 +1380,10 @@ public sealed class SwapperService : ISwapperService
                                                                            item.Rarity.BackendValue,
                                                                            item.Images.SmallIcon,
                                                                            option.SwapModel).ToSaturnOption(),
+            "CID_A_045_Athena_Commando_M_BananaLeader" => new PotassiusPeelsSkinSwap(item.Name,
+                                                                                     item.Rarity.BackendValue,
+                                                                                     item.Images.SmallIcon,
+                                                                                     option.SwapModel).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
