@@ -1270,6 +1270,10 @@ public sealed class SwapperService : ISwapperService
                                                                         item.Images.SmallIcon,
                                                                         item.Rarity.BackendValue,
                                                                         option.Swaps).ToSaturnOption(),
+            "BID_724_BananaLeader" => new CapeOfPotassiumBackblingswap(item.Name,
+                                                                       item.Images.SmallIcon,
+                                                                       item.Rarity.BackendValue,
+                                                                       option.Swaps).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
