@@ -181,16 +181,7 @@ public class AddSkins
             Description = "Your typical transforming, monster-slaying teen with a possessed sword.",
             Icon =
                 "https://fortnite-api.com/images/cosmetics/br/CID_A_203_Athena_Commando_F_PunkKoi/smallicon.png",
-            Rarity = "Epic",
-        },
-        new SaturnItem
-        {
-            ItemDefinition = "CID_037_Athena_Commando_F_WinterCamo",
-            Name = "Arctic Assassin",
-            Description = "Stay frosty.",
-            Icon =
-                "https://fortnite-api.com/images/cosmetics/br/CID_037_Athena_Commando_F_WinterCamo/smallicon.png",
-            Rarity = "Rare",
+            Rarity = "Epic"
         },
     };
 
