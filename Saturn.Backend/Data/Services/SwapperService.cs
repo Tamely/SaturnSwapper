@@ -1590,10 +1590,10 @@ public sealed class SwapperService : ISwapperService
                                                                       option.Swaps,
                                                                       Rarity).ToSaturnOption(),
             "Pickaxe_ID_562_BananaLeader" => new GladiusOfPotassiusSwap(item.Name,
-                                                                      item.Rarity.Value,
-                                                                      item.Images.SmallIcon,
-                                                                      option.Swaps,
-                                                                      Rarity).ToSaturnOption(),
+                                                                        item.Rarity.Value,
+                                                                        item.Images.SmallIcon,
+                                                                        option.Swaps,
+                                                                        Rarity).ToSaturnOption(),
             _ => new SaturnOption()
             
         };
