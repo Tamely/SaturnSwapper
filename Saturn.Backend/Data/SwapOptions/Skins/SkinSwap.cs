@@ -175,6 +175,14 @@ public class AddSkins
             Series = "LavaSeries"
         },
         new SaturnItem
+            ItemDefinition = "CID_A_203_Athena_Commando_F_PunkKoi",
+            Name = "Charlotte",
+            Description = "Your typical transforming, monster-slaying teen with a possessed sword.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/CID_A_203_Athena_Commando_F_PunkKoi/smallicon.png",
+            Rarity = "Epic",
+        },
+        new SaturnItem
         {
             ItemDefinition = "CID_A_210_Athena_Commando_F_RenegadeSkull",
             Name = "Skeletara",
