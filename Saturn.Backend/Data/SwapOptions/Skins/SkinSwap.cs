@@ -175,6 +175,7 @@ public class AddSkins
             Series = "LavaSeries"
         },
         new SaturnItem
+        {
             ItemDefinition = "CID_A_203_Athena_Commando_F_PunkKoi",
             Name = "Charlotte",
             Description = "Your typical transforming, monster-slaying teen with a possessed sword.",
@@ -192,6 +193,7 @@ public class AddSkins
             Rarity = "Rare"
         },
     };
+
 
     private string _lastID = "";
     private Dictionary<string, FSkeletalMaterial[]> _lastMaterials = new Dictionary<string, FSkeletalMaterial[]>();
