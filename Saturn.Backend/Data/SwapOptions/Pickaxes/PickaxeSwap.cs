@@ -329,6 +329,15 @@ public class AddPickaxes
                   "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_766_BinaryFemale/smallicon.png",
               Rarity = "Rare"
           },
+          new SaturnItem
+          {
+              ItemDefinition = "Pickaxe_ID_562_BananaLeader",
+              Name = "Gladius Of Potassium",
+              Description = "The valiant never taste of pudding but once.",
+              Icon =
+                  "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_562_BananaLeader/smallicon.png",
+              Rarity = "Rare"
+          },
     };
 
     public async Task<Cosmetic> AddPickaxeOptions(Cosmetic pickaxe, ISwapperService swapperService,
