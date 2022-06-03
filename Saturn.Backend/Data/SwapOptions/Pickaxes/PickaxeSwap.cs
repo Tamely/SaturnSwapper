@@ -322,20 +322,20 @@ public class AddPickaxes
           },
           new SaturnItem
           {
-              ItemDefinition = "Pickaxe_ID_766_BinaryFemale",
-              Name = "The Imagined Blade",
-              Description = "This thing cuts everything. Armor, comms wires, sandwiches...",
-              Icon =
-                  "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_766_BinaryFemale/smallicon.png",
-              Rarity = "Rare"
-          },
-          new SaturnItem
-          {
               ItemDefinition = "Pickaxe_ID_562_BananaLeader",
               Name = "Gladius Of Potassius",
               Description = "The valiant never taste of pudding but once.",
               Icon =
                   "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_562_BananaLeader/smallicon.png",
+              Rarity = "Uncommon"            
+          },
+          new SaturnItem
+          {
+              ItemDefinition = "Pickaxe_ID_766_BinaryFemale",
+              Name = "The Imagined Blade",
+              Description = "This thing cuts everything. Armor, comms wires, sandwiches...",
+              Icon =
+                  "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_766_BinaryFemale/smallicon.png",
               Rarity = "Rare"
           },
     };
