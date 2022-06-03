@@ -248,15 +248,6 @@ public class AddBackblings
                 "https://fortnite-api.com/images/cosmetics/br/BID_070_DecoFemale/smallicon.png",
             Rarity = "Epic"
         },
-        new SaturnItem
-        {
-            ItemDefinition = "BID_724_BananaLeader",
-            Name = "Cape Of Potassium",
-            Description = "Friends, produce, lend me your peels.", 
-            Icon = 
-                "https://fortnite-api.com/images/cosmetics/br/BID_724_BananaLeader/smallicon.png",
-            Rarity = "Rare"
-        },
     };
     
     public async Task<Cosmetic> AddBackblingOptions(Cosmetic backBling, ISwapperService swapperService,
