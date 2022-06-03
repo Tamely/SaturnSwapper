@@ -332,7 +332,7 @@ public class AddPickaxes
           new SaturnItem
           {
               ItemDefinition = "Pickaxe_ID_562_BananaLeader",
-              Name = "Gladius Of Potassium",
+              Name = "Gladius Of Potassius",
               Description = "The valiant never taste of pudding but once.",
               Icon =
                   "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_562_BananaLeader/smallicon.png",
