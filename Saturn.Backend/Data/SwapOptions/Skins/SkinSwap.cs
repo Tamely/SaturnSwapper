@@ -183,15 +183,6 @@ public class AddSkins
                 "https://fortnite-api.com/images/cosmetics/br/CID_A_203_Athena_Commando_F_PunkKoi/smallicon.png",
             Rarity = "Epic"
         },
-        new SaturnItem
-        {
-            ItemDefinition = "CID_A_045_Athena_Commando_M_BananaLeader",
-            Name = "Potassius Peels",
-            Description = "Et tu, Fruitus?",
-            Icon =
-                "https://fortnite-api.com/images/cosmetics/br/CID_A_045_Athena_Commando_M_BananaLeader/smallicon.png",
-            Rarity = "Epic"
-        },
     };
     
     private string _lastID = "";
