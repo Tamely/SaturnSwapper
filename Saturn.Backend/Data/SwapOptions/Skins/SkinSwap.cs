@@ -183,9 +183,18 @@ public class AddSkins
                 "https://fortnite-api.com/images/cosmetics/br/CID_A_203_Athena_Commando_F_PunkKoi/smallicon.png",
             Rarity = "Epic",
         },
+        new SaturnItem
+        {
+            ItemDefinition = "CID_037_Athena_Commando_F_WinterCamo",
+            Name = "Arctic Assassin",
+            Description = "Stay frosty.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/CID_037_Athena_Commando_F_WinterCamo/smallicon.png",
+            Rarity = "Rare",
+        },
     };
 
-
+    
     private string _lastID = "";
     private Dictionary<string, FSkeletalMaterial[]> _lastMaterials = new Dictionary<string, FSkeletalMaterial[]>();
     public async Task<Cosmetic> AddSkinOptions(Cosmetic skin, ISwapperService swapperService, DefaultFileProvider _provider)
