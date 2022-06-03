@@ -1593,7 +1593,7 @@ public sealed class SwapperService : ISwapperService
                                                              item.Images.SmallIcon,
                                                              option.Swaps,
                                                              Rarity).ToSaturnOption(),
-           "Pickaxe_ID_766_BinaryFemale" => new TheImaginedBladeSwap(item.Name,
+            "Pickaxe_ID_766_BinaryFemale" => new TheImaginedBladeSwap(item.Name,
                                                                       item.Rarity.Value,
                                                                       item.Images.SmallIcon,
                                                                       option.Swaps,
