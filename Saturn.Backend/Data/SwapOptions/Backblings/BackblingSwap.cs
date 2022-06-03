@@ -230,6 +230,24 @@ public class AddBackblings
                 "https://fortnite-api.com/images/cosmetics/br/bid_319_streetracerdriftremix/smallicon.png",
             Rarity = "Legendary"
         },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_069_DecoMale",
+            Name = "Venturion Cape",
+            Description = "Take action.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/BID_069_DecoMale/smallicon.png",
+            Rarity = "Epic"
+        },
+        new SaturnItem
+        {
+            ItemDefinition = "BID_070_DecoFemale",
+            Name = "Ventura Cape",
+            Description = "Take initiative.", 
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/BID_070_DecoFemale/smallicon.png",
+            Rarity = "Epic"
+        },
     };
     
     public async Task<Cosmetic> AddBackblingOptions(Cosmetic backBling, ISwapperService swapperService,

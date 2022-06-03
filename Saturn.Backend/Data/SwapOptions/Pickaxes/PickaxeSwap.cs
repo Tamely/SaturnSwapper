@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Saturn.Backend.Data.Enums;
 using Saturn.Backend.Data.Utils.Swaps;
 using System.Collections.Generic;
@@ -265,7 +265,7 @@ public class AddPickaxes
                 "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_313_ShiitakeShaolinMale/smallicon.png",
             Rarity = "Rare"
         },
- new SaturnItem()
+        new SaturnItem()
         {
             ItemDefinition = "Pickaxe_ID_545_CrushFemale1H",
             Name = "Lovestruck Striker",
@@ -311,6 +311,33 @@ public class AddPickaxes
             Rarity = "Epic",
             Series = "LavaSeries"
           },*/ //Removed, waiting for a fix
+          new SaturnItem
+          {
+              ItemDefinition = "Pickaxe_ID_612_AntiqueMale",
+              Name = "Chop Chop",
+              Description = "Drip chop, who's next?",
+              Icon =
+                  "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_612_AntiqueMale/smallicon.png",
+              Rarity = "Rare"
+          },
+          new SaturnItem
+          {
+              ItemDefinition = "Pickaxe_ID_766_BinaryFemale",
+              Name = "The Imagined Blade",
+              Description = "This thing cuts everything. Armor, comms wires, sandwiches...",
+              Icon =
+                  "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_766_BinaryFemale/smallicon.png",
+              Rarity = "Rare"
+          },
+          new SaturnItem
+          {
+              ItemDefinition = "Pickaxe_ID_613_BelieverFemale",
+              Name = "The Fret Basher",
+              Description = "Pitch perfect six-string striker.",
+              Icon =
+                  "https://fortnite-api.com/images/cosmetics/br/Pickaxe_ID_613_BelieverFemale/smallicon.png",
+              Rarity = "Epic"
+          },
     };
 
     public async Task<Cosmetic> AddPickaxeOptions(Cosmetic pickaxe, ISwapperService swapperService,

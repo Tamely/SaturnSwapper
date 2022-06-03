@@ -16,7 +16,7 @@ internal sealed class CrescentShroomSwap : PickaxeSwap
         {
             new SaturnAsset()
             {
-                ParentAsset = "Game/Athena/Items/Weapons/WID_Harvest_Pickaxe_ShiitakeShaolinMale",
+                ParentAsset = "FortniteGame/Content/Athena/Items/Weapons/WID_Harvest_Pickaxe_ShiitakeShaolinMale",
                 Swaps = new List<SaturnSwap>()
                 {
                     new SaturnSwap()
