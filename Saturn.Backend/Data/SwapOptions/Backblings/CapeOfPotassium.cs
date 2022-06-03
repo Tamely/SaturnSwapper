@@ -4,9 +4,9 @@ using System.Collections.Generic;
 
 namespace Saturn.Backend.Data.SwapOptions.Backblings;
 
-internal sealed class CapeOfPotassiumBackblingSwap : BackblingSwap
+internal sealed class CapeOfPotassiusBackblingSwap : BackblingSwap
 {
-    public CapeOfPotassiumBackblingSwap(string name, string rarity, string icon, Dictionary<string, string> data)
+    public CapeOfPotassiusBackblingSwap(string name, string rarity, string icon, Dictionary<string, string> data)
         : base(name, rarity, icon, data)
     {
     }
