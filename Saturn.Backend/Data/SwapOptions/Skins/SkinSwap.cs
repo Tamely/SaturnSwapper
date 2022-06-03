@@ -174,6 +174,15 @@ public class AddSkins
             Rarity = "Epic",
             Series = "LavaSeries"
         },
+        new SaturnItem
+        {
+            ItemDefinition = "CID_A_210_Athena_Commando_F_RenegadeSkull",
+            Name = "Skeletara",
+            Description = "Lightly irradiated for maximum destruction.",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/CID_A_210_Athena_Commando_F_RenegadeSkull/smallicon.png",
+            Rarity = "Rare"
+        },
     };
 
     private string _lastID = "";
