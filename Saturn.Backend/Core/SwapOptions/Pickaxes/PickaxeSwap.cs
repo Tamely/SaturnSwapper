@@ -1,19 +1,15 @@
-using System;
+using CUE4Parse.FileProvider;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Objects;
+using CUE4Parse.UE4.Objects.UObject;
 using Saturn.Backend.Core.Enums;
+using Saturn.Backend.Core.Models.FortniteAPI;
+using Saturn.Backend.Core.Models.Items;
+using Saturn.Backend.Core.Services;
 using Saturn.Backend.Core.Utils.Swaps;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using CUE4Parse.FileProvider;
-using CUE4Parse.UE4.Assets.Exports;
-using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
-using CUE4Parse.UE4.Assets.Objects;
-using CUE4Parse.UE4.Objects.Core.i18N;
-using CUE4Parse.UE4.Objects.UObject;
-using Saturn.Backend.Core.Models.FortniteAPI;
-using Saturn.Backend.Core.Models.Items;
-using Saturn.Backend.Core.Services;
-using Saturn.Backend.Core.Utils;
 
 namespace Saturn.Backend.Core.SwapOptions.Pickaxes;
 

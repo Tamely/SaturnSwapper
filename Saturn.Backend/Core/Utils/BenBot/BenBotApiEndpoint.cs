@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using RestSharp;
+using Saturn.Backend.Core.Models.BenBot;
+using Serilog;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using RestSharp;
-using Saturn.Backend.Core.Models.BenBot;
-using Serilog;
 
 namespace Saturn.Backend.Core.Utils.BenBot;
 

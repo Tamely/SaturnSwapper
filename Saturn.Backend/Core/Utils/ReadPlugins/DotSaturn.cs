@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using DiscordRPC;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json;
 using Saturn.Backend.Core.Enums;
 using Saturn.Backend.Core.Models.FortniteAPI;
 using Saturn.Backend.Core.Models.Items;
 using Saturn.Backend.Core.Models.SaturnAPI;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Asset = Saturn.Backend.Core.Models.SaturnAPI.Asset;
 using Swap = Saturn.Backend.Core.Models.SaturnAPI.Swap;
 
@@ -245,7 +241,7 @@ public class DotSaturn
     }
 
     public static ulong GenerateSecurityCheck(uint compressedSize, uint decompressedSize)
-        => (ulong) compressedSize ^ (ulong) decompressedSize;
+        => compressedSize ^ (ulong) decompressedSize;
 
 
 }

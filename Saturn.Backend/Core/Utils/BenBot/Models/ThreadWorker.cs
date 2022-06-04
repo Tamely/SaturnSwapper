@@ -1,15 +1,15 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using CUE4Parse.Utils;
+﻿using CUE4Parse.Utils;
 using Saturn.Backend.Core.Enums;
 using Serilog;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Saturn.Backend.Core.Utils.BenBot.Models;
 
 public class ThreadWorker : ViewModel
 {
-    EStatusKind _status;
+    private EStatusKind _status;
 
     private bool _statusChangeAttempted;
     public bool StatusChangeAttempted

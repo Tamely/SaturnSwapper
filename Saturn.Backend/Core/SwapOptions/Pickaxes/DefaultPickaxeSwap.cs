@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using Saturn.Backend.Core.Enums;
+﻿using Saturn.Backend.Core.Enums;
 using Saturn.Backend.Core.Models.Items;
-using Saturn.Backend.Core.Services;
+using System.Collections.Generic;
 
 namespace Saturn.Backend.Core.SwapOptions.Pickaxes;
 
