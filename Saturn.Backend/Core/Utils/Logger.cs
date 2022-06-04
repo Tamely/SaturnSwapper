@@ -10,10 +10,10 @@ namespace Saturn.Backend.Core.Utils
 {
     public static class Logger
     {
-        private static TextWriter _writer;
+        private static readonly TextWriter _writer;
         public static List<string> WrittenText { get; set; } = new List<string>();
 
-        public static void Start()
+        static Logger()
         {
             if (File.Exists(Config.LogFile))
             {

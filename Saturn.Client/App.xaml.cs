@@ -28,7 +28,6 @@ namespace Saturn.Client
             if (!File.Exists(Config.OodlePath))
                 new WebClient().DownloadFile("https://cdn.discordapp.com/attachments/754879989614379042/926560284271870022/oo2core_5_win64.dll", Config.OodlePath);
 
-            Logger.Start();
             AppDomain.CurrentDomain.UnhandledException += (sender, error) =>
             {
                 Logger.Log("There was an error in the application.\n" + error.ExceptionObject);
