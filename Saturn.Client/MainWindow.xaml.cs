@@ -4,9 +4,9 @@ using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
-using Saturn.Backend.Data.Services;
+using Saturn.Backend.Core.Services;
 using MudBlazor.Services;
-using Saturn.Backend.Data.Utils;
+using Saturn.Backend.Core.Utils;
 
 
 namespace Saturn.Client

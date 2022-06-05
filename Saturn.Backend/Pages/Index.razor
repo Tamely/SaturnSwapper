@@ -9,21 +9,21 @@
 @using System.Net
 @using DiscordRPC
 @using System.Net.NetworkInformation
-@using Saturn.Backend.Data.Enums
-@using Saturn.Backend.Data.Models.FortniteAPI
-@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Core.Enums
+@using Saturn.Backend.Core.Models.FortniteAPI
+@using Saturn.Backend.Core.Services
 @using System.IO
-@using Saturn.Backend.Data.Models.Items
-@using Saturn.Backend.Data.Utils
+@using Saturn.Backend.Core.Models.Items
+@using Saturn.Backend.Core.Utils
 @using System.Diagnostics
 @using System.Globalization
 @using System.Runtime.ExceptionServices
 @using System.Text.RegularExpressions
 @using MudBlazor
 @using Newtonsoft.Json
-@using Saturn.Backend.Data.Models.SaturnAPI
-@using Saturn.Backend.Data.Utils.ReadPlugins
-@using Colors = Saturn.Backend.Data.Enums.Colors
+@using Saturn.Backend.Core.Models.SaturnAPI
+@using Saturn.Backend.Core.Utils.ReadPlugins
+@using Colors = Saturn.Backend.Core.Enums.Colors
 @using System.Windows
 @using System.Windows.Media
 @using Newtonsoft.Json.Linq
@@ -1414,7 +1414,7 @@
     /// </summary>
     private async Task ResetConfiguration()
     {
-        _configService.ConfigFile = new Saturn.Backend.Data.Models.Configuration(); // Reset the config file
+        _configService.ConfigFile = new Saturn.Backend.Core.Models.Configuration(); // Reset the config file
         _configService.SaveConfig(); // Save the config file
 
         ResetConfig = "Reset the swapper's config to default settings!"; // Set the reset config message
@@ -1453,7 +1453,7 @@
             if (File.Exists(Config.BasePath + "//" + "LobbyBackground.png"))
                 await RevertLobbyBG();
 
-            _configService.ConfigFile = new Saturn.Backend.Data.Models.Configuration(); // Reset the config
+            _configService.ConfigFile = new Saturn.Backend.Core.Models.Configuration(); // Reset the config
             _configService.SaveConfig(); // Save the config
 
             RemoveDuped = "Removed all duplicated files from Fortnite!"; // Set the message on the settings button
