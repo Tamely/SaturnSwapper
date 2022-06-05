@@ -10,6 +10,7 @@ namespace CUE4Parse.UE4.IO.Objects
         BeforeVersionWasAdded = -1, // Custom constant to indicate pre-UE5 data
         Initial = 0,
         LocalizedPackages = 1,
+        OptionalSegmentPackages = 2,
 
         LatestPlusOne,
         Latest = LatestPlusOne - 1
@@ -19,10 +20,11 @@ namespace CUE4Parse.UE4.IO.Objects
     {
         private const int Signature = 0x496f436e;
         public FIoContainerId ContainerId;
-        public uint PackageCount;
         public FNameEntrySerialized[]? ContainerNameMap;
         public FPackageId[] PackageIds;
         public FFilePackageStoreEntry[] StoreEntries;
+        public FPackageId[] OptionalSegmentPackageIds;
+        public uint[] OptionalSegmentStoreEntries;
 
         public FIoContainerHeader(FArchive Ar)
         {
@@ -39,7 +41,7 @@ namespace CUE4Parse.UE4.IO.Objects
             }
 
             ContainerId = Ar.Read<FIoContainerId>();
-            PackageCount = Ar.Read<uint>();
+            var packageCount = version < EIoContainerHeaderVersion.OptionalSegmentPackages ? Ar.Read<uint>() : 0;
             if (version == EIoContainerHeaderVersion.BeforeVersionWasAdded)
             {
                 var namesSize = Ar.Read<int>();
@@ -51,11 +53,20 @@ namespace CUE4Parse.UE4.IO.Objects
                 Ar.Position = continuePos;
             }
 
-            PackageIds = Ar.ReadArray<FPackageId>();
+            PackageIds = Ar.ReadArray<FPackageId>(); // < OptionalSegmentPackages ? Length = PackageCount (FN 20.0)
             var storeEntriesSize = Ar.Read<int>();
             var storeEntriesEnd = Ar.Position + storeEntriesSize;
-            StoreEntries = Ar.ReadArray((int) PackageCount, () => new FFilePackageStoreEntry(Ar));
+            StoreEntries = Ar.ReadArray(PackageIds.Length, () => new FFilePackageStoreEntry(Ar));
             Ar.Position = storeEntriesEnd;
+
+            if (version >= EIoContainerHeaderVersion.OptionalSegmentPackages)
+            {
+                OptionalSegmentPackageIds = Ar.ReadArray<FPackageId>();
+                var optionalSegmentStoreEntriesSize = Ar.Read<int>();
+                var optionalSegmentStoreEntriesEnd = Ar.Position + optionalSegmentStoreEntriesSize;
+                OptionalSegmentStoreEntries = Ar.ReadArray<uint>(OptionalSegmentPackageIds.Length);
+                Ar.Position = optionalSegmentStoreEntriesEnd;
+            }
             if (version >= EIoContainerHeaderVersion.Initial)
             {
                 ContainerNameMap = FNameEntrySerialized.LoadNameBatch(Ar); // Actual name is RedirectsNameMap
