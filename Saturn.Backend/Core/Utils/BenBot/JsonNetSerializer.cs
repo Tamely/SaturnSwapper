@@ -1,8 +1,8 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using RestSharp;
 using RestSharp.Serialization;
+using System;
 
 namespace Saturn.Backend.Core.Utils.BenBot;
 

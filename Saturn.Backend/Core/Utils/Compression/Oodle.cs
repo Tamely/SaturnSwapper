@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Saturn.Backend.Core.Enums;
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using Saturn.Backend.Core.Enums;
 
 namespace Saturn.Backend.Core.Utils.Compression;
 

@@ -1,5 +1,4 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Saturn.Backend.Core.Enums;
 using Saturn.Backend.Core.Models;
 using Saturn.Backend.Core.Models.Items;
