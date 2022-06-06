@@ -117,7 +117,7 @@ namespace Saturn.Client
 
         public MainWindow()
         {
-            Title = "Saturn Swapper - " + Constants.UserVersion;
+            Title = "Saturn Swapper - v" + Constants.UserVersion;
             
             var services = new ServiceCollection();
             services.AddBlazorWebView();
