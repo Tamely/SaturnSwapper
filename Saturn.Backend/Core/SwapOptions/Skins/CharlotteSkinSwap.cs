@@ -68,7 +68,7 @@ internal sealed class CharlotteSkinSwap: SkinSwap
             },
             new SaturnAsset()
             {
-                ParentAsset = "FortniteGame/Content/Characters/CharacterParts/Hats/CP_Hat_F_Commando_UglySweaterFrozen",
+                ParentAsset = "FortniteGame/Content/Characters/CharacterParts/FaceAccessories/CP_F_MED_PunkKoi_FaceAcc",
                 Swaps = new List<SaturnSwap>()
                 {
                     new SaturnSwap()
