@@ -100,6 +100,8 @@ public sealed class SwapperService : ISwapperService
         var keys = new List<KeyValuePair<FGuid, FAesKey>>();
         if (aes.MainKey != null)
             keys.Add(new(new FGuid(), new FAesKey(aes.MainKey)));
+        else
+            keys.Add(new(new FGuid(), new FAesKey("0000000000000000000000000000000000000000000000000000000000000000")));
         keys.AddRange(from x in aes.DynamicKeys
                       select new KeyValuePair<FGuid, FAesKey>(new FGuid(x.PakGuid), new FAesKey(x.Key)));
 
@@ -838,7 +840,7 @@ public sealed class SwapperService : ISwapperService
                 }
                 if (isDefault && asset.ParentAsset.Contains("DefaultGameDataCosmetics"))
                     data = new WebClient().DownloadData(
-                        "https://cdn.discordapp.com/attachments/754879989614379042/966517115920195624/DefaultGameDataCosmetics.uasset");
+                        "https://cdn.discordapp.com/attachments/754879989614379042/983189162444357642/test.uasset");
                 Logger.Log("Asset exported");
                 Logger.Log($"Starting backup of {Path.GetFileName(SaturnData.Path)}");
 

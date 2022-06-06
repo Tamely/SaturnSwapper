@@ -23,6 +23,7 @@ namespace CUE4Parse.UE4.Assets.Objects
     public abstract class FPropertyTagType<T> : FPropertyTagType
     {
         public T Value { get; protected set; }
+        public long Position { get; set; }
 
         public override object? GenericValue => Value;
 

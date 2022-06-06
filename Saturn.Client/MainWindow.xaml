@@ -6,7 +6,9 @@
         xmlns:BlazorTemplate="clr-namespace:Saturn.Backend;assembly=Saturn.Backend"
         xmlns:blazor="clr-namespace:Microsoft.AspNetCore.Components.WebView.Wpf;assembly=Microsoft.AspNetCore.Components.WebView.Wpf"
         mc:Ignorable="d"
-        Title="Saturn Swapper">
+        MinHeight="680"
+        MinWidth="1288"
+        SizeToContent="WidthAndHeight">
 
     <blazor:BlazorWebView HostPage="wwwroot\index.html" Services="{StaticResource services}" x:Name="blazorWebView">
         <blazor:BlazorWebView.RootComponents>

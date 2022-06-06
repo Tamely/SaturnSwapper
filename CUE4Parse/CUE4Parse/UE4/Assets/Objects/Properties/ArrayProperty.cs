@@ -9,6 +9,7 @@ namespace CUE4Parse.UE4.Assets.Objects
     {
         public ArrayProperty(FAssetArchive Ar, FPropertyTagData? tagData, ReadType type)
         {
+            Position = Ar.Position;
             Value = type switch
             {
                 ReadType.ZERO => new UScriptArray(tagData?.InnerType ?? "ZeroUnknown"),
@@ -21,6 +22,7 @@ namespace CUE4Parse.UE4.Assets.Objects
     {
         public override void WriteJson(JsonWriter writer, ArrayProperty value, JsonSerializer serializer)
         {
+            SaturnData.ChildArrayAssets.Add(value.Position, value);
             serializer.Serialize(writer, value.Value);
         }
 

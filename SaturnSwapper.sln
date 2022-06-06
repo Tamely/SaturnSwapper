@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CUE4Parse", "CUE4Parse\CUE4
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CUE4Parse-Conversion", "CUE4Parse\CUE4Parse-Conversion\CUE4Parse-Conversion.csproj", "{81FFA8A6-3D00-4D12-B618-F362C5D763C1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Saturn.GameData", "Saturn.GameData\Saturn.GameData.csproj", "{F22057E4-4849-497D-B6BC-0F986D782F62}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,14 @@ Global
 		{81FFA8A6-3D00-4D12-B618-F362C5D763C1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{81FFA8A6-3D00-4D12-B618-F362C5D763C1}.Release|x64.ActiveCfg = Release|Any CPU
 		{81FFA8A6-3D00-4D12-B618-F362C5D763C1}.Release|x64.Build.0 = Release|Any CPU
+		{F22057E4-4849-497D-B6BC-0F986D782F62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F22057E4-4849-497D-B6BC-0F986D782F62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F22057E4-4849-497D-B6BC-0F986D782F62}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F22057E4-4849-497D-B6BC-0F986D782F62}.Debug|x64.Build.0 = Debug|Any CPU
+		{F22057E4-4849-497D-B6BC-0F986D782F62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F22057E4-4849-497D-B6BC-0F986D782F62}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F22057E4-4849-497D-B6BC-0F986D782F62}.Release|x64.ActiveCfg = Release|Any CPU
+		{F22057E4-4849-497D-B6BC-0F986D782F62}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
