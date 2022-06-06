@@ -17,7 +17,7 @@ internal sealed class TheImaginedBladePickaxeSwap : PickaxeSwap
         {
             new SaturnAsset()
             {
-                ParentAsset = "FortniteGame/Content/Athena/Items/Weapons/WID_Harvest_Pickaxe_AntiqueMale",
+                ParentAsset = "FortniteGame/Content/Athena/Items/Weapons/WID_Harvest_Pickaxe_BinaryFemale",
                 Swaps = new List<SaturnSwap>()
                 {
                     new SaturnSwap()
