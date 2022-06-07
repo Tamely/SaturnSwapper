@@ -191,6 +191,15 @@ public class AddSkins
                 "https://fortnite-api.com/images/cosmetics/br/CID_A_210_Athena_Commando_F_RenegadeSkull/smallicon.png",
             Rarity = "Rare"
         },
+        new SaturnItem
+        {
+            ItemDefinition = "CID_044_Athena_Commando_F_SciPop",
+            Name = "Brite Bomber",
+            Description = "The future looks bright...",
+            Icon =
+                "https://fortnite-api.com/images/cosmetics/br/CID_044_Athena_Commando_F_SciPop/smallicon.png",
+            Rarity = "Rare"
+        },
     };
 
 
