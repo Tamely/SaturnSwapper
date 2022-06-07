@@ -1382,6 +1382,10 @@ public sealed class SwapperService : ISwapperService
                                                                                  item.Rarity.BackendValue,
                                                                                  item.Images.SmallIcon,
                                                                                  option.SwapModel).ToSaturnOption(),
+            "CID_044_Athena_Commando_F_SciPop" => new BriteBomberSkinSwap(item.Name,
+                                                                          item.Rarity.BackendValue,
+                                                                          item.Images.SmallIcon,
+                                                                          option.SwapModel).ToSaturnOption(),
             _ => new SaturnOption()
         };
     }
