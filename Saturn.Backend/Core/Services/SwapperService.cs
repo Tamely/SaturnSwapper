@@ -741,7 +741,6 @@ public sealed class SwapperService : ISwapperService
         }
     }
     
-
     public async Task<bool> Convert(Cosmetic item, SaturnItem option, ItemType itemType, bool isDefault = false, bool isRandom = false, Cosmetic random = null)
     {
         try
@@ -755,29 +754,39 @@ public sealed class SwapperService : ISwapperService
             else
                 await ItemUtil.UpdateStatus(item, option, "Starting...");
 
-            ConvertedItem convItem = new();
+            ConvertedItem convItem = new()
+            {
+                Item = item,
+                Option = option,
+                FromName = option.Name,
+                ItemType = itemType,
+                IsDefault = isDefault,
+                IsRandom = isRandom,
+                Random = random,
+                Name = item.Name,
+                ItemDefinition = item.Id,
+                Type = itemType.ToString(),
+                Swaps = new List<ActiveSwap>()
+            };
 
             if (isRandom)
             {
                 convItem = new ConvertedItem()
                 {
+                    Item = item,
+                    Option = option,
+                    FromName = option.Name,
+                    ItemType = itemType,
+                    IsDefault = isDefault,
+                    IsRandom = isRandom,
+                    Random = random,
                     Name = item.Name,
                     ItemDefinition = random.Id,
                     Type = itemType.ToString(),
                     Swaps = new List<ActiveSwap>()
                 };
             }
-            else
-            {
-                convItem = new ConvertedItem()
-                {
-                    Name = item.Name,
-                    ItemDefinition = item.Id,
-                    Type = itemType.ToString(),
-                    Swaps = new List<ActiveSwap>()
-                };
-            }
-            
+
             if (isRandom)
                 await ItemUtil.UpdateStatus(random, option, "Checking item type");
             else

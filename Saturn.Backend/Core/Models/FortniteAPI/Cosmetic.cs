@@ -82,27 +82,21 @@ namespace Saturn.Backend.Core.Models.FortniteAPI
     {
         [JsonProperty("streamImage")] public MemoryStream? StreamImage { get; set; }
         [JsonProperty("id")] public string Id { get; set; }
-
         [JsonProperty("name")] public string Name { get; set; }
-
         [JsonProperty("description")] public string Description { get; set; }
 
         [JsonProperty("type")] public Type Type { get; set; }
-
         [JsonProperty("rarity")] public Rarity Rarity { get; set; }
-
         [JsonProperty("series")] public Series? Series { get; set; }
 
         [JsonProperty("set")] public Set Set { get; set; }
 
         [JsonProperty("introduction")] public object Introduction { get; set; }
-
         [JsonProperty("images")] public Images Images { get; set; }
 
         [JsonProperty("variants")] public List<Variants>? Variants { get; set; }
 
         [JsonProperty("searchTags")] public object SearchTags { get; set; }
-
         [JsonProperty("gameplayTags")] public List<string> GameplayTags { get; set; }
 
         [JsonProperty("metaTags")] public object MetaTags { get; set; }
@@ -120,9 +114,7 @@ namespace Saturn.Backend.Core.Models.FortniteAPI
         [JsonProperty("added")] public DateTime Added { get; set; }
 
         [JsonProperty("shopHistory")] public List<DateTime> ShopHistory { get; set; }
-
         [JsonProperty("isConverted")] public bool IsConverted { get; set; }
-
         [JsonProperty("printColor")] public Colors PrintColor { get; set; } = Colors.C_WHITE;
         [JsonProperty("isPickingStyles")] public bool IsPickingStyles { get; set; } = false;
         [JsonProperty("hatType")] public HatTypes HatTypes { get; set; } = HatTypes.HT_FaceACC;
