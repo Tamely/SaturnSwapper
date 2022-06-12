@@ -7,6 +7,5 @@
         IT_Pickaxe = 2,
         IT_Dance = 3,
         IT_Misc = 4,
-        IT_Presets = 5,
     }
 }

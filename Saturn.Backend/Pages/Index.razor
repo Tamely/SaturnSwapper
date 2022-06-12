@@ -92,10 +92,6 @@
                         <img src="img/UI/extra.png" alt="">
                         <h2>Misc</h2>
                     </div>
-                    <div class="option" @onclick=@(async() => await GetSaturnPresets())>
-                        <img src="img/UI/presets.png" alt="">
-                        <h2>Presets</h2>
-                    </div>
                     <div class="option" @onclick=@(async() => await GoToSettings())>
                         <img src="img/UI/settings.png" alt="">
                         <h2>Settings</h2>
@@ -330,7 +326,13 @@
                                 <p style="color:white; font-size: @GetTextSize("Be able to use your own swaps.")">Be able to use your own swaps.</p>
                             </div>
                         </div>
-                        
+                        <div class="card" @onclick=@(async() => await GetSaturnPresets())>
+                            <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                            <div class="card-info">
+                                <h2 style="font-size: @GetTextSize("Presets", true);">Presets</h2>
+                                <p style="color:white; font-size: @GetTextSize("Be able to save your swaps.")">Be able to save your swaps.</p>
+                            </div>
+                        </div>
                         <div class="card" @onclick=@(() => _saturnState = SaturnState.S_LobbyPick)>
                             <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                             <div class="card-info">
@@ -1563,7 +1565,7 @@
                 throw new ArgumentOutOfRangeException("How tf did you select a search type that doesn't exist?"); // Throw an exception
         }
 
-
+        await ChunkCosmetics();
     }
 
     /// <summary>
@@ -1776,6 +1778,14 @@
     {
         _saturnState = SaturnState.S_Loading; // Set the screens state to loading
         _items = await callback(); // Await the callback
+        await ChunkCosmetics();
+        _backupItems = new List<Cosmetic>(_items); // Creates a backup of the list (used for searching)
+        currentType = type; // Sets the current type of item to the type passed in
+        _saturnState = SaturnState.S_Items; // Sets the screens state to items
+    }
+
+    private async Task ChunkCosmetics()
+    {
         _tabs = new List<List<Cosmetic>>(); // Create a new list of tabs
         _tabCount = _items.Count / 150; // Calculate the number of pages
         var remaining = _items.Count % 150; // Calculate the number of items on the last page
@@ -1800,10 +1810,6 @@
             
             _tabs.Add(tabItems); // Add the list to the tabs
         }
-        
-        _backupItems = new List<Cosmetic>(_items); // Creates a backup of the list (used for searching)
-        currentType = type; // Sets the current type of item to the type passed in
-        _saturnState = SaturnState.S_Items; // Sets the screens state to items
     }
 
     /// <summary>
@@ -1843,7 +1849,6 @@
             _presetsLoaded = true;
         }
         
-        currentType = ItemType.IT_Presets;
         _saturnState = SaturnState.S_PresetsMain;
     }
 
