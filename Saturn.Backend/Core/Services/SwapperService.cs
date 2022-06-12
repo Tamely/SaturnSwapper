@@ -168,7 +168,7 @@ public sealed class SwapperService : ISwapperService
         }
         
         if (isOption)
-            skins.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
+            skins.RemoveAll(x => x.Id.Length > Index.CurrentSkin.Id.Length);
 
         _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
 
@@ -257,7 +257,7 @@ public sealed class SwapperService : ISwapperService
         }
         
         if (isOption)
-            backblings.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
+            backblings.RemoveAll(x => x.Id.Length > Index.CurrentSkin.Id.Length);
 
         _discordRPCService.UpdatePresence($"Looking at {backblings.Count} different backblings");
 
@@ -326,7 +326,7 @@ public sealed class SwapperService : ISwapperService
         }
         
         if (isOption)
-            pickaxes.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
+            pickaxes.RemoveAll(x => x.Id.Length > Index.CurrentSkin.Id.Length);
 
         _discordRPCService.UpdatePresence($"Looking at {pickaxes.Count} different pickaxes");
 
@@ -395,7 +395,7 @@ public sealed class SwapperService : ISwapperService
         }
         
         if (isOption)
-            emotes.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
+            emotes.RemoveAll(x => x.Id.Length > Index.CurrentSkin.Id.Length);
 
         _discordRPCService.UpdatePresence($"Looking at {emotes.Count} different emotes");
 
