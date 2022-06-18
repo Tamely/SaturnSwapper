@@ -140,6 +140,14 @@ main {
         );
     }
     
+    .textbox {
+        background: linear-gradient(
+                to right bottom,
+                rgba(255, 255, 255, 0.7),
+                rgba(255, 255, 255, 0.3)
+        );
+    }
+    
     .key {
         background: linear-gradient(
                 to right bottom,
@@ -208,6 +216,14 @@ main {
     }
 
     .iteminput {
+        background: linear-gradient(
+                to right bottom,
+                rgba(255, 255, 255, 0.7),
+                rgba(255, 255, 255, 0.3)
+        );
+    }
+    
+    .textbox {
         background: linear-gradient(
                 to right bottom,
                 rgba(255, 255, 255, 0.7),
@@ -283,6 +299,14 @@ main {
     }
 
     .iteminput {
+        background: linear-gradient(
+                to right bottom,
+                rgba(0, 0, 0, 0.7),
+                rgba(0, 0, 0, 0.3)
+        );
+    }
+    
+    .textbox {
         background: linear-gradient(
                 to right bottom,
                 rgba(0, 0, 0, 0.7),
@@ -386,6 +410,15 @@ main {
     border-radius: 2vh;
     position: absolute;
     margin-top: -35%;
+}
+
+.textbox {
+    border: none;
+    width: 30%;
+    border-radius: 2vh;
+    font-size: 23px;
+    text-indent: 10px;
+    margin-left: 10px;
 }
 
 .dropdown {

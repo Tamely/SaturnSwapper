@@ -168,7 +168,7 @@ public sealed class SwapperService : ISwapperService
         }
         
         if (isOption)
-            skins.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
+            skins.RemoveAll(x => x.Id.Length > Index.CurrentSkin.Id.Length);
 
         _discordRPCService.UpdatePresence($"Looking at {skins.Count} different skins");
 
@@ -257,7 +257,7 @@ public sealed class SwapperService : ISwapperService
         }
         
         if (isOption)
-            backblings.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
+            backblings.RemoveAll(x => x.Id.Length > Index.CurrentSkin.Id.Length);
 
         _discordRPCService.UpdatePresence($"Looking at {backblings.Count} different backblings");
 
@@ -326,7 +326,7 @@ public sealed class SwapperService : ISwapperService
         }
         
         if (isOption)
-            pickaxes.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
+            pickaxes.RemoveAll(x => x.Id.Length > Index.CurrentSkin.Id.Length);
 
         _discordRPCService.UpdatePresence($"Looking at {pickaxes.Count} different pickaxes");
 
@@ -395,7 +395,7 @@ public sealed class SwapperService : ISwapperService
         }
         
         if (isOption)
-            emotes.RemoveAll(x => x.Id.Length > Index.currentSkin.Id.Length);
+            emotes.RemoveAll(x => x.Id.Length > Index.CurrentSkin.Id.Length);
 
         _discordRPCService.UpdatePresence($"Looking at {emotes.Count} different emotes");
 
@@ -741,7 +741,6 @@ public sealed class SwapperService : ISwapperService
         }
     }
     
-
     public async Task<bool> Convert(Cosmetic item, SaturnItem option, ItemType itemType, bool isDefault = false, bool isRandom = false, Cosmetic random = null)
     {
         try
@@ -755,29 +754,39 @@ public sealed class SwapperService : ISwapperService
             else
                 await ItemUtil.UpdateStatus(item, option, "Starting...");
 
-            ConvertedItem convItem = new();
+            ConvertedItem convItem = new()
+            {
+                Item = item,
+                Option = option,
+                FromName = option.Name,
+                ItemType = itemType,
+                IsDefault = isDefault,
+                IsRandom = isRandom,
+                Random = random,
+                Name = item.Name,
+                ItemDefinition = item.Id,
+                Type = itemType.ToString(),
+                Swaps = new List<ActiveSwap>()
+            };
 
             if (isRandom)
             {
                 convItem = new ConvertedItem()
                 {
+                    Item = item,
+                    Option = option,
+                    FromName = option.Name,
+                    ItemType = itemType,
+                    IsDefault = isDefault,
+                    IsRandom = isRandom,
+                    Random = random,
                     Name = item.Name,
                     ItemDefinition = random.Id,
                     Type = itemType.ToString(),
                     Swaps = new List<ActiveSwap>()
                 };
             }
-            else
-            {
-                convItem = new ConvertedItem()
-                {
-                    Name = item.Name,
-                    ItemDefinition = item.Id,
-                    Type = itemType.ToString(),
-                    Swaps = new List<ActiveSwap>()
-                };
-            }
-            
+
             if (isRandom)
                 await ItemUtil.UpdateStatus(random, option, "Checking item type");
             else
