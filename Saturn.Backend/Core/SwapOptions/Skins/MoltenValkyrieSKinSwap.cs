@@ -163,7 +163,7 @@ internal sealed class MoltenValkyrieSkinSwap : SkinSwap
                     new SaturnSwap()
                     {
                         Search = System.Convert.ToBase64String(new byte[] { 4, 3, 1, 2, 2 }),
-                        Replace = System.Convert.ToBase64String(new byte[] { 4, 3, 1, 2, (byte)SwapModel.HatType }),
+                        Replace = System.Convert.ToBase64String(new byte[] { 4, 3, 1, (byte)SwapModel.HatType, 2 }),
                         Type = SwapType.Property
                     },
                     new SaturnSwap()

@@ -527,13 +527,6 @@
                                 </div>
                             </div>
                         }
-                        @*<div>
-                            @foreach (var item in CurrentPreset.Items)
-                            {
-                                var info = $"{item.ToName} to {item.FromName}";
-                                <h3>@info</h3>
-                            }
-                        </div>*@
                     </div>
                 }
                 else if (_saturnState == SaturnState.S_Presets)
@@ -1731,7 +1724,7 @@
                 Logger.Log("Presets folder found! Setting data...");
                 foreach (var file in Directory.EnumerateFiles(Config.PresetsPath))
                 {
-                    var contents = File.ReadAllText(file);
+                    var contents = await File.ReadAllTextAsync(file);
                     var preset = JsonConvert.DeserializeObject<Preset>(contents);
                     Logger.Log("Deserialized preset: " + preset.Name);
                     foreach (var item in preset.Items)
@@ -1818,6 +1811,7 @@
     private async Task GetSaturnSkins()
     {
         await GetSaturnCosmetic(ItemType.IT_Skin, async () => await _swapperService.GetSaturnSkins());
+        _tabIndex = 0;
     }
 
     private async Task GetSaturnMisc()
@@ -1834,6 +1828,7 @@
         }
 
         _items = await _fortniteAPIService.AreItemsConverted(_items);
+        _tabIndex = 0;
         
         _backupItems = new List<Cosmetic>(_items);
         currentType = ItemType.IT_Misc;
@@ -1858,6 +1853,7 @@
     private async Task GetSaturnBackblings()
     {
         await GetSaturnCosmetic(ItemType.IT_Skin, async () => await _swapperService.GetSaturnBackblings());
+        _tabIndex = 0;
     }
 
     /// <summary>
@@ -1866,6 +1862,7 @@
     private async Task GetSaturnEmotes()
     {
         await GetSaturnCosmetic(ItemType.IT_Skin, async () => await _swapperService.GetSaturnEmotes());
+        _tabIndex = 0;
     }
     
     /// <summary>
@@ -1874,6 +1871,7 @@
     private async Task GetSaturnPickaxes()
     {
         await GetSaturnCosmetic(ItemType.IT_Skin, async () => await _swapperService.GetSaturnPickaxes());
+        _tabIndex = 0;
     }
 
     /// <summary>
@@ -1888,7 +1886,7 @@
         foreach (var cacheFile in JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(JsonConvert.SerializeObject(JObject.Parse(File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "//FortniteGame/Saved/PersistentDownloadDir/CMS/DownloadCache.json"))["cache"])).Values)
         {
             // If the cache file is a lobby background
-            if (!cacheFile["sourceUrl"].Contains("landscapev4") && !cacheFile["sourceUrl"].Contains("lobby")) continue;
+            if (!cacheFile["sourceUrl"].Contains("background") && !cacheFile["sourceUrl"].Contains("lobby")) continue;
 
             // Set the file path to the cache file
             filePath = cacheFile["filePath"].ToString();
