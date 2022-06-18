@@ -28,7 +28,7 @@ internal sealed class ChopChopSwap : PickaxeSwap
                     new SaturnSwap()
                     {
                         Search =
-                            "/Game/UI/Foundation/Textures/Icons/Weapons/Items/T-Icon-Pickaxes-AnitquePickaxe-L.T-Icon-Pickaxes-AnitquePickaxe-L",
+                            "/Game/UI/Foundation/Textures/Icons/Weapons/Items/T-Icon-Pickaxes-AnitquePickaxe.T-Icon-Pickaxes-AnitquePickaxe",
                         Replace = Swaps["SmallIcon"],
                         Type = SwapType.SmallIcon
                     },
