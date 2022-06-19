@@ -1243,7 +1243,7 @@
 
         var stackTrace = "\n" + e.Exception.ToString().Split("--- ")[0]; // Get the stack trace.
 
-        if (stackTrace.Contains("System.ComponentModel.Win32Exception") || stackTrace.Contains("System.Net.Sockets.SocketException") || stackTrace.Contains("System.ArgumentNullException") || stackTrace.Contains("System.TimeoutException")) // This literally does not matter
+        if (stackTrace.Contains("System.ComponentModel.Win32Exception") || stackTrace.Contains("System.Net.Sockets.SocketException") || stackTrace.Contains("System.ArgumentNullException") || stackTrace.Contains("System.TimeoutException") || stackTrace.Contains("System.Threading.Tasks.TaskCanceledException")) // These literally do not matter
             return; // Ignore it
 
         Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.
