@@ -159,8 +159,10 @@
                                         <img class="base" src="img/Rarity/@(item.Rarity.Value.ToLower()).png" alt=""/>
                                     }
                                     
-                                    <img class="icon" src="@item.Images.SmallIcon" alt=""/>
-                                    <img class="icon" src="@item.Images.SmallIcon" alt=""/>
+                                    @if (_showIcons)
+                                    {
+                                        <img class="icon" src="@item.Images.SmallIcon" alt=""/>
+                                    }
                                     <div class="card-info">
                                         @if (item.IsConverted)
                                         {
@@ -200,7 +202,11 @@
                                     {
                                         <img class="base" src="img/Rarity/@(item.Rarity.Value.ToLower()).png" alt=""/>
                                     }
-                                    <img class="icon" src="@item.Images.SmallIcon" alt=""/>
+                                    
+                                    @if (_showIcons)
+                                    {
+                                        <img class="icon" src="@item.Images.SmallIcon" alt=""/>
+                                    }
                                     <div class="card-info">
                                         @if (item.IsConverted)
                                         {
@@ -240,7 +246,10 @@
                                                 <img class="base" src="img/Rarity/@(option.Rarity.ToLower()).png" alt=""/>
                                             }
 
-                                            <img class="icon" src="@option.Icon" alt=""/>
+                                            @if (_showIcons)
+                                            {
+                                                <img class="icon" src="@option.Icon" alt=""/>
+                                            }
                                             <div class="card-info">
                                                 @if (option.IsConverted)
                                                 {
@@ -710,6 +719,22 @@
                                 <p style="color:white; font-size: @GetTextSize("Deletes all Saturn files");">Deletes all Saturn files</p>
                             </div>
                         </div>
+                        
+                        <div class="card" @onclick=@(async () => await ToggleIcons())>
+                            <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                            <div class="card-info">
+                                <h2 style="font-size: @GetTextSize("Toggle Fortnite Icons", true);">Toggle Fortnite Icons</h2>
+                                @switch (_toggleIconsColor)
+                                {
+                                    case Colors.C_WHITE:
+                                        <p style="color:white; font-size: @GetTextSize(_toggleIcons);">@_toggleIcons</p>
+                                        break;
+                                    case Colors.C_GREEN:
+                                        <p style="color:green; font-size: @GetTextSize(_toggleIcons);">@_toggleIcons</p>
+                                        break;
+                                }
+                            </div>
+                        </div>
                     </div>
                 }
                 else if (_saturnState == SaturnState.S_LobbyPick)
@@ -850,6 +875,8 @@
     private int _tabIndex;
     private int _tabCount;
 
+    private bool _showIcons = true;
+
     private Dictionary<string, Preset> _presets = new Dictionary<string, Preset>();
     private List<PresetItem> _convertedItems = new List<PresetItem>();
     private Preset _currentPreset = null;
@@ -872,6 +899,9 @@
 
     private string _openLogFile = "This will open the log file that correlates to the current swapper session.";
     private Colors _openLogColor = Colors.C_WHITE;
+
+    private string _toggleIcons = "This will toggle the icons owned by Epic Games on and off.";
+    private Colors _toggleIconsColor = Colors.C_WHITE;
     
     private string _showStyles = "";
 
@@ -881,6 +911,17 @@
     private SaturnItem _currentOption;
 
     private SearchType _searchType = SearchType.ST_Name;
+
+    private async Task ToggleIcons()
+    {
+        _showIcons = !_showIcons;
+        _toggleIconsColor = Colors.C_GREEN;
+        _toggleIcons = $"Successfully changed value to {_showIcons}!";
+
+        await Task.Delay(2000);
+        _toggleIcons = "This will toggle the icons owned by Epic Games on and off.";
+        _toggleIconsColor = Colors.C_WHITE;
+    }
 
     /// <summary>
     /// Uninstalls saturn
