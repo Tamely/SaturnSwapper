@@ -1013,10 +1013,18 @@
         Directory.CreateDirectory(Config.PresetsPath); // Create the preset folder if it doesn't exist
         foreach (var file in Directory.EnumerateFiles(Config.PresetsPath))
         {
-            var contents = File.ReadAllText(file); // Read the file
-            var preset = JsonConvert.DeserializeObject<Preset>(contents); // Deserialize the json
-            presets.Add(preset.Name, preset); // Add the preset to the list
-            Logger.Log($"Loaded preset {preset.Name}"); // Log the preset
+            try
+            {
+                var contents = File.ReadAllText(file); // Read the file
+                var preset = JsonConvert.DeserializeObject<Preset>(contents); // Deserialize the json
+                presets.Add(preset.Name, preset); // Add the preset to the list
+                Logger.Log($"Loaded preset {preset.Name}"); // Log the preset
+            }
+            catch (Exception e)
+            {
+                Logger.Log($"Could not load preset {file} due to error: {e.ToString()}");
+            }
+
         }
         
         _presets = presets; // Set the presets
