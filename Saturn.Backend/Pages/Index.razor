@@ -158,7 +158,7 @@
                                     {
                                         <img class="base" src="img/Rarity/@(item.Rarity.Value.ToLower()).png" alt=""/>
                                     }
-                                    
+
                                     @if (_showIcons)
                                     {
                                         <img class="icon" src="@item.Images.SmallIcon" alt=""/>
@@ -202,7 +202,7 @@
                                     {
                                         <img class="base" src="img/Rarity/@(item.Rarity.Value.ToLower()).png" alt=""/>
                                     }
-                                    
+
                                     @if (_showIcons)
                                     {
                                         <img class="icon" src="@item.Images.SmallIcon" alt=""/>
@@ -283,6 +283,16 @@
                                 </div>
                             }
                         }
+                        @if (_items.Count == 0)
+                        {
+                            <div class="card">
+                                <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                                <div class="card-info">
+                                    <h2 style="font-size: @GetTextSize("There are no items to display!", true);">There are no items to display!</h2>
+                                    <p style="color:white; font-size: @GetTextSize("Assuming you searched to get to this, make sure you typed the cosmetic's name right.")">Assuming you searched to get to this, make sure you typed the cosmetic's name right.</p>
+                                </div>
+                            </div>
+                        }
                         @if (_tabIndex > 0)
                         {
                             <div class="card" @onclick=@(() => { _tabIndex--; _saturnState = SaturnState.S_Items; })>
@@ -293,7 +303,7 @@
                                 </div>
                             </div>
                         }
-                        @if (_tabIndex < _tabCount)
+                        @if (_tabIndex < _tabCount && _items.Count > 0)
                         {
                             <div class="card" @onclick=@(() => { _tabIndex++; _saturnState = SaturnState.S_Items; })>
                                 <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
@@ -1243,7 +1253,7 @@
 
         var stackTrace = "\n" + e.Exception.ToString().Split("--- ")[0]; // Get the stack trace.
 
-        if (stackTrace.Contains("System.ComponentModel.Win32Exception") || stackTrace.Contains("System.Net.Sockets.SocketException") || stackTrace.Contains("System.ArgumentNullException") || stackTrace.Contains("System.TimeoutException") || stackTrace.Contains("System.Threading.Tasks.TaskCanceledException")) // These literally do not matter
+        if (stackTrace.Contains("System.ComponentModel.Win32Exception") || stackTrace.Contains("System.Net.Sockets.SocketException") || stackTrace.Contains("System.ArgumentNullException") || stackTrace.Contains("System.TimeoutException") || stackTrace.Contains("System.Threading.Tasks.TaskCanceledException") || stackTrace.Contains("System.NullReferenceException")) // These literally do not matter
             return; // Ignore it
 
         Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.
@@ -1544,6 +1554,7 @@
     /// <param name="input">The search input</param>
     private async Task FilterItems(string input)
     {
+        _tabIndex = 0;
         _items = new List<Cosmetic>(_backupItems); // Sets the items to the backup items
 
         _searchType = (SearchType) await _jsRuntime.InvokeAsync<int>("GetSelectedElement"); // Gets the selected search type
@@ -1821,6 +1832,13 @@
     private async Task ChunkCosmetics()
     {
         _tabs = new List<List<Cosmetic>>(); // Create a new list of tabs
+        
+        if (_items.Count == 0) // If there are no items that match the results
+        {
+            _tabs.Add(new List<Cosmetic>()); // Add nothing to the list
+            return; // Return nothing
+        }
+        
         _tabCount = _items.Count / 150; // Calculate the number of pages
         var remaining = _items.Count % 150; // Calculate the number of items on the last page
         for (int i = 0; i < _tabCount; i++)
@@ -1893,7 +1911,7 @@
     /// </summary>
     private async Task GetSaturnBackblings()
     {
-        await GetSaturnCosmetic(ItemType.IT_Skin, async () => await _swapperService.GetSaturnBackblings());
+        await GetSaturnCosmetic(ItemType.IT_Backbling, async () => await _swapperService.GetSaturnBackblings());
         _tabIndex = 0;
     }
 
@@ -1902,7 +1920,7 @@
     /// </summary>
     private async Task GetSaturnEmotes()
     {
-        await GetSaturnCosmetic(ItemType.IT_Skin, async () => await _swapperService.GetSaturnEmotes());
+        await GetSaturnCosmetic(ItemType.IT_Dance, async () => await _swapperService.GetSaturnEmotes());
         _tabIndex = 0;
     }
     
@@ -1911,7 +1929,7 @@
     /// </summary>
     private async Task GetSaturnPickaxes()
     {
-        await GetSaturnCosmetic(ItemType.IT_Skin, async () => await _swapperService.GetSaturnPickaxes());
+        await GetSaturnCosmetic(ItemType.IT_Pickaxe, async () => await _swapperService.GetSaturnPickaxes());
         _tabIndex = 0;
     }
 

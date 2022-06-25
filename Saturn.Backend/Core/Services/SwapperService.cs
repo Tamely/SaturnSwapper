@@ -513,7 +513,7 @@ public sealed class SwapperService : ISwapperService
                         return;
                     }
                 }
-                else if (!await Convert(item, option, itemType, false))
+                else if (!await Convert(item, option, itemType))
                 {
                     await ItemUtil.UpdateStatus(item, option,
                         $"There was an error converting {item.Name}!",
@@ -801,9 +801,7 @@ public sealed class SwapperService : ISwapperService
 
             SaturnOption itemSwap = new();
             if (isDefault)
-            {
                 itemSwap = await GenerateDefaultSkins(item);
-            }
             else if (option.Options != null)
                 itemSwap = option.Options[0];
             else
@@ -815,19 +813,6 @@ public sealed class SwapperService : ISwapperService
                     ItemType.IT_Backbling => await GenerateMeshBackbling(item, option),
                     _ => new()
                 };
-
-            try
-            {
-                var changes = _cloudStorageService.GetChanges(option.ItemDefinition, item.Id);
-                cloudChanges = _cloudStorageService.DecodeChanges(changes);
-
-                // Really shouldn't be a list but I'm too lazy to change it right now
-                itemSwap.Assets = option.Options[0].Assets;
-            }
-            catch
-            {
-                Logger.Log("There was no hotfix found for this item!", LogLevel.Warning);
-            }
 
             if (item.IsCloudAdded)
                 itemSwap = option.Options[0];
