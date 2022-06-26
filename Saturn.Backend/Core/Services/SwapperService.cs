@@ -941,6 +941,11 @@ public sealed class SwapperService : ISwapperService
                     $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
             Trace.WriteLine($"Converted in {sw.Elapsed.Seconds} seconds!");
             Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
+
+            if (await _configService.GetConvertedFileCount() > 2)
+                await _jsRuntime.InvokeVoidAsync("MessageBox",
+                    "You have more than 2 converted files. This will cause Fortnite to kick you from your game",
+                               "If you are not intending on being kicked from your games, revert the last thing you swapped as your currently swapped items cannot be combined with each other.");
             
             return true;
         }

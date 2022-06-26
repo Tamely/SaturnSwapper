@@ -111,7 +111,6 @@ public class AddPickaxes
             Rarity = "Epic",
             Series = "ShadowSeries"
         },
-        /*
         new SaturnItem
         {
             ItemDefinition = "DefaultPickaxe",
@@ -120,7 +119,7 @@ public class AddPickaxes
             Icon =
                 "https://fortnite-api.com/images/cosmetics/br/defaultpickaxe/smallicon.png",
             Rarity = "Common"
-        },*/
+        },
         new SaturnItem
         {
             ItemDefinition = "Pickaxe_ID_713_GumballMale",
