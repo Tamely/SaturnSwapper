@@ -1,4 +1,5 @@
-﻿using CUE4Parse.FileProvider;
+﻿using System;
+using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
 using Microsoft.JSInterop;
 using Saturn.Backend.Core.Enums;
@@ -62,11 +63,24 @@ namespace Saturn.Backend.Core
                     {
                         Logger.Log("Local mappings folder doesn't contain mappings! Downloading them from Discord!", LogLevel.Warning);
                         var mappingPath = Path.Combine(Config.MappingsFolder, "++" + FileUtil.SubstringFromLast(Config.MappingsURL, '/'));
-                        new WebClient().DownloadFile(Config.MappingsURL, mappingPath);
+                        new WebClient().DownloadFile(Config.MappingsURL, mappingPath.Replace("FortniteRelease", "Fortnite+Release"));
                         latestUsmaps = new DirectoryInfo(Config.MappingsFolder).GetFiles("*_oo.usmap");
                     }
 
                     var latestUsmapInfo = latestUsmaps.OrderBy(f => f.LastWriteTime).Last();
+
+                    if (latestUsmapInfo.LastWriteTime.AddDays(14) < DateTime.Now)
+                    {
+                        Logger.Log(
+                            "Local mappings folder contains very outdated mappings, downloading new ones from Discord!",
+                            LogLevel.Warning);
+                        var mappingPath = Path.Combine(Config.MappingsFolder, "++" + FileUtil.SubstringFromLast(Config.MappingsURL, '/'));
+                        new WebClient().DownloadFile(Config.MappingsURL, mappingPath.Replace("FortniteRelease", "Fortnite+Release"));
+                        latestUsmaps = new DirectoryInfo(Config.MappingsFolder).GetFiles("*_oo.usmap");
+                    }
+                    
+                    latestUsmapInfo = latestUsmaps.OrderBy(f => f.LastWriteTime).Last();
+                    
                     _provider.MappingsContainer = new FileUsmapTypeMappingsProvider(latestUsmapInfo.FullName);
                     Logger.Log($"Mappings pulled from '{latestUsmapInfo.Name}'", LogLevel.Warning);
                 }
