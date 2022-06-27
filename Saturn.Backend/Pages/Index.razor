@@ -1090,8 +1090,6 @@
 
     private async Task GoToLobbyCosmetics(ItemType type)
     {
-        if (_halted) return;
-        _halted = true;
         currentType = type;
         _saturnState = SaturnState.S_Loading;
 
