@@ -279,11 +279,8 @@ public class AddBackblings
                 : uobj.GetPathName();
 
             if (OGCP == "ERROR")
-            {
-                await _jsRuntime.InvokeVoidAsync("MessageBox", "There was an error getting the backbling option " + option.Name, "Could not get the character part for this option. This might mean your files are corrupt!");
                 throw new Exception("Couldn't get character part for backbling option " + option.Name);
-            }
-            
+
             Dictionary<string, string> OGSwaps = await GetAssetsFromCP(OGCP, _provider);
 
             bool bDontProceed = false;

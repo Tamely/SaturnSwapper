@@ -123,6 +123,7 @@ namespace Saturn.Client
             services.AddBlazorWebView();
 
             services.AddScoped<IConfigService, ConfigService>();
+            services.AddScoped<INotificationService, NotificationService>();
             
             // NEEDS TO BE BEFORE FORTNITEAPI
             services.AddScoped<ICloudStorageService, CloudStorageService>();

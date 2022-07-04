@@ -59,6 +59,7 @@ public interface ISwapperService
 
 public sealed class SwapperService : ISwapperService
 {
+    private readonly INotificationService _notificationService;
     private readonly IConfigService _configService;
     private readonly IFortniteAPIService _fortniteAPIService;
     private readonly IDiscordRPCService _discordRPCService;
@@ -72,8 +73,10 @@ public sealed class SwapperService : ISwapperService
     private readonly DefaultFileProvider _provider;
 
     public SwapperService(IFortniteAPIService fortniteAPIService, ISaturnAPIService saturnAPIService,
-        IConfigService configService, ICloudStorageService cloudStorageService, IJSRuntime jsRuntime, IBenBotAPIService benBotApiService, IDiscordRPCService discordRPCService)
+        IConfigService configService, ICloudStorageService cloudStorageService, IJSRuntime jsRuntime,
+        IBenBotAPIService benBotApiService, IDiscordRPCService discordRPCService, INotificationService notificationService)
     {
+        _notificationService = notificationService;
         _fortniteAPIService = fortniteAPIService;
         _saturnAPIService = saturnAPIService;
         _configService = configService;
@@ -174,18 +177,14 @@ public sealed class SwapperService : ISwapperService
 
         if (!FileUtil.CheckIfCppIsInstalled())
         {
-            await _jsRuntime.InvokeVoidAsync("MessageBox",
-                "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
-                "error");
+            await _notificationService.Error("There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk");
             await Task.Delay(2000);
             await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
         }
         
         if (skins.Count == 0)
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
-                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
-
-
+            await _notificationService.Error("There was a mappings error, to fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.");
+        
         return skins;
     }
 
@@ -263,17 +262,14 @@ public sealed class SwapperService : ISwapperService
 
         if (!FileUtil.CheckIfCppIsInstalled())
         {
-            await _jsRuntime.InvokeVoidAsync("MessageBox",
-                "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
-                "error");
+            await _notificationService.Error(
+                "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk");
             await Task.Delay(2000);
             await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
         }
         
         if (backblings.Count == 0)
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
-                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
-
+            await _notificationService.Error("There was a mappings error. To fix this, go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.");
 
         return backblings;
     }
@@ -332,16 +328,14 @@ public sealed class SwapperService : ISwapperService
 
         if (!FileUtil.CheckIfCppIsInstalled())
         {
-            await _jsRuntime.InvokeVoidAsync("MessageBox",
-                "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
-                "error");
+            await _notificationService.Error(
+                "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk");
             await Task.Delay(2000);
             await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
         }
         
         if (pickaxes.Count == 0)
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
-                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
+            await _notificationService.Error("There was a mappings error. To fix this, go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.");
 
 
         return pickaxes;
@@ -401,16 +395,14 @@ public sealed class SwapperService : ISwapperService
 
         if (!FileUtil.CheckIfCppIsInstalled())
         {
-            await _jsRuntime.InvokeVoidAsync("MessageBox",
-                "There was an error with CUE4Parse", "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk",
-                "error");
+            await _notificationService.Error(
+                "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk");
             await Task.Delay(2000);
             await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
         }
         
         if (emotes.Count == 0)
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "There was a mappings error.",
-                "To fix this. Go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.", "error");
+            await _notificationService.Error("There was a mappings error. To fix this, go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.");
 
 
         return emotes;
@@ -436,9 +428,8 @@ public sealed class SwapperService : ISwapperService
                 
                 if (Config.isMaintenance)
                 {
-                    await _jsRuntime.InvokeVoidAsync("MessageBox", "Some parts of the swapper may be broken!",
-                        "Tamely hasn't updated the swapper's offsets to the current Fortnite build. Watch announcements in his server so you are the first to know when he does!",
-                        "warning");
+                    await _notificationService.Warn(
+                        "Some parts of the swapper might be broken! Watch announcements in his server so you are the first to know when the swapper is 100% working for the newest update!");
                 }
             }
             else
@@ -466,16 +457,14 @@ public sealed class SwapperService : ISwapperService
                     }
                     else if (Config.isMaintenance)
                     {
-                        await _jsRuntime.InvokeVoidAsync("MessageBox", "Some parts of the swapper may be broken!",
-                            "Tamely hasn't updated the swapper's offsets to the current Fortnite build. Watch announcements in his server so you are the first to know when he does!",
-                            "warning");
+                        await _notificationService.Warn(
+                            "Some parts of the swapper might be broken! Watch announcements in his server so you are the first to know when the swapper is 100% working for the newest update!");
                     }
                 }
                 else if (option.Name == "No options!")
                 {
-                    await _jsRuntime.InvokeVoidAsync("MessageBox", "No options!",
-                        $"There are no options for {item.Name}! Can you not read the name and description?",
-                        "warning");
+                    await _notificationService.Error(
+                        $"There are no options for {item.Name}! Can you not read the name and description?");
                 }
                 else if (option.Name.Contains("Default Skins") || option.Name.Contains("No Backbling"))
                 {
@@ -486,8 +475,8 @@ public sealed class SwapperService : ISwapperService
                             await ItemUtil.UpdateStatus(item, option,
                                 $"There was an error converting {item.Name}!",
                                 Colors.C_RED);
-                            await _jsRuntime.InvokeVoidAsync("MessageBox", "You haven't swapped a skin from default!",
-                                "To add a backbling to default skins (from no backbling), you must swap a skin from default first!");
+                            await _notificationService.Error(
+                                "You haven't swapped a skin from default! To add a backbling to default skins (from no backbling), you must swap a skin from default first!");
                         }
                         else
                         {
@@ -507,9 +496,8 @@ public sealed class SwapperService : ISwapperService
                     }
                     else
                     {
-                        await _jsRuntime.InvokeVoidAsync("MessageBox", "This is a BETA feature!",
-                            "You have to boost Tamely's server to be able to swap from the default skin due to Saturn using a method no other swapper can offer!",
-                            "warning");
+                        await _notificationService.Error(
+                            "This is a BETA only feature! You have to boost Tamely's server to be able to swap from the default skin due to Saturn using a method no other swapper can offer!");
                         return;
                     }
                 }
@@ -524,9 +512,8 @@ public sealed class SwapperService : ISwapperService
                 
                 if (Config.isMaintenance)
                 {
-                    await _jsRuntime.InvokeVoidAsync("MessageBox", "Some parts of the swapper may be broken!",
-                        "Tamely hasn't updated the swapper's offsets to the current Fortnite build. Watch announcements in his server so you are the first to know when he does!",
-                        "warning");
+                    await _notificationService.Warn(
+                        "Some parts of the swapper might be broken! Watch announcements in his server so you are the first to know when the swapper is 100% working for the newest update!");
                 }
 
             }
@@ -706,17 +693,32 @@ public sealed class SwapperService : ISwapperService
 
                         await _configService.AddConvertedItem(convertedItem);
                         _configService.SaveConfig();
-                        
+
                         if (sw.Elapsed.Minutes > 1)
+                        {
                             await ItemUtil.UpdateStatus(option, null, $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
-                                    Colors.C_GREEN);
+                                Colors.C_GREEN);
+                            await _notificationService.Success(
+                                $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!", true,
+                                "Launch Fortnite");
+                        }
                         else if (sw.Elapsed.Seconds > 1)
+                        {
                             await ItemUtil.UpdateStatus(option, null, $"Converted in {sw.Elapsed.Seconds} seconds!",
-                                    Colors.C_GREEN);
+                                Colors.C_GREEN);
+                            await _notificationService.Success(
+                                $"Converted in {sw.Elapsed.Seconds} seconds!", true,
+                                "Launch Fortnite");
+                        }
                         else
+                        {
                             await ItemUtil.UpdateStatus(option, null, $"Converted in {sw.Elapsed.Milliseconds} milliseconds!",
-                                    Colors.C_GREEN);
-                        
+                                Colors.C_GREEN);
+                            await _notificationService.Success(
+                                $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", true,
+                                "Launch Fortnite");
+                        }
+
                         return true;
                     }
                 }
@@ -730,8 +732,7 @@ public sealed class SwapperService : ISwapperService
                 Logger.Log("Could not find AssetRegistry.bin", LogLevel.Fatal);
             }
 
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Failed", "Couldn't convert lobby skin!",
-                "error");
+            await _notificationService.Error("Failed to convert lobby skin!");
             return false;
         }
         catch (Exception e)
@@ -943,10 +944,9 @@ public sealed class SwapperService : ISwapperService
             Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
 
             if (await _configService.GetConvertedFileCount() > 2)
-                await _jsRuntime.InvokeVoidAsync("MessageBox",
-                    "You have more than 2 converted files. This will cause Fortnite to kick you from your game",
-                               "If you are not intending on being kicked from your games, revert the last thing you swapped as your currently swapped items cannot be combined with each other.");
-            
+                await _notificationService.Error(
+                    "You have more than 2 converted files. This will cause Fortnite to kick you out of your game! Please revert the last item you swapped to prevent this!");
+
             return true;
         }
         catch (Exception ex)
@@ -960,9 +960,8 @@ public sealed class SwapperService : ISwapperService
                 .Contains(
                     "Win32.SafeHandles.SafeFileHandle.CreateFile(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options)"))
             {
-                await _jsRuntime.InvokeVoidAsync("MessageBox", "There was an error creating the file backups!",
-                    "There was a SafeFileHandle error creating Saturn's backups. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/YXXj31G7QKg",
-                    "error");
+                await _notificationService.Error(
+                    "Couldn't create file backups! Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/YXXj31G7QKg");
                 await Task.Delay(2000);
                 await FileUtil.OpenBrowser("https://youtu.be/YXXj31G7QKg");
             }
@@ -1029,10 +1028,18 @@ public sealed class SwapperService : ISwapperService
 
             item.IsConverted = false;
             if (sw.Elapsed.Seconds > 1)
+            {
                 await ItemUtil.UpdateStatus(item, option, $"Reverted in {sw.Elapsed.Seconds} seconds!", Colors.C_GREEN);
+                await _notificationService.Success($"Reverted in {sw.Elapsed.Seconds} seconds!", true,
+                    "Launch Fortnite");
+            }
             else
+            {
                 await ItemUtil.UpdateStatus(item, option, $"Reverted in {sw.Elapsed.Milliseconds} milliseconds!",
                     Colors.C_GREEN);
+                await _notificationService.Success($"Reverted in {sw.Elapsed.Milliseconds} milliseconds!", true,
+                    "Launch Fortnite");
+            }
 
             Logger.Log($"Reverted in {sw.Elapsed.Seconds} seconds!");
             Trace.WriteLine($"Reverted in {sw.Elapsed.Seconds} seconds!");
@@ -1397,9 +1404,8 @@ public sealed class SwapperService : ISwapperService
             return new SaturnOption();
         }
 
-        await _jsRuntime.InvokeVoidAsync("MessageBox", "Don't put this emote in your selected emotes!",
-            "If you are going to use it in-game, favorite the emote and select it from your favorites! Fortnite will kick you if it's in your 6 selections!",
-            "warning");
+        await _notificationService.Warn(
+            "Don't put this emote in your selected emotes! If you are going to use it in-game, favorite the emote and select it from your favorites! Fortnite will kick you if it's in your 6 selections!");
 
         Logger.Log("CMM: " + option.Swaps["CMM"]);
         Logger.Log("CMF: " + option.Swaps["CMF"]);

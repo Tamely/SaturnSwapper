@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Saturn.Backend.Core.Models.Epic_Games;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -22,6 +23,16 @@ namespace Saturn.Backend.Core.Utils
                                 .FirstOrDefault(x => x.AppName == "Fortnite").InstallLocation;
         }
 
+        public static void LaunchFortnite()
+        {
+            Process.Start(new ProcessStartInfo // Create a new process
+            {
+                FileName = "cmd.exe", // Use cmd.exe
+                Arguments = "/c start com.epicgames.launcher://apps/Fortnite?action=launch&silent=true", // Set the arguments we want
+                WindowStyle = ProcessWindowStyle.Hidden, // Hide the window
+                CreateNoWindow = true // Don't create a new window
+            }); // Start the process
+        }
         public static string GetFortniteVersion()
         {
             var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),

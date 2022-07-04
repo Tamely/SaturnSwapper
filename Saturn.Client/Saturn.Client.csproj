@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
-        <TargetFrameworks>net6.0-windows</TargetFrameworks>
-        <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
+        <TargetFramework>net6.0-windows10.0.20348.0</TargetFramework>
+        <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
         <OutputType>WinExe</OutputType>
         <UseWPF>true</UseWPF>
         <IsPackable>false</IsPackable>
@@ -14,11 +14,11 @@
         <NeutralLanguage>en</NeutralLanguage>
         <Product>Saturn</Product>
         <AssemblyName>Saturn</AssemblyName>
-        <PackageVersion>1.4.6</PackageVersion>
+        <PackageVersion>1.4.10</PackageVersion>
         <Title>Saturn</Title>
         <Description>The most advanced fortnite skin swapper</Description>
         <AssemblyVersion>1.4</AssemblyVersion>
-        <FileVersion>1.4.6</FileVersion>
+        <FileVersion>1.4.10</FileVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">

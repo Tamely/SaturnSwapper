@@ -4,6 +4,7 @@
 @inject IConfigService _configService
 @inject IJSRuntime _jsRuntime
 @inject ISaturnAPIService _saturnAPIService
+@inject INotificationService _notificationService
 
 @page "/"
 @using System.Net
@@ -706,7 +707,7 @@
                             </div>
                         </div>
 
-                        <div class="card" @onclick=@(async () => { if (Directory.Exists(Config.PluginsPath)) Directory.Delete(Config.PluginsPath, true); await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished removing all plugins!", "success"); })>
+                        <div class="card" @onclick=@(async () => { if (Directory.Exists(Config.PluginsPath)) Directory.Delete(Config.PluginsPath, true); await _notificationService.Success("Finished removing all plugins!"); })>
                             <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                             <div class="card-info">
                                 <h2 style="font-size: @GetTextSize("Removes plugins", true);">Remove plugins</h2>
@@ -1056,8 +1057,7 @@
 
             if (!_presets.TryAdd(_currentName, new Preset() { Name = _currentName, Items = _convertedItems }))
             {
-                await _jsRuntime.InvokeVoidAsync("MessageBox", "Preset with that name already exists!", "Preset with that name already exists! Choose a different name that has not been used!", "error");
-                Logger.Log("Preset with that name already exists!", LogLevel.Error); // Log the error
+                await _notificationService.Warn("Preset with that name already exists! Choose a different name that has not been used!");
             }
             
             File.WriteAllText(name, JsonConvert.SerializeObject(_presets[_currentName], Formatting.Indented)); // Write the preset to the file
@@ -1232,7 +1232,7 @@
         await CheckUpdate(); // Check if there is an update
 
         if (await IsFortniteOpen())
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Fortnite has been closed.", "Fortnite has been closed. You cannot use a swapper while Fortnite is running in the background!", "warning");
+            await _notificationService.Warn("Fortnite has been closed. You cannot use a swapper while Fortnite is running in the background!");
 
         await CheckMaintenance(); // Check if the swapper is in maintenance mode
 
@@ -1259,7 +1259,7 @@
 
         var stackTrace = "\n" + e.Exception.ToString().Split("--- ")[0]; // Get the stack trace.
 
-        if (stackTrace.Contains("System.ComponentModel.Win32Exception") || stackTrace.Contains("System.Net.Sockets.SocketException") || stackTrace.Contains("System.ArgumentNullException") || stackTrace.Contains("System.TimeoutException") || stackTrace.Contains("System.Threading.Tasks.TaskCanceledException") || stackTrace.Contains("System.NullReferenceException")) // These literally do not matter
+        if (stackTrace.Contains("System.ComponentModel.Win32Exception") || stackTrace.Contains("System.Net.Sockets.SocketException") || stackTrace.Contains("System.ArgumentNullException") || stackTrace.Contains("System.TimeoutException") || stackTrace.Contains("System.Threading.Tasks.TaskCanceledException") || stackTrace.Contains("System.NullReferenceException") || stackTrace.Contains("System.Runtime.InteropServices.COMException")) // These literally do not matter
             return; // Ignore it
 
         Logger.Log($"Unhandled exception occurred. {e.ToString().GetType().Name}: {e.ToString()} {stackTrace}", LogLevel.Fatal); // Log the exception.
@@ -1316,7 +1316,7 @@
     {
         if (_discordRPCService.Client.CurrentUser == null) // If the user is not logged in or doesn't have Discord desktop open
         {
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Couldn't get Discord user info!", "Please open discord if you intend to use BETA features!", "error"); // show a message saying they need to open discord to use beta features
+            await _notificationService.Warn("Couldn't get Discord user info! Please open Discord if you intend to use BETA features!");
             return; // return
         }
 
@@ -1449,7 +1449,7 @@
             {
                 Logger.Log(await _configService.TryGetFortniteVersion()); // Log the configs version
                 await RemoveDupedFiles(); // Remove duped files
-                await _jsRuntime.InvokeVoidAsync("MessageBox", "Detected old backups!", "The swapper has automatically removed them for you!", "warning"); // Show a message confirming the files have been removed
+                await _notificationService.Warn("Detected old backups! The swapper has automatically removed them for you!");
 
             }
             await _configService.TrySetFortniteVersion(await GetLastestVersion()); // Set the configs version to the latest version
@@ -1495,12 +1495,12 @@
     /// </summary>
     private async Task CheckUpdate()
     {
-        if (Constants.UserVersion != await _configService.TryGetSwapperVersion())
+        if (Constants.UserVersion.Split("-preview")[0] != await _configService.TryGetSwapperVersion())
         {
             await _configService.TrySetSwapperVersion();
         }
 
-        if (Constants.UserVersion != await GetSwapperVersion()) // If the user's version is not the latest version
+        if (Constants.UserVersion.Split("-preview")[0] != await GetSwapperVersion()) // If the user's version is not the latest version
             _saturnState = SaturnState.S_Update; // Set the state to update
     }
 
@@ -1550,7 +1550,7 @@
     /// </summary>
     private async Task RunUpdate()
     {
-        await _jsRuntime.InvokeVoidAsync("MessageBox", "There is a swapper update ready to download!", "Please download it from Tamely's Discord.", "error"); // Show update message on screen
+        await _notificationService.Error("There is a swapper update ready to download! Please download it from Tamely's Discord.");
         await FileUtil.OpenBrowser(JsonConvert.DeserializeObject<IndexModel>(await _saturnAPIService.ReturnEndpointAsync("/")).DiscordServer); // Open discord server in browser
     }
 
@@ -1658,11 +1658,11 @@
                 if ((file.EndsWith(".json") || file.EndsWith(".saturn")) && blacklistedFiles.Find(e => file.ToLower().EndsWith(e.ToLower())) == null) // If the file is a json file and isn't blacklisted.
                     File.Move(file, Config.PluginsPath + Path.GetFileName(file)); // Move the file to the plugins folder.
 
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Success", "Finished moving plugin files to the plugins folder!", "success"); // Show a message box saying it was successful.
+            await _notificationService.Success("Finished moving plugin to the plugins folder!");
         }
         catch (Exception e) // If something went wrong
         {
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Error", "There was an error moving the plugin files to the plugins folder! Please report this and the current swapper log to Tamely in his Discord!", "error"); // Show a message box saying it was unsuccessful.
+            await _notificationService.Error("Failed to move plugin to plugins folder! Please report this and the current log to the 'Support' channel in Tamely's Discord!");
             Logger.Log(e.ToString()); // Log the error.
         }
     }
@@ -1680,13 +1680,7 @@
     /// </summary>
     private async Task Launch()
     {
-        Process.Start(new ProcessStartInfo // Create a new process
-        {
-            FileName = "cmd.exe", // Use cmd.exe
-            Arguments = "/c start com.epicgames.launcher://apps/Fortnite?action=launch&silent=true", // Set the arguments we want
-            WindowStyle = ProcessWindowStyle.Hidden, // Hide the window
-            CreateNoWindow = true // Don't create a new window
-        }); // Start the process
+        FortniteUtil.LaunchFortnite(); // Launch Fortnite
 
         _launchFortnite = "Fortnite is launching... please wait."; // Set the button text to "Fortnite is launching..."
         _launchFortniteColor = Colors.C_GREEN; // Set the button color to green
@@ -1800,6 +1794,8 @@
             }
 
             _removeDuped = "Removed all duplicated files from Fortnite!"; // Set the message on the settings button
+            
+            await _notificationService.Success("Successfully removed duped ucas from Fortnite!"); // Show a success notification
 
             _removeDupedColor = Colors.C_GREEN; // Set the color of the settings button
         }
@@ -1961,7 +1957,7 @@
         if (string.IsNullOrWhiteSpace(filePath))
         {
             // Display an error message
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Could not find the background file!", "Could not find the background file! Contact support on Discord to get this resolved!", "error");
+            await _notificationService.Error("Could not find the background file! Contact support on Discord to get this resolved!");
             Logger.Log("Could not find the background file!", LogLevel.Error); // Log the error
             return; // Return
         }
@@ -1982,7 +1978,7 @@
         if (!enumerable.Any())
         {
             // Display an error message
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Could not find any images!", "You don't have any '.jpg' or '.png' files in the current Saturn program directory.", "error");
+            await _notificationService.Error("You don't have any '.jpg' or '.png' files in the current Saturn program directory.");
             Logger.Log("Could not find any images to replace with!", LogLevel.Error); // Log the error
             return; // Return
         }
@@ -1991,7 +1987,7 @@
         if (enumerable.Count() > 1)
         {
             // Display an error message
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Too many images!", "You have more than one '.jpg' or '.png' file in the current Saturn program directory. Please only have one image in the directory.", "error");
+            await _notificationService.Error("You have more than one '.jpg' or '.png' file in the current Saturn program directory. Please only have one image in the directory.");
             Logger.Log("Too many images to replace with!", LogLevel.Error); // Log the error
             return; // Return
         }
@@ -2007,7 +2003,7 @@
         _configService.ConfigFile.IsLobbyBackgroundConverted = true; // Set the config file to converted
         _configService.SaveConfig(); // Save the config file
         
-        await _jsRuntime.InvokeVoidAsync("MessageBox", "Success!", "The background has been replaced!", "success"); // Display a success message
+        await _notificationService.Success("The background has been replaced!", true, "Launch Fortnite"); // Display a success message
         Logger.Log("Successfully replaced the background!"); // Log the success
     }
 
@@ -2049,7 +2045,7 @@
         if (string.IsNullOrWhiteSpace(filePath))
         {
             // Display an error message
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Could not find the background file!", "Could not find the background file! Contact support on Discord to get this resolved!", "error");
+            await _notificationService.Error("Could not find the background file! Contact support on Discord to get this resolved!");
             Logger.Log("Could not find the background file!", LogLevel.Error); // Log the error
             return; // Return
         }
@@ -2059,7 +2055,7 @@
         if (!File.Exists(Config.LobbyBackgroundPath)) // If the original image doesn't exist
         {
             // Display an error message
-            await _jsRuntime.InvokeVoidAsync("MessageBox", "Could not find the original image!", "Could not find the original image! Contact support on Discord to get this resolved!", "error");
+            await _notificationService.Error("Could not find the original image! Contact support on Discord to get this resolved!");
             Logger.Log("Could not find the original image!", LogLevel.Error); // Log the error
             return; // Return
         }
@@ -2074,7 +2070,7 @@
         _configService.ConfigFile.IsLobbyBackgroundConverted = false; // Set the config file to not converted
         _configService.SaveConfig(); // Save the config file
         
-        await _jsRuntime.InvokeVoidAsync("MessageBox", "Success!", "The background has been reverted to its original state!", "success"); // Display a success message
+        await _notificationService.Success("The background has been reverted to its original state!"); // Display a success message
         Logger.Log("Successfully reverted the background!"); // Log the success
     }
 }
