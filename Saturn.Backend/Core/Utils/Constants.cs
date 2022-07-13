@@ -21,6 +21,6 @@
         public const string PidPath = "FortniteGame/Content/Athena/Items/Cosmetics/Pickaxes/";
         public const string NewPidPath = "FortniteGame/Content/Athena/Items/Cosmetics/PickAxes/";
 
-        public const string UserVersion = "1.4.9-preview-1";
+        public const string UserVersion = "1.4.10";
     }
 }
