@@ -277,6 +277,13 @@ namespace CUE4Parse.UE4.IO
 
                 SaturnData.Offset = partitionOffset;
 
+                if (SaturnData.isExporting)
+                {
+                    SaturnData.Reader = this;
+                    SaturnData.Offsets.Add(partitionOffset);
+                    SaturnData.FirstBlockIndex = firstBlockIndex;
+                }
+
                 SaturnData.Path = reader.Name;;
 
                 SaturnData.UAssetPath = AbstractFileProvider.uassetPath;

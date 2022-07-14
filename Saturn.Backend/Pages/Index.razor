@@ -353,13 +353,6 @@
                                 <p style="color:white; font-size: @GetTextSize("Be able to save your swaps.")">Be able to save your swaps.</p>
                             </div>
                         </div>
-                        <div class="card" @onclick=@(() => _saturnState = SaturnState.S_LobbyPick)>
-                            <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
-                            <div class="card-info">
-                                <h2 style="font-size: @GetTextSize("Lobby Swapper", true);">Lobby Swapper</h2>
-                                <p style="color:white; font-size: @GetTextSize("Swap items in LOBBY ONLY, but everyone can see them.")">Swap items in LOBBY ONLY, but everyone can see them.</p>
-                            </div>
-                        </div>
 
                         @foreach (var item in _items)
                         {
