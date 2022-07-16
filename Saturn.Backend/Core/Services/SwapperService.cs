@@ -1243,7 +1243,7 @@ public sealed class SwapperService : ISwapperService
             CID.TryGetValue(out UObject export, "HeroDefinition");
             export.TryGetValue(out FSoftObjectPath SmallIcon, "SmallPreviewImage");
 
-            return SmallIcon.AssetPathName.Text ?? "/";
+            return string.IsNullOrWhiteSpace(SmallIcon.AssetPathName.Text) || SmallIcon.AssetPathName.Text == "None" ? "/" : SmallIcon.AssetPathName.Text;
         }
 
         return "";
