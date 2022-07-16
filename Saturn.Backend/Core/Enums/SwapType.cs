@@ -2,6 +2,8 @@
 {
     public enum SwapType
     {
+        SkinIcon,
+
         BodyMesh,
         BodyMaterial,
         BodyAnim,
