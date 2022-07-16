@@ -7,6 +7,7 @@ using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.i18N;
 using CUE4Parse.UE4.Objects.Core.Misc;
+using CUE4Parse.UE4.Objects.UObject;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
 using Saturn.Backend.Core.Enums;
@@ -846,6 +847,35 @@ public sealed class SwapperService : ISwapperService
                 else
                     await BackupFile(file, item, option);
 
+                if (option.Type == ItemType.IT_Skin && Config.isBeta)
+                {
+                    string icon = "";
+                    if (isDefault && asset.ParentAsset.Contains("DefaultGameDataCosmetics"))
+                    {
+                        foreach (var defaultIcon in Constants.DefaultIcons)
+                        {
+                            icon = "/Game/UI/Foundation/Textures/Icons/Heroes/Athena/Soldier/" + defaultIcon + "." + defaultIcon;
+                        }
+                    }
+                    else
+                        icon = GetSkinIcon(option.ItemDefinition).GetAwaiter().GetResult();
+
+                    var newIcon = GetSkinIcon(item.Id).GetAwaiter().GetResult();
+
+                    var newAsset = new SaturnAsset();
+
+                    newAsset.ParentAsset = "FortniteGame/Athena/Heroes/" + option.ItemDefinition.Replace("CID", "HID");
+
+                    newAsset.Swaps.Add(new SaturnSwap
+                    {
+                        Search = icon,
+                        Replace = newIcon,
+                        Type = SwapType.SkinIcon
+                    });
+
+                    itemSwap.Assets.Add(newAsset);
+                }
+
                 foreach (var swaps in asset.Swaps)
                 {
                     Logger.Log(swaps.Search + " :: " + swaps.Replace);
@@ -1199,6 +1229,24 @@ public sealed class SwapperService : ISwapperService
         }
 
         return cps;
+    }
+
+    /// <summary>
+    /// Get skin icon from the skin
+    /// </summary>
+    /// <param name="id">skin ID</param>
+    /// <returns>The icon of the skin.</returns>
+    private async Task<string> GetSkinIcon(string id)
+    {
+        if (Provider.TryLoadObject("FortniteGame/Content/Athena/Items/Cosmetics/Characters/" + id, out var CID))
+        {
+            CID.TryGetValue(out UObject export, "HeroDefinition");
+            export.TryGetValue(out FSoftObjectPath SmallIcon, "SmallPreviewImage");
+
+            return SmallIcon.AssetPathName.Text ?? "/";
+        }
+
+        return "";
     }
 
     #region GenerateBackbling
