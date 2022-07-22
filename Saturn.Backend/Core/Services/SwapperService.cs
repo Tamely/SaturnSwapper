@@ -3,10 +3,13 @@
 using CUE4Parse;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
+using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.i18N;
 using CUE4Parse.UE4.Objects.Core.Misc;
+using CUE4Parse.UE4.Objects.UObject;
+using CUE4Parse.Utils;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
 using Saturn.Backend.Core.Enums;
@@ -14,6 +17,7 @@ using Saturn.Backend.Core.Models.CloudStorage;
 using Saturn.Backend.Core.Models.FortniteAPI;
 using Saturn.Backend.Core.Models.Items;
 using Saturn.Backend.Core.Models.SaturnAPI;
+using Saturn.Backend.Core.Services.Textures;
 using Saturn.Backend.Core.SwapOptions.Backblings;
 using Saturn.Backend.Core.SwapOptions.Emotes;
 using Saturn.Backend.Core.SwapOptions.Pickaxes;
@@ -910,6 +914,23 @@ public sealed class SwapperService : ISwapperService
             else
                 item.IsConverted = true;
 
+            if (option.Type == ItemType.IT_Skin && Config.isBeta)
+            {
+                var swapToIcon = await GetIconFromCID(item.Id);
+                if (isDefault)
+                {
+                    foreach (var icon in Constants.DefaultIconPaths)
+                    {
+                        await new TextureImporter(Provider).SwapTexture(icon, swapToIcon);
+                    }
+                }
+                else
+                {
+                    var iconResult = await new TextureImporter(Provider).SwapTexture(await GetIconFromCID(option.ItemDefinition), swapToIcon);
+                    if (!iconResult.Success) Logger.Log(iconResult.Error);
+                }
+            }
+
             sw.Stop();
 
             if (!await _configService.AddConvertedItem(convItem))
@@ -1019,6 +1040,26 @@ public sealed class SwapperService : ISwapperService
                 return true;
             });
 
+            if (option.Type == ItemType.IT_Skin && Config.isBeta)
+            {
+                var path = await GetIconFromCID(item.Id); // Swapping icon path
+                if (option.Name.Contains("Default Skins"))
+                {
+                    foreach (var icon in Constants.DefaultIconPaths)
+                    {
+                        await new TextureImporter(Provider).SwapTexture(null, path,
+                            await File.ReadAllBytesAsync(Path.Combine(Config.CompressedDataPath, icon.SubstringAfterLast('/'))));
+                        File.Delete(icon.SubstringAfterLast('/'));
+                    }
+                }
+                else
+                {
+                    var iconResult = await new TextureImporter(Provider).SwapTexture(
+                        path, null,
+                        await File.ReadAllBytesAsync(Path.Combine(Config.CompressedDataPath, path.SubstringAfterLast('/'))));
+                    if (!iconResult.Success) Logger.Log(iconResult.Error);
+                }
+            }
 
             if (!await _configService.RemoveConvertedItem(id))
                 Logger.Log("There was an error removing the item from the config!", LogLevel.Error);
@@ -1607,7 +1648,7 @@ public sealed class SwapperService : ISwapperService
     }
 
 
-    private async Task BackupFile(string sourceFile, Cosmetic item, SaturnItem? option = null)
+    public async Task BackupFile(string sourceFile, Cosmetic item, SaturnItem? option = null)
     {
         await ItemUtil.UpdateStatus(item, option, "Backing up files", Colors.C_YELLOW);
         
@@ -1869,4 +1910,17 @@ public sealed class SwapperService : ISwapperService
     }
     
     private static void FillEnd(ref byte[] buffer, int len) => Array.Resize(ref buffer, len);
+
+    private async Task<string> GetIconFromCID(string id)
+    {
+        if (Provider.TryLoadObject("FortniteGame/Content/Athena/Items/Cosmetics/Characters/" + id, out var cidObj) 
+            && cidObj.TryGetValue(out UObject export, "HeroDefinition") 
+            && export.TryGetValue(out FSoftObjectPath SPI, "SmallPreviewImage"))
+        {
+                    var imageAsset = SPI.AssetPathName.Text.Replace("/Game/", "FortniteGame/Content/").Split('.')[0] + ".uasset";
+                    return imageAsset;
+        }
+
+        return string.Empty;
+    }
 }
