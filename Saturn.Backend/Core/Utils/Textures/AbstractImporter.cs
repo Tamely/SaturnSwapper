@@ -1,11 +1,11 @@
-﻿using CUE4Parse;
-using CUE4Parse.FileProvider;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using CUE4Parse;
+using CUE4Parse.FileProvider;
 
-namespace Saturn.Backend.Core.Services.Textures
+namespace Saturn.Backend.Core.Utils.Textures
 {
 
     internal class AbstractImporter

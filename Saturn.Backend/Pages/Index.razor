@@ -77,7 +77,7 @@
                         <img src="img/UI/skins.png" alt="">
                         <h2>Skins</h2>
                     </div>
-                    <div class="option" @onclick=@(async() => await GetSaturnBackblings())>
+                    <div class="option" @onclick=@(async() => await GetSaturnGliders())>
                         <img src="img/UI/backblings.png" alt="">
                         <h2>Backblings</h2>
                     </div>
@@ -1163,6 +1163,8 @@
             _skinOptions = await _swapperService.GetBackblingOptions(item);
         else if (item.Id.Contains("EID_"))
             _skinOptions = await _swapperService.GetEmoteOptions(item);
+        else if (item.Id.Contains("Glider") || item.Id.Contains("Umbrella"))
+            _skinOptions = await _swapperService.GetGliderOptions(item);
         else
             _skinOptions = await _swapperService.GetPickaxeOptions(item);
     }
@@ -1865,6 +1867,15 @@
     private async Task GetSaturnSkins()
     {
         await GetSaturnCosmetic(ItemType.IT_Skin, async () => await _swapperService.GetSaturnSkins());
+        _tabIndex = 0;
+    }
+
+    /// <summary>
+    /// Generates, loads, and displays gliders on the screen.
+    /// </summary>
+    private async Task GetSaturnGliders()
+    {
+        await GetSaturnCosmetic(ItemType.IT_Glider, async () => await _swapperService.GetSaturnGliders());
         _tabIndex = 0;
     }
 

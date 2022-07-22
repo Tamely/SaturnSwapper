@@ -1,16 +1,13 @@
-﻿using CUE4Parse;
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using CUE4Parse;
 using CUE4Parse.FileProvider;
 using CUE4Parse.Utils;
-using Saturn.Backend.Core.Services;
-using Saturn.Backend.Core.Services.Textures;
-using System;
-using Saturn.Backend.Core.Utils.Compression;
-using System.Threading.Tasks;
-using CUE4Parse.UE4.Assets.Exports.Texture;
-using System.IO;
-using Saturn.Backend.Core.Utils;
+using Saturn.Backend.Core.Enums;
 
-namespace Saturn.Backend.Core.Services.Textures
+namespace Saturn.Backend.Core.Utils.Textures
 {
     internal sealed class TextureImporter : AbstractImporter
     {
@@ -18,18 +15,31 @@ namespace Saturn.Backend.Core.Services.Textures
         {
         }
 
-        public async Task<(bool Success, string Error)> SwapTexture(string asset, string toAsset, byte[]? overrideSwapData = null)
+        public async Task<(bool Success, string Error, long Offset)> SwapTexture(string asset, string toAsset, byte[]? overrideSwapData = null)
         {
+            long address = 0;
             try
             {
-                var toUbulkBytes = overrideSwapData ?? Provider.SaveAsset(toAsset);
+                if (!Provider.TrySavePackage(toAsset.Split('.')[0], out var pkg))
+                {
+                    Logger.Log($"Failed to export asset \"{toAsset}\"!", LogLevel.Warning);
+                    return (false, $"Failed to export asset \"{toAsset}\"!", -1);
+                }
+
+                var toUbulkBytes = overrideSwapData ?? pkg.FirstOrDefault(x => x.Key.Contains("ubulk")).Value;
                 byte[]? originalUbulkBytes = null;
 
                 if (overrideSwapData == null)
                 {
                     // Save ubulk data
                     SaturnData.isExporting = true;
-                    originalUbulkBytes = Provider.SaveAsset(asset);
+                    if (!Provider.TrySavePackage(asset.Split('.')[0], out pkg))
+                    {
+                        Logger.Log($"Failed to export asset \"{asset}\"!", LogLevel.Warning);
+                        return (false, $"Failed to export asset \"{asset}\"!", -1);
+                    }
+
+                    originalUbulkBytes = overrideSwapData ?? pkg.FirstOrDefault(x => x.Key.Contains("ubulk")).Value;
                     SaturnData.isExporting = false;
 
                     int dataSize = 16384; // 128x128 data size
@@ -37,10 +47,11 @@ namespace Saturn.Backend.Core.Services.Textures
                     var startPos = originalUbulkBytes.Length - dataSize;
 
                     var startPos2 = toUbulkBytes.Length - dataSize;
+                    
+                    Directory.CreateDirectory(Config.CompressedDataPath);
+                    await File.WriteAllBytesAsync(System.IO.Path.Combine(Config.CompressedDataPath, asset.SubstringAfterLast("/")), originalUbulkBytes);
 
                     Buffer.BlockCopy(toUbulkBytes, startPos2, originalUbulkBytes, startPos, dataSize);
-
-                    await File.WriteAllBytesAsync(System.IO.Path.Combine(Config.CompressedDataPath, asset.SubstringAfterLast("/")), originalUbulkBytes);
                 }
 
                 // Initialize ucas stream
@@ -55,8 +66,8 @@ namespace Saturn.Backend.Core.Services.Textures
                 for (int i = 0; i < chunked.Count; i++)
                 {
                     byte[] chunk = chunked[i];
-                    var compressedChunk = new Saturn.Backend.Core.Utils.Compression.Oodle().Compress(chunk);
-                    long address = SaturnData.Offsets[0] + written; // Store the address we are writing to
+                    var compressedChunk = new Saturn.Backend.Core.Utils.Compression.Oodle(Config.BasePath).Compress(chunk);
+                    address = SaturnData.Offsets[0] + written; // Store the address we are writing to
                     var ptr = BitConverter.GetBytes((uint)address);
                     var shortComp = BitConverter.GetBytes((ushort)compressedChunk.Length); // Get the length of the compressed chunk
                     var shortDecomp = BitConverter.GetBytes((ushort)chunk.Length); // Get the decompressed length
@@ -68,16 +79,16 @@ namespace Saturn.Backend.Core.Services.Textures
                     written += compressedChunk.Length + 10; // Skip ten so the data doesn't conflict when decompressing
 
                     TocStream.BaseStream.Position = SaturnData.Reader.TocResource.CompressionBlocks[SaturnData.FirstBlockIndex + i].Position;
-                    TocStream.BaseStream.Write(ptr, 0, ptr.Length); // Write address of the custom chunk
+                    await TocStream.BaseStream.WriteAsync(ptr, 0, ptr.Length); // Write address of the custom chunk
 
                     TocStream.BaseStream.Position += 1;
-                    TocStream.BaseStream.Write(shortComp, 0, 2); // Write compressed bytes' length
+                    await TocStream.BaseStream.WriteAsync(shortComp, 0, 2); // Write compressed bytes' length
 
                     TocStream.BaseStream.Position += 1;
-                    TocStream.BaseStream.Write(shortDecomp, 0, shortDecomp.Length); // Write decompressed bytes' length
+                    await TocStream.BaseStream.WriteAsync(shortDecomp, 0, shortDecomp.Length); // Write decompressed bytes' length
 
                     TocStream.BaseStream.Position += 1;
-                    TocStream.BaseStream.Write(forceCompressedBytes, 0, forceCompressedBytes.Length); // Force chunk to be compressed (Frick off AllyJax)
+                    await TocStream.BaseStream.WriteAsync(forceCompressedBytes, 0, forceCompressedBytes.Length); // Force chunk to be compressed (Frick off AllyJax)
                 }
 
                 SaturnData.Offsets.Clear();
@@ -88,10 +99,10 @@ namespace Saturn.Backend.Core.Services.Textures
             }
             catch (Exception e)
             {
-                return new(false, e.ToString());
+                return new(false, e.ToString(), -1);
             }
 
-            return new(true, null);
+            return new(true, null, address);
         }
     }
 }

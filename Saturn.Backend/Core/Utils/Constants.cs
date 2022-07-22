@@ -20,8 +20,10 @@
 
         public const string PidPath = "FortniteGame/Content/Athena/Items/Cosmetics/Pickaxes/";
         public const string NewPidPath = "FortniteGame/Content/Athena/Items/Cosmetics/PickAxes/";
+        
+        public const string GliderIdPath = "FortniteGame/Content/Athena/Items/Cosmetics/Gliders/";
 
-        public static string[] DefaultIconPaths =
+        public static readonly string[] DefaultIconPaths =
         {
             "FortniteGame/Content/UI/Foundation/Textures/Icons/Heroes/Athena/Soldier/T-Soldier-HID-A-273-Athena-Commando-F-Prime-B.uasset",
             "FortniteGame/Content/UI/Foundation/Textures/Icons/Heroes/Athena/Soldier/T-Soldier-HID-A-274-Athena-Commando-F-Prime-C.uasset",

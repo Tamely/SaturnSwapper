@@ -55,6 +55,8 @@
 
         Modifier,
         Property,
-        Base64
+        Base64,
+        String,
+        Texture
     }
 }

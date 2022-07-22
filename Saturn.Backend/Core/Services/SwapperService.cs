@@ -3,7 +3,6 @@
 using CUE4Parse;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
-using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.i18N;
@@ -17,7 +16,6 @@ using Saturn.Backend.Core.Models.CloudStorage;
 using Saturn.Backend.Core.Models.FortniteAPI;
 using Saturn.Backend.Core.Models.Items;
 using Saturn.Backend.Core.Models.SaturnAPI;
-using Saturn.Backend.Core.Services.Textures;
 using Saturn.Backend.Core.SwapOptions.Backblings;
 using Saturn.Backend.Core.SwapOptions.Emotes;
 using Saturn.Backend.Core.SwapOptions.Pickaxes;
@@ -36,6 +34,8 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Saturn.Backend.Core.SwapOptions.Gliders;
+using Saturn.Backend.Core.Utils.Textures;
 using Colors = Saturn.Backend.Core.Enums.Colors;
 using Index = Saturn.Backend.Pages.Index;
 
@@ -54,8 +54,10 @@ public interface ISwapperService
     public Task<List<SaturnItem>> GetPickaxeOptions(Cosmetic item);
     public Task<List<SaturnItem>> GetBackblingOptions(Cosmetic item);
     public Task<List<SaturnItem>> GetEmoteOptions(Cosmetic item);
+    public Task<List<SaturnItem>> GetGliderOptions(Cosmetic item);
     public Task<List<Cosmetic>> GetSaturnPickaxes(bool isLobby = false, bool isOption = false);
     public Task<List<Cosmetic>> GetSaturnBackblings(bool isLobby = false, bool isOption = false);
+    public Task<List<Cosmetic>> GetSaturnGliders();
     public Task<List<Cosmetic>> GetSaturnEmotes(bool isLobby = false, bool isOption = false);
     public Task Swap(Cosmetic item, SaturnItem option, ItemType itemType, List<Cosmetic> Items, bool isAuto = true);
     public DefaultFileProvider Provider { get; }
@@ -201,6 +203,11 @@ public sealed class SwapperService : ISwapperService
     {
         return (await new AddBackblings().AddBackblingOptions(item, this, _provider, _jsRuntime)).CosmeticOptions;
     }
+
+    public async Task<List<SaturnItem>> GetGliderOptions(Cosmetic item)
+    {
+        return (await new AddGliders().AddGliderOptions(item, this, _provider)).CosmeticOptions;
+    }
     
     public async Task<List<SaturnItem>> GetPickaxeOptions(Cosmetic item)
     {
@@ -276,6 +283,50 @@ public sealed class SwapperService : ISwapperService
             await _notificationService.Error("There was a mappings error. To fix this, go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.");
 
         return backblings;
+    }
+    
+    public async Task<List<Cosmetic>> GetSaturnGliders()
+    {
+        var gliders = new List<Cosmetic>();
+
+        AbstractGeneration Generation = new GliderGeneration(gliders, _provider, _configService, this, _jsRuntime);
+
+        gliders = await Generation.Generate();
+
+        Trace.WriteLine($"Deserialized {gliders.Count} objects");
+        
+        await _fortniteAPIService.RemoveItems(gliders);
+
+        await _fortniteAPIService.AddExtraItems(gliders, ItemType.IT_Glider);
+
+        for (int i = gliders.Count - 1; i >= 0; i--)
+        {
+            if (gliders[i].Description.Contains("style:") && !await _configService.TryGetShouldShowStyles())
+            {
+                gliders.RemoveAt(i);
+                i++;
+                continue;
+            }
+
+            if ((await _configService.TryGetConvertedItems()).Any(x =>
+                    string.Equals(x.Name, gliders[i].Name) && string.Equals(x.ItemDefinition, gliders[i].Id)))
+                gliders[i].IsConverted = true;
+        }
+
+        _discordRPCService.UpdatePresence($"Looking at {gliders.Count} different gliders");
+
+        if (!FileUtil.CheckIfCppIsInstalled())
+        {
+            await _notificationService.Error(
+                "There was an error decompressing packages with CUE4Parse. Please follow the tutorial that is opening on your browser to fix this, or paste this link in your browser: https://youtu.be/PeETf6ZQnBk");
+            await Task.Delay(2000);
+            await FileUtil.OpenBrowser("https://youtu.be/PeETf6ZQnBk");
+        }
+        
+        if (gliders.Count == 0)
+            await _notificationService.Error("There was a mappings error. To fix this, go to %localappdata%/Saturn/ and delete the folder 'Mappings' then relaunch the swapper.");
+
+        return gliders;
     }
     
     public async Task<List<Cosmetic>> GetSaturnPickaxes(bool isLobby = false, bool isOption = false)
@@ -804,169 +855,354 @@ public sealed class SwapperService : ISwapperService
                 await ItemUtil.UpdateStatus(item, option, "Generating swaps", Colors.C_YELLOW);
             Logger.Log("Generating swaps...");
 
-            SaturnOption itemSwap = new();
-            if (isDefault)
-                itemSwap = await GenerateDefaultSkins(item);
-            else if (option.Options != null)
-                itemSwap = option.Options[0];
-            else
-                itemSwap = itemType switch
-                {
-                    ItemType.IT_Skin => await GenerateMeshSkins(item, option),
-                    ItemType.IT_Dance => await GenerateMeshEmote(item, option),
-                    ItemType.IT_Pickaxe => await GenerateMeshPickaxe(item, option),
-                    ItemType.IT_Backbling => await GenerateMeshBackbling(item, option),
-                    _ => new()
-                };
-
-            if (item.IsCloudAdded)
-                itemSwap = option.Options[0];
-
-            Logger.Log($"There are {itemSwap.Assets.Count} assets to swap...", LogLevel.Info);
-            foreach (var asset in itemSwap.Assets)
+            if (itemType == ItemType.IT_Glider)
             {
-                Logger.Log($"Starting swaps for {asset.ParentAsset}");
-                Directory.CreateDirectory(Config.CompressedDataPath);
-                if (isRandom)
-                    await ItemUtil.UpdateStatus(random, option, "Exporting asset", Colors.C_YELLOW);
-                else
-                    await ItemUtil.UpdateStatus(item, option, "Exporting asset", Colors.C_YELLOW);
-                Logger.Log("Exporting asset");
-                if (!TryExportAsset(asset.ParentAsset, out var data))
+                Logger.Log("Getting glider swaps...");
+                string originalMaterial = (await new AddGliders().GetGliderData(option.ItemDefinition, _provider))["Material"];
+                string replaceMaterial = option.Swaps["Material"].Split("|")[0];
+
+                Dictionary<string, string> OriginalTextures = new();
+                if (_provider.TryLoadObject(originalMaterial, out UObject OriginalMaterial))
                 {
-                    Logger.Log($"Failed to export \"{asset.ParentAsset}\"!", LogLevel.Error);
-                    return false;
-                }
-                if (isDefault && asset.ParentAsset.Contains("DefaultGameDataCosmetics"))
-                    data = new WebClient().DownloadData(
-                        "https://cdn.discordapp.com/attachments/754879989614379042/983189162444357642/test.uasset");
-                Logger.Log("Asset exported");
-                Logger.Log($"Starting backup of {Path.GetFileName(SaturnData.Path)}");
-
-                var file = SaturnData.Path;
-
-                if (isRandom)
-                    await BackupFile(file, random, option);
-                else
-                    await BackupFile(file, item, option);
-
-                foreach (var swaps in asset.Swaps)
-                {
-                    Logger.Log(swaps.Search + " :: " + swaps.Replace);
-                }
-
-                if (!TryIsB64(ref data, asset))
-                    Logger.Log($"Cannot swap/determine if '{asset.ParentAsset}' is Base64 or not!",
-                        LogLevel.Fatal);
-
-                var Oodle = new Utils.Compression.Oodle(Config.BasePath);
-                var compressed = SaturnData.isCompressed ? Oodle.Compress(data) : data;
-
-                Directory.CreateDirectory(Config.DecompressedDataPath);
-                File.SetAttributes(Config.DecompressedDataPath,
-                    FileAttributes.Hidden | FileAttributes.System);
-                await File.WriteAllBytesAsync(
-                    Config.DecompressedDataPath + Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset", data);
-
-
-                file = Path.GetFileName(file.Replace("WindowsClient", "SaturnClient"));
-
-                var ucas = file;
-
-                if (isRandom)
-                    await ItemUtil.UpdateStatus(random, option, "Adding asset to UCAS", Colors.C_YELLOW);
-                else
-                    await ItemUtil.UpdateStatus(item, option, "Adding asset to UCAS", Colors.C_YELLOW);
-
-                await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, file), SaturnData.Offset,
-                    compressed);
-
-                if (file.Contains("ient_s")) // Check if it's partitioned
-                    file = file.Split("ient_s")[0] + "ient"; // Remove the partition from the name because they don't get utocs
-                
-                file = file.Replace("ucas", "utoc");
-
-                if (!file.Contains("utoc")) // Check if it contains utoc
-                    file += ".utoc"; // If not, add it
-                
-                Dictionary<long, byte[]> lengths = new();
-                if (!await CustomAssets.TryHandleOffsets(asset, compressed.Length, data.Length, lengths, file, _saturnAPIService))
-                    Logger.Log(
-                        $"Unable to apply custom offsets to '{asset.ParentAsset}.' Asset might not have custom assets at all!",
-                        LogLevel.Error);
-
-                if (isRandom)
-                    await ItemUtil.UpdateStatus(random, option, "Adding swap to item's config", Colors.C_YELLOW);
-                else
-                    await ItemUtil.UpdateStatus(item, option, "Adding swap to item's config", Colors.C_YELLOW);
-                convItem.Swaps.Add(new ActiveSwap
-                {
-                    File = ucas,
-                    Offset = SaturnData.Offset,
-                    ParentAsset = asset.ParentAsset,
-                    IsCompressed = SaturnData.isCompressed,
-                    Lengths = lengths
-                });
-            }
-
-            if (isRandom)
-                random.IsConverted = true;
-            else
-                item.IsConverted = true;
-
-            if (option.Type == ItemType.IT_Skin && Config.isBeta)
-            {
-                var swapToIcon = await GetIconFromCID(item.Id);
-                if (isDefault)
-                {
-                    foreach (var icon in Constants.DefaultIconPaths)
+                    if (OriginalMaterial.TryGetValue(out FStructFallback[] TextureParameterValues,
+                            "TextureParameterValues"))
                     {
-                        await new TextureImporter(Provider).SwapTexture(icon, swapToIcon);
+                        foreach (var texture in TextureParameterValues)
+                        {
+                            if (texture.TryGetValue(out FStructFallback ParameterInfo, "ParameterInfo"))
+                            {
+                                if (ParameterInfo.TryGetValue(out FName Name, "Name"))
+                                {
+                                    if (texture.TryGetValue(out UObject text, "ParameterValue"))
+                                    {
+                                        OriginalTextures.Add(Name.Text, text.GetPathName());
+                                    }
+                                }
+                                else
+                                {
+                                    Logger.Log("Could not get ParameterInfo.Name!", LogLevel.Fatal);
+                                    return false;
+                                }
+                            }
+                            else
+                            {
+                                Logger.Log("Could not get ParameterInfo!", LogLevel.Fatal);
+                                return false;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Logger.Log("Could not find TextureParameterValues!", LogLevel.Fatal);
+                        return false;
                     }
                 }
                 else
                 {
-                    var iconResult = await new TextureImporter(Provider).SwapTexture(await GetIconFromCID(option.ItemDefinition), swapToIcon);
-                    if (!iconResult.Success) Logger.Log(iconResult.Error);
+                    Logger.Log("Could not find original material!", LogLevel.Fatal);
+                    return false;
                 }
+                
+                Logger.Log("Found " + OriginalTextures.Count + " textures for the original material!");
+                foreach (var texture in OriginalTextures)
+                {
+                    Logger.Log("Texture: " + texture.Key + " - " + texture.Value);
+                }
+                
+                Dictionary<string, string> ReplaceTextures = new();
+                if (_provider.TryLoadObject(replaceMaterial, out UObject ReplaceMaterial))
+                {
+                    if (ReplaceMaterial.TryGetValue(out FStructFallback[] TextureParameterValues,
+                            "TextureParameterValues"))
+                    {
+                        foreach (var texture in TextureParameterValues)
+                        {
+                            if (texture.TryGetValue(out FStructFallback ParameterInfo, "ParameterInfo"))
+                            {
+                                if (ParameterInfo.TryGetValue(out FName Name, "Name"))
+                                {
+                                    if (texture.TryGetValue(out UObject text, "ParameterValue"))
+                                    {
+                                        ReplaceTextures.Add(Name.Text, text.GetPathName());
+                                    }
+                                }
+                                else
+                                {
+                                    Logger.Log("Could not get ParameterInfo.Name!", LogLevel.Fatal);
+                                    return false;
+                                }
+                            }
+                            else
+                            {
+                                Logger.Log("Could not get ParameterInfo!", LogLevel.Fatal);
+                                return false;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Logger.Log("Could not find TextureParameterValues!", LogLevel.Fatal);
+                        return false;
+                    }
+                }
+                else
+                {
+                    Logger.Log("Could not find replace material!", LogLevel.Fatal);
+                    return false;
+                }
+                
+                Logger.Log("Found " + ReplaceTextures.Count + " textures for the replace material!");
+                foreach (var texture in ReplaceTextures)
+                {
+                    Logger.Log("Texture: " + texture.Key + " - " + texture.Value);
+                }
+
+                foreach (var texture in OriginalTextures)
+                {
+                    if (ReplaceTextures.ContainsKey(texture.Key) && texture.Value != ReplaceTextures[texture.Key])
+                    {
+                        Logger.Log("Found a match for " + texture.Key + "!");
+                        
+                        if (!TryExportAsset(texture.Value, out _, true))
+                        {
+                            Logger.Log($"Failed to export \"{texture.Value}\"!", LogLevel.Error);
+                            return false;
+                        }
+                        
+                        var file = SaturnData.Path;
+                        
+                        await BackupFile(file, item, option);
+                        
+                        var iconResult =
+                            await new TextureImporter(Provider).SwapTexture(texture.Value.Split('.')[0] + ".uasset",
+                                ReplaceTextures[texture.Key].Split('.')[0] + ".uasset");
+                        if (!iconResult.Success) Logger.Log(iconResult.Error);
+                        else
+                        {
+                            Logger.Log("Swapped " + texture.Value + " with " + ReplaceTextures[texture.Key]);
+                            convItem.Swaps.Add(new ActiveSwap
+                            {
+                                File = file,
+                                Offset = iconResult.Offset,
+                                ParentAsset = texture.Value,
+                                IsCompressed = true
+                            });
+                        }
+                    }
+                }
+                
+                sw.Stop();
+
+                if (!await _configService.AddConvertedItem(convItem))
+                    Logger.Log("Could not add converted item to config!", LogLevel.Error);
+                else
+                    Logger.Log($"Added {item.Name} to converted items list in config.");
+
+                _configService.SaveConfig();
+
+                if (sw.Elapsed.Minutes > 1)
+                    if (isRandom)
+                        await ItemUtil.UpdateStatus(random, option,
+                            $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
+                            Colors.C_GREEN);
+                    else
+                        await ItemUtil.UpdateStatus(item, option,
+                            $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
+                            Colors.C_GREEN);
+                else if (sw.Elapsed.Seconds > 1)
+                    if (isRandom)
+                        await ItemUtil.UpdateStatus(random, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
+                            Colors.C_GREEN);
+                    else
+                        await ItemUtil.UpdateStatus(item, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
+                            Colors.C_GREEN);
+                else if (isRandom)
+                    await ItemUtil.UpdateStatus(random, option,
+                        $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
+                else
+                    await ItemUtil.UpdateStatus(item, option,
+                        $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
+                Trace.WriteLine($"Converted in {sw.Elapsed.Seconds} seconds!");
+                Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
+
+                if (await _configService.GetConvertedFileCount() > 2)
+                    await _notificationService.Error(
+                        "You have more than 2 converted files. This will cause Fortnite to kick you out of your game! Please revert the last item you swapped to prevent this!");
+            }
+            else
+            {
+                SaturnOption itemSwap = new();
+                if (isDefault)
+                    itemSwap = await GenerateDefaultSkins(item);
+                else if (option.Options != null)
+                    itemSwap = option.Options[0];
+                else
+                    itemSwap = itemType switch
+                    {
+                        ItemType.IT_Skin => await GenerateMeshSkins(item, option),
+                        ItemType.IT_Dance => await GenerateMeshEmote(item, option),
+                        ItemType.IT_Pickaxe => await GenerateMeshPickaxe(item, option),
+                        ItemType.IT_Backbling => await GenerateMeshBackbling(item, option),
+                        _ => new()
+                    };
+
+                if (item.IsCloudAdded)
+                    itemSwap = option.Options[0];
+
+                Logger.Log($"There are {itemSwap.Assets.Count} assets to swap...", LogLevel.Info);
+                foreach (var asset in itemSwap.Assets)
+                {
+                    Logger.Log($"Starting swaps for {asset.ParentAsset}");
+                    Directory.CreateDirectory(Config.CompressedDataPath);
+                    if (isRandom)
+                        await ItemUtil.UpdateStatus(random, option, "Exporting asset", Colors.C_YELLOW);
+                    else
+                        await ItemUtil.UpdateStatus(item, option, "Exporting asset", Colors.C_YELLOW);
+                    Logger.Log("Exporting asset");
+                    if (!TryExportAsset(asset.ParentAsset, out var data))
+                    {
+                        Logger.Log($"Failed to export \"{asset.ParentAsset}\"!", LogLevel.Error);
+                        return false;
+                    }
+
+                    if (isDefault && asset.ParentAsset.Contains("DefaultGameDataCosmetics"))
+                        data = new WebClient().DownloadData(
+                            "https://cdn.discordapp.com/attachments/754879989614379042/983189162444357642/test.uasset");
+                    Logger.Log("Asset exported");
+                    Logger.Log($"Starting backup of {Path.GetFileName(SaturnData.Path)}");
+
+                    var file = SaturnData.Path;
+
+                    if (isRandom)
+                        await BackupFile(file, random, option);
+                    else
+                        await BackupFile(file, item, option);
+
+                    foreach (var swaps in asset.Swaps)
+                    {
+                        Logger.Log(swaps.Search + " :: " + swaps.Replace);
+                    }
+
+                    if (!TryIsB64(ref data, asset))
+                        Logger.Log($"Cannot swap/determine if '{asset.ParentAsset}' is Base64 or not!",
+                            LogLevel.Fatal);
+
+                    var Oodle = new Utils.Compression.Oodle(Config.BasePath);
+                    var compressed = SaturnData.isCompressed ? Oodle.Compress(data) : data;
+
+                    Directory.CreateDirectory(Config.DecompressedDataPath);
+                    File.SetAttributes(Config.DecompressedDataPath,
+                        FileAttributes.Hidden | FileAttributes.System);
+                    await File.WriteAllBytesAsync(
+                        Config.DecompressedDataPath + Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") +
+                        ".uasset", data);
+
+
+                    file = Path.GetFileName(file.Replace("WindowsClient", "SaturnClient"));
+
+                    var ucas = file;
+
+                    if (isRandom)
+                        await ItemUtil.UpdateStatus(random, option, "Adding asset to UCAS", Colors.C_YELLOW);
+                    else
+                        await ItemUtil.UpdateStatus(item, option, "Adding asset to UCAS", Colors.C_YELLOW);
+
+                    await TrySwapAsset(Path.Combine(FortniteUtil.PakPath, file), SaturnData.Offset,
+                        compressed);
+
+                    if (file.Contains("ient_s")) // Check if it's partitioned
+                        file = file.Split("ient_s")[0] +
+                               "ient"; // Remove the partition from the name because they don't get utocs
+
+                    file = file.Replace("ucas", "utoc");
+
+                    if (!file.Contains("utoc")) // Check if it contains utoc
+                        file += ".utoc"; // If not, add it
+
+                    Dictionary<long, byte[]> lengths = new();
+                    if (!await CustomAssets.TryHandleOffsets(asset, compressed.Length, data.Length, lengths, file,
+                            _saturnAPIService))
+                        Logger.Log(
+                            $"Unable to apply custom offsets to '{asset.ParentAsset}.' Asset might not have custom assets at all!",
+                            LogLevel.Error);
+
+                    if (isRandom)
+                        await ItemUtil.UpdateStatus(random, option, "Adding swap to item's config", Colors.C_YELLOW);
+                    else
+                        await ItemUtil.UpdateStatus(item, option, "Adding swap to item's config", Colors.C_YELLOW);
+                    convItem.Swaps.Add(new ActiveSwap
+                    {
+                        File = ucas,
+                        Offset = SaturnData.Offset,
+                        ParentAsset = asset.ParentAsset,
+                        IsCompressed = SaturnData.isCompressed,
+                        Lengths = lengths
+                    });
+                }
+
+                if (isRandom)
+                    random.IsConverted = true;
+                else
+                    item.IsConverted = true;
+
+                if (option.Type == ItemType.IT_Skin && Config.isBeta)
+                {
+                    var swapToIcon = await GetIconFromCID(item.Id);
+                    if (isDefault)
+                    {
+                        foreach (var icon in Constants.DefaultIconPaths)
+                        {
+                            await new TextureImporter(Provider).SwapTexture(icon, swapToIcon);
+                        }
+                    }
+                    else
+                    {
+                        var iconResult =
+                            await new TextureImporter(Provider).SwapTexture(await GetIconFromCID(option.ItemDefinition),
+                                swapToIcon);
+                        if (!iconResult.Success) Logger.Log(iconResult.Error);
+                    }
+                }
+
+                sw.Stop();
+
+                if (!await _configService.AddConvertedItem(convItem))
+                    Logger.Log("Could not add converted item to config!", LogLevel.Error);
+                else
+                    Logger.Log($"Added {item.Name} to converted items list in config.");
+
+                _configService.SaveConfig();
+
+                if (sw.Elapsed.Minutes > 1)
+                    if (isRandom)
+                        await ItemUtil.UpdateStatus(random, option,
+                            $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
+                            Colors.C_GREEN);
+                    else
+                        await ItemUtil.UpdateStatus(item, option,
+                            $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
+                            Colors.C_GREEN);
+                else if (sw.Elapsed.Seconds > 1)
+                    if (isRandom)
+                        await ItemUtil.UpdateStatus(random, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
+                            Colors.C_GREEN);
+                    else
+                        await ItemUtil.UpdateStatus(item, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
+                            Colors.C_GREEN);
+                else if (isRandom)
+                    await ItemUtil.UpdateStatus(random, option,
+                        $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
+                else
+                    await ItemUtil.UpdateStatus(item, option,
+                        $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
+                Trace.WriteLine($"Converted in {sw.Elapsed.Seconds} seconds!");
+                Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
+
+                if (await _configService.GetConvertedFileCount() > 2)
+                    await _notificationService.Error(
+                        "You have more than 2 converted files. This will cause Fortnite to kick you out of your game! Please revert the last item you swapped to prevent this!");
             }
 
-            sw.Stop();
-
-            if (!await _configService.AddConvertedItem(convItem))
-                Logger.Log("Could not add converted item to config!", LogLevel.Error);
-            else
-                Logger.Log($"Added {item.Name} to converted items list in config.");
-
-            _configService.SaveConfig();
-            
-            if (sw.Elapsed.Minutes > 1)
-                if (isRandom)
-                    await ItemUtil.UpdateStatus(random, option, $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
-                        Colors.C_GREEN);
-                else
-                    await ItemUtil.UpdateStatus(item, option, $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
-                        Colors.C_GREEN);
-            else if (sw.Elapsed.Seconds > 1)
-                if (isRandom)
-                    await ItemUtil.UpdateStatus(random, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
-                        Colors.C_GREEN);
-                else
-                    await ItemUtil.UpdateStatus(item, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
-                        Colors.C_GREEN);
-            else
-            if (isRandom)
-                await ItemUtil.UpdateStatus(random, option,
-                    $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
-            else
-                await ItemUtil.UpdateStatus(item, option,
-                    $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
-            Trace.WriteLine($"Converted in {sw.Elapsed.Seconds} seconds!");
-            Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
-
-            if (await _configService.GetConvertedFileCount() > 2)
-                await _notificationService.Error(
-                    "You have more than 2 converted files. This will cause Fortnite to kick you out of your game! Please revert the last item you swapped to prevent this!");
 
             return true;
         }
@@ -1240,6 +1476,11 @@ public sealed class SwapperService : ISwapperService
         }
 
         return cps;
+    }
+
+    private async Task<SaturnOption> GenerateMeshGlider(Cosmetic item, SaturnItem option)
+    {
+        return new SaturnOption();
     }
 
     #region GenerateBackbling
@@ -1859,7 +2100,7 @@ public sealed class SwapperService : ISwapperService
         }
     }
 
-    private bool TryExportAsset(string asset, out byte[] data)
+    private bool TryExportAsset(string asset, out byte[] data, bool isUbulk = false)
     {
         data = Array.Empty<byte>();
         try
@@ -1872,12 +2113,17 @@ public sealed class SwapperService : ISwapperService
             }
 
             Logger.Log("Getting data");
-            data = pkg.FirstOrDefault(x => x.Key.Contains("uasset")).Value;
+            data = isUbulk
+                ? pkg.FirstOrDefault(x => x.Key.Contains("ubulk")).Value
+                : pkg.FirstOrDefault(x => x.Key.Contains("uasset")).Value;
 
-            Logger.Log($"UAsset path is {SaturnData.UAssetPath}", LogLevel.Debug);
-            File.WriteAllBytes(
-                Path.Combine(Config.CompressedDataPath, $"{Path.GetFileName(SaturnData.UAssetPath)}"),
-                SaturnData.CompressedData);
+            if (!isUbulk)
+            {
+                Logger.Log($"UAsset path is {SaturnData.UAssetPath}", LogLevel.Debug);
+                File.WriteAllBytes(
+                    Path.Combine(Config.CompressedDataPath, $"{Path.GetFileName(SaturnData.UAssetPath)}"),
+                    SaturnData.CompressedData);
+            }
 
             Logger.Log($"Successfully exported asset \"{asset}\" and cached compressed data");
 
