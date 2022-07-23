@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -59,7 +59,7 @@ internal class GliderGeneration : AbstractGeneration
 
                 glider.Rarity = new Rarity // Make a new rarity instance
                 {
-                    Value = asset.TryGetValue(out EFortRarity Rarity, "Rarity") ? Rarity.ToString() : "Uncommon" // Get the rarity
+                    Value = asset.GetOrDefault("Rarity", EFortRarity.Uncommon).ToString() // Get the rarity
                 }; // End the rarity instance
 
                 if (glider.Name is "Random") // If the pickaxe name is random
