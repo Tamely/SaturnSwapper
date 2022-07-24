@@ -176,7 +176,7 @@ namespace Saturn.Backend.Core.Services
         public async Task<int> GetConvertedFileCount()
         {
             List<string> convertedFiles = new List<string>();
-            foreach (var swap in from item in ConfigFile.ConvertedItems from swap in item.Swaps where convertedFiles.IndexOf(swap.File) == -1 select swap)
+            foreach (var swap in from item in ConfigFile.ConvertedItems from swap in item.Swaps where convertedFiles.IndexOf(swap.File) == -1 && !swap.File.Contains("utoc") select swap)
                 convertedFiles.Add(swap.File);
             return convertedFiles.Count;
         }

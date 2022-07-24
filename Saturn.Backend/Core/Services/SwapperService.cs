@@ -972,21 +972,28 @@ public sealed class SwapperService : ISwapperService
                         var file = SaturnData.Path;
                         
                         await BackupFile(file, item, option);
+
+                        var asset = texture.Value.Replace("/Game/", "FortniteGame/Content/").Split('.')[0] + ".ubulk";
+                        var toAsset =
+                            ReplaceTextures[texture.Key].Replace("/Game/", "FortniteGame/Content/").Split('.')[0] +
+                            ".ubulk";
                         
-                        var iconResult =
-                            await new TextureImporter(Provider).SwapTexture(texture.Value.Split('.')[0] + ".uasset",
-                                ReplaceTextures[texture.Key].Split('.')[0] + ".uasset");
+                        var iconResult = await new TextureImporter(Provider).SwapUbulk(asset, toAsset);
                         if (!iconResult.Success) Logger.Log(iconResult.Error);
                         else
                         {
                             Logger.Log("Swapped " + texture.Value + " with " + ReplaceTextures[texture.Key]);
-                            convItem.Swaps.Add(new ActiveSwap
+                            foreach (var swap in iconResult.Offsets)
                             {
-                                File = file,
-                                Offset = iconResult.Offset,
-                                ParentAsset = texture.Value,
-                                IsCompressed = true
-                            });
+                                convItem.Swaps.Add(new ActiveSwap
+                                {
+                                    File = swap.Key.Item3 ? file.Replace("WindowsClient", "SaturnClient") : file.SubstringBeforeLast('_').Replace(".utoc", string.Empty).Replace(".ucas", string.Empty).Replace("WindowsClient", "SaturnClient") + ".utoc",
+                                    Offset = swap.Key.Item2,
+                                    ParentAsset = swap.Key.Item1 + "_" + asset.SubstringAfterLast('/') + "_Chunk.uasset",
+                                    IsCompressed = true,
+                                    Lengths = new Dictionary<long, byte[]>()
+                                });
+                            }
                         }
                     }
                 }
@@ -997,31 +1004,38 @@ public sealed class SwapperService : ISwapperService
                     Logger.Log("Could not add converted item to config!", LogLevel.Error);
                 else
                     Logger.Log($"Added {item.Name} to converted items list in config.");
+                
+                if (isRandom)
+                    random.IsConverted = true;
+                else
+                    item.IsConverted = true;
 
                 _configService.SaveConfig();
 
-                if (sw.Elapsed.Minutes > 1)
-                    if (isRandom)
-                        await ItemUtil.UpdateStatus(random, option,
-                            $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
-                            Colors.C_GREEN);
-                    else
-                        await ItemUtil.UpdateStatus(item, option,
-                            $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
-                            Colors.C_GREEN);
-                else if (sw.Elapsed.Seconds > 1)
-                    if (isRandom)
-                        await ItemUtil.UpdateStatus(random, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
-                            Colors.C_GREEN);
-                    else
-                        await ItemUtil.UpdateStatus(item, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
-                            Colors.C_GREEN);
-                else if (isRandom)
-                    await ItemUtil.UpdateStatus(random, option,
-                        $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
-                else
-                    await ItemUtil.UpdateStatus(item, option,
-                        $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
+                        if (sw.Elapsed.Minutes > 1)
+                        {
+                            await ItemUtil.UpdateStatus(isRandom ? random : item, option, $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
+                                Colors.C_GREEN);
+                            await _notificationService.Success(
+                                $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!", true,
+                                "Launch Fortnite");
+                        }
+                        else if (sw.Elapsed.Seconds > 1)
+                        {
+                            await ItemUtil.UpdateStatus(isRandom ? random : item, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
+                                Colors.C_GREEN);
+                            await _notificationService.Success(
+                                $"Converted in {sw.Elapsed.Seconds} seconds!", true,
+                                "Launch Fortnite");
+                        }
+                        else
+                        {
+                            await ItemUtil.UpdateStatus(isRandom ? random : item, option, $"Converted in {sw.Elapsed.Milliseconds} milliseconds!",
+                                Colors.C_GREEN);
+                            await _notificationService.Success(
+                                $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", true,
+                                "Launch Fortnite");
+                        }
                 Trace.WriteLine($"Converted in {sw.Elapsed.Seconds} seconds!");
                 Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
 
@@ -1174,27 +1188,30 @@ public sealed class SwapperService : ISwapperService
                 _configService.SaveConfig();
 
                 if (sw.Elapsed.Minutes > 1)
-                    if (isRandom)
-                        await ItemUtil.UpdateStatus(random, option,
-                            $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
-                            Colors.C_GREEN);
-                    else
-                        await ItemUtil.UpdateStatus(item, option,
-                            $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
-                            Colors.C_GREEN);
+                {
+                    await ItemUtil.UpdateStatus(isRandom ? random : item, option, $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!",
+                        Colors.C_GREEN);
+                    await _notificationService.Success(
+                        $"Converted in {sw.Elapsed.Minutes} minutes and {sw.Elapsed.Seconds} seconds!", true,
+                        "Launch Fortnite");
+                }
                 else if (sw.Elapsed.Seconds > 1)
-                    if (isRandom)
-                        await ItemUtil.UpdateStatus(random, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
-                            Colors.C_GREEN);
-                    else
-                        await ItemUtil.UpdateStatus(item, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
-                            Colors.C_GREEN);
-                else if (isRandom)
-                    await ItemUtil.UpdateStatus(random, option,
-                        $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
+                {
+                    await ItemUtil.UpdateStatus(isRandom ? random : item, option, $"Converted in {sw.Elapsed.Seconds} seconds!",
+                        Colors.C_GREEN);
+                    await _notificationService.Success(
+                        $"Converted in {sw.Elapsed.Seconds} seconds!", true,
+                        "Launch Fortnite");
+                }
                 else
-                    await ItemUtil.UpdateStatus(item, option,
-                        $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", Colors.C_GREEN);
+                {
+                    await ItemUtil.UpdateStatus(isRandom ? random : item, option, $"Converted in {sw.Elapsed.Milliseconds} milliseconds!",
+                        Colors.C_GREEN);
+                    await _notificationService.Success(
+                        $"Converted in {sw.Elapsed.Milliseconds} milliseconds!", true,
+                        "Launch Fortnite");
+                }
+                
                 Trace.WriteLine($"Converted in {sw.Elapsed.Seconds} seconds!");
                 Logger.Log($"Converted in {sw.Elapsed.Seconds} seconds!");
 
@@ -1269,32 +1286,41 @@ public sealed class SwapperService : ISwapperService
                         .GetResult();
                     File.Delete(Path.Combine(Config.CompressedDataPath,
                         Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset"));
-                    File.Delete(Path.Combine(Config.DecompressedDataPath,
-                        Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset"));
+                    if (File.Exists(Path.Combine(Config.DecompressedDataPath,
+                            Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset")))
+                        File.Delete(Path.Combine(Config.DecompressedDataPath,
+                            Path.GetFileName(asset.ParentAsset).Replace(".uasset", "") + ".uasset"));
                 }
 
                 return true;
             });
 
-            if (option.Type == ItemType.IT_Skin && Config.isBeta)
+            try
             {
-                var path = await GetIconFromCID(item.Id); // Swapping icon path
-                if (option.Name.Contains("Default Skins"))
+                if (option.Type == ItemType.IT_Skin && Config.isBeta)
                 {
-                    foreach (var icon in Constants.DefaultIconPaths)
+                    var path = await GetIconFromCID(item.Id); // Swapping icon path
+                    if (option.Name.Contains("Default Skins"))
                     {
-                        await new TextureImporter(Provider).SwapTexture(null, path,
-                            await File.ReadAllBytesAsync(Path.Combine(Config.CompressedDataPath, icon.SubstringAfterLast('/'))));
-                        File.Delete(icon.SubstringAfterLast('/'));
+                        foreach (var icon in Constants.DefaultIconPaths)
+                        {
+                            await new TextureImporter(Provider).SwapTexture(null, path,
+                                await File.ReadAllBytesAsync(Path.Combine(Config.CompressedDataPath, icon.SubstringAfterLast('/'))));
+                            File.Delete(icon.SubstringAfterLast('/'));
+                        }
+                    }
+                    else
+                    {
+                        var iconResult = await new TextureImporter(Provider).SwapTexture(
+                            path, null,
+                            await File.ReadAllBytesAsync(Path.Combine(Config.CompressedDataPath, path.SubstringAfterLast('/'))));
+                        if (!iconResult.Success) Logger.Log(iconResult.Error);
                     }
                 }
-                else
-                {
-                    var iconResult = await new TextureImporter(Provider).SwapTexture(
-                        path, null,
-                        await File.ReadAllBytesAsync(Path.Combine(Config.CompressedDataPath, path.SubstringAfterLast('/'))));
-                    if (!iconResult.Success) Logger.Log(iconResult.Error);
-                }
+            }
+            catch
+            {
+                // ignored
             }
 
             if (!await _configService.RemoveConvertedItem(id))

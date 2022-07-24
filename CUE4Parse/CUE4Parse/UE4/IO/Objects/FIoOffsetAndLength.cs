@@ -7,8 +7,12 @@ namespace CUE4Parse.UE4.IO.Objects
         public readonly ulong Offset;
         public readonly ulong Length;
 
+        public readonly long Position;
+
         public FIoOffsetAndLength(FArchive Ar)
         {
+            Position = Ar.Position;
+            
             unsafe
             {
                 var offsetAndLength = stackalloc byte[10];

@@ -10,9 +10,11 @@ namespace Saturn.Backend.Core.Utils.Textures
 
     internal class AbstractImporter
     {
-        public DefaultFileProvider Provider { get; }
-        public BinaryWriter Stream { get; protected set; }
-        public BinaryWriter TocStream { get; protected set; }
+        protected DefaultFileProvider Provider { get; }
+        protected BinaryReader Reader { get; private set; }
+        protected BinaryReader TocReader { get; private set; }
+        protected BinaryWriter Stream { get; private set; }
+        protected BinaryWriter TocStream { get; private set; }
 
         internal enum FileT
         {
@@ -33,8 +35,16 @@ namespace Saturn.Backend.Core.Utils.Textures
         {
             try
             {
-                if (file.EndsWith(".ucas")) Stream = new BinaryWriter(File.OpenWrite(file.Replace("WindowsClient", "SaturnClient")));
-                else TocStream = new BinaryWriter(File.OpenWrite(file));
+                if (file.EndsWith(".ucas"))
+                {
+                    Reader = new BinaryReader(new FileStream(file.Replace("WindowsClient", "SaturnClient"), FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+                    Stream = new BinaryWriter(new FileStream(file.Replace("WindowsClient", "SaturnClient"), FileMode.Open, FileAccess.Write, FileShare.ReadWrite));
+                }
+                else
+                {
+                    TocReader = new BinaryReader(new FileStream(file.Replace("WindowsClient", "SaturnClient"), FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+                    TocStream = new BinaryWriter(new FileStream(file.Replace("WindowsClient", "SaturnClient"), FileMode.Open, FileAccess.Write, FileShare.ReadWrite));
+                }
             }
             catch (Exception e)
             {
@@ -51,9 +61,11 @@ namespace Saturn.Backend.Core.Utils.Textures
             {
                 case FileT.Cas:
                     Stream.Close();
+                    Reader.Close();
                     break;
                 case FileT.Toc:
                     TocStream.Close();
+                    TocReader.Close();
                     break;
             }
         }
