@@ -40,6 +40,6 @@
             "FortniteGame/Content/UI/Foundation/Textures/Icons/Heroes/Athena/Soldier/T-Soldier-HID-A-285-Athena-Commando-M-Prime-G.uasset"
         };
         
-        public const string UserVersion = "1.4.10";
+        public const string UserVersion = "1.4.11";
     }
 }
