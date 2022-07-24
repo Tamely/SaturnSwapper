@@ -98,6 +98,15 @@ public class AddGliders
             Icon = 
                 "https://fortnite-api.com/images/cosmetics/br/DefaultGlider/smallicon.png",
             Rarity = "Common"
+        },
+        new SaturnItem()
+        {
+            ItemDefinition = "Glider_ID_244_ChOneGlider",
+            Name = "The O.G.",
+            Description = "True Original Glider.",
+            Icon = 
+                "https://fortnite-api.com/images/cosmetics/br/Glider_ID_244_ChOneGlider/smallicon.png",
+            Rarity = "Uncommon"
         }
     };
     
