@@ -1159,7 +1159,7 @@ public sealed class SwapperService : ISwapperService
                 else
                     item.IsConverted = true;
 
-                if (option.Type == ItemType.IT_Skin && Config.isBeta)
+                if (option.Type == ItemType.IT_Skin && Config.isBeta && await _configService.TryGetShouldShowIcons())
                 {
                     var swapToIcon = await GetIconFromCID(item.Id);
                     if (isDefault)
@@ -1177,6 +1177,9 @@ public sealed class SwapperService : ISwapperService
                         if (!iconResult.Success) Logger.Log(iconResult.Error);
                     }
                 }
+                else if (!Config.isBeta)
+                    await _notificationService.Warn(
+                        "If you would like to add icons to your skins, please boost Tamely's Discord server to gain that feature!");
 
                 sw.Stop();
 
@@ -1297,7 +1300,7 @@ public sealed class SwapperService : ISwapperService
 
             try
             {
-                if (option.Type == ItemType.IT_Skin && Config.isBeta)
+                if (option.Type == ItemType.IT_Skin && Config.isBeta && await _configService.TryGetShouldShowIcons())
                 {
                     var path = await GetIconFromCID(item.Id); // Swapping icon path
                     if (option.Name.Contains("Default Skins"))

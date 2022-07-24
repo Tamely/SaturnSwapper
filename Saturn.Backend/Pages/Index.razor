@@ -77,7 +77,7 @@
                         <img src="img/UI/skins.png" alt="">
                         <h2>Skins</h2>
                     </div>
-                    <div class="option" @onclick=@(async() => await GetSaturnGliders())>
+                    <div class="option" @onclick=@(async() => await GetSaturnBackblings())>
                         <img src="img/UI/backblings.png" alt="">
                         <h2>Backblings</h2>
                     </div>
@@ -89,9 +89,9 @@
                         <img src="img/UI/emotes.png" alt="">
                         <h2>Emotes</h2>
                     </div>
-                    <div class="option" @onclick=@(async() => await GetSaturnMisc())>
-                        <img src="img/UI/extra.png" alt="">
-                        <h2>Misc</h2>
+                    <div class="option" @onclick=@(async() => await GetSaturnGliders())>
+                        <img src="img/UI/umbrella.png" alt="">
+                        <h2>Gliders</h2>
                     </div>
                     <div class="option" @onclick=@(async() => await GoToSettings())>
                         <img src="img/UI/settings.png" alt="">
@@ -699,6 +699,15 @@
                                 <p style="color:white; font-size: @GetTextSize(_showStyles);">@_showStyles</p>
                             </div>
                         </div>
+                        
+                        <div class="card" @onclick=@(async () => await ToggleShowIcons())>
+                            <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                            <div class="card-info">
+                                <h2 style="font-size: @GetTextSize("Show Skin Icons In Game", true);">Show Skin Icons In Game</h2>
+                                <p style="color:white; font-size: @GetTextSize(_showSkinIcons);">@_showSkinIcons</p>
+                            </div>
+                        </div>
+                        
 
                         <div class="card" @onclick=@(async () => { if (Directory.Exists(Config.PluginsPath)) Directory.Delete(Config.PluginsPath, true); await _notificationService.Success("Finished removing all plugins!"); })>
                             <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
@@ -727,7 +736,7 @@
                         <div class="card" @onclick=@(async () => await ToggleIcons())>
                             <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
                             <div class="card-info">
-                                <h2 style="font-size: @GetTextSize("Toggle Fortnite Icons", true);">Toggle Fortnite Icons</h2>
+                                <h2 style="font-size: @GetTextSize("Toggle Fortnite Icons", true);">Toggle Copyrighted Images</h2>
                                 @switch (_toggleIconsColor)
                                 {
                                     case Colors.C_WHITE:
@@ -737,6 +746,14 @@
                                         <p style="color:green; font-size: @GetTextSize(_toggleIcons);">@_toggleIcons</p>
                                         break;
                                 }
+                            </div>
+                        </div>
+                        
+                        <div class="card" @onclick=@(async () => await GetSaturnMisc())>
+                            <img class="base" src="img/Series/2020AnnualPassSeries.png" alt=""/>
+                            <div class="card-info">
+                                <h2 style="font-size: @GetTextSize("Go To Misc Tab", true);">Go To Misc Tab</h2>
+                                <p style="color:white;font-size: @GetTextSize("This brings you to the Misc tab where the lobby background swapper and plugins are stored.");">This brings you to the Misc tab where the lobby background swapper and plugins are stored.</p>
                             </div>
                         </div>
                     </div>
@@ -908,6 +925,7 @@
     private Colors _toggleIconsColor = Colors.C_WHITE;
     
     private string _showStyles = "";
+    private string _showSkinIcons = "";
 
     private SaturnState _saturnState = SaturnState.S_Key;
     
@@ -1041,7 +1059,7 @@
             var oldName = Config.PresetsPath + "//" + _currentPreset.Name + ".json";
             _currentPreset.Name = _currentName;
             File.Move(oldName, name);
-            File.WriteAllText(name, JsonConvert.SerializeObject(_currentPreset, Formatting.Indented));
+            await File.WriteAllTextAsync(name, JsonConvert.SerializeObject(_currentPreset, Formatting.Indented));
         }
         else
         {
@@ -1183,6 +1201,14 @@
         => _showStyles = await _configService.TryGetShouldShowStyles() 
             ? "Currently set to 'WILL show item styles.' This could cause performance issues on low-end PCs!" 
             : "Currently set to 'WILL NOT show item styles.' This could cause performance issues on low-end PCs!";
+    
+    /// <summary>
+    /// Sets the Show Skin Icons button text
+    /// </summary>
+    private async Task ShouldShowIcons()
+        => _showSkinIcons = await _configService.TryGetShouldShowIcons()
+            ? "Currently set to 'WILL show skin icons in game.' NOTE: This is a BETA only feature."
+            : "Currently set to 'WILL NOT show skin icons in game.' NOTE: This is a BETA only feature.";
 
     /// <summary>
     /// This will get the currently swapped items and return them in a message box.
@@ -1202,6 +1228,8 @@
         AppDomain.CurrentDomain.FirstChanceException += UnhandledException; // Catch unhandled exceptions
 
         await ShouldShowStyles(); // Get the current style setting
+
+        await ShouldShowIcons(); // Get the current icon setting
 
         var currentUser = _discordRPCService.Client.CurrentUser; // Get the current user
 
@@ -1631,6 +1659,20 @@
         {
             true => "Currently set to 'WILL show item styles.' This could cause performance issues on low-end PCs!", // If true, it will show styles
             false => "Currently set to 'WILL NOT show item styles.' This could cause performance issues on low-end PCs!" // If false, it will not show styles
+        };
+    }
+    
+    /// <summary>
+    /// Toggles showing item icons in game.
+    /// </summary>
+    private async Task ToggleShowIcons()
+    {
+        await _configService.TrySetShouldShowIcons(!await _configService.TryGetShouldShowIcons()); // Toggle the config value
+
+        _showSkinIcons = await _configService.TryGetShouldShowIcons() switch // Set the text to display
+        {
+            true => "Currently set to 'WILL show skin icons in game.' NOTE: This is a BETA only feature.", // If true, it will show icons
+            false => "Currently set to 'WILL NOT show skin icons in game.' NOTE: This is a BETA only feature." // If false, it will not show icons
         };
     }
 

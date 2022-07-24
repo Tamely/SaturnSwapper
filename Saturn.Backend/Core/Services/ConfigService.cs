@@ -21,6 +21,8 @@ namespace Saturn.Backend.Core.Services
         public Task<bool> TryGetShouldSeriesConvert();
         public Task<bool> TrySetShouldSeriesConvert(bool shouldConvert);
         public Task<bool> TryGetShouldShowStyles();
+        public Task<bool> TryGetShouldShowIcons();
+        public Task<bool> TrySetShouldShowIcons(bool shouldShow);
         public Task<bool> TrySetShouldShowStyles(bool shouldShow);
         public Task<string> TryGetFortniteVersion();
         public Task<bool> TrySetFortniteVersion(string fortniteBuild);
@@ -156,6 +158,7 @@ namespace Saturn.Backend.Core.Services
                 TryGetShouldRarityConvert().GetAwaiter();
                 TryGetShouldSeriesConvert().GetAwaiter();
                 TryGetShouldShowStyles().GetAwaiter();
+                TryGetShouldShowIcons().GetAwaiter();
                 TryGetHeadOrHatCharacterPart().GetAwaiter();
                 TryGetSwapperVersion().GetAwaiter();
                 TryGetIsDefaultSwapped().GetAwaiter();
@@ -306,6 +309,33 @@ namespace Saturn.Backend.Core.Services
             try
             {
                 ConfigFile.ShouldShowStyles = shouldShow;
+                SaveConfig();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        
+        public async Task<bool> TryGetShouldShowIcons()
+        {
+            try
+            {
+                return ConfigFile.ShouldShowIcons;
+            }
+            catch
+            {
+                ConfigFile.ShouldShowIcons = true;
+                return true;
+            }
+        }
+        
+        public async Task<bool> TrySetShouldShowIcons(bool shouldShow)
+        {
+            try
+            {
+                ConfigFile.ShouldShowIcons = shouldShow;
                 SaveConfig();
                 return true;
             }
