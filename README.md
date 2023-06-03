@@ -23,7 +23,6 @@ This repo should contain issues that are tied to the actual codebase of the proj
 
 ## Useful Links
 * [Saturn's Discord](https://discord.gg/Saturn)
-* [.NET 6 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.0-windows-x64-installer) - Needed for running the project
 * [WebView2 Runtime (comes with Windows 11, you need the x64 Evergreen Bootstrapper)](https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download-section) - Needed to run the website the project hosts as a native program
 
 ## Unlisted Contributors
