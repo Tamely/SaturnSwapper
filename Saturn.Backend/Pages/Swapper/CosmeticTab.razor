@@ -231,12 +231,6 @@
         IoPackage.NameToBeSearching.Clear();
         
         await Swap(Constants.Provider);
-
-        Constants.ConvertedIDs.Add(Constants.SelectedItem!.ID);
-        StateHasChanged();
-        currentlySwapping = false;
-        Constants.SelectedItem = null;
-        Constants.SelectedOption = null;
     }
 
     private async Task Swap(DefaultFileProvider provider)
@@ -364,6 +358,12 @@
             OptionModel = Constants.SelectedOption,
             ItemModel = Constants.SelectedItem
         });
+        
+        Constants.ConvertedIDs.Add(Constants.SelectedItem!.ID);
+        StateHasChanged();
+        currentlySwapping = false;
+        Constants.SelectedItem = null;
+        Constants.SelectedOption = null;
     }
 
     private bool _handled = false;
