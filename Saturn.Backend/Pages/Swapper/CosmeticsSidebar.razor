@@ -1,0 +1,147 @@
+﻿@using Saturn.Backend.Data.Variables
+@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Data.Swapper.Generation
+@using Saturn.Backend.Data
+@using Saturn.Backend.Data.FortniteCentral
+@using Saturn.Backend.Data.SaturnAPI.Models
+
+@inject IJSRuntime _jsRuntime
+@inject IFortniteCentralService _fortniteCentralService
+@inject LocalizationResourceService _localizationResourceService
+
+<ul class="sidebar">
+    <li id="skin-li" class="selected" @onclick="@(async() => await SwitchState(SaturnState.S_Skin))">
+        <h6><i class="fas fa-user"></i> @_localizationResourceService.GetString(18)</h6>
+    </li>
+    
+    <li id="backbling-li" @onclick="@(async() => await SwitchState(SaturnState.S_Backbling))">
+        <h6><i class="fas fa-backpack"></i> @_localizationResourceService.GetString(19)</h6>
+    </li>
+    
+    <li id="pickaxe-li" @onclick="@(async() => await SwitchState(SaturnState.S_Pickaxe))">
+        <h6><i class="fas fa-axe"></i> @_localizationResourceService.GetString(20)</h6>
+    </li>
+    
+    <li id="emote-li" @onclick="@(async() => await SwitchState(SaturnState.S_Emote))">
+        <h6><i class="fas fa-user-music"></i> @_localizationResourceService.GetString(21)</h6>
+    </li>
+    
+    <li id="glider-li" @onclick="@(async() => await SwitchState(SaturnState.S_Glider))">
+        <h6><i class="fas fa-umbrella"></i> @_localizationResourceService.GetString(22)</h6>
+    </li>
+    
+    <div class="input-block-small">
+        <input placeholder="Search..." @onkeydown="@(async(key) => await FilterItems(key))" @bind="@SearchPattern"/>
+        <span class="label">@_localizationResourceService.GetString(24)</span>
+    </div>
+    
+    <li id="back-li" class="settings-high" @onclick="@(async() => await GoBack())">
+        <h6><i class="fas fa-arrow-to-left"></i> @_localizationResourceService.GetString(23)</h6>
+    </li>
+</ul>
+
+@code {
+    private static Generator _generator;
+
+    private static string SearchPattern = "";
+
+    private async Task FilterItems(KeyboardEventArgs key)
+    {
+        if (key.Code != "Enter")
+            return;
+        
+        Constants.ChunkedItems = new List<List<DisplayItemModel>>()
+        {
+            new List<DisplayItemModel>()
+            {
+                new DisplayItemModel()
+                {
+                    Name = "Please wait...",
+                    Description = "Filtering items...",
+                    ID = "CID_117_Athena_Commando_M_TacticalJungle"
+                }
+            }
+        };
+        StateHasChanged();
+        
+        switch (Constants.CosmeticState)
+        {
+            case SaturnState.S_Pickaxe:
+                _generator = new PickaxeGenerator();
+                break;
+            case SaturnState.S_Emote:
+                _generator = new EmoteGenerator();
+                break;
+            case SaturnState.S_Skin:
+                _generator = new SkinGenerator();
+                break;
+            case SaturnState.S_Backbling:
+                _generator = new BackblingGenerator();
+                break;
+            case SaturnState.S_Glider:
+                _generator = new GliderGenerator();
+                break;
+        }
+
+        Constants.ChunkedItems[0] = (await _generator.Generate()).OrderBy(x => x.ID).ToList();
+        Constants.ChunkedItems[0].RemoveAll(x => !x.Name.ToLower().Contains(SearchPattern.ToLower()) && !x.Description.ToLower().Contains(SearchPattern.ToLower()) && !x.ID.ToLower().Contains(SearchPattern.ToLower()));
+        
+        Constants.ChunkedItems = Constants.ChunkedItems[0]
+            .Select((x, i) => new { Index = i, Value = x })
+            .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
+            .Select(x => x.Select(v => v.Value).ToList())
+            .ToList();
+    }
+    
+    private async Task SwitchState(SaturnState state)
+    {
+        Constants.CosmeticState = state;
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOutNoOutro", "pickaxe");
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOutNoOutro", "emote");
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOutNoOutro", "skin");
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOutNoOutro", "backbling");
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOutNoOutro", "glider");
+        switch (state)
+        {
+            case SaturnState.S_Pickaxe:
+                await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "pickaxe");
+                _generator = new PickaxeGenerator();
+                break;
+            case SaturnState.S_Emote:
+                await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "emote");
+                _generator = new EmoteGenerator();
+                break;
+            case SaturnState.S_Skin:
+                await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "skin");
+                _generator = new SkinGenerator();
+                break;
+            case SaturnState.S_Backbling:
+                await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "backbling");
+                _generator = new BackblingGenerator();
+                break;
+            case SaturnState.S_Glider:
+                await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "glider");
+                _generator = new GliderGenerator();
+                break;
+        }
+        
+        Constants.ChunkedItems = (await _generator.Generate()).OrderBy(x => x.ID).ToList()
+            .Select((x, i) => new { Index = i, Value = x })
+            .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
+            .Select(x => x.Select(v => v.Value).ToList())
+            .ToList();
+        StateHasChanged();
+    }
+
+    private async Task GoBack()
+    {
+        Constants.CosmeticState = SaturnState.S_Skin;
+
+        DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", "Dash");
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOut", "cosmetic");
+        Constants.State = SaturnState.S_Dash;
+        while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "dash")) {}
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "dash");
+    }
+}

@@ -1,0 +1,68 @@
+﻿@using Saturn.Backend.Data.Variables
+@using Saturn.Backend.Data
+@using Saturn.Backend.Data.SaturnAPI.Models
+@using Saturn.Backend.Data.Services
+
+@inject IJSRuntime _jsRuntime
+@inject LocalizationResourceService _localizationResourceService
+
+<div class="modal minimized" id="option-modal">
+    <div class="modal-window" style="width: 490px">
+        <div class="close-button" onclick="saturn.modalManager.hideModal('option')">
+            <i class="fas fa-times"></i>
+        </div>
+        
+        <div class="modal-header">
+            <h1 class="modal-title">@OptionTitle</h1>
+            <p class="modal-desc">@(_localizationResourceService.GetString(54) + OptionDescription)</p>
+        </div>
+        
+        @foreach (var item in BaseItem?.Options ?? new List<SaturnItemModel>())
+        {
+            <div id="@(item.ID + "-section")" class="section hoverable" onclick="@(async() => await SelectItem(item))">
+                <img src=@($"https://fortnite-api.com/images/cosmetics/br/{item.ID}/smallicon.png") alt="Icon"/>
+                <div class="name">
+                    <h1>@item.Name</h1>
+                    <h3>@item.Description</h3>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+
+@code {
+    public static SaturnItemModel? BaseItem = null;
+    private static string OptionTitle = "TBD";
+    private static string OptionDescription = "To be determined...";
+
+    private async void ChangeState()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(500);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ChangeState();
+    }
+
+    public static void SetItem(SaturnItemModel item)
+    {
+        Constants.SelectedItem = item;
+        BaseItem = item;
+        OptionTitle = item.Name + " Options";
+        OptionDescription = item.Name;
+    }
+
+    private async Task SelectItem(SaturnItemModel item)
+    {
+        BaseItem = null;
+        Constants.SelectedOption = item;
+        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.hideModal", "option");
+    }
+
+}

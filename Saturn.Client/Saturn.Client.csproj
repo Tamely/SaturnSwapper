@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
-        <TargetFramework>net6.0-windows10.0.20348.0</TargetFramework>
-        <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
         <OutputType>WinExe</OutputType>
         <UseWPF>true</UseWPF>
         <IsPackable>false</IsPackable>
@@ -14,11 +12,12 @@
         <NeutralLanguage>en</NeutralLanguage>
         <Product>Saturn</Product>
         <AssemblyName>Saturn</AssemblyName>
-        <PackageVersion>1.4.10</PackageVersion>
+        <PackageVersion>2.2.0</PackageVersion>
         <Title>Saturn</Title>
         <Description>The most advanced fortnite skin swapper</Description>
-        <AssemblyVersion>1.4</AssemblyVersion>
-        <FileVersion>1.4.10</FileVersion>
+        <AssemblyVersion>2.2</AssemblyVersion>
+        <FileVersion>2.2.0</FileVersion>
+        <TargetFramework>net6.0-windows</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -42,7 +41,6 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Wpf" Version="6.0.101-preview.10.2068" />
-        <PackageReference Include="MudBlazor" Version="6.0.5" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,146 +1,130 @@
 ﻿using System;
-using System.Diagnostics;
+using System.ComponentModel;
 using System.IO;
+using System.Net;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Interop;
 using Microsoft.Extensions.DependencyInjection;
-using Saturn.Backend.Core.Services;
-using MudBlazor.Services;
-using Saturn.Backend.Core.Utils;
-
+using Saturn.Backend.Data;
+using Saturn.Backend.Data.FortniteCentral;
+using Saturn.Backend.Data.SaturnAPI;
+using Saturn.Backend.Data.Services;
+using Saturn.Backend.Data.Services.OobeServiceUtils;
+using Saturn.Backend.Data.Variables;
 
 namespace Saturn.Client
 {
-	/// <summary>
+    /// <summary>
 	///     Interaction logic for MainWindow.xaml
 	/// </summary>
 	public partial class MainWindow : Window
     {
-        private double _aspectRatio;
-        private bool? _adjustingHeight = null;
-
-        internal enum SWP
-        {
-            NOMOVE = 0x0002
-        }
-
-        internal enum WM
-        {
-            WINDOWPOSCHANGING = 0x0046,
-            EXITSIZEMOVE = 0x0232
-        }
-        
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct WINDOWPOS
-        {
-            public IntPtr hwnd;
-            public IntPtr hwndInsertAfter;
-            public int x;
-            public int y;
-            public int cx;
-            public int cy;
-            public int flags;
-        }
-
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool GetCursorPos(ref Win32Point pt);
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct Win32Point
-        {
-            public Int32 X;
-            public Int32 Y;
-        };
-
-        public static Point GetMousePosition() // mouse position relative to screen
-        {
-            Win32Point w32Mouse = new Win32Point();
-            GetCursorPos(ref w32Mouse);
-            return new Point(w32Mouse.X, w32Mouse.Y);
-        }
-
-
-        private void Window_SourceInitialized(object sender, EventArgs ea)
-        {
-            HwndSource hwndSource = (HwndSource)HwndSource.FromVisual((Window)sender);
-            hwndSource.AddHook(DragHook);
-
-            _aspectRatio = this.Width / this.Height;
-        }
-
-        private IntPtr DragHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-        {
-            switch ((WM)msg)
-            {
-                case WM.WINDOWPOSCHANGING:
-                    {
-                        WINDOWPOS pos = (WINDOWPOS)Marshal.PtrToStructure(lParam, typeof(WINDOWPOS));
-
-                        if ((pos.flags & (int)SWP.NOMOVE) != 0)
-                            return IntPtr.Zero;
-
-                        Window wnd = (Window)HwndSource.FromHwnd(hwnd).RootVisual;
-                        if (wnd == null)
-                            return IntPtr.Zero;
-
-                        // determine what dimension is changed by detecting the mouse position relative to the 
-                        // window bounds. if gripped in the corner, either will work.
-                        if (!_adjustingHeight.HasValue)
-                        {
-                            Point p = GetMousePosition();
-
-                            double diffWidth = Math.Min(Math.Abs(p.X - pos.x), Math.Abs(p.X - pos.x - pos.cx));
-                            double diffHeight = Math.Min(Math.Abs(p.Y - pos.y), Math.Abs(p.Y - pos.y - pos.cy));
-
-                            _adjustingHeight = diffHeight > diffWidth;
-                        }
-
-                        if (_adjustingHeight.Value)
-                            pos.cy = (int)(pos.cx / _aspectRatio); // adjusting height to width change
-                        else
-                            pos.cx = (int)(pos.cy * _aspectRatio); // adjusting width to heigth change
-
-                        Marshal.StructureToPtr(pos, lParam, true);
-                        handled = true;
-                    }
-                    break;
-                case WM.EXITSIZEMOVE:
-                    _adjustingHeight = null; // reset adjustment dimension and detect again next time window is resized
-                    break;
-            }
-
-            return IntPtr.Zero;
-        }
-
         public MainWindow()
         {
-            Title = "Saturn Swapper - v" + Constants.UserVersion;
+            InitializeAsync();
+            InitializeComponent();
+        }
+        private async Task InitializeAsync()
+        {
+            AppDomain.CurrentDomain.FirstChanceException += CurrentDomainOnFirstChanceException;
+            AppDomain.CurrentDomain.ProcessExit += CurrentDomainOnProcessExit;
+            Title = "Saturn Swapper - v" + Constants.USER_VERSION + (Constants.isBeta ? "-BETA" : "");
             
             var services = new ServiceCollection();
             services.AddBlazorWebView();
 
-            services.AddScoped<IConfigService, ConfigService>();
-            services.AddScoped<INotificationService, NotificationService>();
-            
-            // NEEDS TO BE BEFORE FORTNITEAPI
-            services.AddScoped<ICloudStorageService, CloudStorageService>();
+            services.AddScoped<ISaturnAPIService, SaturnAPIService>();
+            services.AddScoped<IFortniteCentralService, FortniteCentralService>();
+            services.AddScoped<LocalizationResourceService>();
+            services.AddScoped<OobeService>();
+            services.AddScoped<DiscordService>();
 
-            services.AddScoped<IDiscordRPCService, DiscordRPCService>();
-            services.AddScoped<IFortniteAPIService, FortniteAPIService>();
-            services.AddScoped<ISaturnAPIService, SaturnAPIService>(); 
-            services.AddScoped<IBenBotAPIService, BenBotAPIService>();
-            
-            services.AddScoped<ISwapperService, SwapperService>();
-            
-            services.AddMudServices();
+            var serviceProvider = services.BuildServiceProvider();
+            Resources.Add("services", serviceProvider);
 
-            Resources.Add("services", services.BuildServiceProvider());
+            Loaded += OnLoaded;
+            
+            OobeService? oobeService = serviceProvider.GetService<OobeService>();
+            if (oobeService != null)
+            {
+                await oobeService.ConfigureOobe();
+                base.Width = 1179.0;
+                base.Height = 660.0;
+                base.MinWidth = 939.0;
+                base.MinHeight = 517.0;
+                base.ResizeMode = ResizeMode.CanResize;
+            }
+        }
+        
+        private async void OnLoaded(object _, RoutedEventArgs e)
+        {
+            Logger.Log("Ensuring WebView2");
+            await blazorWebView.WebView.EnsureCoreWebView2Async().ConfigureAwait(continueOnCapturedContext: true);
+            blazorWebView.WebView.CoreWebView2.Settings.AreDevToolsEnabled = true;
+            blazorWebView.WebView.CoreWebView2.Settings.AreDefaultContextMenusEnabled = true;
+            blazorWebView.WebView.CoreWebView2.Settings.AreDefaultScriptDialogsEnabled = false;
+            blazorWebView.WebView.CoreWebView2.Settings.IsStatusBarEnabled = true;
+            blazorWebView.WebView.CoreWebView2.Settings.IsZoomControlEnabled = false;
+            Logger.Log("WebView2 has been ensured");
+        }
+        
+        private void CurrentDomainOnProcessExit(object? sender, EventArgs e)
+        {
+            if (Constants.isClosingCorrectly) return;
+            foreach (var file in Directory.EnumerateFiles(Constants.DataPath))
+            {
+                File.Delete(file);
+            }
+        }
+        
+        private void CurrentDomainOnFirstChanceException(object? sender, FirstChanceExceptionEventArgs e)
+        {
+            Exception exception = e.Exception;
+            if (exception.StackTrace != null && (exception.StackTrace!.Contains("ToastNotification") || (exception.StackTrace!.Contains("CUE4Parse") && !exception.StackTrace.Contains("IoPackage") && !exception.StackTrace.Contains("Property") && !exception.StackTrace.Contains("FAssetRegistryState") && !exception.StackTrace.Contains("UObject"))))
+            {
+                return;
+            }
+            
+            if (exception.StackTrace != null && exception.StackTrace!.Contains("There is an update ready to download!"))
+            {
+                MessageBox.Show("There is an update ready to download! Please download it from discord.gg/Saturn.", "Update", MessageBoxButton.OK, MessageBoxImage.Information);
+                Environment.Exit(0);
+            }
 
-            InitializeComponent();
-            SourceInitialized += Window_SourceInitialized;
+            if (!(exception is WebException ex))
+            {
+                if (!exception.StackTrace.Contains("Webview2"))
+                {
+                    if (exception is FileNotFoundException || exception is DllNotFoundException)
+                    {
+                        MessageBox.Show(
+                            "Important files seem to have been deleted from Saturn. Please redownload Saturn from discord.gg/Saturn and check if your antivirus might be deleting files.\n\n" +
+                            e.Exception.Message, "Files missing", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        Environment.Exit(0);
+                    }
+                    else if (!(exception is COMException) && !(exception is Win32Exception) &&
+                             (exception.StackTrace == null || exception.StackTrace!.Contains("Saturn.Backend")))
+                    {
+                        Logger.Log("An exception occured.", LogLevel.Error);
+                        Logger.Log(exception.GetType().Name + ": " + exception.ToString(), LogLevel.Error);
+                        Logger.Log(exception.StackTrace ?? "", LogLevel.Error);
+                        MessageBox.Show(
+                            "An error has occurred performing this operation. Please try again later.\n\n" + exception.Message,
+                            "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        Environment.Exit(0);
+                    }
+                }
+                else
+                {
+                    if (MessageBox.Show("You need to install Microsoft Edge WebView 2 to use Saturn. Do you want to install it now?", "Missing WebView2", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                    {
+                        Utilities.OpenBrowser("https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/2a723731-d64d-4119-8214-9781c986c21b/MicrosoftEdgeWebView2RuntimeInstallerX64.exe");
+                    }
+                    Environment.Exit(0);
+                }
+            }
         }
     }
 

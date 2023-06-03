@@ -1,0 +1,268 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using CUE4Parse;
+using CUE4Parse.UE4.Assets;
+using CUE4Parse.Utils;
+using Microsoft.JSInterop;
+using Saturn.Backend.Data.Fortnite;
+using Saturn.Backend.Data.SaturnAPI;
+using Saturn.Backend.Data.SaturnAPI.Models;
+using Saturn.Backend.Data.SaturnConfig;
+using Saturn.Backend.Data.Swapper.Core.Models;
+using Saturn.Backend.Data.Swapper.Swapping;
+using Saturn.Backend.Data.Swapper.Swapping.Models;
+using Saturn.Backend.Data.Variables;
+
+namespace Saturn.Backend.Data
+{
+    public static class Utilities
+    {
+        public static async Task SwapPreset(PresetModel preset, IJSRuntime _jsRuntime)
+        {
+            SaturnData.Clear();
+            IoPackage.ClearHeaders();
+            IoPackage.NameToBeSearching.Clear();
+            
+            if (!Constants.isKeyValid)
+            {
+                await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "key");
+                return;
+            }
+
+            foreach (var item in preset.PresetSwaps)
+            {
+                List<SwapData> swapData = new();
+        
+                foreach (var characterPart in item.OptionModel.CharacterParts.Where(characterPart => item.ItemModel.CharacterParts.ContainsKey(characterPart.Key)))
+                {
+                    IoPackage.NameToBeSearching.Add(characterPart.Value.Path.SubstringAfterLast('/').Split('.')[0]);
+                    IoPackage.NameToBeSearching.Add(item.ItemModel.CharacterParts[characterPart.Key].Path.SubstringAfterLast('/').Split('.')[0]);
+                    
+                    if (characterPart.Key == "Pickaxe")
+                        SaturnData.IsPickaxe = true;
+                    
+                    IoPackage.ClearHeaders();
+                    IoPackage oldObj = (IoPackage)await Constants.Provider.LoadPackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
+                    long originalLength = oldObj.TotalSize;
+                    Logger.Log($"Asset '{characterPart.Value.Path.Split('.')[0] + ".uasset"}' has a length of {originalLength}");
+
+                    var data = SaturnData.ToNonStatic();
+                    SaturnData.Clear();
+                    
+                    if (characterPart.Key == "Pickaxe")
+                        SaturnData.IsPickaxe = true;
+                    
+                    IoPackage.ClearHeaders();
+                    IoPackage newObj = (IoPackage)await Constants.Provider.LoadPackageAsync(item.ItemModel.CharacterParts[characterPart.Key].Path.Split('.')[0] + ".uasset");
+
+                    var obj = oldObj.Swap(newObj);
+                    byte[] serializedData = obj.Serialize();
+                    byte[] swap = new byte[originalLength];
+                    Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
+                    
+                    swapData.Add(new SwapData
+                    {
+                        SaturnData = data,
+                        Data = swap
+                    });
+
+                    SaturnData.Clear();
+                }
+
+                foreach (var characterPart in item.OptionModel.CharacterParts.Where(characterPart => !item.ItemModel.CharacterParts.ContainsKey(characterPart.Key)))
+                {
+                    IoPackage.NameToBeSearching.Add(characterPart.Value.Path.SubstringAfterLast('/').Split('.')[0]);
+
+                    if (characterPart.Key == "Pickaxe")
+                        SaturnData.IsPickaxe = true;
+
+                    IoPackage.ClearHeaders();
+                    IoPackage oldObj = (IoPackage)await Constants.Provider.LoadPackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
+                    long originalLength = oldObj.TotalSize;
+                    Logger.Log($"Asset '{characterPart.Value.Path.Split('.')[0] + ".uasset"}' has a length of {originalLength}");
+
+                    var data = SaturnData.ToNonStatic();
+                    SaturnData.Clear();
+                    
+                    if (characterPart.Key == "Pickaxe")
+                        SaturnData.IsPickaxe = true;
+
+                    var realPartType = characterPart.Value.Enums["CharacterPartType"];
+                    
+                    IoPackage.NameToBeSearching.Add(Constants.EmptyParts[realPartType].Path.SubstringAfterLast('/').Split('.')[0]);
+
+                    IoPackage.ClearHeaders();
+                    IoPackage newObj = (IoPackage)await Constants.Provider.LoadPackageAsync(Constants.EmptyParts[realPartType].Path.Split('.')[0] + ".uasset");
+
+                    var obj = oldObj.Swap(newObj);
+                    byte[] serializedData = obj.Serialize();
+                    byte[] swap = new byte[originalLength];
+                    Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
+                    
+                    swapData.Add(new SwapData
+                    {
+                        SaturnData = data,
+                        Data = swap
+                    });
+                    
+                    SaturnData.Clear();
+                }
+
+                await FileLogic.Convert(swapData);
+            
+                if (Constants.CanLobbySwap && Constants.ShouldLobbySwap && Constants.isPlus)
+                {
+                    switch (Constants.CosmeticState)
+                    {
+                        case SaturnState.S_Skin:
+                            await FileLogic.ConvertLobby("/game/athena/items/cosmetics/characters/" + item.OptionModel.ID + "." + item.OptionModel.ID, "/game/athena/items/cosmetics/characters/" + item.ItemModel.ID + "." + item.ItemModel.ID);
+                            break;
+                        case SaturnState.S_Backbling:
+                            await FileLogic.ConvertLobby("/game/athena/items/cosmetics/backpacks/" + item.OptionModel.ID + "." + item.OptionModel.ID, "/game/athena/items/cosmetics/backpacks/" + item.ItemModel.ID + "." + item.ItemModel.ID);
+                            break;
+                        case SaturnState.S_Pickaxe:
+                            await FileLogic.ConvertLobby("/game/athena/items/cosmetics/pickaxes/" + item.OptionModel.ID + "." + item.OptionModel.ID, "/game/athena/items/cosmetics/pickaxes/" + item.ItemModel.ID + "." + item.ItemModel.ID);
+                            break;
+                    }
+                    SaturnData.Clear();
+                }
+                else if (Constants.isPlus && Constants.ShouldLobbySwap)
+                {
+                    Logger.Log("Unable to lobby swap at this time... pakchunk0 was unable to be mounted.", LogLevel.Error);
+                }
+            }
+            
+            await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "finished");
+        }
+        
+        public static async Task<bool> IsKeyValid(ISaturnAPIService saturnApiService)
+        {
+            if (string.IsNullOrWhiteSpace(Config.Get()._config.Key))
+                return false;
+            
+            KeySearchModel keyData = await saturnApiService.ReturnEndpointAsync<KeySearchModel>($"/api/v1/Saturn/ReturnKeyExists?key={Config.Get()._config.Key}");
+            if (!keyData.Found) return false;
+            if (keyData.HWID != GetHWID() && keyData.HWID != "NotSet")
+            {
+                throw new Exception("Key is already in use on another PC. Please contact support if you believe this is an error.");
+            }
+                
+            saturnApiService.ReturnEndpoint($"/api/v1/Saturn/SetHWID?key={Config.Get()._config.Key}&hwid={GetHWID()}");
+            return true;
+
+        }
+        
+        public static string GetHWID() => System.Security.Principal.WindowsIdentity.GetCurrent().User.Value;
+
+        public static string GetKeyFromValue(this Dictionary<string, string> dict, string value)
+        {
+            return dict.FirstOrDefault(x => x.Value == value).Key;
+        }
+
+        public static bool IsHexDigit(char c)
+        {
+            return c is >= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F';
+        }
+        
+        public static int IndexOfSequence(byte[] buffer, byte[] pattern)
+        {
+            int i = Array.IndexOf(buffer, pattern[0], 0);
+            while (i >= 0 && i <= buffer.Length - pattern.Length)
+            {
+                byte[] segment = new byte[pattern.Length];
+                Buffer.BlockCopy(buffer, i, segment, 0, pattern.Length);
+                if (segment.SequenceEqual(pattern))
+                    return i;
+                i = Array.IndexOf(buffer, pattern[0], i + 1);
+            }
+
+            return -1;
+        }
+        
+        public static byte[] WriteBytes(byte[] src, byte[] dst, int offset)
+        {
+            for (int i = 0; i < src.Length; i++)
+            {
+                dst[i + offset] = src[i];
+            }
+
+            return dst;
+        }
+        
+        public static string ToHexString(this byte[] bytes)
+        {
+            return BitConverter.ToString(bytes).Replace("-", " ");
+        }
+        
+        public static bool IsHex(string hex)
+        {
+            hex = hex.Replace(" ", "");
+            if (hex.Length % 2 != 0)
+                return false;
+
+            foreach (char c in hex)
+            {
+                if (!IsHexDigit(c))
+                    return false;
+            }
+
+            return true;
+        }
+        
+        public static bool IsFileReady(string filename)
+        {
+            try
+            {
+                using FileStream inputStream = File.Open(filename, FileMode.Open, FileAccess.Read, FileShare.None);
+                return inputStream.Length > 0;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public static byte[] HexStringToByteArray(string hex)
+        {
+            hex = hex.Replace(" ", "");
+            return Enumerable.Range(0, hex.Length)
+                .Where(x => x % 2 == 0)
+                .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
+                .ToArray();
+        }
+
+        public static void CorrectFiles()
+        {
+            if (Directory.Exists(DataCollection.GetGamePath() + "\\Apple\\"))
+            {
+                foreach (var file in Directory.EnumerateFiles(DataCollection.GetGamePath() + "\\Apple\\"))
+                {
+                    File.Move(file, DataCollection.GetGamePath() + "\\" + Path.GetFileName(file));
+                }
+            }
+            
+            foreach (var file in Directory.EnumerateFiles(DataCollection.GetGamePath()))
+            {
+                if (!file.Contains("TamelyClient")) continue;
+                if (File.Exists(file.Replace("TamelyClient", "WindowsClient")))
+                {
+                    File.Delete(file.Replace("TamelyClient", "WindowsClient"));
+                }
+                File.Move(file, file.Replace("TamelyClient", "WindowsClient"));
+            }
+        }
+
+        public static void OpenBrowser(string url)
+        {
+            Process.Start(new ProcessStartInfo(url)
+            {
+                UseShellExecute = true,
+                Verb = "open"
+            });
+        }
+    }
+}

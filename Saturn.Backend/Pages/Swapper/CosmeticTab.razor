@@ -1,0 +1,412 @@
+﻿@using Saturn.Backend.Data.SaturnAPI.Models
+@using Saturn.Backend.Data.SaturnConfig
+@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Data.Swapper.Generation
+@using Saturn.Backend.Data.Variables
+@using Saturn.Backend.Data.FortniteCentral
+@using Saturn.Backend.Data.Swapper
+@using CUE4Parse.UE4.Assets
+@using CUE4Parse.FileProvider
+@using System.IO
+@using CUE4Parse.UE4.Assets.Objects
+@using CUE4Parse.Utils
+@using Saturn.Backend.Data
+@using Saturn.Backend.Data.Swapper.Core.Models
+@using Saturn.Backend.Data.Swapper.Swapping
+@using SaturnData = CUE4Parse.SaturnData
+
+@inject IJSRuntime _jsRuntime;
+@inject IFortniteCentralService _fortniteCentralService;
+@inject LocalizationResourceService _localizationResourceService
+
+<KeyModal/>
+<OptionModal/>
+<CosmeticsSidebar/>
+<div class="tab-page" id="cosmetic-page" style="display: none">
+    <div class="header" onclick="saturn.modalManager.showModal('changelog')">
+        <img src="@UpdateBackgroundUrl" alt="Banner"/>
+        <div class="fade"></div>
+        <div class="text-container">
+            <h1>@("Saturn " + Constants.USER_VERSION + (Constants.isBeta ? " BETA" : ""))</h1>
+        </div>
+        <h4>@_localizationResourceService.GetString(16)</h4>
+    </div>
+    
+    @if (Constants.PotentialOptions.Count == 0)
+    {
+        <div class="tab-message">
+            <div class="text">
+                <h1>@NoCosmeticsKoomoji</h1>
+                <h3>@_localizationResourceService.GetString(25)</h3>
+            </div>
+
+            <div class="controls">
+                <button @onclick="@(async () => await AddCosmetics())">
+                    <i class="fas fa-plus" style="padding-right: 5px"></i>
+                    @_localizationResourceService.GetString(28)
+                </button>
+            </div>
+        </div>
+    }
+    else if (Constants.ChunkedItems.Count == 0 || Constants.ChunkedItems[0].Count == 0)
+    {
+        <div class="tab-message">
+            <div class="text">
+                <h1>@NoCosmeticsKoomoji</h1>
+                <h3>@_localizationResourceService.GetString(26)</h3>
+                <h3>@_localizationResourceService.GetString(27)</h3>
+            </div>
+        </div>
+    }
+    else
+    {
+        @foreach (var item in Constants.ChunkedItems[Constants.ChunkIndex])
+        {
+            <div id="@(item.ID + "-section")" class="section hoverable" @onclick="@(async () => await DecideWhatPathToDo(item))">
+                <img src=@($"https://fortnite-api.com/images/cosmetics/br/{item.ID}/smallicon.png") alt="Icon"/>
+                @if (FaultyIDs.Keys.Contains(item.ID))
+                {
+                    <div class="icon-overlay">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                }
+                <div class="name">
+                    <h1>@item.Name</h1>
+
+                    @if (FaultyIDs.Keys.Contains(item.ID))
+                    {
+                        <h3 style="opacity: 1; color: #ffba3b">
+                            @FaultyIDs[item.ID]
+                        </h3>
+                    }
+                    else
+                    {
+                        <h3>
+                            @item.Description
+                        </h3>
+                    }
+                </div>
+                @if (Constants.ConvertedIDs.Contains(item.ID))
+                {
+                    <div class="item-info">
+                        <h3>@_localizationResourceService.GetString(33)</h3>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (Constants.ChunkIndex == 0 && Constants.ChunkIndex != Constants.ChunkedItems.Count - 1)
+        {
+            <div id="@("next-section")" class="section hoverable" @onclick="@(() => Constants.ChunkIndex++)">
+                <img src=@($"https://fortnite-api.com/images/cosmetics/br/Character_HeadhunterStar/smallicon.png") alt="Icon"/>
+                <div class="name">
+                    <h1>@_localizationResourceService.GetString(29)</h1>
+                    <h3>@_localizationResourceService.GetString(30)</h3>
+                </div>
+            </div>
+        }
+        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex == Constants.ChunkedItems.Count - 1)
+        {
+            <div id="@("next-section")" class="section hoverable" @onclick="@(() => Constants.ChunkIndex--)">
+                <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>
+                <div class="name">
+                    <h1>@_localizationResourceService.GetString(31)</h1>
+                    <h3>@_localizationResourceService.GetString(32)</h3>
+                </div>
+            </div>
+        }
+        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex != Constants.ChunkedItems.Count - 1)
+        {
+            <div id="@("next-section")" class="section hoverable" @onclick="@(() => Constants.ChunkIndex--)">
+                <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>
+                <div class="name">
+                    <h1>@_localizationResourceService.GetString(31)</h1>
+                    <h3>@_localizationResourceService.GetString(32)</h3>
+                </div>
+            </div>
+
+            <div id="@("next-section")" class="section hoverable" @onclick="@(() => Constants.ChunkIndex++)">
+                <img src=@($"https://fortnite-api.com/images/cosmetics/br/Character_HeadhunterStar/smallicon.png") alt="Icon"/>
+                <div class="name">
+                    <h1>@_localizationResourceService.GetString(29)</h1>
+                    <h3>@_localizationResourceService.GetString(30)</h3>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+
+    private static Dictionary<string, string> FaultyIDs = new();
+
+    private string UpdateBackgroundUrl = "/img/banner.png";
+    private string NoCosmeticsKoomoji = "(⇀‸↼‶)";
+
+    private async Task AddCosmetics()
+    {
+        Logger.Log("Generating cosmetics!");
+        Constants.ChunkedItems = (await new SkinGenerator().Generate()).OrderBy(x => x.ID).ToList()
+            .Select((x, i) => new { Index = i, Value = x })
+            .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
+            .Select(x => x.Select(v => v.Value).ToList())
+            .ToList();
+        Logger.Log("Done!");
+
+        DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", "Selecting Cosmetics");
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOut", "cosmetic");
+        Constants.State = SaturnState.S_SelectCosmetics;
+        while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "cosmetic")) {}
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "cosmetic");
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ChangeState();
+        CheckForSwap();
+    }
+
+    private async Task ChangeState()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(500);
+        }
+    }
+
+    private bool currentlySwapping = false;
+    private async Task CheckForSwap()
+    {
+        while (true)
+        {
+            if (Constants.SelectedItem != null && Constants.SelectedOption != null && !currentlySwapping)
+                await Swap();
+            await Task.Delay(500);
+        }
+    }
+
+    private async Task DecideWhatPathToDo(DisplayItemModel item)
+    {
+        if (item.Name == "Please wait...") return;
+        if (Constants.ConvertedIDs.Contains(item.ID))
+        {
+            await Revert(item);
+        }
+        else
+        {
+            await ShowOptionMenu(item);
+        }
+    }
+
+    private async Task Revert(DisplayItemModel item)
+    {
+        item.Description = "Starting to revert " + item.Name;
+        StateHasChanged();
+
+        await FileLogic.Revert(item.ID);
+
+        item.Description = "Reverted " + item.Name;
+        Constants.ConvertedIDs.Remove(item.ID);
+        StateHasChanged();
+        
+        Constants.CurrentSwaps.RemoveAll(x => string.Equals(x.ItemModel.ID, item.ID, StringComparison.CurrentCultureIgnoreCase));
+    }
+
+    private async Task Swap()
+    {
+        SaturnData.Clear();
+        if (!Constants.isKeyValid)
+        {
+            await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "key");
+            Constants.SelectedDisplayItem.Description = "Key check failed!";
+            Constants.SelectedItem = null;
+            Constants.SelectedOption = null;
+            return;
+        }
+        
+        currentlySwapping = true;
+        
+        IoPackage.NameToBeSearching.Clear();
+        
+        await Swap(Constants.Provider);
+
+        Constants.ConvertedIDs.Add(Constants.SelectedItem!.ID);
+        StateHasChanged();
+        currentlySwapping = false;
+        Constants.SelectedItem = null;
+        Constants.SelectedOption = null;
+    }
+
+    private async Task Swap(DefaultFileProvider provider)
+    {
+        Constants.SelectedDisplayItem.Description = "Swapping from " + Constants.SelectedOption!.Name + " to " + Constants.SelectedDisplayItem.Name;
+        StateHasChanged();
+        
+        List<SwapData> swapData = new();
+        
+        foreach (var characterPart in Constants.SelectedOption.CharacterParts.Where(characterPart => Constants.SelectedItem!.CharacterParts.ContainsKey(characterPart.Key)))
+        {
+            if (Constants.SelectedDisplayItem != null)
+                Constants.SelectedDisplayItem.Description = "Swapping asset: " + Path.GetFileName(characterPart.Value.Path.Split('.')[0] + ".uasset");
+            StateHasChanged();
+            
+            IoPackage.NameToBeSearching.Add(characterPart.Value.Path.SubstringAfterLast('/').Split('.')[0]);
+            IoPackage.NameToBeSearching.Add(Constants.SelectedItem!.CharacterParts[characterPart.Key].Path.SubstringAfterLast('/').Split('.')[0]);
+            
+            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
+                SaturnData.IsPickaxe = true;
+            
+            IoPackage.ClearHeaders();
+            IoPackage oldObj = (IoPackage)await provider.LoadPackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
+            long originalLength = oldObj.TotalSize;
+            Logger.Log($"Asset '{characterPart.Value.Path.Split('.')[0] + ".uasset"}' has a length of {originalLength}");
+
+            var data = SaturnData.ToNonStatic();
+            SaturnData.Clear();
+            
+            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
+                SaturnData.IsPickaxe = true;
+            
+            IoPackage.ClearHeaders();
+            IoPackage newObj = (IoPackage)await provider.LoadPackageAsync(Constants.SelectedItem!.CharacterParts[characterPart.Key].Path.Split('.')[0] + ".uasset");
+
+            var obj = oldObj.Swap(newObj);
+            byte[] serializedData = obj.Serialize();
+            byte[] swap = new byte[originalLength];
+            Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
+            
+            swapData.Add(new SwapData
+            {
+                SaturnData = data,
+                Data = swap
+            });
+
+            SaturnData.Clear();
+        }
+
+        foreach (var characterPart in Constants.SelectedOption.CharacterParts.Where(characterPart => !Constants.SelectedItem!.CharacterParts.ContainsKey(characterPart.Key)))
+        {
+            if (Constants.SelectedDisplayItem != null)
+                Constants.SelectedDisplayItem.Description = "Swapping asset: " + Path.GetFileName(characterPart.Value.Path.Split('.')[0] + ".uasset");
+            StateHasChanged();
+            
+            IoPackage.NameToBeSearching.Add(characterPart.Value.Path.SubstringAfterLast('/').Split('.')[0]);
+
+            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
+                SaturnData.IsPickaxe = true;
+
+            IoPackage.ClearHeaders();
+            IoPackage oldObj = (IoPackage)await provider.LoadPackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
+            long originalLength = oldObj.TotalSize;
+            Logger.Log($"Asset '{characterPart.Value.Path.Split('.')[0] + ".uasset"}' has a length of {originalLength}");
+
+            var data = SaturnData.ToNonStatic();
+            SaturnData.Clear();
+            
+            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
+                SaturnData.IsPickaxe = true;
+
+            var realPartType = characterPart.Value.Enums["CharacterPartType"];
+            
+            IoPackage.NameToBeSearching.Add(Constants.EmptyParts[realPartType].Path.SubstringAfterLast('/').Split('.')[0]);
+
+            IoPackage.ClearHeaders();
+            IoPackage newObj = (IoPackage)await provider.LoadPackageAsync(Constants.EmptyParts[realPartType].Path.Split('.')[0] + ".uasset");
+
+            var obj = oldObj.Swap(newObj);
+            byte[] serializedData = obj.Serialize();
+            byte[] swap = new byte[originalLength];
+            Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
+            
+            swapData.Add(new SwapData
+            {
+                SaturnData = data,
+                Data = swap
+            });
+            
+            SaturnData.Clear();
+        }
+
+        await FileLogic.Convert(swapData);
+        
+        if (Constants.CanLobbySwap && Constants.ShouldLobbySwap && Constants.isPlus)
+        {
+            Constants.SelectedDisplayItem.Description = "Attempting to lobby swap";
+            StateHasChanged();
+            switch (Constants.CosmeticState)
+            {
+                case SaturnState.S_Skin:
+                    await FileLogic.ConvertLobby("/game/athena/items/cosmetics/characters/" + Constants.SelectedOption.ID + "." + Constants.SelectedOption.ID, "/game/athena/items/cosmetics/characters/" + Constants.SelectedDisplayItem.ID + "." + Constants.SelectedDisplayItem.ID);
+                    break;
+                case SaturnState.S_Backbling:
+                    await FileLogic.ConvertLobby("/game/athena/items/cosmetics/backpacks/" + Constants.SelectedOption.ID + "." + Constants.SelectedOption.ID, "/game/athena/items/cosmetics/backpacks/" + Constants.SelectedDisplayItem.ID + "." + Constants.SelectedDisplayItem.ID);
+                    break;
+                case SaturnState.S_Pickaxe:
+                    await FileLogic.ConvertLobby("/game/athena/items/cosmetics/pickaxes/" + Constants.SelectedOption.ID + "." + Constants.SelectedOption.ID, "/game/athena/items/cosmetics/pickaxes/" + Constants.SelectedDisplayItem.ID + "." + Constants.SelectedDisplayItem.ID);
+                    break;
+            }
+            SaturnData.Clear();
+        }
+        else if (Constants.isPlus && Constants.ShouldLobbySwap)
+        {
+            Constants.SelectedDisplayItem.Description = "Unable to lobby swap at this time... pakchunk0 was unable to be mounted.";
+            StateHasChanged();
+            Logger.Log("Unable to lobby swap at this time... pakchunk0 was unable to be mounted.", LogLevel.Error);
+        }
+
+        Constants.SelectedDisplayItem.Description = "Swapped from " + Constants.SelectedOption.Name + " to " + Constants.SelectedDisplayItem.Name;
+        StateHasChanged();
+        
+        Constants.CurrentSwaps.Add(new()
+        {
+            OptionModel = Constants.SelectedOption,
+            ItemModel = Constants.SelectedItem
+        });
+    }
+
+    private bool _handled = false;
+
+    private async Task ShowOptionMenu(DisplayItemModel item)
+    {
+        if (_handled) return;
+        _handled = true;
+        
+        item.Description = "Generating options";
+        StateHasChanged();
+
+        await Task.Delay(50); // Need to display the text
+
+        SaturnItemModel completeItem;
+
+        switch (Constants.CosmeticState)
+        {
+            case SaturnState.S_Skin:
+                completeItem = await new SkinGenerator().GetItemData(item);
+                break;
+            case SaturnState.S_Backbling:
+                completeItem = await new BackblingGenerator().GetItemData(item);
+                break;
+            case SaturnState.S_Emote:
+                completeItem = await new EmoteGenerator().GetItemData(item);
+                break;
+            case SaturnState.S_Pickaxe:
+                completeItem = await new PickaxeGenerator().GetItemData(item);
+                break;
+            case SaturnState.S_Glider:
+                completeItem = await new GliderGenerator().GetItemData(item);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+        Constants.SelectedDisplayItem = item;
+
+        OptionModal.SetItem(completeItem);
+        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "option");
+        
+        _handled = false;
+    }
+
+}

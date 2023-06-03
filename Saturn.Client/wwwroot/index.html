@@ -2,22 +2,32 @@
 <html>
 
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
     <title>Saturn Swapper</title>
-    <base href="/"/>
-    <link href="_content/Saturn.Backend/css/style.css" rel="stylesheet">
-    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
-    <script src="_content/Saturn.Backend/js/misc.js"></script>
-    <script src="_content/Saturn.Backend/js/openfiledialog.js"></script>
-</head>
+    <base href="/" />
+    <link href="_content/Saturn.Backend/css/app.css" rel="stylesheet">
+    <link href="_content/Saturn.Backend/css/swapper/reset.css" rel="stylesheet">
+    <link href="_content/Saturn.Backend/css/swapper/installer.css" rel="stylesheet">
+    <link href="_content/Saturn.Backend/css/swapper/base.css" rel="stylesheet">
+    <link href="_content/Saturn.Backend/css/swapper/oobe.css" rel="stylesheet">
+    <link href="_content/Saturn.Backend/css/swapper/app.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/css/all.css" rel="stylesheet">
+    
+    <script>window.saturn = {};</script>
+    
+    <script src="_content/Saturn.Backend/js/anims.js"></script>
+    <script src="_content/Saturn.Backend/js/utils.js"></script>
+    <script src="_content/Saturn.Backend/js/tabManager.js"></script>
+    <script src="_content/Saturn.Backend/js/modalManager.js"></script>
+    <script src="_content/Saturn.Backend/js/contextMenu.js"></script>
+    <script src="_content/Saturn.Backend/lib/anime.min.js"></script>
 
 <body>
 <div id="app"></div>
 
 <div style="color: black" id="blazor-error-ui">
-    An unhandled error has occurred. Send your log in the Discord support channel!
+    An unhandled error has occurred. Get help in discord.gg/Saturn!
     <a class="reload" href="">Reload</a>
     <a class="dismiss">🗙</a>
 </div>

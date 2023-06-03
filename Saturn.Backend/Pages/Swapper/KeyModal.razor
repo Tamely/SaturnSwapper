@@ -1,0 +1,37 @@
+﻿@using Saturn.Backend.Data.Variables
+@using Saturn.Backend.Data.Services
+
+@inject IJSRuntime _jsRuntime
+@inject LocalizationResourceService _localizationResourceService;
+
+<div class="modal minimized" id="key-modal">
+    <div class="modal-window" style="width: 490px">
+        <div class="close-button" onclick="saturn.modalManager.hideModal('key')">
+            <i class="fas fa-times"></i>
+        </div>
+        
+        <div class="modal-header">
+            <h1 class="modal-title">@_localizationResourceService.GetString(51)</h1>
+            <p class="modal-desc">@_localizationResourceService.GetString(52)</p>
+        </div>
+        
+        <div class="modal-bottom">
+            <h3><span class="hyperlink" onclick="@(async() => await GoToDash())">@_localizationResourceService.GetString(53)</span></h3>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private async Task GoToDash()
+    {
+        Constants.CosmeticState = SaturnState.S_Skin;
+
+        DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", "Dash");
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOut", "cosmetic");
+        Constants.State = SaturnState.S_Dash;
+        while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "dash")) {}
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "dash");
+    }
+}

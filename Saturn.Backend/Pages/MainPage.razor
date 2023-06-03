@@ -1,0 +1,133 @@
+﻿@page "/"
+@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Pages.Swapper
+@using System.IO
+@using System.Net
+@using CUE4Parse
+@using CUE4Parse.UE4.Assets
+@using CUE4Parse.Utils
+@using Newtonsoft.Json
+@using Saturn.Backend.Data
+@using Saturn.Backend.Data.Fortnite
+@using Saturn.Backend.Data.FortniteCentral
+@using Saturn.Backend.Data.FortniteCentral.Models
+@using Saturn.Backend.Data.SaturnAPI
+@using Saturn.Backend.Data.SaturnAPI.Models
+@using Saturn.Backend.Data.SaturnConfig
+@using Saturn.Backend.Data.Swapper
+@using Saturn.Backend.Data.Swapper.Core.Models
+@using Saturn.Backend.Data.Swapper.Swapping
+@using Saturn.Backend.Data.Variables
+@inherits LayoutComponentBase
+
+@inject IJSRuntime _jsRuntime
+@inject OobeService _oobeService
+@inject ISaturnAPIService _saturnAPIService
+@inject IFortniteCentralService _fortniteCentralService
+@inject LocalizationResourceService _localizationResourceService
+
+<Scripts/>
+<body>
+    <div class="app-mount">
+        <OobeOverlay/>
+        <SwapperPage/>
+        <InstallerPage/>
+    </div>
+</body>
+
+@code {
+
+    async Task UpdateState()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(500);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        UpdateState();
+
+        Constants.State = SaturnState.S_Installer;
+        
+        foreach (var file in Directory.EnumerateFiles(Constants.DataPath))
+            File.Delete(file);
+
+        Utilities.CorrectFiles();
+
+        while (!await _jsRuntime.InvokeAsync<bool>("saturn.anims.waitForId", "installer-welcome")) {}
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerWelcomeIn");
+
+        // Check if the swapper has an update
+        var idx = await _saturnAPIService.ReturnEndpointAsync<IndexModel>("/");
+        if (idx.swapperVersion != Constants.USER_VERSION)
+            throw new Exception($"There's an update for the swapper, please download it from {idx.DiscordServer} and try again");
+
+        // If it doesn't, check if mappings are up to date
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(74));
+        
+        var mappings = await _fortniteCentralService.ReturnEndpointAsync<FortniteCentralMappingsModel[]>("/api/v1/mappings");
+        if (mappings.Length == 0)
+            throw new Exception(_localizationResourceService.GetString(75));
+
+        // If they aren't, download the new mappings
+        if (!File.Exists(Constants.MappingsPath + mappings[0].FileName))
+        {
+            new WebClient().DownloadFile(mappings[0].Url, Constants.MappingsPath + mappings[0].FileName);
+        }
+        
+        // If they are, check if the game is up to date with the mappings
+        if (mappings[0].Meta.Version.Split("-CL-")[0] != DataCollection.GetGameVersion().Split("-CL-")[0])
+        {
+            await WarningModal.SetEmergencyNotice(_localizationResourceService.GetString(77), _localizationResourceService.GetString(76));
+            await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "emergency");
+        }
+        
+        // Check if cosmetics are already input
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(78));
+        if (File.Exists(Constants.CosmeticsPath))
+        {
+            string data = await File.ReadAllTextAsync(Constants.CosmeticsPath);
+            try
+            {
+                Constants.PotentialOptions = JsonConvert.DeserializeObject<List<string>>(data) ?? new();
+            }
+            catch
+            {
+                Logger.Log("Found corrupt cosmetics.json! Deleting it from disk.");
+                File.Delete(Constants.CosmeticsPath);
+            }
+        }
+        
+        // Check if dependencies are up to date
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(79));
+        var deps = await _saturnAPIService.ReturnEndpointAsync<DependencyModel[]>("/api/v1/Saturn/Dependencies");
+        foreach (var dep in deps)
+        {
+            if (Config.Get().CheckVersion(dep.name, dep.version)) continue;
+            await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(80) + dep.name);
+            new WebClient().DownloadFile(dep.link, Constants.ExternalPath + dep.name);
+        }
+        
+        // Check if key is valid
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(81));
+        Constants.isKeyValid = await Utilities.IsKeyValid(_saturnAPIService);
+        Constants.isKeyValid |= Constants.isPlus;
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(82));
+
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerWelcomeOut");
+
+        await _oobeService.ConfigureOobe();
+
+        Constants.Provider = new SaturnFileProvider(_fortniteCentralService).Provider;
+        Constants.State = SaturnState.S_Dash;
+
+        while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "dash")) {}
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "dash");        
+        
+        Utilities.OpenBrowser(idx.DiscordServer);
+    }
+}

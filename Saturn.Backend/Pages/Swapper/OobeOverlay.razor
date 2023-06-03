@@ -1,0 +1,182 @@
+﻿@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Data.Services.OobeServiceUtils
+@using Saturn.Backend.Data.Variables
+@using Saturn.Backend.Data.SaturnConfig
+@using Saturn.Backend.Data.Swapper.Generation
+
+@inject OobeService _oobeService;
+@inject IJSRuntime _jsRuntime;
+@inject LocalizationResourceService _localizationResourceService;
+
+@if (!_oobeService.OobeType.HasFlag(OobeType.Done) && Constants.State == SaturnState.S_Dash && !_oobeService.OobeType.HasFlag(OobeType.ExplainDashboard))
+{
+    <div @onclick="@(async () => await _oobeService.AddFlag(OobeType.ExplainDashboard))">
+        <div class="overlay"></div>
+        <div class="center-container over-overlay">
+            <div class="text" style="text-align: center">
+                <h1>@_localizationResourceService.GetString(60)</h1>
+                <h3>@_localizationResourceService.GetString(61)</h3>
+                <h5>@_localizationResourceService.GetString(62)</h5>
+            </div>
+        </div>
+    </div>
+}
+else if (!_oobeService.OobeType.HasFlag(OobeType.Done) && Constants.State == SaturnState.S_Dash && !_oobeService.OobeType.HasFlag(OobeType.ExplainWarning))
+{
+    <div @onclick="@(async () => await _oobeService.AddFlag(OobeType.ExplainWarning))">
+        <div class="overlay"></div>
+        <div class="center-container over-overlay">
+            <i class="arrow up" style="scale: 5; margin-left: 70vw; margin-bottom: 60vh;"></i>
+            <div class="text" style="text-align: center">
+                <h1>@_localizationResourceService.GetString(63)</h1>
+                <h3>@_localizationResourceService.GetString(64)</h3>
+                <h5>@_localizationResourceService.GetString(62)</h5>
+            </div>
+        </div>
+    </div>
+}
+else if (!_oobeService.OobeType.HasFlag(OobeType.Done) && Constants.State == SaturnState.S_Dash && !_oobeService.OobeType.HasFlag(OobeType.ClickEndDashboard))
+{
+    <div @onclick="@(async () => await GoToSettings())">
+        <div class="overlay"></div>
+        <div class="center-container over-overlay">
+            <i class="arrow up" style="scale: 5; margin-left: 85vw; margin-bottom: 60vh;"></i>
+
+            <div class="text" style="text-align: center">
+                <h1>@_localizationResourceService.GetString(104)</h1>
+                <h5>@_localizationResourceService.GetString(62)</h5>
+            </div>
+        </div>
+    </div>
+}
+else if (!_oobeService.OobeType.HasFlag(OobeType.Done) && Constants.State == SaturnState.S_Settings && !_oobeService.OobeType.HasFlag(OobeType.ExplainPickCosmetics))
+{
+    <div @onclick="@(async () => await _oobeService.AddFlag(OobeType.ExplainPickCosmetics))">
+        <div class="overlay"></div>
+        <div class="center-container over-overlay">
+            <div class="text" style="text-align: center">
+                <h1>@_localizationResourceService.GetString(105)</h1>
+                <h5>@_localizationResourceService.GetString(62)</h5>
+            </div>
+        </div>
+    </div>
+}
+else if (!_oobeService.OobeType.HasFlag(OobeType.Done) && Constants.State == SaturnState.S_Dash && !_oobeService.OobeType.HasFlag(OobeType.ClickEndPickCosmetics))
+{
+    <div @onclick="@(async () => await GoToCosmetics())">
+        <div class="overlay"></div>
+        <div class="center-container over-overlay">
+            <i class="arrow up" style="scale: 5; margin-right: 85vw; margin-bottom: 60vh;"></i>
+
+            <div class="text" style="text-align: center">
+                <h1>@_localizationResourceService.GetString(65)</h1>
+                <h5>@_localizationResourceService.GetString(62)</h5>
+            </div>
+        </div>
+    </div>
+}
+else if (!_oobeService.OobeType.HasFlag(OobeType.Done) && Constants.State == SaturnState.S_Skin && !_oobeService.OobeType.HasFlag(OobeType.ExplainCosmetics) && _oobeService.OobeType.HasFlag(OobeType.ClickEndPickCosmetics))
+{
+    <div @onclick="@(async() => await _oobeService.AddFlag(OobeType.ExplainCosmetics))">
+        <div class="overlay"></div>
+        <div class="center-container over-overlay">
+            <div class="text" style="text-align: center">
+                <h1>@_localizationResourceService.GetString(66)</h1>
+                <h2>@_localizationResourceService.GetString(67)</h2>
+            </div>
+        </div>
+    </div>
+}
+else if (!_oobeService.OobeType.HasFlag(OobeType.Done) && Constants.ConvertedIDs.Count != 0 && Constants.isKeyValid && !_oobeService.OobeType.HasFlag(OobeType.ClickEndCosmetics))
+{
+    <div @onclick="@(async() => await GoToSettings())">
+        <div class="overlay"></div>
+        <div class="center-container over-overlay">
+            <div class="text" style="text-align: center">
+                <h1>@_localizationResourceService.GetString(68)</h1>
+                <h3>@_localizationResourceService.GetString(69)</h3>
+                <h4>@_localizationResourceService.GetString(70)</h4>
+                <h5>@_localizationResourceService.GetString(62)</h5>
+            </div>
+        </div>
+    </div>
+}
+else if (!_oobeService.OobeType.HasFlag(OobeType.Done) && Constants.State == SaturnState.S_Settings && !_oobeService.OobeType.HasFlag(OobeType.ExplainSettings) && _oobeService.OobeType.HasFlag(OobeType.ClickEndCosmetics))
+{
+    <div @onclick="@(async() => await _oobeService.AddFlag(OobeType.ExplainSettings))">
+        <div class="overlay"></div>
+        <div class="center-container over-overlay">
+            <div class="text" style="text-align: center">
+                <h1>@_localizationResourceService.GetString(71)</h1>
+                <h3>@_localizationResourceService.GetString(72)</h3>
+                <h5>@_localizationResourceService.GetString(62)</h5>
+            </div>
+        </div>
+    </div>
+}
+else if (!_oobeService.OobeType.HasFlag(OobeType.Done) && Constants.State == SaturnState.S_Settings && !_oobeService.OobeType.HasFlag(OobeType.LaunchFortnite) && _oobeService.OobeType.HasFlag(OobeType.ClickEndCosmetics))
+{
+    <div @onclick="@(async() => await _oobeService.AddFlag(OobeType.LaunchFortnite))">
+        <div class="overlay"></div>
+        <div class="center-container over-overlay">
+            <div class="text" style="text-align: center">
+                <h1>@_localizationResourceService.GetString(73)</h1>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private async void ChangeState()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(500);
+        }
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        ChangeState();
+    }
+
+    private async Task GoToCosmetics()
+    {
+        await _oobeService.AddFlag(OobeType.ClickEndPickCosmetics);
+        
+        Data.Logger.Log("Generating cosmetics!");
+        Constants.ChunkedItems = (await new SkinGenerator().Generate()).OrderBy(x => x.ID).ToList()
+            .Select((x, i) => new { Index = i, Value = x })
+            .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
+            .Select(x => x.Select(v => v.Value).ToList())
+            .ToList();
+        Data.Logger.Log("Done!");
+
+        DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", SaturnState.S_Skin.ToString().Split("S_")[1]);
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOut", "cosmetic");
+        Constants.State = SaturnState.S_Skin;
+        while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "cosmetic")) {}
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "cosmetic");
+    }
+    
+    private async Task GoToSettings()
+    {
+        if (!_oobeService.OobeType.HasFlag(OobeType.ClickEndDashboard))
+        {
+            await _oobeService.AddFlag(OobeType.ClickEndDashboard);
+        }
+        else
+        {
+            await _oobeService.AddFlag(OobeType.ClickEndCosmetics);
+        }
+
+        DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", SaturnState.S_Settings.ToString().Split("S_")[1]);
+
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOut", "cosmetic");
+        Constants.State = SaturnState.S_Settings;
+        while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "settings")) {}
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "settings");
+    }
+}

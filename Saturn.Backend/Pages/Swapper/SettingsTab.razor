@@ -1,0 +1,119 @@
+﻿@using Saturn.Backend.Data.SaturnConfig
+@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Data.Variables
+@using System.IO
+@using Saturn.Backend.Data.Fortnite
+@using System.Diagnostics
+@using Saturn.Backend.Data
+@using Saturn.Backend.Data.Discord
+@using Saturn.Backend.Data.Swapper.Generation
+
+@inject IJSRuntime _jsRuntime;
+@inject LocalizationResourceService _localizationResourceService
+
+<PresetModal/>
+<KeyModal/>
+<FinishedModal/>
+
+<div class="tab-page" id="settings-page" style="display: none">
+    <div class="section vertical" id="user-settings">
+        <h1>@_localizationResourceService.GetString(95)</h1>
+        
+        <img class="avatar" src="@Constants.DiscordAvatar" alt="Avatar"/>
+        @if (Constants.isPlus)
+        {
+            <div class="additional-info">
+                <h3>SATURN+</h3>
+            </div>
+        }
+        <span>@(Constants.DiscordName + "#" + Constants.DiscordDiscriminator)</span>
+        <button @onclick="@(async() => await CheckSaturnPlus())">
+            @_localizationResourceService.GetString(99)
+        </button>
+    </div>
+    
+    <div class="section vertical" id="swapper-settings">
+        <h1>@_localizationResourceService.GetString(96)</h1>
+
+        <button @onclick="@(async() => await NavToSelect())">
+            @_localizationResourceService.GetString(97)
+        </button>
+        
+        <button onclick="saturn.modalManager.showModal('presetcreator')">
+            @_localizationResourceService.GetString(102)
+        </button>
+        
+        <button onclick="saturn.modalManager.showModal('presetmanager')">
+            @_localizationResourceService.GetString(103)
+        </button>
+        
+        <button @onclick="@(async() => await ToggleLobbySwaps())">
+            @(_localizationResourceService.GetString(101) + (Constants.ShouldLobbySwap ? "Yes" : "No"))
+        </button>
+    </div>
+    
+    <div class="section vertical" id="game-settings">
+        <h1>@_localizationResourceService.GetString(98)</h1>
+
+        <div class="setting">
+            <button @onclick="@(async() => await LaunchFortnite())">
+                <i class="fas fa-play" style="padding-right: 5px"></i>
+                @_localizationResourceService.GetString(100)
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private async Task CheckSaturnPlus()
+    {
+        new DiscordUtilities();
+        StateHasChanged();
+        Constants.isKeyValid |= Constants.isPlus;
+    }
+
+    private async Task LaunchFortnite()
+    {
+        Constants.isClosingCorrectly = true;
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            Arguments = "/c \"start " + Constants.ExternalPath + "Saturn.Launcher.exe\"",
+            WindowStyle = ProcessWindowStyle.Hidden,
+            CreateNoWindow = true
+        });
+    }
+
+    private async Task ToggleLobbySwaps()
+    {
+        Constants.ShouldLobbySwap = !Constants.ShouldLobbySwap;
+    }
+    
+    private async Task NavToSelect()
+    {
+        string stateFrom = Constants.State switch
+        {
+            SaturnState.S_Skin => "cosmetic",
+            SaturnState.S_Importer => "asset",
+            SaturnState.S_Settings => "settings",
+            SaturnState.S_Dash => "dash",
+            SaturnState.S_SelectCosmetics => "cosmetic",
+            _ => "cosmetic"
+        };
+        
+        Logger.Log("Generating cosmetics!");
+        Constants.ChunkedItems = (await new SkinGenerator().Generate()).OrderBy(x => x.ID).ToList()
+            .Select((x, i) => new { Index = i, Value = x })
+            .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
+            .Select(x => x.Select(v => v.Value).ToList())
+            .ToList();
+        Logger.Log("Done!");
+
+        DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", "Selecting Cosmetics");
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOut", stateFrom);
+        Constants.State = SaturnState.S_SelectCosmetics;
+        while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "cosmetic")) {}
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "cosmetic");
+    }
+}

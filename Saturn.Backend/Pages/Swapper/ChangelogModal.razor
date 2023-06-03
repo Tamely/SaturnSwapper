@@ -1,0 +1,46 @@
+﻿@using Saturn.Backend.Data.Variables
+@using Saturn.Backend.Data
+@using Saturn.Backend.Data.Services
+
+@inject LocalizationResourceService _localizationResourceService
+
+<div class="modal minimized" id="changelog-modal">
+    <div class="modal-window" style="width: 490px">
+        <div class="close-button" onclick="saturn.modalManager.hideModal('changelog')">
+            <i class="fas fa-times"></i>
+        </div>
+        
+        <div class="modal-header">
+            <h1 class="modal-title">@ChangelogTitle</h1>
+            <p class="modal-desc">@Constants.Changelog.Description</p>
+        </div>
+        
+        <div class="change-container">
+            @foreach (var changelogSection in Constants.Changelog.Sections)
+            {
+                <div class="change-section">
+                    <h1>@changelogSection.Title</h1>
+                    <ul>
+                        @foreach (var changelogChange in changelogSection.Changes)
+                        {
+                            <li>
+                                <strong>@changelogChange.Summary</strong>
+                                <span>@changelogChange.Description</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+        
+        <div class="modal-bottom">
+            <h3><span class="hyperlink" onclick="@(() => Utilities.OpenBrowser("https://discord.gg/Saturn"))">@_localizationResourceService.GetString(17)</span></h3>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    public string ChangelogTitle = "Saturn " + Constants.USER_VERSION;
+
+}

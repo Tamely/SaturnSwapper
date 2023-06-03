@@ -1,0 +1,92 @@
+﻿@using Saturn.Backend.Pages
+@using Saturn.Backend.Data.Variables
+@using Saturn.Backend.Data
+@using System.Threading
+@using System.Diagnostics
+@using Saturn.Backend.Data.FortniteCentral
+@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Data.Swapper.Generation
+
+@inject IJSRuntime _jsRuntime
+@inject IFortniteCentralService _fortniteCentralService;
+@inject LocalizationResourceService _localizationResourceService;
+
+<ul class="sidebar">
+    <li id="cosmetic-li" onclick="@(async() => await SwitchState("cosmetic"))">
+        <h6><i class="fas fa-user"></i> @_localizationResourceService.GetString(56)</h6>
+    </li>
+    
+    <li id="asset-li" onclick="@(async() => await SwitchState("asset"))">
+        <h6><i class="fas fa-file-import"></i> @_localizationResourceService.GetString(57)</h6>
+    </li>
+    
+    <li id="settings-li" class="settings" onclick="@(async() => await SwitchState("settings"))">
+        <h6><i class="fas fa-cog"></i> @_localizationResourceService.GetString(58)</h6>
+    </li>
+    
+    @if (WarningModal.IsEmergencyNoticeSet())
+    {
+        <li id="emergency-li" class="warn" onclick="saturn.modalManager.showModal('emergency')">
+            <h6><i class="fas fa-exclamation-triangle"></i> @_localizationResourceService.GetString(59)</h6>
+        </li>
+    }
+</ul>
+
+@code {
+    private async void ChangeState()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(500);
+        }
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        ChangeState();
+    }
+
+    private async Task SwitchState(string tabName)
+    {
+        string stateFrom = Constants.State switch
+        {
+            SaturnState.S_Skin => "cosmetic",
+            SaturnState.S_Importer => "asset",
+            SaturnState.S_Settings => "settings",
+            SaturnState.S_Dash => "dash",
+            SaturnState.S_SelectCosmetics => "cosmetic",
+            _ => "cosmetic"
+        };
+        
+        SaturnState stateToGoTo = tabName switch
+        {
+            "cosmetic" => SaturnState.S_Skin,
+            "asset" => SaturnState.S_Importer,
+            "settings" => SaturnState.S_Settings,
+            "dash" => SaturnState.S_Dash,
+            _ => SaturnState.S_Skin
+        };
+        
+        if (Constants.State == stateToGoTo)
+            return;
+
+        if (stateToGoTo == SaturnState.S_Skin)
+        {
+            Logger.Log("Generating cosmetics!");
+            Constants.ChunkedItems = (await new SkinGenerator().Generate()).OrderBy(x => x.ID).ToList()
+                .Select((x, i) => new { Index = i, Value = x })
+                .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
+                .Select(x => x.Select(v => v.Value).ToList())
+                .ToList();
+            Logger.Log("Done!");
+        }
+        
+        DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", stateToGoTo.ToString().Split("S_")[1]);
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOut", stateFrom);
+        Constants.State = stateToGoTo;
+        while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", tabName)) {}
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", tabName);
+    }
+}

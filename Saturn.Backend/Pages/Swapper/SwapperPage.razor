@@ -1,0 +1,45 @@
+﻿@using Saturn.Backend.Data.Variables
+
+<div id="swapper-page" style="display:none">
+    <Sidebar/>
+    
+    <div class="tab-container">
+        @switch (Constants.State)
+        {
+            case SaturnState.S_SelectCosmetics:
+                <SelectCosmeticsPage/>
+                break;
+            case SaturnState.S_Skin:
+                <CosmeticTab/>
+                <ChangelogModal/>
+                break;
+            case SaturnState.S_Importer:
+                <ImportTab/>
+                break;
+            case SaturnState.S_Settings:
+                <SettingsTab/>
+                break;
+            case SaturnState.S_Dash:
+                <DashboardTab/>
+                break;
+        }
+        <WarningModal/>
+    </div>
+</div>
+
+@code {
+
+    private async void ChangeState()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(500);
+        }
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        ChangeState();
+    }
+}
