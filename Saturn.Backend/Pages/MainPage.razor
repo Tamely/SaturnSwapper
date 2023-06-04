@@ -11,6 +11,7 @@
 @using Saturn.Backend.Data.Fortnite
 @using Saturn.Backend.Data.FortniteCentral
 @using Saturn.Backend.Data.FortniteCentral.Models
+@using Saturn.Backend.Data.Manifest
 @using Saturn.Backend.Data.SaturnAPI
 @using Saturn.Backend.Data.SaturnAPI.Models
 @using Saturn.Backend.Data.SaturnConfig
@@ -115,6 +116,16 @@
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(81));
         Constants.isKeyValid = await Utilities.IsKeyValid(_saturnAPIService);
         Constants.isKeyValid |= Constants.isPlus;
+        
+        /*
+        // Download the manifest
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(106));
+        Fortnite manifest = new Fortnite();
+        
+        // Check for modified files
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(107));
+        manifest.CleanFiles();
+        manifest.CheckForModifiedFiles();*/
         
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(82));
 

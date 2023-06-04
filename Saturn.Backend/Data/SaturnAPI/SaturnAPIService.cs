@@ -32,14 +32,11 @@ namespace Saturn.Backend.Data.SaturnAPI
 
             _endpoint = new Uri("https://tamelyapi.azurewebsites.net");
 
-            _client = new RestClient
+            _client = new RestClient(new RestClientOptions()
             {
-                Options =
-                {
-                    UserAgent = $"Saturn/{Constants.USER_VERSION}",
-                    MaxTimeout = 5 * 1000
-                }
-            }.UseSerializer<JsonNetSerializer>();
+                UserAgent = $"Saturn/{Constants.USER_VERSION}",
+                MaxTimeout = 5 * 1000
+            }, configureSerialization: s => s.UseSerializer<JsonNetSerializer>());
         }
 
         public async Task<T> ReturnEndpointAsync<T>(string url)

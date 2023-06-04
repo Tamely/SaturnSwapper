@@ -157,6 +157,8 @@ public class LocalizationResourceService
         { 103, "Manage Presets" },
         { 104, "Click 'Settings' to add the cosmetics you own" },
         { 105, "Click 'Add Cosmetics' and select the items you own. Then click 'Back' at the top right when you're done!" },
+        { 106, "Downloading Fortnite's file manifest" },
+        { 107, "Checking for modified files" },
     };
     
     private Dictionary<int, string> ItalianStringTable = new()

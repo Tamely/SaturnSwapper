@@ -22,9 +22,9 @@ namespace Saturn.Backend.Data.SaturnAPI
         public ISerializer Serializer => this;
         public IDeserializer Deserializer => this;
 
-        public string ContentType { get; set; } = "application/json";
-        public string[] AcceptedContentTypes => RestSharp.Serializers.ContentType.JsonAccept;
-        public SupportsContentType SupportsContentType => contentType => contentType.EndsWith("json", StringComparison.InvariantCultureIgnoreCase);
+        public ContentType ContentType { get; set; } = ContentType.Json;
+        public string[] AcceptedContentTypes => ContentType.JsonAccept;
+        public SupportsContentType SupportsContentType => contentType => contentType.Value.EndsWith("json", StringComparison.InvariantCultureIgnoreCase);
 
         public DataFormat DataFormat => DataFormat.Json;
     }
