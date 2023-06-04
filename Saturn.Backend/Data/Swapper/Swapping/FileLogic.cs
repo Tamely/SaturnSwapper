@@ -137,7 +137,7 @@ public class FileLogic
 
         ItemModel item = new ItemModel();
         item.Name = Constants.SelectedOption.Name + " to " + Constants.SelectedItem.Name;
-        item.Swaps = new Swap[swapData.Sum(x => ChunkData(x.Data).Count)];
+        item.Swaps = new Swap[swapData.Sum(x => ChunkData(x.Data).Count * 6 + 1)];
         int swapIndex = 0;
             
         foreach (var swap in swapData)
@@ -146,19 +146,16 @@ public class FileLogic
             
             var chunkedData = ChunkData(swap.Data);
 
-            //long totalDataCount = chunkedData.Sum(x => compression.Compress(x).Length);
-            string file = swap.SaturnData.Path;
-            ulong offset = swap.SaturnData.PartitionOffset;
-            //var (file, offset) = OffsetsInFile.Allocate(swap.SaturnData.Path, totalDataCount);
+            long totalDataCount = chunkedData.Sum(x => compression.Compress(x).Length);
+            var (file, offset) = OffsetsInFile.Allocate(swap.SaturnData.Path, totalDataCount);
             Logger.Log("Allocated space at offset: " + offset + " in file: " + file);
             
-            /*
             byte partitionIndex = 0;
             if (file.Contains("Client_s"))
             {
                 string temp = file.Split("Client_s")[1];
                 partitionIndex = (byte)int.Parse(Path.GetFileNameWithoutExtension(temp));
-            }*/
+            }
 
             long written = 0;
 
@@ -166,16 +163,13 @@ public class FileLogic
             {
                 var chunk = chunkedData[index];
                 var compressedChunk = compression.Compress(chunk);
-                var noScriptChunk = compression.Compress(RemoveClassNames(chunk));
 
                 item.Swaps[swapIndex++] = new Swap()
                 {
-                    File = swap.SaturnData.PartitionIndex == 0 ? swap.SaturnData.Path.Replace(".utoc", ".ucas") : swap.SaturnData.Path.Replace(".utoc", $"_s{swap.SaturnData.PartitionIndex}.ucas"),
-                    Offset = (long)offset,
-                    Data = swap.SaturnData.CompressedSize == chunk.Length ? chunk : compressedChunk.Length < noScriptChunk.Length ? compressedChunk : noScriptChunk
+                    File = file,
+                    Data = compressedChunk
                 };
                 
-                /*
                 item.Swaps[swapIndex++] = new Swap()
                 {
                     File = swap.SaturnData.Path,
@@ -209,18 +203,18 @@ public class FileLogic
                     File = swap.SaturnData.Path,
                     Offset = swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Position + 11,
                     Data = new byte[] { 0x01 }
-                };*/
+                };
 
                 written += chunkedData.Count;
             }
             
-            /*
+            
             item.Swaps[swapIndex++] = new Swap()
             {
                 File = swap.SaturnData.Path,
                 Offset = swap.SaturnData.Reader.TocResource.ChunkOffsetLengths[swap.SaturnData.TocIndex].Position + 6,
                 Data = BitConverter.GetBytes(swap.Data.Length).Reverse().ToArray()
-            };*/
+            };
         }
         
         while (File.Exists(Constants.DataPath + Constants.SelectedItem.ID + ".json"))

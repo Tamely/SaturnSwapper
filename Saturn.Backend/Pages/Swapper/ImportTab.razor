@@ -224,27 +224,12 @@
     
     private async Task Swap()
     {
-        byte[] serializedData = ((IoPackage)parentPkg).Serialize();
-        long originalSize = ((IoPackage)parentPkg).TotalSize;
-
-        if (serializedData.Length > originalSize)
-            throw new Exception($"Serialized length: {serializedData.Length} is greater than the original asset length: {originalSize}. Please try making the custom asset's paths shorter.");
-        
-        byte[] data = new byte[originalSize];
-        Buffer.BlockCopy(serializedData, 0, data, 0, serializedData.Length);
-
-        byte[] compressedData = compressor.Compress(data);
-        byte[] noScriptCompressedData = compressor.Compress(FileLogic.RemoveClassNames(data));
-
-        if (compressedData.Length > SaturnData.CompressedSize && noScriptCompressedData.Length > SaturnData.CompressedSize)
-            throw new Exception($"Serialized compressed length: {compressedData.Length} and serialized compressed length with no scripts: {noScriptCompressedData.Length} are BOTH greater than the asset's default compressed length of {SaturnData.CompressedSize}. Either make the custom asset's paths shorter, make the custom asset's paths more like the one you are replacing, or replace a different parent asset.");
-
         var swapData = new List<SwapData>
         {
             new()
             {
                 SaturnData = SaturnData.ToNonStatic(),
-                Data = data
+                Data = ((IoPackage)parentPkg).Serialize()
             }
         };
 

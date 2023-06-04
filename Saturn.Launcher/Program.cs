@@ -47,13 +47,15 @@ public class Program
         string swapPath = basePath + "SwapData/";
         Directory.CreateDirectory(swapPath);
 
-        //Dictionary<string, long> FileSizes = Directory.EnumerateFiles(GetGamePath()).ToDictionary(file => file, file => new FileInfo(file).Length);
+        Dictionary<string, long> FileSizes = Directory.EnumerateFiles(GetGamePath()).ToDictionary(file => file, file => new FileInfo(file).Length);
         foreach (var file in Directory.EnumerateFiles(GetGamePath()))
         {
             if (file.Contains(".pak") || file.Contains(".utoc"))
             {
                 File.Copy(file, swapPath + Path.GetFileName(file), true);
             }
+
+            FileSizes[Path.GetFileName(file)] = new FileInfo(file).Length;
         }
 
         foreach (var file in new DirectoryInfo(swapPath).GetFileSystemInfos().OrderBy(x => x.CreationTime))
@@ -146,17 +148,24 @@ public class Program
 
         foreach (var file in Directory.EnumerateFiles(GetGamePath()))
         {
-            //if (FileSizes[file] == new FileInfo(file).Length) continue;
-            if (!currentSwapBackups.ContainsKey(Path.GetFileName(file.ToLower()))) continue;
-            
-            using (var stream = new FileStream(file, FileMode.Open, FileAccess.ReadWrite))
+            if (FileSizes[file] != new FileInfo(file).Length)
             {
-                foreach (var swap in currentSwapBackups[Path.GetFileName(file.ToLower())])
+                using (var stream = new FileStream(file, FileMode.Open, FileAccess.ReadWrite))
                 {
-                    stream.Position = swap.Item1;
-                    stream.Write(swap.Item2);
+                    stream.SetLength(FileSizes[file]);
                 }
-                //stream.SetLength(FileSizes[file]);
+            }
+
+            if (currentSwapBackups.ContainsKey(Path.GetFileName(file.ToLower())))
+            {
+                using (var stream = new FileStream(file, FileMode.Open, FileAccess.ReadWrite))
+                {
+                    foreach (var swap in currentSwapBackups[Path.GetFileName(file.ToLower())])
+                    {
+                        stream.Position = swap.Item1;
+                        stream.Write(swap.Item2);
+                    }
+                }
             }
         }
         

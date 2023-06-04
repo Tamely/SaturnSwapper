@@ -119,51 +119,6 @@ public class BackblingGenerator : Generator
             bool bShouldBreak = backbling.CharacterParts.Any(characterPart => !option.CharacterParts.ContainsKey(characterPart.Key));
             if (bShouldBreak) continue;
 
-            string key = backbling.CharacterParts.First().Key;
-            int diffSize = (backbling.CharacterParts[key].Path.Split('.')[0].Length + Path.GetFileNameWithoutExtension(backbling.CharacterParts[key].Path).Length) -
-                           (option.CharacterParts[key].Path.Split('.')[0].Length + Path.GetFileNameWithoutExtension(option.CharacterParts[key].Path).Length);
-
-            IoPackage.NameToBeSearching.Add(backbling.CharacterParts[key].Path.SubstringAfterLast('/').Split('.')[0]);
-            IoPackage.NameToBeSearching.Add(option.CharacterParts[key].Path.SubstringAfterLast('/').Split('.')[0]);
-
-            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
-                SaturnData.IsPickaxe = true;
-
-            IoPackage.ClearHeaders();
-            IoPackage oldObj =
-                (IoPackage)await Constants.Provider.LoadPackageAsync(option.CharacterParts[key].Path.Split('.')[0] + ".uasset");
-                
-            long originalLength = oldObj.TotalSize;
-            uint originalCompressedSize = SaturnData.CompressedSize;
-
-            SaturnData.Clear();
-
-            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
-                SaturnData.IsPickaxe = true;
-
-            IoPackage.ClearHeaders();
-            IoPackage newObj =
-                (IoPackage)await Constants.Provider.LoadPackageAsync(backbling.CharacterParts[key].Path.Split('.')[0] + ".uasset");
-
-            if (oldObj.TotalSize < newObj.TotalSize + diffSize) continue;
-
-            var obj = oldObj.Swap(newObj);
-            byte[] serializedData = obj.Serialize();
-            
-            if (serializedData.Length > originalLength) continue;
-
-            byte[] swap = new byte[originalLength];
-            Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
-
-            IoPackage.NameToBeSearching.Clear();
-
-            byte[] data = compressor.Compress(swap);
-            byte[] noScriptData = compressor.Compress(FileLogic.RemoveClassNames(swap));
-
-            Logger.Log($"Asset: '{option.CharacterParts[key].Path} | Compressed Length: {originalCompressedSize} | Script Length: {data.Length} | No Script Length: {noScriptData.Length}");
-                
-            if (data.Length > originalCompressedSize && noScriptData.Length > originalCompressedSize) continue;
-
             options.Add(option);
         }
 

@@ -110,50 +110,6 @@ public class GliderGenerator : Generator
             
             if (option.CharacterParts["Glider"].Enums["Series"] != glider.CharacterParts["Glider"].Enums["Series"]) continue;
             if (option.CharacterParts["Glider"].Enums["SkeletalMesh"] != glider.CharacterParts["Glider"].Enums["SkeletalMesh"]) continue;
-            
-            int diffSize = (glider.CharacterParts["Glider"].Path.Split('.')[0].Length + Path.GetFileNameWithoutExtension(glider.CharacterParts["Glider"].Path).Length) -
-                           (option.CharacterParts["Glider"].Path.Split('.')[0].Length + Path.GetFileNameWithoutExtension(option.CharacterParts["Glider"].Path).Length);
-
-            IoPackage.NameToBeSearching.Add(glider.CharacterParts["Glider"].Path.SubstringAfterLast('/').Split('.')[0]);
-            IoPackage.NameToBeSearching.Add(option.CharacterParts["Glider"].Path.SubstringAfterLast('/').Split('.')[0]);
-
-            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
-                SaturnData.IsPickaxe = true;
-
-            IoPackage.ClearHeaders();
-            IoPackage oldObj =
-                (IoPackage)await Constants.Provider.LoadPackageAsync(option.CharacterParts["Glider"].Path.Split('.')[0] + ".uasset");
-                
-            long originalLength = oldObj.TotalSize;
-            uint originalCompressedSize = SaturnData.CompressedSize;
-
-            SaturnData.Clear();
-
-            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
-                SaturnData.IsPickaxe = true;
-
-            IoPackage.ClearHeaders();
-            IoPackage newObj =
-                (IoPackage)await Constants.Provider.LoadPackageAsync(glider.CharacterParts["Glider"].Path.Split('.')[0] + ".uasset");
-
-            if (oldObj.TotalSize < newObj.TotalSize + diffSize) continue;
-
-            var obj = oldObj.Swap(newObj);
-            byte[] serializedData = obj.Serialize();
-            
-            if (serializedData.Length > originalLength) continue;
-
-            byte[] swap = new byte[originalLength];
-            Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
-
-            IoPackage.NameToBeSearching.Clear();
-
-            byte[] data = compressor.Compress(swap);
-            byte[] noScriptData = compressor.Compress(FileLogic.RemoveClassNames(swap));
-
-            Logger.Log($"Asset: '{option.CharacterParts["Glider"].Path} | Compressed Length: {originalCompressedSize} | Script Length: {data.Length} | No Script Length: {noScriptData.Length}");
-                
-            if (data.Length > originalCompressedSize && noScriptData.Length > originalCompressedSize) continue;
 
             options.Add(option);
         }

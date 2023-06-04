@@ -267,14 +267,11 @@
             IoPackage newObj = (IoPackage)await provider.LoadPackageAsync(Constants.SelectedItem!.CharacterParts[characterPart.Key].Path.Split('.')[0] + ".uasset");
 
             var obj = oldObj.Swap(newObj);
-            byte[] serializedData = obj.Serialize();
-            byte[] swap = new byte[originalLength];
-            Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
-            
+
             swapData.Add(new SwapData
             {
                 SaturnData = data,
-                Data = swap
+                Data = obj.Serialize()
             });
 
             SaturnData.Clear();
@@ -310,14 +307,11 @@
             IoPackage newObj = (IoPackage)await provider.LoadPackageAsync(Constants.EmptyParts[realPartType].Path.Split('.')[0] + ".uasset");
 
             var obj = oldObj.Swap(newObj);
-            byte[] serializedData = obj.Serialize();
-            byte[] swap = new byte[originalLength];
-            Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
-            
+
             swapData.Add(new SwapData
             {
                 SaturnData = data,
-                Data = swap
+                Data = obj.Serialize()
             });
             
             SaturnData.Clear();

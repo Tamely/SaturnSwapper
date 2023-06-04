@@ -177,61 +177,6 @@ public class SkinGenerator : Generator
                     bShouldBreak = true;
                     break;
                 }
-
-                int diffSize = (characterPart.Value.Path.Split('.')[0].Length + Path.GetFileNameWithoutExtension(characterPart.Value.Path).Length) -
-                               (option.CharacterParts[characterPart.Key].Path.Split('.')[0].Length + Path.GetFileNameWithoutExtension(option.CharacterParts[characterPart.Key].Path).Length);
-
-                IoPackage.NameToBeSearching.Add(characterPart.Value.Path.SubstringAfterLast('/').Split('.')[0]);
-                IoPackage.NameToBeSearching.Add(option.CharacterParts[characterPart.Key].Path.SubstringAfterLast('/').Split('.')[0]);
-
-                if (Constants.CosmeticState == SaturnState.S_Pickaxe)
-                    SaturnData.IsPickaxe = true;
-
-                IoPackage.ClearHeaders();
-                IoPackage oldObj =
-                    (IoPackage)await Constants.Provider.LoadPackageAsync(option.CharacterParts[characterPart.Key].Path.Split('.')[0] + ".uasset");
-                
-                long originalLength = oldObj.TotalSize;
-                uint originalCompressedSize = SaturnData.CompressedSize;
-
-                SaturnData.Clear();
-
-                if (Constants.CosmeticState == SaturnState.S_Pickaxe)
-                    SaturnData.IsPickaxe = true;
-
-                IoPackage.ClearHeaders();
-                IoPackage newObj =
-                    (IoPackage)await Constants.Provider.LoadPackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
-
-                if (oldObj.TotalSize < newObj.TotalSize + diffSize)
-                {
-                    bShouldBreak = true;
-                    break;
-                }
-
-                var obj = oldObj.Swap(newObj);
-                byte[] serializedData = obj.Serialize();
-
-                if (serializedData.Length > originalLength)
-                {
-                    bShouldBreak = true;
-                    break;
-                }
-
-                byte[] swap = new byte[originalLength];
-                Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
-
-                IoPackage.NameToBeSearching.Clear();
-
-                byte[] data = compressor.Compress(swap);
-                byte[] noScriptData = compressor.Compress(FileLogic.RemoveClassNames(swap));
-
-                Logger.Log($"Asset: '{option.CharacterParts[characterPart.Key].Path} | Compressed Length: {originalCompressedSize} | Script Length: {data.Length} | No Script Length: {noScriptData.Length}");
-                
-                if (data.Length <= originalCompressedSize || noScriptData.Length <= originalCompressedSize) continue;
-                
-                bShouldBreak = true;
-                break;
             }
 
             if (bShouldBreak) continue;
