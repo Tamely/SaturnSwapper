@@ -85,7 +85,7 @@ namespace Saturn.Backend.Data.Variables
 
         public static bool isKeyValid = false;
         public static bool isPlus = false;
-        public static bool isBeta = false;
+        public static bool isBeta = true;
         public static bool isClosingCorrectly = false;
 
         public static readonly Dictionary<string, CharacterPart> EmptyParts = new()
