@@ -167,5 +167,6 @@ namespace Saturn.Backend.Data.Variables
         public static List<string> PotentialOptions = new();
 
         public static List<Swaps> CurrentSwaps = new();
+        public static List<ItemModel> CurrentLobbySwaps = new();
     }
 }

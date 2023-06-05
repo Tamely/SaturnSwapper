@@ -108,10 +108,15 @@ public class FileLogic
             return;
 
         int offset = Utilities.IndexOfSequence(SaturnData.AssetRegistrySwap!.Value.DecompressedData, searchArray);
-        CompressionBase oodle = new Oodle();
-        
+
         Logger.Log($"Writing data with a length of {replaceArray.Length} to offset {offset} in decompressed data with a length of {SaturnData.AssetRegistrySwap.Value.DecompressedData.Length}");
         var writtenData = Utilities.WriteBytes(replaceArray, SaturnData.AssetRegistrySwap.Value.DecompressedData, offset);
+
+        foreach (var lobbySwap in Constants.CurrentLobbySwaps.Where(lobbySwap => lobbySwap.Swaps[0].Offset == SaturnData.AssetRegistrySwap.Value.CompressionBlock.CompressedStart))
+        {
+            Utilities.WriteBytes(replaceArray, lobbySwap.Swaps[0].Data, offset);
+            return;
+        }
 
         item.Name = "Lobby - " + Path.GetFileNameWithoutExtension(searchId) + " to " + Path.GetFileNameWithoutExtension(replaceId);
         item.Swaps = new[]
@@ -120,11 +125,11 @@ public class FileLogic
             {
                 File = DataCollection.GetGamePath() + "\\pakchunk0-WindowsClient.pak",
                 Offset = SaturnData.AssetRegistrySwap.Value.CompressionBlock.CompressedStart,
-                Data = oodle.Compress(writtenData)
+                Data = writtenData
             }
         };
         
-        await File.WriteAllTextAsync(Constants.DataPath + item.Name + ".json", JsonConvert.SerializeObject(item));
+        Constants.CurrentLobbySwaps.Add(item);
         isLocked = false;
     }
 
