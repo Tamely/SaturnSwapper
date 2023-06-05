@@ -60,8 +60,12 @@ public class FileLogic
         return result;
     }
 
+    private static bool isLocked = false;
     public static async Task ConvertLobby(string searchId, string replaceId)
     {
+        if (isLocked) return;
+        isLocked = true;
+        
         ItemModel item = new();
         
         byte[] searchArray = new byte[8];
@@ -109,6 +113,7 @@ public class FileLogic
         };
         
         await File.WriteAllTextAsync(Constants.DataPath + item.Name + ".json", JsonConvert.SerializeObject(item));
+        isLocked = false;
     }
 
     public static async Task Revert(string id)
