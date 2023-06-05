@@ -59,27 +59,33 @@ public class Fortnite
         }
     }
 
-    public void CheckForModifiedFiles()
+    public async Task CheckForModifiedFiles()
     {
-        foreach (var curManifest in _manifest.FileManifests)
+        await Task.Run(async () =>
         {
-            if (curManifest.Name != Path.GetFileName(curManifest.Name)) continue;
-            string localFilePath = Path.Combine(DataCollection.GetGamePath(), curManifest.Name);
-
-            if (!File.Exists(localFilePath))
+            foreach (var curManifest in _manifest.FileManifests)
             {
-                throw new Exception($"Could not find file path {localFilePath}!\nTo fix this, please verify your Fortnite installation in Epic Games!");
-            }
-
-            using (var localFileStream = File.OpenRead(localFilePath))
-            {
-                string hash = SHA1Hash.HashFileStream(localFileStream);
+                if (!curManifest.Name.Contains("FortniteGame/Content/Paks/") 
+                    || curManifest.Name.Contains("optional") 
+                    || curManifest.Name.Contains("ondemand") 
+                    || curManifest.Name.Contains("sm")) 
+                    continue;
                 
+                string localFilePath = Path.Combine(DataCollection.GetGamePath(), Path.GetFileName(curManifest.Name));
+
+                if (!File.Exists(localFilePath))
+                {
+                    throw new Exception($"Could not find file path {localFilePath}!\nTo fix this, please verify your Fortnite installation in Epic Games!");
+                }
+                
+                await using var localFileStream = File.OpenRead(localFilePath);
+                string hash = SHA1Hash.HashFileStream(localFileStream);
+
                 if (curManifest.Hash != hash)
                 {
                     throw new Exception($"Detected modified file {localFilePath}!\nTo fix this, please verify your Fortnite installation in Epic Games!");
                 }
             }
-        }
+        });
     }
 }
