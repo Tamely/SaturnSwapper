@@ -31,6 +31,7 @@
 <body>
     <div class="app-mount">
         <OobeOverlay/>
+        <DiscordModal/>
         <SwapperPage/>
         <InstallerPage/>
     </div>
@@ -127,18 +128,27 @@
         manifest.CleanFiles();
         manifest.CheckForModifiedFiles();*/
         
+        
+        // Initialize provider
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(108));
+        Constants.Provider = new SaturnFileProvider(_fortniteCentralService).Provider;
+
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(82));
 
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerWelcomeOut");
 
         await _oobeService.ConfigureOobe();
-
-        Constants.Provider = new SaturnFileProvider(_fortniteCentralService).Provider;
+        
         Constants.State = SaturnState.S_Dash;
 
         while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "dash")) {}
-        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "dash");        
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "dash");
         
-        Utilities.OpenBrowser(idx.DiscordServer);
+        
+        // Reload the UI just in case
+        StateHasChanged();
+
+        DiscordModal.DiscordLink = idx.DiscordServer;
+        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "discord");
     }
 }

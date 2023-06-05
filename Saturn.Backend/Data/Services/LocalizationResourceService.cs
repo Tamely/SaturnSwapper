@@ -159,6 +159,11 @@ public class LocalizationResourceService
         { 105, "Click 'Add Cosmetics' and select the items you own. Then click 'Back' at the top right when you're done!" },
         { 106, "Downloading Fortnite's file manifest" },
         { 107, "Checking for modified files" },
+        { 108, "Initializing file provider" },
+        { 109, "Discord Server" },
+        { 110, "Please join Saturn's discord server!" },
+        { 111, "This would help you stay updated on what's happening with the swapper!" },
+        { 112, "Join Saturn" },
     };
     
     private Dictionary<int, string> ItalianStringTable = new()
@@ -269,6 +274,13 @@ public class LocalizationResourceService
         { 103, "Gestione delle preimpostazioni" },
         { 104, "Fare clic su \"Impostazioni\" per aggiungere i cosmetici posseduti." },
         { 105, "Fare clic su \"Aggiungi cosmetici\" e selezionare gli articoli che si possiedono. Quindi fare clic su \"Indietro\" in alto a destra quando si è finito!" },
+        { 106, "Scaricare il file manifest di Fortnite" },
+        { 107, "Controllo dei file modificati" },
+        { 108, "Inizializzazione del provider di file" },
+        { 109, "Server Discord" },
+        { 110, "Unitevi al server discord di Saturn!" },
+        { 111, "Questo vi aiuterà a rimanere aggiornati su ciò che accade con lo swapper!" },
+        { 112, "Unisciti a Saturno" },
     };
     
     private Dictionary<int, string> SpanishStringTable = new()
@@ -379,6 +391,13 @@ public class LocalizationResourceService
         { 103, "Gestionar preselecciones" },
         { 104, "Haz clic en \"Configuración\" para añadir los cosméticos que posees" },
         { 105, "Haz clic en \"Añadir cosméticos\" y selecciona los artículos que tienes. Cuando hayas terminado, haz clic en \"Volver\" en la parte superior derecha." },
+        { 106, "Descarga del manifiesto de archivos de Fortnite" },
+        { 107, "Comprobación de archivos modificados" },
+        { 108, "Inicialización del proveedor de archivos" },
+        { 109, "Servidor Discord" },
+        { 110, "Únete al servidor discord de Saturno." },
+        { 111, "Esto te ayudará a estar al día de lo que ocurre con el swapper." },
+        { 112, "Únete a Saturno" },
     };
     
     private Dictionary<int, string> PortugueseStringTable = new()
@@ -489,6 +508,13 @@ public class LocalizationResourceService
         { 103, "Gerir predefinições" },
         { 104, "Clique em \"Definições\" para adicionar os cosméticos que possui" },
         { 105, "Clique em 'Adicionar cosméticos' e seleccione os artigos que possui. Em seguida, clique em 'Voltar' no canto superior direito quando tiver terminado!" },
+        { 106, "Descarregar o manifesto de ficheiros do Fortnite" },
+        { 107, "Verificação de ficheiros modificados" },
+        { 108, "Inicialização do fornecedor de ficheiros" },
+        { 109, "Servidor do Discord" },
+        { 110, "Juntem-se ao servidor discord de Saturno!" },
+        { 111, "Isto ajudá-lo-á a manter-se actualizado sobre o que está a acontecer com o permutador!" },
+        { 112, "Juntar-se a Saturno" },
     };
     
     private Dictionary<int, string> FrenchStringTable = new()
@@ -599,6 +625,13 @@ public class LocalizationResourceService
         { 103, "Gérer les préréglages" },
         { 104, "Cliquez sur \"Paramètres\" pour ajouter les produits cosmétiques que vous possédez." },
         { 105, "Cliquez sur \"Ajouter des cosmétiques\" et sélectionnez les articles que vous possédez. Cliquez ensuite sur \"Retour\" en haut à droite lorsque vous avez terminé !" },
+        { 106, "Télécharger le manifeste des fichiers de Fortnite" },
+        { 107, "Vérification des fichiers modifiés" },
+        { 108, "Initialisation du fournisseur de fichiers" },
+        { 109, "Serveur Discord" },
+        { 110, "Rejoignez le serveur discord de Saturn!" },
+        { 111, "Cela vous permettra de rester au courant de ce qui se passe avec l'échangiste!" },
+        { 112, "Rejoindre Saturne" },
     };
     
     private Dictionary<int, string> GermanStringTable = new()
@@ -709,6 +742,13 @@ public class LocalizationResourceService
         { 103, "Voreinstellungen verwalten" },
         { 104, "Klicken Sie auf \"Einstellungen\", um Ihre eigenen Kosmetika hinzuzufügen." },
         { 105, "Klicken Sie auf \"Kosmetika hinzufügen\" und wählen Sie die Artikel aus, die Sie besitzen. Klicken Sie dann oben rechts auf \"Zurück\", wenn Sie fertig sind!" },
+        { 106, "Herunterladen des Dateimanifests von Fortnite" },
+        { 107, "Prüfen auf geänderte Dateien" },
+        { 108, "Dateianbieter initialisieren" },
+        { 109, "Diskord-Server" },
+        { 110, "Bitte treten Sie dem Saturn-Discord-Server bei!" },
+        { 111, "So bleiben Sie auf dem Laufenden, was mit dem Swapper passiert!" },
+        { 112, "Saturn beitreten" },
     };
     
     private Dictionary<int, string> RussianStringTable = new()
@@ -819,6 +859,13 @@ public class LocalizationResourceService
         { 103, "Управление предустановками" },
         { 104, "Нажмите \"Настройки\", чтобы добавить косметику, которой вы владеете" },
         { 105, "Нажмите \"Добавить косметику\" и выберите те предметы, которые у вас есть. Затем нажмите \"Назад\" в правом верхнем углу, когда закончите!" },
+        { 106, "Загрузка файлового манифеста Fortnite" },
+        { 107, "Проверка наличия измененных файлов" },
+        { 108, "Инициализация поставщика файлов" },
+        { 109, "Сервер Discord" },
+        { 110, "Пожалуйста, присоединяйтесь к discord-серверу Сатурна!" },
+        { 111, "Это поможет вам быть в курсе того, что происходит с обменщиком!" },
+        { 112, "Присоединиться к Сатурну" },
     };
     
     private Dictionary<int, string> UkrainianStringTable = new()
@@ -929,6 +976,13 @@ public class LocalizationResourceService
         { 103, "Керування пресетами" },
         { 104, "Натисніть \"Налаштування\", щоб додати косметику, якою ви володієте" },
         { 105, "Натисніть \"Додати косметику\" і виберіть товари, які у вас є. Потім натисніть \"Назад\" у верхньому правому куті, коли закінчите!" },
+        { 106, "Завантаження файлового маніфесту Fortnite" },
+        { 107, "Перевірка на наявність змінених файлів" },
+        { 108, "Ініціалізація файлового провайдера" },
+        { 109, "Сервер розбрату" },
+        { 110, "Будь ласка, приєднуйтесь до сервера розбрату Сатурна!" },
+        { 111, "Це допоможе вам залишатися в курсі того, що відбувається зі своппером!" },
+        { 112, "Приєднуйтесь до Сатурна" },
     };
     
     public string GetString(int id)
