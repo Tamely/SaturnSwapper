@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using RestSharp;
 
 namespace EpicManifestParser.Objects
 {
@@ -19,7 +20,8 @@ namespace EpicManifestParser.Objects
 		public int CL { get; }
 		public string Hash { get; }
 		public Uri Uri { get; }
-		public string FileName { get; }
+        public List<UriBuilder> Uris { get; set; }
+        public string FileName { get; }
 
 		public ManifestInfo(Stream jsonStream) : this(JsonDocument.Parse(jsonStream)) { }
 		public ManifestInfo(byte[] jsonBytes) : this(JsonDocument.Parse(jsonBytes)) { }
@@ -42,7 +44,7 @@ namespace EpicManifestParser.Objects
 			}
 
 			var manifestsArray = rootElement.GetProperty("manifests");
-			var manifestUriBuilders = new List<UriBuilder>();
+			Uris = new List<UriBuilder>();
 
 			foreach (var manifestElement in manifestsArray.EnumerateArray())
 			{
@@ -67,10 +69,10 @@ namespace EpicManifestParser.Objects
 					}
 				}
 
-				manifestUriBuilders.Add(uriBuilder);
+                Uris.Add(uriBuilder);
 			}
 
-			Uri = (manifestUriBuilders.Find(x => x.Query.Length == 0) ?? manifestUriBuilders[0]).Uri;
+			Uri = (Uris.Find(x => x.Query.Length == 0) ?? Uris[0]).Uri;
 			FileName = Uri.Segments[^1];
 		}
 
@@ -111,8 +113,23 @@ namespace EpicManifestParser.Objects
 				return await File.ReadAllBytesAsync(path).ConfigureAwait(false);
 			}
 
-			using var client = new HttpClient();
-			var data = await client.GetByteArrayAsync(Uri).ConfigureAwait(false);
+			using var client = new RestClient();
+
+            byte[]? data = null;
+
+            foreach (var uriBuilder in Uris)
+            {
+                var res = await client.ExecuteAsync(new(uriBuilder.Uri));
+
+                if (res.IsSuccessful && res.RawBytes is not null)
+                {
+                    data = res.RawBytes;
+                    break;
+                }
+            }
+
+            if (data is null)
+                throw new HttpRequestException("Could not download manifest data.");
 
 			if (path != null)
 			{

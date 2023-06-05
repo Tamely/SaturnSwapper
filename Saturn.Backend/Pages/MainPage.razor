@@ -118,7 +118,6 @@
         Constants.isKeyValid = await Utilities.IsKeyValid(_saturnAPIService);
         Constants.isKeyValid |= Constants.isPlus;
         
-        /*
         // Download the manifest
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(106));
         Fortnite manifest = new Fortnite();
@@ -126,9 +125,8 @@
         // Check for modified files
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(107));
         manifest.CleanFiles();
-        manifest.CheckForModifiedFiles();*/
-        
-        
+        manifest.CheckForModifiedFiles();
+
         // Initialize provider
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(108));
         Constants.Provider = new SaturnFileProvider(_fortniteCentralService).Provider;
@@ -143,8 +141,7 @@
 
         while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "dash")) {}
         await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "dash");
-        
-        
+
         // Reload the UI just in case
         StateHasChanged();
 
