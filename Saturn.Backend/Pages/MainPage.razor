@@ -125,7 +125,7 @@
         // Check for modified files
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(107));
         manifest.CleanFiles();
-        await manifest.CheckForModifiedFiles();
+        //await manifest.CheckForModifiedFiles();
 
         // Initialize provider
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(108));

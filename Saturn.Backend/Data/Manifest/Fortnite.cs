@@ -68,6 +68,7 @@ public class Fortnite
                 if (!curManifest.Name.Contains("FortniteGame/Content/Paks/") 
                     || curManifest.Name.Contains("optional") 
                     || curManifest.Name.Contains("ondemand") 
+                    || curManifest.Name.Contains("pakchunk11") 
                     || curManifest.Name.Contains("sm")) 
                     continue;
                 
