@@ -70,12 +70,21 @@ public class FileLogic
         
         byte[] searchArray = new byte[8];
         byte[] replaceArray = new byte[8];
+        bool returnFunc = false;
+        
         await Task.Run(async () =>
         {
             if (Constants.Provider.TryCreateReader("FortniteGame/AssetRegistry.bin", out var archive))
             {
                 var registry = new FAssetRegistryState(archive);
                 var (searchPathIdx, searchAssetIdx, replacePathIdx, replaceAssetIdx) = registry.Swap(searchId, replaceId);
+
+                if (searchPathIdx is -1 || searchAssetIdx is -1 || replacePathIdx is -1 || replaceAssetIdx is -1)
+                {
+                    Logger.Log("Couldn't find an ID! Unable to lobby swap.");
+                    returnFunc = true;
+                    return;
+                }
 
                 searchArray = new byte[8];
                 Buffer.BlockCopy(BitConverter.GetBytes(searchPathIdx), 0, searchArray, 0, 4);
@@ -94,6 +103,9 @@ public class FileLogic
                 throw new Exception("Unable to load AssetRegistry.bin");
             }
         });
+
+        if (returnFunc)
+            return;
 
         int offset = Utilities.IndexOfSequence(SaturnData.AssetRegistrySwap!.Value.DecompressedData, searchArray);
         CompressionBase oodle = new Oodle();
@@ -125,20 +137,29 @@ public class FileLogic
     }
     
     public static async Task Convert(List<SwapData> swapData)
-    {        
+    {
+        if (isLocked) return;
+        isLocked = true;
+        
         CompressionBase compression = new Oodle();
-        
-        Constants.SelectedItem ??= new SaturnItemModel()
+
+        if (string.IsNullOrWhiteSpace(Constants.SelectedItem.Name))
         {
-            Name = "AssetImporter",
-            ID = "AssetImporter"
-        };
+            Constants.SelectedItem = new SaturnItemModel()
+            {
+                Name = "AssetImporter",
+                ID = "AssetImporter"
+            };
+        }
         
-        Constants.SelectedOption ??= new SaturnItemModel()
+        if (string.IsNullOrWhiteSpace(Constants.SelectedOption.Name))
         {
-            Name = "AssetImporter",
-            ID = "AssetImporter"
-        };
+            Constants.SelectedOption = new SaturnItemModel()
+            {
+                Name = "AssetImporter",
+                ID = "AssetImporter"
+            };
+        }
 
         ItemModel item = new ItemModel();
         item.Name = Constants.SelectedOption.Name + " to " + Constants.SelectedItem.Name;
@@ -228,5 +249,6 @@ public class FileLogic
         }
         
         await File.WriteAllTextAsync(Constants.DataPath + Constants.SelectedItem.ID + ".json", JsonConvert.SerializeObject(item));
+        isLocked = false;
     }
 }

@@ -160,9 +160,9 @@ namespace Saturn.Backend.Data.Variables
         public static int ChunkIndex = 0;
         
         public static List<List<DisplayItemModel>> ChunkedItems = new();
-        public static DisplayItemModel? SelectedDisplayItem = null;
-        public static SaturnItemModel? SelectedItem = null;
-        public static SaturnItemModel? SelectedOption = null;
+        public static DisplayItemModel SelectedDisplayItem = new();
+        public static SaturnItemModel SelectedItem = new();
+        public static SaturnItemModel SelectedOption = new();
 
         public static List<string> PotentialOptions = new();
 
