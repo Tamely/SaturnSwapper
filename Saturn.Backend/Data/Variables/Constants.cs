@@ -9,7 +9,7 @@ namespace Saturn.Backend.Data.Variables
 {
     public class Constants
     {
-        public const string USER_VERSION = "2.2.0";
+        public const string USER_VERSION = "2.2.1";
 
         public static readonly Changelog Changelog = new Changelog()
         {
@@ -85,7 +85,7 @@ namespace Saturn.Backend.Data.Variables
 
         public static bool isKeyValid = false;
         public static bool isPlus = false;
-        public static bool isBeta = true;
+        public static bool isBeta = false;
         public static bool isClosingCorrectly = false;
 
         public static readonly Dictionary<string, CharacterPart> EmptyParts = new()
