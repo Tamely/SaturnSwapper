@@ -11,6 +11,7 @@
 @using Saturn.Backend.Data.Fortnite
 @using Saturn.Backend.Data.FortniteCentral
 @using Saturn.Backend.Data.FortniteCentral.Models
+@using Saturn.Backend.Data.Manifest
 @using Saturn.Backend.Data.SaturnAPI
 @using Saturn.Backend.Data.SaturnAPI.Models
 @using Saturn.Backend.Data.SaturnConfig
@@ -30,6 +31,7 @@
 <body>
     <div class="app-mount">
         <OobeOverlay/>
+        <DiscordModal/>
         <SwapperPage/>
         <InstallerPage/>
     </div>
@@ -116,18 +118,34 @@
         Constants.isKeyValid = await Utilities.IsKeyValid(_saturnAPIService);
         Constants.isKeyValid |= Constants.isPlus;
         
+        // Download the manifest
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(106));
+        Fortnite manifest = new Fortnite();
+        
+        // Check for modified files
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(107));
+        manifest.CleanFiles();
+        //await manifest.CheckForModifiedFiles();
+
+        // Initialize provider
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(108));
+        Constants.Provider = new SaturnFileProvider(_fortniteCentralService).Provider;
+
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(82));
 
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerWelcomeOut");
 
         await _oobeService.ConfigureOobe();
-
-        Constants.Provider = new SaturnFileProvider(_fortniteCentralService).Provider;
+        
         Constants.State = SaturnState.S_Dash;
 
         while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "dash")) {}
-        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "dash");        
-        
-        Utilities.OpenBrowser(idx.DiscordServer);
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "dash");
+
+        // Reload the UI just in case
+        StateHasChanged();
+
+        DiscordModal.DiscordLink = idx.DiscordServer;
+        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "discord");
     }
 }

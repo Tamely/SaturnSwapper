@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Saturn.Client", "Saturn.Cli
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Saturn.Launcher", "Saturn.Launcher\Saturn.Launcher.csproj", "{8BB76C34-D7A7-4486-B375-0203C95FA5AC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpicManifestParser", "EpicManifestParser\EpicManifestParser.csproj", "{736A7A2C-141B-4602-8591-24C64893137D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{8BB76C34-D7A7-4486-B375-0203C95FA5AC}.Release|x64.Build.0 = Release|Any CPU
 		{8BB76C34-D7A7-4486-B375-0203C95FA5AC}.Release|x86.ActiveCfg = Release|Any CPU
 		{8BB76C34-D7A7-4486-B375-0203C95FA5AC}.Release|x86.Build.0 = Release|Any CPU
+		{736A7A2C-141B-4602-8591-24C64893137D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{736A7A2C-141B-4602-8591-24C64893137D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{736A7A2C-141B-4602-8591-24C64893137D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{736A7A2C-141B-4602-8591-24C64893137D}.Debug|x64.Build.0 = Debug|Any CPU
+		{736A7A2C-141B-4602-8591-24C64893137D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{736A7A2C-141B-4602-8591-24C64893137D}.Debug|x86.Build.0 = Debug|Any CPU
+		{736A7A2C-141B-4602-8591-24C64893137D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{736A7A2C-141B-4602-8591-24C64893137D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{736A7A2C-141B-4602-8591-24C64893137D}.Release|x64.ActiveCfg = Release|Any CPU
+		{736A7A2C-141B-4602-8591-24C64893137D}.Release|x64.Build.0 = Release|Any CPU
+		{736A7A2C-141B-4602-8591-24C64893137D}.Release|x86.ActiveCfg = Release|Any CPU
+		{736A7A2C-141B-4602-8591-24C64893137D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

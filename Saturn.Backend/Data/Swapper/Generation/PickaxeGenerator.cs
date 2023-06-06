@@ -110,50 +110,6 @@ public class PickaxeGenerator : Generator
             
             if (option.CharacterParts["Pickaxe"].Enums["Series"] != pickaxe.CharacterParts["Pickaxe"].Enums["Series"]) continue;
             if (option.CharacterParts["Pickaxe"].Enums["PrimaryFireAbility"] != pickaxe.CharacterParts["Pickaxe"].Enums["PrimaryFireAbility"]) continue;
-            
-            int diffSize = (pickaxe.CharacterParts["Pickaxe"].Path.Split('.')[0].Length + Path.GetFileNameWithoutExtension(pickaxe.CharacterParts["Pickaxe"].Path).Length) -
-                           (option.CharacterParts["Pickaxe"].Path.Split('.')[0].Length + Path.GetFileNameWithoutExtension(option.CharacterParts["Pickaxe"].Path).Length);
-
-            IoPackage.NameToBeSearching.Add(pickaxe.CharacterParts["Pickaxe"].Path.SubstringAfterLast('/').Split('.')[0]);
-            IoPackage.NameToBeSearching.Add(option.CharacterParts["Pickaxe"].Path.SubstringAfterLast('/').Split('.')[0]);
-
-            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
-                SaturnData.IsPickaxe = true;
-
-            IoPackage.ClearHeaders();
-            IoPackage oldObj =
-                (IoPackage)await Constants.Provider.LoadPackageAsync(option.CharacterParts["Pickaxe"].Path.Split('.')[0] + ".uasset");
-                
-            long originalLength = oldObj.TotalSize;
-            uint originalCompressedSize = SaturnData.CompressedSize;
-
-            SaturnData.Clear();
-
-            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
-                SaturnData.IsPickaxe = true;
-
-            IoPackage.ClearHeaders();
-            IoPackage newObj =
-                (IoPackage)await Constants.Provider.LoadPackageAsync(pickaxe.CharacterParts["Pickaxe"].Path.Split('.')[0] + ".uasset");
-
-            if (oldObj.TotalSize < newObj.TotalSize + diffSize) continue;
-
-            var obj = oldObj.Swap(newObj);
-            byte[] serializedData = obj.Serialize();
-            
-            if (serializedData.Length > originalLength) continue;
-            
-            byte[] swap = new byte[originalLength];
-            Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
-
-            IoPackage.NameToBeSearching.Clear();
-
-            byte[] data = compressor.Compress(swap);
-            byte[] noScriptData = compressor.Compress(FileLogic.RemoveClassNames(swap));
-
-            Logger.Log($"Asset: '{option.CharacterParts["Pickaxe"].Path} | Compressed Length: {originalCompressedSize} | Script Length: {data.Length} | No Script Length: {noScriptData.Length}");
-                
-            if (data.Length > originalCompressedSize && noScriptData.Length > originalCompressedSize) continue;
 
             options.Add(option);
         }

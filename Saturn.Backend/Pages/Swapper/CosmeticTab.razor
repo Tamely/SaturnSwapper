@@ -181,7 +181,7 @@
     {
         while (true)
         {
-            if (Constants.SelectedItem != null && Constants.SelectedOption != null && !currentlySwapping)
+            if (!string.IsNullOrWhiteSpace(Constants.SelectedItem.ID) && !string.IsNullOrWhiteSpace(Constants.SelectedOption.ID))
                 await Swap();
             await Task.Delay(500);
         }
@@ -221,29 +221,34 @@
         {
             await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "key");
             Constants.SelectedDisplayItem.Description = "Key check failed!";
-            Constants.SelectedItem = null;
-            Constants.SelectedOption = null;
+            Constants.SelectedItem = new();
+            Constants.SelectedOption = new();
             return;
         }
-        
-        currentlySwapping = true;
-        
-        IoPackage.NameToBeSearching.Clear();
-        
+
         await Swap(Constants.Provider);
     }
 
     private async Task Swap(DefaultFileProvider provider)
     {
-        Constants.SelectedDisplayItem.Description = "Swapping from " + Constants.SelectedOption!.Name + " to " + Constants.SelectedDisplayItem.Name;
+        if (currentlySwapping) return;
+        currentlySwapping = true;
+        
+        IoPackage.NameToBeSearching.Clear();
+        Constants.SelectedDisplayItem.Description = "Swapping from " + Constants.SelectedOption.Name + " to " + Constants.SelectedDisplayItem.Name;
         StateHasChanged();
+        
+        Constants.CurrentSwaps.Add(new()
+        {
+            OptionModel = Constants.SelectedOption,
+            ItemModel = Constants.SelectedItem
+        });
         
         List<SwapData> swapData = new();
         
         foreach (var characterPart in Constants.SelectedOption.CharacterParts.Where(characterPart => Constants.SelectedItem!.CharacterParts.ContainsKey(characterPart.Key)))
         {
-            if (Constants.SelectedDisplayItem != null)
-                Constants.SelectedDisplayItem.Description = "Swapping asset: " + Path.GetFileName(characterPart.Value.Path.Split('.')[0] + ".uasset");
+            Constants.SelectedDisplayItem.Description = "Swapping asset: " + Path.GetFileName(characterPart.Value.Path.Split('.')[0] + ".uasset");
             StateHasChanged();
             
             IoPackage.NameToBeSearching.Add(characterPart.Value.Path.SubstringAfterLast('/').Split('.')[0]);
@@ -254,8 +259,6 @@
             
             IoPackage.ClearHeaders();
             IoPackage oldObj = (IoPackage)await provider.LoadPackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
-            long originalLength = oldObj.TotalSize;
-            Logger.Log($"Asset '{characterPart.Value.Path.Split('.')[0] + ".uasset"}' has a length of {originalLength}");
 
             var data = SaturnData.ToNonStatic();
             SaturnData.Clear();
@@ -267,14 +270,11 @@
             IoPackage newObj = (IoPackage)await provider.LoadPackageAsync(Constants.SelectedItem!.CharacterParts[characterPart.Key].Path.Split('.')[0] + ".uasset");
 
             var obj = oldObj.Swap(newObj);
-            byte[] serializedData = obj.Serialize();
-            byte[] swap = new byte[originalLength];
-            Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
-            
+
             swapData.Add(new SwapData
             {
                 SaturnData = data,
-                Data = swap
+                Data = obj.Serialize()
             });
 
             SaturnData.Clear();
@@ -282,8 +282,7 @@
 
         foreach (var characterPart in Constants.SelectedOption.CharacterParts.Where(characterPart => !Constants.SelectedItem!.CharacterParts.ContainsKey(characterPart.Key)))
         {
-            if (Constants.SelectedDisplayItem != null)
-                Constants.SelectedDisplayItem.Description = "Swapping asset: " + Path.GetFileName(characterPart.Value.Path.Split('.')[0] + ".uasset");
+            Constants.SelectedDisplayItem.Description = "Swapping asset: " + Path.GetFileName(characterPart.Value.Path.Split('.')[0] + ".uasset");
             StateHasChanged();
             
             IoPackage.NameToBeSearching.Add(characterPart.Value.Path.SubstringAfterLast('/').Split('.')[0]);
@@ -293,8 +292,6 @@
 
             IoPackage.ClearHeaders();
             IoPackage oldObj = (IoPackage)await provider.LoadPackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
-            long originalLength = oldObj.TotalSize;
-            Logger.Log($"Asset '{characterPart.Value.Path.Split('.')[0] + ".uasset"}' has a length of {originalLength}");
 
             var data = SaturnData.ToNonStatic();
             SaturnData.Clear();
@@ -310,14 +307,11 @@
             IoPackage newObj = (IoPackage)await provider.LoadPackageAsync(Constants.EmptyParts[realPartType].Path.Split('.')[0] + ".uasset");
 
             var obj = oldObj.Swap(newObj);
-            byte[] serializedData = obj.Serialize();
-            byte[] swap = new byte[originalLength];
-            Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
-            
+
             swapData.Add(new SwapData
             {
                 SaturnData = data,
-                Data = swap
+                Data = obj.Serialize()
             });
             
             SaturnData.Clear();
@@ -349,21 +343,21 @@
             StateHasChanged();
             Logger.Log("Unable to lobby swap at this time... pakchunk0 was unable to be mounted.", LogLevel.Error);
         }
-
+        
         Constants.SelectedDisplayItem.Description = "Swapped from " + Constants.SelectedOption.Name + " to " + Constants.SelectedDisplayItem.Name;
         StateHasChanged();
-        
-        Constants.CurrentSwaps.Add(new()
+
+        if (string.IsNullOrWhiteSpace(Constants.SelectedOption.Name) || string.IsNullOrWhiteSpace(Constants.SelectedItem.Name))
         {
-            OptionModel = Constants.SelectedOption,
-            ItemModel = Constants.SelectedItem
-        });
-        
+            Constants.SelectedDisplayItem.Description = "The cosmetic has swapped as successfully as it could, but something went wrong. Restart Saturn and reswap if the swap didn't apply.";
+            StateHasChanged();
+        }
+
         Constants.ConvertedIDs.Add(Constants.SelectedItem!.ID);
         StateHasChanged();
+        Constants.SelectedOption = new();
+        Constants.SelectedItem = new();
         currentlySwapping = false;
-        Constants.SelectedItem = null;
-        Constants.SelectedOption = null;
     }
 
     private bool _handled = false;

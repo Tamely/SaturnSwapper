@@ -9,7 +9,7 @@ namespace Saturn.Backend.Data.Variables
 {
     public class Constants
     {
-        public const string USER_VERSION = "2.2.0";
+        public const string USER_VERSION = "2.2.1";
 
         public static readonly Changelog Changelog = new Changelog()
         {
@@ -139,6 +139,8 @@ namespace Saturn.Backend.Data.Variables
                 }
             }
         };
+        
+        public const string MANIFEST_URL = "launcher/api/public/assets/v2/platform/Windows/namespace/fn/catalogItem/4fe75bbc5a674f4f9b356b5c90567da5/app/Fortnite/label/Live";
 
         // These aren't really constants but :shrug:
         public static string DiscordAvatar = "img/Saturn.png";
@@ -158,12 +160,13 @@ namespace Saturn.Backend.Data.Variables
         public static int ChunkIndex = 0;
         
         public static List<List<DisplayItemModel>> ChunkedItems = new();
-        public static DisplayItemModel? SelectedDisplayItem = null;
-        public static SaturnItemModel? SelectedItem = null;
-        public static SaturnItemModel? SelectedOption = null;
+        public static DisplayItemModel SelectedDisplayItem = new();
+        public static SaturnItemModel SelectedItem = new();
+        public static SaturnItemModel SelectedOption = new();
 
         public static List<string> PotentialOptions = new();
 
         public static List<Swaps> CurrentSwaps = new();
+        public static List<ItemModel> CurrentLobbySwaps = new();
     }
 }

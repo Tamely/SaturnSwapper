@@ -25,15 +25,12 @@ public class FortniteCentralService : IFortniteCentralService
     public FortniteCentralService()
     {
         _endpoint = new Uri("https://fortnitecentral.genxgames.gg/");
-            
-        _client = new RestClient
+
+        _client = new RestClient(new RestClientOptions()
         {
-            Options =
-            {
-                UserAgent = $"Saturn/{Constants.USER_VERSION}",
-                MaxTimeout = 5 * 1000
-            }
-        }.UseSerializer<JsonNetSerializer>();
+            UserAgent = $"Saturn/{Constants.USER_VERSION}",
+            MaxTimeout = 5 * 1000
+        }, configureSerialization: s => s.UseSerializer<JsonNetSerializer>());
     }
 
     public async Task<T> ReturnEndpointAsync<T>(string url)

@@ -4,9 +4,12 @@
 @using System.IO
 @using Saturn.Backend.Data.Fortnite
 @using System.Diagnostics
+@using Newtonsoft.Json
 @using Saturn.Backend.Data
+@using Saturn.Backend.Data.Compression
 @using Saturn.Backend.Data.Discord
 @using Saturn.Backend.Data.Swapper.Generation
+@using Saturn.Backend.Data.Swapper.Swapping.Models
 
 @inject IJSRuntime _jsRuntime;
 @inject LocalizationResourceService _localizationResourceService
@@ -74,7 +77,29 @@
 
     private async Task LaunchFortnite()
     {
+        if (Constants.CurrentLobbySwaps.Count > 0)
+        {
+            CompressionBase oodle = new Oodle();
+            ItemModel LobbySwaps = new()
+            {
+                Name = "Lobby Swaps",
+                Swaps = new Swap[Constants.CurrentLobbySwaps.Sum(x => x.Swaps.Length)]
+            };
+
+            int idx = 0;
+            foreach (var item in Constants.CurrentLobbySwaps)
+            {
+                foreach (var swap in item.Swaps)
+                {
+                    swap.Data = oodle.Compress(swap.Data);
+                    LobbySwaps.Swaps[idx++] = swap;
+                }
+            }
+            
+            await File.WriteAllTextAsync(Constants.DataPath + LobbySwaps.Name + ".json", JsonConvert.SerializeObject(LobbySwaps));
+        }
         Constants.isClosingCorrectly = true;
+        
         Process.Start(new ProcessStartInfo
         {
             FileName = "cmd.exe",

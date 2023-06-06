@@ -32,14 +32,11 @@ namespace Saturn.Backend.Data.SaturnAPI
 
             _endpoint = new Uri("https://tamelyapi.azurewebsites.net");
 
-            _client = new RestClient
+            _client = new RestClient(new RestClientOptions()
             {
-                Options =
-                {
-                    UserAgent = $"Saturn/{Constants.USER_VERSION}",
-                    MaxTimeout = 5 * 1000
-                }
-            }.UseSerializer<JsonNetSerializer>();
+                UserAgent = $"Saturn/{Constants.USER_VERSION}",
+                MaxTimeout = 5 * 1000
+            }, configureSerialization: s => s.UseSerializer<JsonNetSerializer>());
         }
 
         public async Task<T> ReturnEndpointAsync<T>(string url)
@@ -51,7 +48,7 @@ namespace Saturn.Backend.Data.SaturnAPI
             if (File.Exists(Constants.APICachePath + "index" + url.Replace("/", "").Replace("?", "").Replace("&", "")))
             {
                 data = JsonConvert.DeserializeObject<CacheModel<T>>(await File.ReadAllTextAsync(Constants.APICachePath + "index" + url.Replace("/", "").Replace("?", "").Replace("&", "")));
-                if (data?.Expiration > DateTime.UtcNow && url != "/")
+                if (data?.Expiration > DateTime.UtcNow && url != "/" && url != "/api/v1/Saturn/Dependencies")
                     return data.Data;
 
                 File.Delete(Constants.APICachePath + "index" + url.Replace("/", "").Replace("?", "").Replace("&", ""));

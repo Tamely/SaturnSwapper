@@ -60,18 +60,31 @@ public class FileLogic
         return result;
     }
 
+    private static bool isLocked = false;
     public static async Task ConvertLobby(string searchId, string replaceId)
     {
+        if (isLocked) return;
+        isLocked = true;
+        
         ItemModel item = new();
         
         byte[] searchArray = new byte[8];
         byte[] replaceArray = new byte[8];
+        bool returnFunc = false;
+        
         await Task.Run(async () =>
         {
             if (Constants.Provider.TryCreateReader("FortniteGame/AssetRegistry.bin", out var archive))
             {
                 var registry = new FAssetRegistryState(archive);
                 var (searchPathIdx, searchAssetIdx, replacePathIdx, replaceAssetIdx) = registry.Swap(searchId, replaceId);
+
+                if (searchPathIdx is -1 || searchAssetIdx is -1 || replacePathIdx is -1 || replaceAssetIdx is -1)
+                {
+                    Logger.Log("Couldn't find an ID! Unable to lobby swap.");
+                    returnFunc = true;
+                    return;
+                }
 
                 searchArray = new byte[8];
                 Buffer.BlockCopy(BitConverter.GetBytes(searchPathIdx), 0, searchArray, 0, 4);
@@ -91,11 +104,19 @@ public class FileLogic
             }
         });
 
+        if (returnFunc)
+            return;
+
         int offset = Utilities.IndexOfSequence(SaturnData.AssetRegistrySwap!.Value.DecompressedData, searchArray);
-        CompressionBase oodle = new Oodle();
-        
+
         Logger.Log($"Writing data with a length of {replaceArray.Length} to offset {offset} in decompressed data with a length of {SaturnData.AssetRegistrySwap.Value.DecompressedData.Length}");
         var writtenData = Utilities.WriteBytes(replaceArray, SaturnData.AssetRegistrySwap.Value.DecompressedData, offset);
+
+        foreach (var lobbySwap in Constants.CurrentLobbySwaps.Where(lobbySwap => lobbySwap.Swaps[0].Offset == SaturnData.AssetRegistrySwap.Value.CompressionBlock.CompressedStart))
+        {
+            Utilities.WriteBytes(replaceArray, lobbySwap.Swaps[0].Data, offset);
+            return;
+        }
 
         item.Name = "Lobby - " + Path.GetFileNameWithoutExtension(searchId) + " to " + Path.GetFileNameWithoutExtension(replaceId);
         item.Swaps = new[]
@@ -104,11 +125,12 @@ public class FileLogic
             {
                 File = DataCollection.GetGamePath() + "\\pakchunk0-WindowsClient.pak",
                 Offset = SaturnData.AssetRegistrySwap.Value.CompressionBlock.CompressedStart,
-                Data = oodle.Compress(writtenData)
+                Data = writtenData
             }
         };
         
-        await File.WriteAllTextAsync(Constants.DataPath + item.Name + ".json", JsonConvert.SerializeObject(item));
+        Constants.CurrentLobbySwaps.Add(item);
+        isLocked = false;
     }
 
     public static async Task Revert(string id)
@@ -120,24 +142,33 @@ public class FileLogic
     }
     
     public static async Task Convert(List<SwapData> swapData)
-    {        
+    {
+        if (isLocked) return;
+        isLocked = true;
+        
         CompressionBase compression = new Oodle();
-        
-        Constants.SelectedItem ??= new SaturnItemModel()
+
+        if (string.IsNullOrWhiteSpace(Constants.SelectedItem.Name))
         {
-            Name = "AssetImporter",
-            ID = "AssetImporter"
-        };
+            Constants.SelectedItem = new SaturnItemModel()
+            {
+                Name = "AssetImporter",
+                ID = "AssetImporter"
+            };
+        }
         
-        Constants.SelectedOption ??= new SaturnItemModel()
+        if (string.IsNullOrWhiteSpace(Constants.SelectedOption.Name))
         {
-            Name = "AssetImporter",
-            ID = "AssetImporter"
-        };
+            Constants.SelectedOption = new SaturnItemModel()
+            {
+                Name = "AssetImporter",
+                ID = "AssetImporter"
+            };
+        }
 
         ItemModel item = new ItemModel();
         item.Name = Constants.SelectedOption.Name + " to " + Constants.SelectedItem.Name;
-        item.Swaps = new Swap[swapData.Sum(x => ChunkData(x.Data).Count)];
+        item.Swaps = new Swap[swapData.Sum(x => ChunkData(x.Data).Count * 6 + 1)];
         int swapIndex = 0;
             
         foreach (var swap in swapData)
@@ -146,19 +177,16 @@ public class FileLogic
             
             var chunkedData = ChunkData(swap.Data);
 
-            //long totalDataCount = chunkedData.Sum(x => compression.Compress(x).Length);
-            string file = swap.SaturnData.Path;
-            ulong offset = swap.SaturnData.PartitionOffset;
-            //var (file, offset) = OffsetsInFile.Allocate(swap.SaturnData.Path, totalDataCount);
+            long totalDataCount = chunkedData.Sum(x => compression.Compress(x).Length);
+            var (file, offset) = OffsetsInFile.Allocate(swap.SaturnData.Path, totalDataCount);
             Logger.Log("Allocated space at offset: " + offset + " in file: " + file);
             
-            /*
             byte partitionIndex = 0;
             if (file.Contains("Client_s"))
             {
                 string temp = file.Split("Client_s")[1];
                 partitionIndex = (byte)int.Parse(Path.GetFileNameWithoutExtension(temp));
-            }*/
+            }
 
             long written = 0;
 
@@ -166,16 +194,13 @@ public class FileLogic
             {
                 var chunk = chunkedData[index];
                 var compressedChunk = compression.Compress(chunk);
-                var noScriptChunk = compression.Compress(RemoveClassNames(chunk));
 
                 item.Swaps[swapIndex++] = new Swap()
                 {
-                    File = swap.SaturnData.PartitionIndex == 0 ? swap.SaturnData.Path.Replace(".utoc", ".ucas") : swap.SaturnData.Path.Replace(".utoc", $"_s{swap.SaturnData.PartitionIndex}.ucas"),
-                    Offset = (long)offset,
-                    Data = swap.SaturnData.CompressedSize == chunk.Length ? chunk : compressedChunk.Length < noScriptChunk.Length ? compressedChunk : noScriptChunk
+                    File = file,
+                    Data = compressedChunk
                 };
                 
-                /*
                 item.Swaps[swapIndex++] = new Swap()
                 {
                     File = swap.SaturnData.Path,
@@ -209,18 +234,18 @@ public class FileLogic
                     File = swap.SaturnData.Path,
                     Offset = swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Position + 11,
                     Data = new byte[] { 0x01 }
-                };*/
+                };
 
                 written += chunkedData.Count;
             }
             
-            /*
+            
             item.Swaps[swapIndex++] = new Swap()
             {
                 File = swap.SaturnData.Path,
                 Offset = swap.SaturnData.Reader.TocResource.ChunkOffsetLengths[swap.SaturnData.TocIndex].Position + 6,
                 Data = BitConverter.GetBytes(swap.Data.Length).Reverse().ToArray()
-            };*/
+            };
         }
         
         while (File.Exists(Constants.DataPath + Constants.SelectedItem.ID + ".json"))
@@ -229,5 +254,6 @@ public class FileLogic
         }
         
         await File.WriteAllTextAsync(Constants.DataPath + Constants.SelectedItem.ID + ".json", JsonConvert.SerializeObject(item));
+        isLocked = false;
     }
 }
