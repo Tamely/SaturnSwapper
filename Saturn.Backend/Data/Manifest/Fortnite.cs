@@ -21,6 +21,10 @@ public class Fortnite
 
         Logger.Log("Getting manifest response");
         manifestResponse = endpoint.GetResponse();
+        
+        if (manifestResponse == null)
+            throw new Exception("Unable to connect to Epic Game's API. Please try using a VPN to resolve this.");
+        
         Logger.Log($"Got response with status code: {manifestResponse.StatusCode}");
         ManifestInfo info = new ManifestInfo(manifestResponse.Content);
         Logger.Log("Downloading manifest");
@@ -30,6 +34,9 @@ public class Fortnite
         {
             data = await info.DownloadManifestDataAsync();
         }).Wait();
+        
+        if (data.Length == 0)
+            throw new Exception("Unable to download Fortnite's manifest info. Please try using a VPN to resolve this.");
 
         _manifest = new EpicManifestParser.Objects.Manifest(data, new ManifestOptions()
         {
