@@ -1,0 +1,34 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radon", "Radon\Radon.csproj", "{E1E59C37-E3BB-47A6-B318-EF9E9DC4DACA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radon.Tests", "Radon.Tests\Radon.Tests.csproj", "{7FD03B58-24BF-4818-8C40-C88139D7AB9C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radon.Generator", "Radon.Generator\Radon.Generator.csproj", "{9ECFE416-D233-4872-B4B7-25F36B8959C7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radon.Runtime", "Radon.Runtime\Radon.Runtime.csproj", "{7D0A7E7D-3769-4C89-BE81-69EF991E4767}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E1E59C37-E3BB-47A6-B318-EF9E9DC4DACA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1E59C37-E3BB-47A6-B318-EF9E9DC4DACA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1E59C37-E3BB-47A6-B318-EF9E9DC4DACA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1E59C37-E3BB-47A6-B318-EF9E9DC4DACA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FD03B58-24BF-4818-8C40-C88139D7AB9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FD03B58-24BF-4818-8C40-C88139D7AB9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FD03B58-24BF-4818-8C40-C88139D7AB9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FD03B58-24BF-4818-8C40-C88139D7AB9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9ECFE416-D233-4872-B4B7-25F36B8959C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9ECFE416-D233-4872-B4B7-25F36B8959C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9ECFE416-D233-4872-B4B7-25F36B8959C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9ECFE416-D233-4872-B4B7-25F36B8959C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D0A7E7D-3769-4C89-BE81-69EF991E4767}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D0A7E7D-3769-4C89-BE81-69EF991E4767}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D0A7E7D-3769-4C89-BE81-69EF991E4767}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D0A7E7D-3769-4C89-BE81-69EF991E4767}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
