@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Runtime.ExceptionServices;
@@ -95,13 +96,18 @@ namespace Saturn.Client
 
             if (!(exception is WebException ex))
             {
-                if (!exception.StackTrace.Contains("Webview2"))
+                if (!exception.StackTrace.ToLower().Contains("webview2"))
                 {
                     if (exception is FileNotFoundException || exception is DllNotFoundException)
                     {
+                        Logger.Log("An exception occured.", LogLevel.Error);
+                        Logger.Log(exception.GetType().Name + ": " + exception.ToString(), LogLevel.Error);
+                        Logger.Log(exception.StackTrace ?? "", LogLevel.Error);
+                        
                         MessageBox.Show(
                             "Important files seem to have been deleted from Saturn. Please redownload Saturn from discord.gg/Saturn and check if your antivirus might be deleting files.\n\n" +
                             e.Exception.Message, "Files missing", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        Process.Start(Constants.LogFile);
                         Environment.Exit(0);
                     }
                     else if (!(exception is COMException) && !(exception is Win32Exception) &&
@@ -113,15 +119,21 @@ namespace Saturn.Client
                         MessageBox.Show(
                             "An error has occurred performing this operation. Please try again later.\n\n" + exception.Message,
                             "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        Process.Start(Constants.LogFile);
                         Environment.Exit(0);
                     }
                 }
                 else
                 {
+                    Logger.Log("An exception occured.", LogLevel.Error);
+                    Logger.Log(exception.GetType().Name + ": " + exception.ToString(), LogLevel.Error);
+                    Logger.Log(exception.StackTrace ?? "", LogLevel.Error);
+                    
                     if (MessageBox.Show("You need to install Microsoft Edge WebView 2 to use Saturn. Do you want to install it now?", "Missing WebView2", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
                     {
                         Utilities.OpenBrowser("https://msedge.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/2a723731-d64d-4119-8214-9781c986c21b/MicrosoftEdgeWebView2RuntimeInstallerX64.exe");
                     }
+                    Process.Start(Constants.LogFile);
                     Environment.Exit(0);
                 }
             }
