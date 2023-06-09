@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using Radon.Runtime.RuntimeInfo;
 using Radon.Runtime.RuntimeSystem;
+using Radon.Runtime.RuntimeSystem.Objects;
 using Radon.Runtime.Utilities;
 using Radon.Utilities;
 
@@ -48,25 +51,21 @@ public static class Program
 
             var assembly = Disassembler.Disassemble(file);
             var assemblyInfo = new AssemblyInfo(assembly);
-            var programInfo = assemblyInfo.Types.IndexOf(x => x.Name == "<$Program>");
-            if (programInfo == -1)
-            {
-                Logger.Log("Could not find the program type", LogLevel.Error);
-                return;
-            }
-        
-            var methodInfo = assemblyInfo.Types[programInfo].Methods.IndexOf(x => x.Name == "<$Main>");
-            if (methodInfo == -1)
-            {
-                Logger.Log("Could not find the main method", LogLevel.Error);
-                return;
-            }
-
-            Console.WriteLine(assemblyInfo);
-
-            var method = assemblyInfo.Types[programInfo].Methods[methodInfo];
             var runtime = new ManagedRuntime(assemblyInfo);
+            
             Logger.Log("Disassembled the assembly", LogLevel.Info);
+
+            var programType = runtime.GetType("<$Program>");
+            var mainMethod = programType.TypeInfo.Methods.FirstOrDefault();
+            if (mainMethod is null)
+            {
+                Logger.Log("No main method found", LogLevel.Error);
+                return;
+            }
+
+            Logger.Log("Running the assembly", LogLevel.Info);
+            
+            programType.InvokeStaticMethod(assemblyInfo, mainMethod, ImmutableArray<IObject>.Empty);
         }
         catch (Exception e)
         {
