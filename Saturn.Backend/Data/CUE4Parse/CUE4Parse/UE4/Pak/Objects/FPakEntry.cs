@@ -4,7 +4,7 @@ using CUE4Parse.Compression;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.UE4.Objects.Core.Misc;
 using CUE4Parse.UE4.Readers;
-using CUE4Parse.UE4.Vfs;
+using CUE4Parse.UE4.VirtualFileSystem;
 using CUE4Parse.Utils;
 using static CUE4Parse.UE4.Objects.Core.Misc.ECompressionFlags;
 using static CUE4Parse.UE4.Pak.Objects.EPakFileVersion;
@@ -105,6 +105,10 @@ namespace CUE4Parse.UE4.Pak.Objects
                     {
                         compressionMethodIndex = 3; // TODO: Investigate what a proper detection is.
                     }
+                    else if (reader.Game == GAME_DeadIsland2)
+                    {
+                        compressionMethodIndex = 6; // ¯\_(ツ)_/¯
+                    }
                     else
                     {
                         compressionMethodIndex = -1;
@@ -190,6 +194,8 @@ namespace CUE4Parse.UE4.Pak.Objects
                 Offset = *(long*) data; // Should be ulong
                 data += sizeof(long);
             }
+
+            if (reader.Ar.Game == GAME_Snowbreak) Offset ^= 0x1F1E1D1C;
 
             // Read the UncompressedSize.
             var bIsUncompressedSize32BitSafe = (bitfield & (1 << 30)) != 0;
@@ -303,7 +309,7 @@ namespace CUE4Parse.UE4.Pak.Objects
                     CompressionBlocks[i].CompressedEnd += Offset;
                 }
             }
-            
+
             // Compute StructSize: each file still have FPakEntry data prepended, and it should be skipped.
             StructSize = sizeof(long) * 3 + sizeof(int) * 2 + 1 + 20;
             // Take into account CompressionBlocks

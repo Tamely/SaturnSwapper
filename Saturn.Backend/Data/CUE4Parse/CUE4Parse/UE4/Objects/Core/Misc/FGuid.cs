@@ -28,10 +28,10 @@ namespace CUE4Parse.UE4.Objects.Core.Misc
     public struct FGuid : IUStruct
 #pragma warning restore 660,661
     {
-        public uint A;
-        public uint B;
-        public uint C;
-        public uint D;
+        public readonly uint A;
+        public readonly uint B;
+        public readonly uint C;
+        public readonly uint D;
 
         public FGuid(uint v)
         {

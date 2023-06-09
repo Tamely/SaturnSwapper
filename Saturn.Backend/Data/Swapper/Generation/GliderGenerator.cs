@@ -1,18 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using CUE4Parse;
 using CUE4Parse.FileProvider;
-using CUE4Parse.UE4.Assets;
+using CUE4Parse.FileProvider.Objects;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Objects.Core.i18N;
 using CUE4Parse.UE4.Objects.UObject;
-using CUE4Parse.Utils;
 using Saturn.Backend.Data.Compression;
 using Saturn.Backend.Data.SaturnAPI.Models;
-using Saturn.Backend.Data.Swapper.Swapping;
 using Saturn.Backend.Data.Variables;
 
 namespace Saturn.Backend.Data.Swapper.Generation;
