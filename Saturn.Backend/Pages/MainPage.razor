@@ -119,6 +119,7 @@
             if (Config.Get().CheckVersion(dep.name, dep.version)) continue;
             await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(80) + dep.name);
             new WebClient().DownloadFile(dep.link, Constants.ExternalPath + dep.name);
+            Config.Get().Dispose();
         }
         
         // Check if key is valid
@@ -149,6 +150,10 @@
 
         while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "dash")) {}
         await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "dash");
+
+        IoPackage.NameToBeSearching.Add("CP_015_Athena_Body");
+        IoPackage obj = (IoPackage)await Constants.Provider.LoadPackageAsync("fortnitegame/content/Athena/Heroes/Meshes/Bodies/CP_015_Athena_Body.uasset".ToLower());
+        await File.WriteAllBytesAsync(Constants.BasePath + "test.uasset", obj.Serialize());
 
         // Reload the UI just in case
         StateHasChanged();

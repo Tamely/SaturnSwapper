@@ -39,6 +39,36 @@ namespace CUE4Parse.UE4.Assets
         public int ToExportBundleIndex;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FDependencyBundleHeader
+    {
+        public int FirstEntryIndex;
+        public uint[,] EntryCount = new uint[(int)EExportCommandType.ExportCommandType_Count, (int)EExportCommandType.ExportCommandType_Count];
+
+        public FDependencyBundleHeader(FAssetArchive Ar)
+        {
+            FirstEntryIndex = Ar.Read<int>();
+            for (int i = 0; i < (int)EExportCommandType.ExportCommandType_Count; i++)
+            {
+                for (int j = 0; j < (int)EExportCommandType.ExportCommandType_Count; j++)
+                {
+                    EntryCount[i, j] = Ar.Read<uint>();
+                }
+            }
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FDependencyBundleEntry
+    {
+        public FPackageIndex LocalImportOrExportIndex;
+
+        public FDependencyBundleEntry(FAssetArchive Ar)
+        {
+            LocalImportOrExportIndex = new FPackageIndex(Ar);
+        }
+    }
+
     [SkipObjectRegistration]
     public sealed class IoPackage : AbstractUePackage
     {
@@ -47,28 +77,36 @@ namespace CUE4Parse.UE4.Assets
 
         public override FPackageFileSummary Summary { get; }
         public override List<FNameEntrySerialized> NameMap { get; }
-        public readonly ulong[]? ImportedPublicExportHashes;
+        private readonly ulong[]? ImportedPublicExportHashes;
         public readonly FPackageObjectIndex[] ImportMap;
-        public readonly FExportMapEntry[] ExportMap;
+        private readonly FExportMapEntry[] ExportMap;
         public readonly FBulkDataMapEntry[] BulkDataMap;
 
-        public readonly Lazy<IoPackage?[]> ImportedPackages;
+        private readonly Lazy<IoPackage?[]> ImportedPackages;
         public override Lazy<UObject>[] ExportsLazy { get; }
-        public List<UObject> Exports { get; set; } = new();
+        private List<UObject> Exports { get; set; } = new();
         private bool HasLoadedExports = false;
         public override bool IsFullyLoaded { get; }
 
         private List<FNameEntrySerialized> nameMap = new();
         public FZenPackageSummary summary { get; set; }
-        public FExportBundleHeader[]? exportBundleHeaders;
-        public FExportBundleEntry[] exportBundleEntries;
+        private FExportBundleHeader[]? exportBundleHeaders;
+        private FExportBundleEntry[] exportBundleEntries;
+        
+        public ulong bulkDataMapSize;
 
         public Dictionary<int, int> ExtraExportSize = new();
-        public Dictionary<string, string> PathOverrides = new Dictionary<string, string>();
-        public List<FInternalArc> InternalArcs = new List<FInternalArc>();
-        public List<List<FExternalArc>> ExternalArcs = new List<List<FExternalArc>>();
-        public ulong bulkDataMapSize;
+        public Dictionary<string, string> PathOverrides = new();
         
+        // Graph Data <= UE 5.2
+        private List<FInternalArc> InternalArcs = new();
+        private List<List<FExternalArc>> ExternalArcs = new();
+        
+        // Graph Data > UE 5.2
+        private List<FDependencyBundleHeader> DependencyBundleHeaders = new();
+        private List<FDependencyBundleEntry> DependencyBundleEntries = new();
+        
+
         public long TotalSize { get; }
 
         public IoPackage(
@@ -79,14 +117,15 @@ namespace CUE4Parse.UE4.Assets
             GlobalData = globalData;
             var uassetAr = new FAssetArchive(uasset, this);
             TotalSize = uassetAr.Length;
-            int allExportDataOffset;
+            
             FPackageId[] importedPackageIds;
             int cookedHeaderSize;
+            int allExportDataOffset;
 
             if (uassetAr.Game >= EGame.GAME_UE5_0)
             {
                 // Summary
-                summary = uassetAr.Read<FZenPackageSummary>();
+                summary = new FZenPackageSummary(uassetAr);
                 Summary = new FPackageFileSummary
                 {
                     PackageFlags = summary.PackageFlags,
@@ -116,13 +155,13 @@ namespace CUE4Parse.UE4.Assets
                 // Name map
                 NameMap = FNameEntrySerialized.LoadNameBatch(uassetAr).ToList();
                 nameMap = NameMap.ToList();
-                Summary.NameCount = NameMap.Count;
                 Name = CreateFNameFromMappedName(summary.Name).Text;
 
                 // Find store entry by package name
                 FFilePackageStoreEntry? storeEntry = null;
                 if (containerHeader != null)
                 {
+                    var packageId = FPackageId.FromName(Name);
                     var storeEntryIdx = Array.IndexOf(containerHeader.PackageIds, FPackageId.FromName(Name));
                     if (storeEntryIdx != -1)
                     {
@@ -130,16 +169,23 @@ namespace CUE4Parse.UE4.Assets
                     }
                     else
                     {
-                        Log.Warning("Couldn't find store entry for package {0}, its data will not be fully read", Name);
+                        var optionalSegmentStoreEntryIdx = Array.IndexOf(containerHeader.OptionalSegmentPackageIds, packageId);
+                        if (optionalSegmentStoreEntryIdx != -1)
+                        {
+                            storeEntry = containerHeader.OptionalSegmentStoreEntries[optionalSegmentStoreEntryIdx];
+                        }
+                        else
+                        {
+                            Log.Warning("Couldn't find store entry for package {0}, its data will not be fully read", Name);
+                        }
                     }
                 }
 
                 BulkDataMap = Array.Empty<FBulkDataMapEntry>();
-                if (uassetAr.Game >= EGame.GAME_UE5_2 || Summary.FileVersionUE >= EUnrealEngineObjectUE5Version.DATA_RESOURCES)
+                if (uassetAr.Ver >= EUnrealEngineObjectUE5Version.DATA_RESOURCES)
                 {
-                     bulkDataMapSize = uassetAr.Read<ulong>();
-                    if (uassetAr.Game != EGame.GAME_UE5_2 || bulkDataMapSize < 65535) // Fortnite moment
-                        BulkDataMap = uassetAr.ReadArray<FBulkDataMapEntry>((int) (bulkDataMapSize / FBulkDataMapEntry.Size));
+                    var bulkDataMapSize = uassetAr.Read<ulong>();
+                    BulkDataMap = uassetAr.ReadArray<FBulkDataMapEntry>((int) (bulkDataMapSize / FBulkDataMapEntry.Size));
                 }
 
                 // Imported public export hashes
@@ -165,41 +211,52 @@ namespace CUE4Parse.UE4.Assets
                     uassetAr.Position = summary.GraphDataOffset;
                     var exportBundleHeadersCount = storeEntry?.ExportBundleCount ?? 1;
                     exportBundleHeaders = uassetAr.ReadArray<FExportBundleHeader>(exportBundleHeadersCount);
+                    
+                    // Graph Data
+                    int InternalArcsCount = uassetAr.Read<int>();
+
+                    for (int i = 0; i < InternalArcsCount; ++i)
+                    {
+                        InternalArcs.Add(uassetAr.Read<FInternalArc>());
+                    }
+
+                    foreach (FPackageId ImportedPackageId in storeEntry?.ImportedPackages ?? Array.Empty<FPackageId>())
+                    {
+                        int ExternalArcsCount = uassetAr.Read<int>();
+                        List<FExternalArc> ExternalArcsForPackage = new List<FExternalArc>();
+                    
+                        for (int i = 0; i < ExternalArcsCount; ++i)
+                        {
+                            FExternalArc externalArc = new FExternalArc
+                            {
+                                FromImportIndex = uassetAr.Read<int>(),
+                                FromCommandType = (EExportCommandType)uassetAr.Read<byte>(),
+                                ToExportBundleIndex = uassetAr.Read<int>()
+                            };
+                            ExternalArcsForPackage.Add(externalArc);
+                        }
+                        ExternalArcs.Add(ExternalArcsForPackage);
+                    }
                 }
                 else
                 {
                     exportBundleHeaders = null;
+                    
+                    // Graph Data
+                    foreach (var _ in exportBundleEntries)
+                    {
+                        DependencyBundleHeaders.Add(new FDependencyBundleHeader(uassetAr));
+                    }
+                    
+                    foreach (var _ in exportBundleEntries)
+                    {
+                        DependencyBundleEntries.Add(new FDependencyBundleEntry(uassetAr));
+                    }
                 }
 
                 importedPackageIds = storeEntry?.ImportedPackages ?? Array.Empty<FPackageId>();
                 cookedHeaderSize = (int) summary.CookedHeaderSize;
 
-                // Graph Data
-                int InternalArcsCount = uassetAr.Read<int>();
-
-                for (int i = 0; i < InternalArcsCount; ++i)
-                {
-                    InternalArcs.Add(uassetAr.Read<FInternalArc>());
-                }
-
-                foreach (FPackageId ImportedPackageId in storeEntry?.ImportedPackages ?? Array.Empty<FPackageId>())
-                {
-                    int ExternalArcsCount = uassetAr.Read<int>();
-                    List<FExternalArc> ExternalArcsForPackage = new List<FExternalArc>();
-                    
-                    for (int i = 0; i < ExternalArcsCount; ++i)
-                    {
-                        FExternalArc externalArc = new FExternalArc
-                        {
-                            FromImportIndex = uassetAr.Read<int>(),
-                            FromCommandType = (EExportCommandType)uassetAr.Read<byte>(),
-                            ToExportBundleIndex = uassetAr.Read<int>()
-                        };
-                        ExternalArcsForPackage.Add(externalArc);
-                    }
-                    ExternalArcs.Add(ExternalArcsForPackage);
-                }
-                
                 allExportDataOffset = (int) summary.HeaderSize;
             }
             else
@@ -247,6 +304,7 @@ namespace CUE4Parse.UE4.Assets
                     Ar.AbsoluteOffset = newPos ? cookedHeaderSize - allExportDataOffset : (int) export.CookedSerialOffset - pos;
                     Ar.Position = pos;
                     DeserializeObject(obj, Ar, (long) export.CookedSerialSize);
+                    Logger.Log($"Object: {{{obj.Name}}} {{{obj.Outer.Name}}} {{{export.CookedSerialSize}}}");
                     // TODO right place ???
                     obj.Flags |= EObjectFlags.RF_LoadCompleted;
                     obj.PostLoad();
@@ -255,6 +313,7 @@ namespace CUE4Parse.UE4.Assets
                 return (int) export.CookedSerialSize;
             }
             
+            Logger.Log($"Processing at offset: {uassetAr.Position}");
             if (exportBundleHeaders != null) // 4.26 - 5.2
             {
                 foreach (var exportBundle in exportBundleHeaders)
@@ -309,32 +368,57 @@ namespace CUE4Parse.UE4.Assets
             data.AddRange(BitConverter.GetBytes((uint)summary.ImportMapOffset - (uint)nameMapSize + (uint)numStringBytes));
             data.AddRange(BitConverter.GetBytes((uint)summary.ExportMapOffset - (uint)nameMapSize + (uint)numStringBytes));
             data.AddRange(BitConverter.GetBytes((uint)summary.ExportBundleEntriesOffset - (uint)nameMapSize + (uint)numStringBytes));
-            data.AddRange(BitConverter.GetBytes((uint)summary.GraphDataOffset - (uint)nameMapSize + (uint)numStringBytes));
+            if (summary.GraphDataOffset == 0)
+            {
+                data.AddRange(BitConverter.GetBytes((uint)summary.DependencyBundleHeadersOffset - (uint)nameMapSize + (uint)numStringBytes));
+                data.AddRange(BitConverter.GetBytes((uint)summary.DependencyBundleEntriesOffset - (uint)nameMapSize + (uint)numStringBytes));
+                data.AddRange(BitConverter.GetBytes((uint)summary.ImportedPackageNamesOffset - (uint)nameMapSize + (uint)numStringBytes));
+            }
+            else
+            {
+                data.AddRange(BitConverter.GetBytes((uint)summary.GraphDataOffset - (uint)nameMapSize + (uint)numStringBytes));
+            }
+
+            Logger.Log("Name map offset: " + data.Count);
 
             // Body
             data.AddRange(BitConverter.GetBytes(NameMap.Count));
             data.AddRange(BitConverter.GetBytes(numStringBytes));
             data.AddRange(BitConverter.GetBytes(NameMap[0].hashVersion));
             
+            Logger.Log("Name map hashes offset: " + data.Count);
+            
             // NameMap
             foreach (var name in NameMap)
                 data.AddRange(BitConverter.GetBytes(CityHash.CityHash64(Encoding.UTF8.GetBytes(name.Name.ToLower()))));
             
+            Logger.Log("Name map headers offset: " + data.Count);
+            
             foreach (var name in NameMap)
                 data.AddRange(new byte[] {0 , (byte)name.Name.Length});
             
+            Logger.Log("Name map names offset: " + data.Count);
+            
             foreach (var name in NameMap)
                 data.AddRange(Encoding.UTF8.GetBytes(name.Name));
+            
+            Logger.Log("Bulk data size offset offset: " + data.Count);
 
             data.AddRange(BitConverter.GetBytes(bulkDataMapSize));
+            
+            Logger.Log("Imported public export offset: " + data.Count);
             
             // ImportExportHashes
             foreach (var hash in ImportedPublicExportHashes)
                 data.AddRange(BitConverter.GetBytes(hash));
             
+            Logger.Log("Import map offset: " + data.Count);
+            
             // ImportMap
             foreach (var import in ImportMap)
                 data.AddRange(BitConverter.GetBytes(import.TypeAndId));
+            
+            Logger.Log("Export map offset: " + data.Count);
             
             // ExportMap
             ulong addedLength = 0;
@@ -354,6 +438,8 @@ namespace CUE4Parse.UE4.Assets
                 data.AddRange(new byte[] { ExportMap[i].FilterFlags, 0, 0, 0 });
             }
             
+            Logger.Log("Export bundle entries offset: " + data.Count);
+            
             // ExportBundleEntries
             foreach (var bundle in exportBundleEntries)
             {
@@ -361,35 +447,57 @@ namespace CUE4Parse.UE4.Assets
                 data.AddRange(BitConverter.GetBytes((uint)bundle.CommandType));
             }
             
-            // ExportBundleHeaders
-            foreach (var bundle in exportBundleHeaders)
-            {
-                data.AddRange(BitConverter.GetBytes(bundle.SerialOffset));
-                data.AddRange(BitConverter.GetBytes(bundle.FirstEntryIndex));
-                data.AddRange(BitConverter.GetBytes(bundle.EntryCount));
-            }
+            Logger.Log("Export bundle headers offset: " + data.Count);
             
-            // Graph Data
-            data.AddRange(BitConverter.GetBytes(InternalArcs.Count));
-
-            foreach (var arc in InternalArcs)
+            // ExportBundleHeaders
+            if (exportBundleHeaders != null)
             {
-                data.AddRange(BitConverter.GetBytes(arc.FromExportBundleIndex));
-                data.AddRange(BitConverter.GetBytes(arc.ToExportBundleIndex));
-            }
-
-            foreach (var arcContainer in ExternalArcs)
-            {
-                data.AddRange(BitConverter.GetBytes(arcContainer.Count));
-
-                foreach (var arc in arcContainer)
+                foreach (var bundle in exportBundleHeaders)
                 {
-                    data.AddRange(BitConverter.GetBytes(arc.FromImportIndex));
-                    data.Add((byte)arc.FromCommandType);
-                    data.AddRange(BitConverter.GetBytes(arc.ToExportBundleIndex));
+                    data.AddRange(BitConverter.GetBytes(bundle.SerialOffset));
+                    data.AddRange(BitConverter.GetBytes(bundle.FirstEntryIndex));
+                    data.AddRange(BitConverter.GetBytes(bundle.EntryCount));
                 }
             }
 
+            if (InternalArcs.Count != 0 || ExternalArcs.Count != 0)
+            {
+                Logger.Log("Graph data offset: " + data.Count);
+                
+                // Graph Data
+                data.AddRange(BitConverter.GetBytes(InternalArcs.Count));
+
+                foreach (var arc in InternalArcs)
+                {
+                    data.AddRange(BitConverter.GetBytes(arc.FromExportBundleIndex));
+                    data.AddRange(BitConverter.GetBytes(arc.ToExportBundleIndex));
+                }
+
+                foreach (var arcContainer in ExternalArcs)
+                {
+                    data.AddRange(BitConverter.GetBytes(arcContainer.Count));
+
+                    foreach (var arc in arcContainer)
+                    {
+                        data.AddRange(BitConverter.GetBytes(arc.FromImportIndex));
+                        data.Add((byte)arc.FromCommandType);
+                        data.AddRange(BitConverter.GetBytes(arc.ToExportBundleIndex));
+                    }
+                }
+            }
+
+            if (DependencyBundleHeaders.Count != 0)
+            {
+                foreach (var header in DependencyBundleHeaders)
+                {
+                    data.AddRange(BitConverter.GetBytes(header.FirstEntryIndex));
+                    foreach (var entry in header.EntryCount)
+                    {
+                        data.AddRange(BitConverter.GetBytes(entry));
+                    }
+                }
+            }
+            
             if (!HasLoadedExports)
             {
                 foreach (var export in ExportsLazy)
@@ -401,12 +509,33 @@ namespace CUE4Parse.UE4.Assets
 
                 HasLoadedExports = true;
             }
+            
+            if (DependencyBundleEntries.Count != 0)
+            {
+                foreach (var entry in DependencyBundleEntries)
+                {
+                    data.AddRange(BitConverter.GetBytes(entry.LocalImportOrExportIndex.Index));
+                }
+            }
+            
+            Exports.Reverse();
+            foreach (var export in Exports)
+            {
+                export.Serialize(data);
+            }
 
+            /*
             // Exports
             Exports.Reverse();
             foreach (var export in Exports)
             {
+                if (export == null)
+                {
+                    throw new Exception("Null export!");
+                }
+                
                 Logger.Log("Serializing export: " + export.Name);
+                
                 foreach (var fragment in FUnversionedHeader.FFragments[0])
                     data.AddRange(BitConverter.GetBytes(fragment.GetPacked()));
 
@@ -425,7 +554,7 @@ namespace CUE4Parse.UE4.Assets
                 
                 // Padding
                 data.AddRange(BitConverter.GetBytes(0));
-            }
+            }*/
 
             return data.ToArray();
         }
