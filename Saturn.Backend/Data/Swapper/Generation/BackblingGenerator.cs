@@ -83,7 +83,7 @@ public class BackblingGenerator : Generator
 
         foreach (var file in Constants.Provider.Files.Keys)
         {
-            if (!file.Contains("fortnitegame/content/athena/items/cosmetics/backpacks/")) continue;
+            if (!file.Contains("fortnitegame/content/athena/items/cosmetics/backpacks/") && !file.Contains("fortnitegame/plugins/gamefeatures/brcosmetics/content/athena/items/cosmetics/backpacks/")) continue;
 
             var item = await GetDisplayCharacterInfo(Constants.Provider, file.Split('.')[0]);
             if (item == null) continue;
@@ -98,14 +98,14 @@ public class BackblingGenerator : Generator
     {
         List<SaturnItemModel> options = new();
 
-        string file = Constants.Provider.Files.First(x => x.Key.Contains(item.ID + ".uasset") && x.Key.Contains("fortnitegame/content/athena/items/cosmetics/backpacks/")).Key;
+        string file = Constants.Provider.Files.First(x => x.Key.Contains(item.ID + ".uasset") && (x.Key.Contains("fortnitegame/content/athena/items/cosmetics/backpacks/") || x.Key.Contains("fortnitegame/plugins/gamefeatures/brcosmetics/content/athena/items/cosmetics/backpacks/"))).Key;
         var backbling = await GetCharacterInfo(Constants.Provider, file.Split('.')[0]);
 
         foreach (var optionId in Constants.PotentialOptions)
         {
             if (!optionId.ToLower().Contains("backpack_") && !optionId.ToLower().Contains("bid_")) continue;
 
-            file = Constants.Provider.Files.FirstOrDefault(x => x.Key.Contains(optionId.ToLower() + ".uasset") && x.Key.Contains("fortnitegame/content/athena/items/cosmetics/backpacks/"), new KeyValuePair<string, GameFile>()).Key;
+            file = Constants.Provider.Files.FirstOrDefault(x => x.Key.Contains(optionId.ToLower() + ".uasset") && (x.Key.Contains("fortnitegame/content/athena/items/cosmetics/backpacks/") || x.Key.Contains("fortnitegame/plugins/gamefeatures/brcosmetics/content/athena/items/cosmetics/backpacks/")), new KeyValuePair<string, GameFile>()).Key;
             if (string.IsNullOrWhiteSpace(file)) continue;
             
             var option = await GetCharacterInfo(Constants.Provider, file.Split('.')[0]);
