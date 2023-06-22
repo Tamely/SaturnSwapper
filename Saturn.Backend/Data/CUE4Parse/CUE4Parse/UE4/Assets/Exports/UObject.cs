@@ -97,11 +97,8 @@ namespace CUE4Parse.UE4.Assets.Exports
             foreach (var property in Properties)
             {
                 if (property.Size == 0) continue;
-
-                if (property.Name.Text == "ClassBudgetingModeOverrides")
-                {
-                    Logger.Log("Writing property type: " + property.PropertyType.Text + " to index: " + Ar.Count + " with size: " + property.Size);
-                }
+                
+                Logger.Log("Writing property type: " + property.PropertyType.Text + " to index: " + Ar.Count + " with size: " + property.Size + " and name: " + property.Name.Text);
 
                 property.Tag.Serialize(Ar);
             }
@@ -238,7 +235,9 @@ namespace CUE4Parse.UE4.Assets.Exports
                     {
                         var tag = new FPropertyTag(Ar, propertyInfo, ReadType.NORMAL);
                         if (tag.Tag != null)
+                        {
                             properties.Add(tag);
+                        }
                         else
                         {
                             throw new ParserException(Ar, $"{type}: Failed to serialize property {propertyInfo.MappingType.Type} {propertyInfo.Name}. Can't proceed with serialization (Serialized {properties.Count} properties until now)");

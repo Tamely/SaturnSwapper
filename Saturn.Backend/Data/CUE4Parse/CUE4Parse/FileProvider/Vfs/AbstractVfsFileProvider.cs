@@ -1,18 +1,22 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using CUE4Parse.Encryption.Aes;
-using CUE4Parse.MappingsProvider;
+using CUE4Parse.FileProvider.Objects;
 using CUE4Parse.UE4.Exceptions;
 using CUE4Parse.UE4.IO;
 using CUE4Parse.UE4.IO.Objects;
 using CUE4Parse.UE4.Objects.Core.Misc;
+using CUE4Parse.UE4.Readers;
 using CUE4Parse.UE4.Versions;
-using CUE4Parse.UE4.Vfs;
+using CUE4Parse.UE4.VirtualFileCache;
+using CUE4Parse.UE4.VirtualFileCache.Manifest;
+using CUE4Parse.UE4.VirtualFileSystem;
 using CUE4Parse.Utils;
 
 namespace CUE4Parse.FileProvider.Vfs
@@ -45,9 +49,10 @@ namespace CUE4Parse.FileProvider.Vfs
         }
 
         public IEnumerable<IAesVfsReader> UnloadedVfsByGuid(FGuid guid) => _unloadedVfs.Keys.Where(it => it.EncryptionKeyGuid == guid);
+
         public void UnloadAllVfs()
         {
-            _files = new FileProviderDictionary(IsCaseInsensitive);
+            _files.Clear();
             foreach (var reader in _mountedVfs.Keys)
             {
                 _keys.TryRemove(reader.EncryptionKeyGuid, out _);
@@ -55,6 +60,16 @@ namespace CUE4Parse.FileProvider.Vfs
                 _mountedVfs.TryRemove(reader, out _);
                 _unloadedVfs[reader] = null;
             }
+        }
+        public void UnloadNonStreamedVfs()
+        {
+            var onDemandFiles = new Dictionary<string, GameFile>();
+            foreach (var (path, vfs) in _files)
+                if (vfs is StreamedGameFile)
+                    onDemandFiles[path] = vfs;
+
+            UnloadAllVfs();
+            _files.AddFiles(onDemandFiles);
         }
 
         public int Mount() => MountAsync().Result;
@@ -163,6 +178,38 @@ namespace CUE4Parse.FileProvider.Vfs
             }
 
             return countNewMounts;
+        }
+
+        public int LoadVirtualCache()
+        {
+            var persistentDownloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), GameName, "Saved/PersistentDownloadDir");
+            if (!Directory.Exists(persistentDownloadDir)) return 0;
+
+            var vfcMetadata = Path.Combine(persistentDownloadDir, "VFC", "vfc.meta");
+            var manifestCacheFolder = new DirectoryInfo(Path.Combine(persistentDownloadDir, "ManifestCache"));
+            if (!File.Exists(vfcMetadata) || !manifestCacheFolder.Exists)
+                return 0;
+
+            var cachedManifest = manifestCacheFolder.GetFiles("*.manifest");
+            if (cachedManifest.Length <= 0)
+                return 0;
+
+            var vfc = new FFileTable(new FByteArchive("vfc.meta", File.ReadAllBytes(vfcMetadata)));
+            var manifest = new OptimizedContentBuildManifest(
+                File.ReadAllBytes(cachedManifest.OrderBy(f => f.LastWriteTime).Last().FullName));
+
+            var onDemandFiles = new Dictionary<string, GameFile>();
+            foreach ((var vfcHash, var dataReference) in vfc.FileMap)
+            {
+                if (!manifest.HashNameMap.TryGetValue(vfcHash.ToString(), out var filePath)) continue;
+
+                var onDemandFile = new VfcGameFile(vfc.BlockFiles, dataReference, persistentDownloadDir, filePath, Versions);
+                if (IsCaseInsensitive) onDemandFiles[onDemandFile.Path.ToLowerInvariant()] = onDemandFile;
+                else onDemandFiles[onDemandFile.Path] = onDemandFile;
+            }
+
+            _files.AddFiles(onDemandFiles);
+            return onDemandFiles.Count;
         }
 
         public void Dispose()

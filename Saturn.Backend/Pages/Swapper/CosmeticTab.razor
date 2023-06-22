@@ -11,6 +11,7 @@
 @using CUE4Parse.UE4.Assets.Objects
 @using CUE4Parse.Utils
 @using Saturn.Backend.Data
+@using Saturn.Backend.Data.Asset
 @using Saturn.Backend.Data.Swapper.Core.Models
 @using Saturn.Backend.Data.Swapper.Swapping
 @using SaturnData = CUE4Parse.SaturnData
@@ -234,7 +235,6 @@
         if (currentlySwapping) return;
         currentlySwapping = true;
         
-        IoPackage.NameToBeSearching.Clear();
         Constants.SelectedDisplayItem.Description = "Swapping from " + Constants.SelectedOption.Name + " to " + Constants.SelectedDisplayItem.Name;
         StateHasChanged();
         
@@ -245,36 +245,29 @@
         });
         
         List<SwapData> swapData = new();
-        
+
         foreach (var characterPart in Constants.SelectedOption.CharacterParts.Where(characterPart => Constants.SelectedItem!.CharacterParts.ContainsKey(characterPart.Key)))
         {
             Constants.SelectedDisplayItem.Description = "Swapping asset: " + Path.GetFileName(characterPart.Value.Path.Split('.')[0] + ".uasset");
             StateHasChanged();
-            
-            IoPackage.NameToBeSearching.Add(characterPart.Value.Path.SubstringAfterLast('/').Split('.')[0]);
-            IoPackage.NameToBeSearching.Add(Constants.SelectedItem!.CharacterParts[characterPart.Key].Path.SubstringAfterLast('/').Split('.')[0]);
-            
-            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
-                SaturnData.IsPickaxe = true;
-            
-            IoPackage.ClearHeaders();
-            IoPackage oldObj = (IoPackage)await provider.LoadPackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
+
+            var oldPkg = await Constants.Provider.SavePackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
+            Deserializer oldDeserializer = new Deserializer(oldPkg.Values.First());
+            oldDeserializer.Deserialize();
 
             var data = SaturnData.ToNonStatic();
             SaturnData.Clear();
-            
-            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
-                SaturnData.IsPickaxe = true;
-            
-            IoPackage.ClearHeaders();
-            IoPackage newObj = (IoPackage)await provider.LoadPackageAsync(Constants.SelectedItem!.CharacterParts[characterPart.Key].Path.Split('.')[0] + ".uasset");
 
-            var obj = oldObj.Swap(newObj);
+            var newPkg = await Constants.Provider.SavePackageAsync(Constants.SelectedItem.CharacterParts[characterPart.Key].Path.Split('.')[0] + ".uasset");
+            Deserializer newDeserializer = new Deserializer(newPkg.Values.First());
+            newDeserializer.Deserialize();
+
+            Serializer serializer = new Serializer(oldDeserializer.Swap(newDeserializer));
 
             swapData.Add(new SwapData
             {
                 SaturnData = data,
-                Data = obj.Serialize()
+                Data = serializer.Serialize()
             });
 
             SaturnData.Clear();
@@ -285,35 +278,27 @@
             Constants.SelectedDisplayItem.Description = "Swapping asset: " + Path.GetFileName(characterPart.Value.Path.Split('.')[0] + ".uasset");
             StateHasChanged();
             
-            IoPackage.NameToBeSearching.Add(characterPart.Value.Path.SubstringAfterLast('/').Split('.')[0]);
-
-            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
-                SaturnData.IsPickaxe = true;
-
-            IoPackage.ClearHeaders();
-            IoPackage oldObj = (IoPackage)await provider.LoadPackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
+            var oldPkg = await Constants.Provider.SavePackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
+            Deserializer oldDeserializer = new Deserializer(oldPkg.Values.First());
+            oldDeserializer.Deserialize();
 
             var data = SaturnData.ToNonStatic();
             SaturnData.Clear();
-            
-            if (Constants.CosmeticState == SaturnState.S_Pickaxe)
-                SaturnData.IsPickaxe = true;
 
             var realPartType = characterPart.Value.Enums["CharacterPartType"];
-            
-            IoPackage.NameToBeSearching.Add(Constants.EmptyParts[realPartType].Path.SubstringAfterLast('/').Split('.')[0]);
 
-            IoPackage.ClearHeaders();
-            IoPackage newObj = (IoPackage)await provider.LoadPackageAsync(Constants.EmptyParts[realPartType].Path.Split('.')[0] + ".uasset");
+            var newPkg = await Constants.Provider.SavePackageAsync(Constants.EmptyParts[realPartType].Path.Split('.')[0] + ".uasset");
+            Deserializer newDeserializer = new Deserializer(newPkg.Values.First());
+            newDeserializer.Deserialize();
 
-            var obj = oldObj.Swap(newObj);
+            Serializer serializer = new Serializer(oldDeserializer.Swap(newDeserializer));
 
             swapData.Add(new SwapData
             {
                 SaturnData = data,
-                Data = obj.Serialize()
+                Data = serializer.Serialize()
             });
-            
+
             SaturnData.Clear();
         }
 

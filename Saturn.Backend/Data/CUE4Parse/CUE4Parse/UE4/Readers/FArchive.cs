@@ -56,14 +56,6 @@ namespace CUE4Parse.UE4.Readers
             var buffer = ReadBytes(size);
             return Unsafe.ReadUnaligned<T>(ref buffer[0]);
         }
-        
-        public virtual void Write<T>(T value)
-        {
-            var size = Unsafe.SizeOf<T>();
-            var buffer = new byte[size];
-            Unsafe.WriteUnaligned(ref buffer[0], value);
-            Write(buffer, 0, size);
-        }
 
         public virtual T[] ReadArray<T>(int length)
         {
@@ -89,7 +81,7 @@ namespace CUE4Parse.UE4.Readers
 
         public override void Flush() { }
         public override bool CanRead { get; } = true;
-        public override bool CanWrite { get; } = true;
+        public override bool CanWrite { get; } = false;
         public override void SetLength(long value) { throw new InvalidOperationException(); }
         public override void Write(byte[] buffer, int offset, int count) { throw new InvalidOperationException(); }
 

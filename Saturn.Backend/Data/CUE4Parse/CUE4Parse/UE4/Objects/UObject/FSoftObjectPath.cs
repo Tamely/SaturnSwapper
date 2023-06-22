@@ -12,12 +12,12 @@ using UExport = CUE4Parse.UE4.Assets.Exports.UObject;
 namespace CUE4Parse.UE4.Objects.UObject
 {
     [JsonConverter(typeof(FSoftObjectPathConverter))]
-    public struct FSoftObjectPath : IUStruct
+    public readonly struct FSoftObjectPath : IUStruct
     {
         /** Asset path, patch to a top level object in a package. This is /package/path.assetname */
-        public FName AssetPathName;
+        public readonly FName AssetPathName;
         /** Optional FString for subobject within an asset. This is the sub path after the : */
-        public string SubPathString;
+        public readonly string SubPathString;
 
         public readonly IPackage? Owner;
 

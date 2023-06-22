@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 using CUE4Parse.UE4.Objects.Core.Serialization;
 using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.UE4.Readers;
@@ -10,6 +8,8 @@ namespace CUE4Parse.UE4.IO.Objects
     public enum EZenPackageVersion : uint
     {
         Initial,
+        DataResourceTable,
+        ImportedPackageNames,
 
         LatestPlusOne,
         Latest = LatestPlusOne - 1
@@ -20,18 +20,17 @@ namespace CUE4Parse.UE4.IO.Objects
         public EZenPackageVersion ZenVersion;
         public FPackageFileVersion PackageVersion;
         public int LicenseeVersion;
-        public FCustomVersion[] CustomVersions;
+        public FCustomVersionContainer CustomVersions;
 
         public FZenPackageVersioningInfo(FArchive Ar)
         {
             ZenVersion = Ar.Read<EZenPackageVersion>();
             PackageVersion = Ar.Read<FPackageFileVersion>();
             LicenseeVersion = Ar.Read<int>();
-            CustomVersions = Ar.ReadArray<FCustomVersion>();
+            CustomVersions = new FCustomVersionContainer(Ar);
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public struct FZenPackageSummary
     {
         public uint bHasVersioningInfo;
@@ -43,6 +42,34 @@ namespace CUE4Parse.UE4.IO.Objects
         public int ImportMapOffset;
         public int ExportMapOffset;
         public int ExportBundleEntriesOffset;
-        public int GraphDataOffset;
+        public int GraphDataOffset = 0;
+        public int DependencyBundleHeadersOffset = 0;
+        public int DependencyBundleEntriesOffset = 0;
+        public int ImportedPackageNamesOffset = 0;
+
+        public FZenPackageSummary(FArchive Ar)
+        {
+            bHasVersioningInfo = Ar.Read<uint>();
+            HeaderSize = Ar.Read<uint>();
+            Name = Ar.Read<FMappedName>();
+            PackageFlags = Ar.Read<EPackageFlags>();
+            CookedHeaderSize = Ar.Read<uint>();
+            ImportedPublicExportHashesOffset = Ar.Read<int>();
+            ImportMapOffset = Ar.Read<int>();
+            ExportMapOffset = Ar.Read<int>();
+            ExportBundleEntriesOffset = Ar.Read<int>();
+
+            if (Ar.Game >= EGame.GAME_UE5_2)
+            {
+                DependencyBundleHeadersOffset = Ar.Read<int>();
+                DependencyBundleEntriesOffset = Ar.Read<int>();
+
+                ImportedPackageNamesOffset = Ar.Read<int>();
+            }
+            else
+            {
+                GraphDataOffset = Ar.Read<int>();
+            }
+        }
     }
 }

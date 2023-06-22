@@ -39,6 +39,36 @@ namespace CUE4Parse.UE4.Assets
         public int ToExportBundleIndex;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FDependencyBundleHeader
+    {
+        public int FirstEntryIndex;
+        public uint[,] EntryCount = new uint[(int)EExportCommandType.ExportCommandType_Count, (int)EExportCommandType.ExportCommandType_Count];
+
+        public FDependencyBundleHeader(FAssetArchive Ar)
+        {
+            FirstEntryIndex = Ar.Read<int>();
+            for (int i = 0; i < (int)EExportCommandType.ExportCommandType_Count; i++)
+            {
+                for (int j = 0; j < (int)EExportCommandType.ExportCommandType_Count; j++)
+                {
+                    EntryCount[i, j] = Ar.Read<uint>();
+                }
+            }
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct FDependencyBundleEntry
+    {
+        public FPackageIndex LocalImportOrExportIndex;
+
+        public FDependencyBundleEntry(FAssetArchive Ar)
+        {
+            LocalImportOrExportIndex = new FPackageIndex(Ar);
+        }
+    }
+
     [SkipObjectRegistration]
     public sealed class IoPackage : AbstractUePackage
     {
@@ -47,27 +77,36 @@ namespace CUE4Parse.UE4.Assets
 
         public override FPackageFileSummary Summary { get; }
         public override List<FNameEntrySerialized> NameMap { get; }
-        public readonly ulong[]? ImportedPublicExportHashes;
+        private readonly ulong[]? ImportedPublicExportHashes;
         public readonly FPackageObjectIndex[] ImportMap;
-        public readonly FExportMapEntry[] ExportMap;
+        private readonly FExportMapEntry[] ExportMap;
         public readonly FBulkDataMapEntry[] BulkDataMap;
 
-        public readonly Lazy<IoPackage?[]> ImportedPackages;
+        private readonly Lazy<IoPackage?[]> ImportedPackages;
         public override Lazy<UObject>[] ExportsLazy { get; }
-        public List<UObject> Exports { get; set; } = new();
+        private List<UObject> Exports { get; set; } = new();
         private bool HasLoadedExports = false;
         public override bool IsFullyLoaded { get; }
 
         private List<FNameEntrySerialized> nameMap = new();
         public FZenPackageSummary summary { get; set; }
-        public FExportBundleHeader[] exportBundleHeaders;
-        public FExportBundleEntry[] exportBundleEntries;
-        public Dictionary<int, int> ExtraExportSize = new();
-        public Dictionary<string, string> PathOverrides = new Dictionary<string, string>();
-        public List<FInternalArc> InternalArcs = new List<FInternalArc>();
-        public List<List<FExternalArc>> ExternalArcs = new List<List<FExternalArc>>();
-        public ulong bulkDataMapSize;
+        private FExportBundleHeader[]? exportBundleHeaders;
+        private FExportBundleEntry[] exportBundleEntries;
         
+        public ulong bulkDataMapSize;
+
+        public Dictionary<int, int> ExtraExportSize = new();
+        public Dictionary<string, string> PathOverrides = new();
+        
+        // Graph Data <= UE 5.2
+        private List<FInternalArc> InternalArcs = new();
+        private List<List<FExternalArc>> ExternalArcs = new();
+        
+        // Graph Data > UE 5.2
+        private List<FDependencyBundleHeader> DependencyBundleHeaders = new();
+        private List<FDependencyBundleEntry> DependencyBundleEntries = new();
+        
+
         public long TotalSize { get; }
 
         public IoPackage(
@@ -78,13 +117,15 @@ namespace CUE4Parse.UE4.Assets
             GlobalData = globalData;
             var uassetAr = new FAssetArchive(uasset, this);
             TotalSize = uassetAr.Length;
-            int allExportDataOffset;
+            
             FPackageId[] importedPackageIds;
+            int cookedHeaderSize;
+            int allExportDataOffset;
 
             if (uassetAr.Game >= EGame.GAME_UE5_0)
             {
                 // Summary
-                summary = uassetAr.Read<FZenPackageSummary>();
+                summary = new FZenPackageSummary(uassetAr);
                 Summary = new FPackageFileSummary
                 {
                     PackageFlags = summary.PackageFlags,
@@ -103,7 +144,7 @@ namespace CUE4Parse.UE4.Assets
                     if (!uassetAr.Versions.bExplicitVer)
                     {
                         uassetAr.Versions.Ver = versioningInfo.PackageVersion;
-                        uassetAr.Versions.CustomVersions = versioningInfo.CustomVersions.ToList();
+                        uassetAr.Versions.CustomVersions = versioningInfo.CustomVersions;
                     }
                 }
                 else
@@ -114,13 +155,13 @@ namespace CUE4Parse.UE4.Assets
                 // Name map
                 NameMap = FNameEntrySerialized.LoadNameBatch(uassetAr).ToList();
                 nameMap = NameMap.ToList();
-                Summary.NameCount = NameMap.Count;
                 Name = CreateFNameFromMappedName(summary.Name).Text;
 
                 // Find store entry by package name
                 FFilePackageStoreEntry? storeEntry = null;
                 if (containerHeader != null)
                 {
+                    var packageId = FPackageId.FromName(Name);
                     var storeEntryIdx = Array.IndexOf(containerHeader.PackageIds, FPackageId.FromName(Name));
                     if (storeEntryIdx != -1)
                     {
@@ -128,16 +169,23 @@ namespace CUE4Parse.UE4.Assets
                     }
                     else
                     {
-                        Log.Warning("Couldn't find store entry for package {0}, its data will not be fully read", Name);
+                        var optionalSegmentStoreEntryIdx = Array.IndexOf(containerHeader.OptionalSegmentPackageIds, packageId);
+                        if (optionalSegmentStoreEntryIdx != -1)
+                        {
+                            storeEntry = containerHeader.OptionalSegmentStoreEntries[optionalSegmentStoreEntryIdx];
+                        }
+                        else
+                        {
+                            Log.Warning("Couldn't find store entry for package {0}, its data will not be fully read", Name);
+                        }
                     }
                 }
 
                 BulkDataMap = Array.Empty<FBulkDataMapEntry>();
-                if (uassetAr.Game >= EGame.GAME_UE5_2 || Summary.FileVersionUE >= EUnrealEngineObjectUE5Version.DATA_RESOURCES)
+                if (uassetAr.Ver >= EUnrealEngineObjectUE5Version.DATA_RESOURCES)
                 {
-                     bulkDataMapSize = uassetAr.Read<ulong>();
-                    if (uassetAr.Game != EGame.GAME_UE5_2 || bulkDataMapSize < 65535) // Fortnite moment
-                        BulkDataMap = uassetAr.ReadArray<FBulkDataMapEntry>((int) (bulkDataMapSize / FBulkDataMapEntry.Size));
+                    var bulkDataMapSize = uassetAr.Read<ulong>();
+                    BulkDataMap = uassetAr.ReadArray<FBulkDataMapEntry>((int) (bulkDataMapSize / FBulkDataMapEntry.Size));
                 }
 
                 // Imported public export hashes
@@ -157,39 +205,58 @@ namespace CUE4Parse.UE4.Assets
                 uassetAr.Position = summary.ExportBundleEntriesOffset;
                 exportBundleEntries = uassetAr.ReadArray<FExportBundleEntry>(Summary.ExportCount * 2);
 
-                // Export bundle headers
-                uassetAr.Position = summary.GraphDataOffset;
-                var exportBundleHeadersCount = storeEntry?.ExportBundleCount ?? 1;
-                exportBundleHeaders = uassetAr.ReadArray<FExportBundleHeader>(exportBundleHeadersCount);
-                
-                importedPackageIds = storeEntry?.ImportedPackages ?? Array.Empty<FPackageId>();
-                
-                // Graph Data
-                int InternalArcsCount = uassetAr.Read<int>();
-
-                for (int i = 0; i < InternalArcsCount; ++i)
+                if (uassetAr.Game < EGame.GAME_UE5_2)
                 {
-                    InternalArcs.Add(uassetAr.Read<FInternalArc>());
-                }
-
-                foreach (FPackageId ImportedPackageId in storeEntry?.ImportedPackages ?? Array.Empty<FPackageId>())
-                {
-                    int ExternalArcsCount = uassetAr.Read<int>();
-                    List<FExternalArc> ExternalArcsForPackage = new List<FExternalArc>();
+                    // Export bundle headers
+                    uassetAr.Position = summary.GraphDataOffset;
+                    var exportBundleHeadersCount = storeEntry?.ExportBundleCount ?? 1;
+                    exportBundleHeaders = uassetAr.ReadArray<FExportBundleHeader>(exportBundleHeadersCount);
                     
-                    for (int i = 0; i < ExternalArcsCount; ++i)
+                    // Graph Data
+                    int InternalArcsCount = uassetAr.Read<int>();
+
+                    for (int i = 0; i < InternalArcsCount; ++i)
                     {
-                        FExternalArc externalArc = new FExternalArc
-                        {
-                            FromImportIndex = uassetAr.Read<int>(),
-                            FromCommandType = (EExportCommandType)uassetAr.Read<byte>(),
-                            ToExportBundleIndex = uassetAr.Read<int>()
-                        };
-                        ExternalArcsForPackage.Add(externalArc);
+                        InternalArcs.Add(uassetAr.Read<FInternalArc>());
                     }
-                    ExternalArcs.Add(ExternalArcsForPackage);
+
+                    foreach (FPackageId ImportedPackageId in storeEntry?.ImportedPackages ?? Array.Empty<FPackageId>())
+                    {
+                        int ExternalArcsCount = uassetAr.Read<int>();
+                        List<FExternalArc> ExternalArcsForPackage = new List<FExternalArc>();
+                    
+                        for (int i = 0; i < ExternalArcsCount; ++i)
+                        {
+                            FExternalArc externalArc = new FExternalArc
+                            {
+                                FromImportIndex = uassetAr.Read<int>(),
+                                FromCommandType = (EExportCommandType)uassetAr.Read<byte>(),
+                                ToExportBundleIndex = uassetAr.Read<int>()
+                            };
+                            ExternalArcsForPackage.Add(externalArc);
+                        }
+                        ExternalArcs.Add(ExternalArcsForPackage);
+                    }
                 }
-                
+                else
+                {
+                    exportBundleHeaders = null;
+                    
+                    // Graph Data
+                    foreach (var _ in exportBundleEntries)
+                    {
+                        DependencyBundleHeaders.Add(new FDependencyBundleHeader(uassetAr));
+                    }
+                    
+                    foreach (var _ in exportBundleEntries)
+                    {
+                        DependencyBundleEntries.Add(new FDependencyBundleEntry(uassetAr));
+                    }
+                }
+
+                importedPackageIds = storeEntry?.ImportedPackages ?? Array.Empty<FPackageId>();
+                cookedHeaderSize = (int) summary.CookedHeaderSize;
+
                 allExportDataOffset = (int) summary.HeaderSize;
             }
             else
@@ -214,45 +281,54 @@ namespace CUE4Parse.UE4.Assets
 
             if (HasFlags(EPackageFlags.PKG_UnversionedProperties) && mappings == null)
                 throw new ParserException("Package has unversioned properties but mapping file is missing, can't serialize");
-
+            
             // Populate lazy exports
-            var currentExportDataOffset = allExportDataOffset;
-            foreach (var exportBundle in exportBundleHeaders)
+            int ProcessEntry(FExportBundleEntry entry, int pos, bool newPos)
             {
-                for (var i = 0u; i < exportBundle.EntryCount; i++)
-                {
-                    var entry = exportBundleEntries[exportBundle.FirstEntryIndex + i];
-                    if (entry.CommandType == EExportCommandType.ExportCommandType_Serialize)
-                    {
-                        var localExportIndex = entry.LocalExportIndex;
-                        var export = ExportMap[localExportIndex];
-                        var localExportDataOffset = currentExportDataOffset;
-                        ExportsLazy[localExportIndex] = new Lazy<UObject>(() =>
-                        {
-                            // Create
-                            var obj = ConstructObject(ResolveObjectIndex(export.ClassIndex)?.Object?.Value as UStruct);
-                            obj.Name = CreateFNameFromMappedName(export.ObjectName).Text;
-                            obj.Outer = (ResolveObjectIndex(export.OuterIndex) as ResolvedExportObject)?.ExportObject.Value ?? this;
-                            obj.Super = ResolveObjectIndex(export.SuperIndex) as ResolvedExportObject;
-                            obj.Template = ResolveObjectIndex(export.TemplateIndex) as ResolvedExportObject;
-                            obj.Flags |= export.ObjectFlags; // We give loaded objects the RF_WasLoaded flag in ConstructObject, so don't remove it again in here
+                if (entry.CommandType != EExportCommandType.ExportCommandType_Serialize)
+                    return 0; // Skip ExportCommandType_Create
 
-                            // Serialize
-                            var Ar = (FAssetArchive) uassetAr.Clone();
-                            Ar.AbsoluteOffset = (int) export.CookedSerialOffset - localExportDataOffset;
-                            Ar.Position = localExportDataOffset;
-                            DeserializeObject(obj, Ar, (long) export.CookedSerialSize);
-                            // TODO right place ???
-                            obj.Flags |= EObjectFlags.RF_LoadCompleted;
-                            obj.PostLoad();
-                            return obj;
-                        });
-                        currentExportDataOffset += (int) export.CookedSerialSize;
+                var export = ExportMap[entry.LocalExportIndex];
+                ExportsLazy[entry.LocalExportIndex] = new Lazy<UObject>(() =>
+                {
+                    // Create
+                    var obj = ConstructObject(ResolveObjectIndex(export.ClassIndex)?.Object?.Value as UStruct);
+                    obj.Name = CreateFNameFromMappedName(export.ObjectName).Text;
+                    obj.Outer = (ResolveObjectIndex(export.OuterIndex) as ResolvedExportObject)?.ExportObject.Value ?? this;
+                    obj.Super = ResolveObjectIndex(export.SuperIndex) as ResolvedExportObject;
+                    obj.Template = ResolveObjectIndex(export.TemplateIndex) as ResolvedExportObject;
+                    obj.Flags |= export.ObjectFlags; // We give loaded objects the RF_WasLoaded flag in ConstructObject, so don't remove it again in here
+
+                    // Serialize
+                    var Ar = (FAssetArchive) uassetAr.Clone();
+                    Ar.AbsoluteOffset = newPos ? cookedHeaderSize - allExportDataOffset : (int) export.CookedSerialOffset - pos;
+                    Ar.Position = pos;
+                    DeserializeObject(obj, Ar, (long) export.CookedSerialSize);
+                    // TODO right place ???
+                    obj.Flags |= EObjectFlags.RF_LoadCompleted;
+                    obj.PostLoad();
+                    return obj;
+                });
+                return (int) export.CookedSerialSize;
+            }
+            
+            if (exportBundleHeaders != null) // 4.26 - 5.2
+            {
+                foreach (var exportBundle in exportBundleHeaders)
+                {
+                    var currentExportDataOffset = allExportDataOffset;
+                    for (var i = 0u; i < exportBundle.EntryCount; i++)
+                    {
+                        currentExportDataOffset += ProcessEntry(exportBundleEntries[exportBundle.FirstEntryIndex + i], currentExportDataOffset, false);
                     }
+                    Summary.BulkDataStartOffset = currentExportDataOffset;
                 }
             }
+            else foreach (var entry in exportBundleEntries)
+            {
+                ProcessEntry(entry, allExportDataOffset + (int) ExportMap[entry.LocalExportIndex].CookedSerialOffset, true);
+            }
 
-            Summary.BulkDataStartOffset = currentExportDataOffset;
             
             IsFullyLoaded = true;
         }
@@ -264,284 +340,6 @@ namespace CUE4Parse.UE4.Assets
         private FName CreateFNameFromMappedName(FMappedName mappedName) =>
             new(mappedName, mappedName.IsGlobal ? GlobalData.GlobalNameMap : NameMap.ToArray());
 
-        public static void ClearHeaders()
-        {
-            FUnversionedHeader.FFragments.Clear();
-            FUnversionedHeader.ZeroMasks.Clear();
-        }
-
-        public new byte[] Serialize()
-        {
-            List<byte> data = new();
-            
-            int nameMapSize = nameMap.Sum(x => x.Name.Length);
-            int numStringBytes = NameMap.Sum(x => x.Name.Length);
-
-            numStringBytes += (NameMap.Count - nameMap.Count) * (8 + 2); // For the added entries: 8 bytes for the hash, 2 bytes for the header
-
-            // Header
-            data.AddRange(BitConverter.GetBytes(summary.bHasVersioningInfo));
-            data.AddRange(BitConverter.GetBytes(summary.HeaderSize - (uint)nameMapSize + (uint)numStringBytes));
-            data.AddRange(BitConverter.GetBytes(summary.Name.NameIndex));
-            data.AddRange(BitConverter.GetBytes(summary.Name.ExtraIndex));
-            data.AddRange(BitConverter.GetBytes((uint)summary.PackageFlags));
-            data.AddRange(BitConverter.GetBytes(summary.CookedHeaderSize - (uint)nameMapSize + (uint)numStringBytes));
-            data.AddRange(BitConverter.GetBytes((uint)summary.ImportedPublicExportHashesOffset - (uint)nameMapSize + (uint)numStringBytes));
-            data.AddRange(BitConverter.GetBytes((uint)summary.ImportMapOffset - (uint)nameMapSize + (uint)numStringBytes));
-            data.AddRange(BitConverter.GetBytes((uint)summary.ExportMapOffset - (uint)nameMapSize + (uint)numStringBytes));
-            data.AddRange(BitConverter.GetBytes((uint)summary.ExportBundleEntriesOffset - (uint)nameMapSize + (uint)numStringBytes));
-            data.AddRange(BitConverter.GetBytes((uint)summary.GraphDataOffset - (uint)nameMapSize + (uint)numStringBytes));
-
-            // Body
-            data.AddRange(BitConverter.GetBytes(NameMap.Count));
-            data.AddRange(BitConverter.GetBytes(numStringBytes));
-            data.AddRange(BitConverter.GetBytes(NameMap[0].hashVersion));
-            
-            // NameMap
-            foreach (var name in NameMap)
-                data.AddRange(BitConverter.GetBytes(CityHash.CityHash64(Encoding.UTF8.GetBytes(name.Name.ToLower()))));
-            
-            foreach (var name in NameMap)
-                data.AddRange(new byte[] {0 , (byte)name.Name.Length});
-            
-            foreach (var name in NameMap)
-                data.AddRange(Encoding.UTF8.GetBytes(name.Name));
-
-            data.AddRange(BitConverter.GetBytes(bulkDataMapSize));
-            
-            // ImportExportHashes
-            foreach (var hash in ImportedPublicExportHashes)
-                data.AddRange(BitConverter.GetBytes(hash));
-            
-            // ImportMap
-            foreach (var import in ImportMap)
-                data.AddRange(BitConverter.GetBytes(import.TypeAndId));
-            
-            // ExportMap
-            ulong addedLength = 0;
-            for (int i = 0; i < ExportMap.Length; i++)
-            {
-                data.AddRange(BitConverter.GetBytes(ExportMap[i].CookedSerialOffset - (ulong)nameMapSize + (ulong)numStringBytes + addedLength));
-                addedLength += (ExtraExportSize.ContainsKey(i + 1) ? (ulong)ExtraExportSize[i + 1] : 0);
-                data.AddRange(BitConverter.GetBytes(ExportMap[i].CookedSerialSize + addedLength));
-                data.AddRange(BitConverter.GetBytes(ExportMap[i].ObjectName.NameIndex));
-                data.AddRange(BitConverter.GetBytes(ExportMap[i].ObjectName.ExtraIndex));
-                data.AddRange(BitConverter.GetBytes(ExportMap[i].OuterIndex.TypeAndId));
-                data.AddRange(BitConverter.GetBytes(ExportMap[i].ClassIndex.TypeAndId));
-                data.AddRange(BitConverter.GetBytes(ExportMap[i].SuperIndex.TypeAndId));
-                data.AddRange(BitConverter.GetBytes(ExportMap[i].TemplateIndex.TypeAndId));
-                data.AddRange(BitConverter.GetBytes(ExportMap[i].PublicExportHash));
-                data.AddRange(BitConverter.GetBytes((uint)ExportMap[i].ObjectFlags));
-                data.AddRange(new byte[] { ExportMap[i].FilterFlags, 0, 0, 0 });
-            }
-            
-            // ExportBundleEntries
-            foreach (var bundle in exportBundleEntries)
-            {
-                data.AddRange(BitConverter.GetBytes(bundle.LocalExportIndex));
-                data.AddRange(BitConverter.GetBytes((uint)bundle.CommandType));
-            }
-            
-            // ExportBundleHeaders
-            foreach (var bundle in exportBundleHeaders)
-            {
-                data.AddRange(BitConverter.GetBytes(bundle.SerialOffset));
-                data.AddRange(BitConverter.GetBytes(bundle.FirstEntryIndex));
-                data.AddRange(BitConverter.GetBytes(bundle.EntryCount));
-            }
-            
-            // Graph Data
-            data.AddRange(BitConverter.GetBytes(InternalArcs.Count));
-
-            foreach (var arc in InternalArcs)
-            {
-                data.AddRange(BitConverter.GetBytes(arc.FromExportBundleIndex));
-                data.AddRange(BitConverter.GetBytes(arc.ToExportBundleIndex));
-            }
-
-            foreach (var arcContainer in ExternalArcs)
-            {
-                data.AddRange(BitConverter.GetBytes(arcContainer.Count));
-
-                foreach (var arc in arcContainer)
-                {
-                    data.AddRange(BitConverter.GetBytes(arc.FromImportIndex));
-                    data.Add((byte)arc.FromCommandType);
-                    data.AddRange(BitConverter.GetBytes(arc.ToExportBundleIndex));
-                }
-            }
-
-            if (!HasLoadedExports)
-            {
-                foreach (var export in ExportsLazy)
-                {
-                    if (export == null)
-                        throw new Exception("There is a null export in the lazy export array!");
-                    Exports.Add(export.Value);
-                }
-
-                HasLoadedExports = true;
-            }
-
-            // Exports
-            Exports.Reverse();
-            foreach (var export in Exports)
-            {
-                Logger.Log("Serializing export: " + export.Name);
-                foreach (var fragment in FUnversionedHeader.FFragments[0])
-                    data.AddRange(BitConverter.GetBytes(fragment.GetPacked()));
-
-                FUnversionedHeader.FFragments.RemoveAt(0);
-
-                if (FUnversionedHeader.ZeroMasks[0].Length > 0)
-                {
-                    byte[] ret = new byte[(FUnversionedHeader.ZeroMasks[0].Length - 1) / 8 + 1];
-                    FUnversionedHeader.ZeroMasks[0].CopyTo(ret, 0);
-                    data.AddRange(ret);
-                }
-                
-                FUnversionedHeader.ZeroMasks.RemoveAt(0);
-                
-                export.Serialize(data);
-                
-                // Padding
-                data.AddRange(BitConverter.GetBytes(0));
-            }
-
-            return data.ToArray();
-        }
-
-        public void SwapNameMap(string search, string replace)
-        {
-            if (!HasLoadedExports)
-            {
-                foreach (var export in ExportsLazy)
-                {
-                    if (export == null)
-                        throw new Exception("There is a null export in the lazy export array!");
-                    Exports.Add(export.Value);
-                }
-
-                HasLoadedExports = true;
-            }
-            
-            if (search.Contains('.') && replace.Contains('.'))
-            {
-                bool bFoundFirst = false;
-                bool bFoundSecond = false;
-                
-                for (int i = 0; i < NameMap.Count; i++)
-                {
-                    if (NameMap[i].Name == search.Split('.')[0] && !bFoundFirst)
-                    {
-                        NameMap[i] = new FNameEntrySerialized(replace.Split('.')[0], NameMap[i].hashVersion);
-                        bFoundFirst = true;
-                    }
-
-                    if (NameMap[i].Name == search.Split('.')[1] && !bFoundSecond)
-                    {
-                        NameMap[i] = new FNameEntrySerialized(replace.Split('.')[1], NameMap[i].hashVersion);
-                        bFoundSecond = true;
-                    }
-                }
-                
-                if (!bFoundFirst)
-                    throw new Exception("Could not find path name in name map!");
-                if (!bFoundSecond)
-                    throw new Exception("Could not find asset name in name map!");
-            }
-            else
-            {
-                bool bFound = false;
-                for (int i = 0; i < NameMap.Count; i++)
-                {
-                    if (NameMap[i].Name == search)
-                    {
-                        NameMap[i] = new FNameEntrySerialized(replace, NameMap[i].hashVersion);
-                        bFound = true;
-                    }
-                }
-                
-                if (!bFound)
-                    throw new Exception("Could not find name in name map!");
-            }
-
-            foreach (var property in Exports.SelectMany(export => export.Properties))
-            {
-                if (PathOverrides.ContainsKey(search))
-                    break;
-
-                switch (property.Tag.GenericValue)
-                {
-                    case FSoftObjectPath softObjectPath when softObjectPath.AssetPathName.Text != search:
-                        softObjectPath.AssetPathName.SetText(new FNameEntrySerialized(replace, softObjectPath.AssetPathName.GetHashVersion()));
-                        PathOverrides.Add(search, replace);
-                        break;
-                    case FStructFallback structFallback:
-                    {
-                        foreach (var fallbackProperty in structFallback.Properties)
-                        {
-                            if (fallbackProperty.Tag.GenericValue is not FSoftObjectPath fallbackSoftObjectPath || fallbackSoftObjectPath.AssetPathName.Text == search) continue;
-                            fallbackSoftObjectPath.AssetPathName.SetText(new FNameEntrySerialized(replace, fallbackSoftObjectPath.AssetPathName.GetHashVersion()));
-                            PathOverrides.Add(search, replace);
-                        }
-
-                        break;
-                    }
-                    case UScriptArray scriptArray:
-                    {
-                        foreach (var arrayProperty in scriptArray.Properties)
-                        {
-                            if (arrayProperty.GenericValue is not FSoftObjectPath arraySoftObjectPath || arraySoftObjectPath.AssetPathName.Text == search) continue;
-                            arraySoftObjectPath.AssetPathName.SetText(new FNameEntrySerialized(replace, arraySoftObjectPath.AssetPathName.GetHashVersion()));
-                            PathOverrides.Add(search, replace);
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            NameMap.RemoveAll(x => String.Equals(x.Name, search, StringComparison.CurrentCultureIgnoreCase));
-        }
-
-        public bool DoesNameMapContainName(string name)
-        {
-            return NameMap.Any(n => n.Name == name);
-        }
-
-        public void AddName(string name)
-        {
-            if (name.Contains('.'))
-            {
-                var path = -1;
-                var asset = -1;
-                if (DoesNameMapContainName(name.Split('.')[0]))
-                    path = NameMap.FindIndex(n => n.Name == name.Split('.')[0]);
-                
-                if (DoesNameMapContainName(name.Split('.')[1]))
-                    asset = NameMap.FindIndex(n => n.Name == name.Split('.')[1]);
-                
-                if (path != -1 && asset != -1) return;
-
-                if (asset == -1)
-                {
-                    NameMap.Add(new FNameEntrySerialized(name.Split('.')[1]));
-                }
-
-                if (path == -1)
-                {
-                    NameMap.Add(new FNameEntrySerialized(name.Split('.')[0]));
-                }
-
-                return;
-            }
-
-            if (DoesNameMapContainName(name)) return;
-
-            NameMap.Add(new FNameEntrySerialized(name));
-        }
-        
         public void ReplaceProperty<T>(string propertyName, FPropertyTagType<T> value)
         {
             if (!HasLoadedExports)
@@ -985,20 +783,6 @@ namespace CUE4Parse.UE4.Assets
                     }
                 }
             }
-        }
-        
-        public IoPackage Swap(IoPackage replacement)
-        {
-            replacement.SwapNameMap(replacement.NameMap[^1].Name, NameMap[^1].Name);
-            replacement.SwapNameMap(replacement.NameMap[^2].Name, NameMap[^2].Name);
-
-            if (replacement.ExportMap.Length != ExportMap.Length)
-                throw new Exception("ExportMap length mismatch");
-            
-            for (int i = 0; i < replacement.ExportMap.Length; i++)
-                replacement.ExportMap[i].PublicExportHash = ExportMap[i].PublicExportHash;
-
-            return replacement;
         }
 
         private void LoadExportBundles(FArchive Ar, int graphDataSize, out FExportBundleHeader[] bundleHeadersArray, out FExportBundleEntry[] bundleEntriesArray)

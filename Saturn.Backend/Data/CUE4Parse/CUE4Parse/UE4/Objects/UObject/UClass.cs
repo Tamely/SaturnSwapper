@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Readers;
@@ -42,6 +42,8 @@ namespace CUE4Parse.UE4.Objects.UObject
         {
             base.Deserialize(Ar, validPos);
 
+            if (Ar.Game == EGame.GAME_AWayOut) Ar.Position += 4;
+
             // serialize the function map
             FuncMap = new Dictionary<FName, FPackageIndex>();
             var funcMapNum = Ar.Read<int>();
@@ -54,7 +56,7 @@ namespace CUE4Parse.UE4.Objects.UObject
             ClassFlags = Ar.Read<uint>();
 
             // Variables.
-            if (Ar.Game == EGame.GAME_StarWarsJediFallenOrder) Ar.Position += 4;
+            if (Ar.Game == EGame.GAME_StarWarsJediFallenOrder || Ar.Game == EGame.GAME_StarWarsJediSurvivor) Ar.Position += 4;
             ClassWithin = new FPackageIndex(Ar);
             ClassConfigName = Ar.ReadFName();
 

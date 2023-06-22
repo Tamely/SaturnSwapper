@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using CUE4Parse;
 using CUE4Parse.FileProvider;
-using CUE4Parse.UE4.Assets;
+using CUE4Parse.FileProvider.Objects;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Objects.Core.i18N;
-using CUE4Parse.Utils;
 using Saturn.Backend.Data.Compression;
 using Saturn.Backend.Data.SaturnAPI.Models;
-using Saturn.Backend.Data.Swapper.Swapping;
 using Saturn.Backend.Data.Variables;
 
 namespace Saturn.Backend.Data.Swapper.Generation;
@@ -82,7 +78,7 @@ public class PickaxeGenerator : Generator
 
         foreach (var file in Constants.Provider.Files.Keys)
         {
-            if (!file.Contains("fortnitegame/content/athena/items/cosmetics/pickaxes/")) continue;
+            if (!file.Contains("fortnitegame/content/athena/items/cosmetics/pickaxes/") && !file.Contains("fortnitegame/plugins/gamefeatures/brcosmetics/content/athena/items/cosmetics/pickaxes/")) continue;
 
             var item = await GetDisplayCharacterInfo(Constants.Provider, file.Split('.')[0]);
             if (item == null) continue;
@@ -97,13 +93,13 @@ public class PickaxeGenerator : Generator
     {
         List<SaturnItemModel> options = new();
 
-        string file = Constants.Provider.Files.First(x => x.Key.Contains(item.ID + ".uasset") && x.Key.Contains("fortnitegame/content/athena/items/cosmetics/pickaxes/")).Key;
+        string file = Constants.Provider.Files.First(x => x.Key.Contains(item.ID + ".uasset") && (x.Key.Contains("fortnitegame/content/athena/items/cosmetics/pickaxes/") || x.Key.Contains("fortnitegame/plugins/gamefeatures/brcosmetics/content/athena/items/cosmetics/pickaxes/"))).Key;
         var pickaxe = await GetCharacterInfo(Constants.Provider, file.Split('.')[0]);
 
         foreach (var optionId in Constants.PotentialOptions)
         {
             if (!optionId.ToLower().Contains("pickaxe")) continue;
-            file = Constants.Provider.Files.FirstOrDefault(x => x.Key.Contains(optionId.ToLower() + ".uasset") && x.Key.Contains("fortnitegame/content/athena/items/cosmetics/pickaxes/"), new KeyValuePair<string, GameFile>()).Key;
+            file = Constants.Provider.Files.FirstOrDefault(x => x.Key.Contains(optionId.ToLower() + ".uasset") && (x.Key.Contains("fortnitegame/content/athena/items/cosmetics/pickaxes/") || x.Key.Contains("fortnitegame/plugins/gamefeatures/brcosmetics/content/athena/items/cosmetics/pickaxes/")), new KeyValuePair<string, GameFile>()).Key;
             if (string.IsNullOrWhiteSpace(file)) continue;
             
             var option = await GetCharacterInfo(Constants.Provider, file.Split('.')[0]);

@@ -17,11 +17,11 @@ namespace Saturn.Backend.Data.Discord
     public class DiscordUtilities
     {
         //Change these values
-        private string CLIENT_ID = "1114338834172362893";
-        private string CLIENT_SECRET = "bTP0bPjNCbyNyMpp-sLZWu-HCwXSrEDQ";
+        private string CLIENT_ID = "1121469600631103551";
+        private string CLIENT_SECRET = "VRwwSt6EQsORzb7n_p3SYdsNRc4Q9Fv9";
         private string REDIRECT_URI = "http://localhost:3000/api/auth/callback/discord";
-        private string GuildID = "1114156540040056975";
-        private string[] TargetRoles = { "1114199040251408394", "1114198787796254842", "1114183776927498270", "1114215451019460682", "1114199157549318218" };
+        private string GuildID = "1118556929799761920";
+        private string[] TargetRoles = { "1118558247260000338", "1121468131911680093", "1120844339279581214" };
         private TokenResponseModel OAuthToken = null;
 
         public DiscordWidgetAPIModel serverAPI

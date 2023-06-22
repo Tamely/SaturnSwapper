@@ -3,15 +3,15 @@
 namespace CUE4Parse.UE4.IO.Objects
 {
     [StructLayout(LayoutKind.Sequential)]
-    public struct FMappedName
+    public readonly struct FMappedName
     {
         private const int IndexBits = 30;
         private const uint IndexMask = (1u << IndexBits) - 1u;
         private const uint TypeMask = ~IndexMask;
         private const int TypeShift = IndexBits;
         
-        public uint _nameIndex;
-        public uint ExtraIndex;
+        private readonly uint _nameIndex;
+        public readonly uint ExtraIndex;
         
         public uint NameIndex => _nameIndex & IndexMask;
         public EType Type => (EType) ((_nameIndex & TypeMask) >> TypeShift);

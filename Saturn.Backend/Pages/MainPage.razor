@@ -8,6 +8,7 @@
 @using CUE4Parse.Utils
 @using Newtonsoft.Json
 @using Saturn.Backend.Data
+@using Saturn.Backend.Data.Asset
 @using Saturn.Backend.Data.Fortnite
 @using Saturn.Backend.Data.FortniteCentral
 @using Saturn.Backend.Data.FortniteCentral.Models
@@ -64,6 +65,10 @@
 
         // Check if the swapper has an update
         var idx = await _saturnAPIService.ReturnEndpointAsync<IndexModel>("/");
+
+        if (idx == null)
+            throw new Exception("Unable to connect to Saturn's API. Please try using a VPN to resolve this.");
+        
         if (idx.swapperVersion != Constants.USER_VERSION)
             throw new Exception($"There's an update for the swapper, please download it from {idx.DiscordServer} and try again");
 
@@ -71,6 +76,10 @@
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(74));
         
         var mappings = await _fortniteCentralService.ReturnEndpointAsync<FortniteCentralMappingsModel[]>("/api/v1/mappings");
+        
+        if (mappings == null)
+            throw new Exception("Unable to connect to FortniteCentral's API. Please try using a VPN to resolve this.");
+        
         if (mappings.Length == 0)
             throw new Exception(_localizationResourceService.GetString(75));
 
@@ -111,6 +120,7 @@
             if (Config.Get().CheckVersion(dep.name, dep.version)) continue;
             await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(80) + dep.name);
             new WebClient().DownloadFile(dep.link, Constants.ExternalPath + dep.name);
+            Config.Get().Dispose();
         }
         
         // Check if key is valid

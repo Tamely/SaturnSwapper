@@ -16,7 +16,7 @@ public sealed class DiscordService
 
 public class DiscordHandler
 {
-    private const string APP_ID = "1114338834172362893";
+    private const string APP_ID = "1121469600631103551";
 
     private RichPresence _currentPresence;
     private readonly DiscordRpcClient _client = new(APP_ID);
@@ -30,7 +30,7 @@ public class DiscordHandler
 
     private readonly Button[] _buttons =
     {
-        new() { Label = "Join Saturn", Url = "https://discord.gg/Saturn" }
+        new() { Label = "Join Saturn", Url = "https://guilded.gg/Saturn" }
     };
 
     public void Initialize()

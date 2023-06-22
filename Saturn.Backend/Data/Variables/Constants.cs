@@ -9,7 +9,7 @@ namespace Saturn.Backend.Data.Variables
 {
     public class Constants
     {
-        public const string USER_VERSION = "2.2.1";
+        public const string USER_VERSION = "2.2.2";
 
         public static readonly Changelog Changelog = new Changelog()
         {
@@ -45,6 +45,18 @@ namespace Saturn.Backend.Data.Variables
                         {
                             Summary = "Added presets",
                             Description = "You can now swap everything you want at once."
+                        }
+                    }
+                },
+                new ChangelogSection()
+                {
+                    Title = "Logic update",
+                    Changes = new []
+                    {
+                        new ChangelogChange()
+                        {
+                            Summary = "Fixed",
+                            Description = "The swapper has been fixed for the new season."
                         },
                         new ChangelogChange()
                         {
@@ -55,8 +67,7 @@ namespace Saturn.Backend.Data.Variables
                         {
                             Summary = "Added lobby swaps",
                             Description = "Everyone in your lobby can now see your swap (Saturn+ only)."
-                        }
-                        ,
+                        },
                         new ChangelogChange()
                         {
                             Summary = "Added UEFN swaps",

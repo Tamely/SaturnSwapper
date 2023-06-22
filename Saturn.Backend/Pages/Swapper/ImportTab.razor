@@ -8,6 +8,7 @@
 @using CUE4Parse.UE4.Objects.Core.Misc
 @using CUE4Parse.UE4.Versions
 @using Newtonsoft.Json
+@using Saturn.Backend.Data.Asset
 @using Saturn.Backend.Data.Compression
 @using Saturn.Backend.Data.FortniteCentral
 @using Saturn.Backend.Data.Services
@@ -147,7 +148,7 @@
     private CompressionBase compressor = new Oodle();
     
     private DefaultFileProvider UEFNProvider;
-    private IPackage parentPkg;
+    private Deserializer parentObj;
 
     private string workingDirectory;
     private string customExperienceName;
@@ -180,7 +181,7 @@
     {
         UEFNState = UEFNImporterState.S_Experience;
         UEFNProvider.Dispose();
-        parentPkg = null;
+        parentObj = null;
         workingDirectory = null;
         customExperienceName = null;
         assetPath = null;
@@ -190,29 +191,27 @@
 
     private async Task MakeEmpty(string search)
     {
-        ((IoPackage)parentPkg).SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), "/Game/G.G");
+        parentObj.SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), "/Game/G.G");
         await Swap();
     }
 
     private async Task MakeEmpty()
     {
-        IoPackage.ClearHeaders();
         SaturnData.Clear();
-        IoPackage.NameToBeSearching.Clear();
-        IoPackage.NameToBeSearching.Add(Path.GetFileNameWithoutExtension(assetPath));
-        
-        if (!Constants.Provider.TryLoadPackage(assetPath, out parentPkg))
+
+        if (!Constants.Provider.TrySavePackage(assetPath, out var parentPkg))
         {
             throw new Exception($"Parent package with the path '{assetPath}' doesn't exist!");
         }
 
-        IoPackage parentObj = (IoPackage)parentPkg;
+        parentObj = new Deserializer(parentPkg.Values.First());
+        parentObj.Deserialize();
 
-        int count = parentObj.NameMap.Count(x => x.Name.ToLower().Contains("mesh") && !x.Name.ToLower().Contains("material") && !x.Name.ToLower().Contains("skeleton") && !x.Name.ToLower().Contains("animbp") && !x.Name.ToLower().Contains("abp"));
+        int count = parentObj.ModifiedNameMap.Count(x => x.Name.ToLower().Contains("mesh") && !x.Name.ToLower().Contains("material") && !x.Name.ToLower().Contains("skeleton") && !x.Name.ToLower().Contains("animbp") && !x.Name.ToLower().Contains("abp"));
         if (count == 1)
         {
-            string search = parentObj.NameMap.First(x => x.Name.ToLower().Contains("mesh") && !x.Name.ToLower().Contains("material") && !x.Name.ToLower().Contains("skeleton") && !x.Name.ToLower().Contains("animbp") && !x.Name.ToLower().Contains("abp")).Name;
-            ((IoPackage)parentPkg).SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), "/Game/G.G");
+            string search = parentObj.ModifiedNameMap.First(x => x.Name.ToLower().Contains("mesh") && !x.Name.ToLower().Contains("material") && !x.Name.ToLower().Contains("skeleton") && !x.Name.ToLower().Contains("animbp") && !x.Name.ToLower().Contains("abp")).Name;
+            parentObj.SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), "/Game/G.G");
             await Swap();
         }
         else
@@ -229,7 +228,7 @@
             new()
             {
                 SaturnData = SaturnData.ToNonStatic(),
-                Data = ((IoPackage)parentPkg).Serialize()
+                Data = new Serializer(parentObj).Serialize()
             }
         };
 
@@ -262,7 +261,7 @@
 
     private async Task SwapNameMap(string search)
     {
-        ((IoPackage)parentPkg).SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), customAssetPath.Split('.')[0] + '.' + Path.GetFileNameWithoutExtension(customAssetPath));
+        parentObj.SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), customAssetPath.Split('.')[0] + '.' + Path.GetFileNameWithoutExtension(customAssetPath));
 
         UEFNState = UEFNImporterState.S_Swap;
         StateHasChanged();
@@ -270,17 +269,17 @@
 
     private string[] GetNameMapEntries()
     {
-        IoPackage.ClearHeaders();
         SaturnData.Clear();
-        IoPackage.NameToBeSearching.Clear();
-        IoPackage.NameToBeSearching.Add(Path.GetFileNameWithoutExtension(assetPath));
-        
-        if (!Constants.Provider.TryLoadPackage(assetPath, out parentPkg))
+
+        if (!Constants.Provider.TrySavePackage(assetPath, out var parentPkg))
         {
             throw new Exception($"Parent package with the path '{assetPath}' doesn't exist!");
         }
+        
+        parentObj = new Deserializer(parentPkg.Values.First());
+        parentObj.Deserialize();
 
-        return ((IoPackage)parentPkg).NameMap.Select(x => x.Name).Where(x => x.Contains('/')).ToArray();
+        return parentObj.ReadNameMap.Select(x => x.Name).Where(x => x.Contains('/')).ToArray();
     }
 
     private async Task SetParent()
