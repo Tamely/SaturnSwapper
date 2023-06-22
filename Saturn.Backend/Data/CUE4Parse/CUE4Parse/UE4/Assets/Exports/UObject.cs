@@ -98,7 +98,7 @@ namespace CUE4Parse.UE4.Assets.Exports
             {
                 if (property.Size == 0) continue;
                 
-                Logger.Log("Writing property type: " + property.PropertyType.Text + " to index: " + Ar.Count + " with size: " + property.Size);
+                Logger.Log("Writing property type: " + property.PropertyType.Text + " to index: " + Ar.Count + " with size: " + property.Size + " and name: " + property.Name.Text);
 
                 property.Tag.Serialize(Ar);
             }
@@ -236,7 +236,6 @@ namespace CUE4Parse.UE4.Assets.Exports
                         var tag = new FPropertyTag(Ar, propertyInfo, ReadType.NORMAL);
                         if (tag.Tag != null)
                         {
-                            Logger.Log($"Property: {tag.Name} | {tag.Size} | {tag.PropertyType.Text} | {Ar.Position}");
                             properties.Add(tag);
                         }
                         else

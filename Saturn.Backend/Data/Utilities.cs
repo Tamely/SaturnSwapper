@@ -8,6 +8,7 @@ using CUE4Parse;
 using CUE4Parse.UE4.Assets;
 using CUE4Parse.Utils;
 using Microsoft.JSInterop;
+using Saturn.Backend.Data.Asset;
 using Saturn.Backend.Data.Fortnite;
 using Saturn.Backend.Data.SaturnAPI;
 using Saturn.Backend.Data.SaturnAPI.Models;
@@ -24,9 +25,7 @@ namespace Saturn.Backend.Data
         public static async Task SwapPreset(PresetModel preset, IJSRuntime _jsRuntime)
         {
             SaturnData.Clear();
-            IoPackage.ClearHeaders();
-            IoPackage.NameToBeSearching.Clear();
-            
+
             if (!Constants.isKeyValid)
             {
                 await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "key");
@@ -39,35 +38,23 @@ namespace Saturn.Backend.Data
         
                 foreach (var characterPart in item.OptionModel.CharacterParts.Where(characterPart => item.ItemModel.CharacterParts.ContainsKey(characterPart.Key)))
                 {
-                    IoPackage.NameToBeSearching.Add(characterPart.Value.Path.SubstringAfterLast('/').Split('.')[0]);
-                    IoPackage.NameToBeSearching.Add(item.ItemModel.CharacterParts[characterPart.Key].Path.SubstringAfterLast('/').Split('.')[0]);
+                    var oldPkg = await Constants.Provider.SavePackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
+                    Deserializer oldDeserializer = new Deserializer(oldPkg.Values.First());
+                    oldDeserializer.Deserialize();
                     
-                    if (characterPart.Key == "Pickaxe")
-                        SaturnData.IsPickaxe = true;
-                    
-                    IoPackage.ClearHeaders();
-                    IoPackage oldObj = (IoPackage)await Constants.Provider.LoadPackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
-                    long originalLength = oldObj.TotalSize;
-                    Logger.Log($"Asset '{characterPart.Value.Path.Split('.')[0] + ".uasset"}' has a length of {originalLength}");
-
                     var data = SaturnData.ToNonStatic();
                     SaturnData.Clear();
                     
-                    if (characterPart.Key == "Pickaxe")
-                        SaturnData.IsPickaxe = true;
-                    
-                    IoPackage.ClearHeaders();
-                    IoPackage newObj = (IoPackage)await Constants.Provider.LoadPackageAsync(item.ItemModel.CharacterParts[characterPart.Key].Path.Split('.')[0] + ".uasset");
+                    var newPkg = await Constants.Provider.SavePackageAsync(item.ItemModel.CharacterParts[characterPart.Key].Path.Split('.')[0] + ".uasset");
+                    Deserializer newDeserializer = new Deserializer(newPkg.Values.First());
+                    newDeserializer.Deserialize();
 
-                    var obj = oldObj.Swap(newObj);
-                    byte[] serializedData = obj.Serialize();
-                    byte[] swap = new byte[originalLength];
-                    Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
-                    
+                    Serializer serializer = new Serializer(oldDeserializer.Swap(newDeserializer));
+
                     swapData.Add(new SwapData
                     {
                         SaturnData = data,
-                        Data = swap
+                        Data = serializer.Serialize()
                     });
 
                     SaturnData.Clear();
@@ -75,40 +62,27 @@ namespace Saturn.Backend.Data
 
                 foreach (var characterPart in item.OptionModel.CharacterParts.Where(characterPart => !item.ItemModel.CharacterParts.ContainsKey(characterPart.Key)))
                 {
-                    IoPackage.NameToBeSearching.Add(characterPart.Value.Path.SubstringAfterLast('/').Split('.')[0]);
-
-                    if (characterPart.Key == "Pickaxe")
-                        SaturnData.IsPickaxe = true;
-
-                    IoPackage.ClearHeaders();
-                    IoPackage oldObj = (IoPackage)await Constants.Provider.LoadPackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
-                    long originalLength = oldObj.TotalSize;
-                    Logger.Log($"Asset '{characterPart.Value.Path.Split('.')[0] + ".uasset"}' has a length of {originalLength}");
-
+                    var oldPkg = await Constants.Provider.SavePackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
+                    Deserializer oldDeserializer = new Deserializer(oldPkg.Values.First());
+                    oldDeserializer.Deserialize();
+                    
                     var data = SaturnData.ToNonStatic();
                     SaturnData.Clear();
                     
-                    if (characterPart.Key == "Pickaxe")
-                        SaturnData.IsPickaxe = true;
-
                     var realPartType = characterPart.Value.Enums["CharacterPartType"];
                     
-                    IoPackage.NameToBeSearching.Add(Constants.EmptyParts[realPartType].Path.SubstringAfterLast('/').Split('.')[0]);
+                    var newPkg = await Constants.Provider.SavePackageAsync(Constants.EmptyParts[realPartType].Path.Split('.')[0] + ".uasset");
+                    Deserializer newDeserializer = new Deserializer(newPkg.Values.First());
+                    newDeserializer.Deserialize();
 
-                    IoPackage.ClearHeaders();
-                    IoPackage newObj = (IoPackage)await Constants.Provider.LoadPackageAsync(Constants.EmptyParts[realPartType].Path.Split('.')[0] + ".uasset");
+                    Serializer serializer = new Serializer(oldDeserializer.Swap(newDeserializer));
 
-                    var obj = oldObj.Swap(newObj);
-                    byte[] serializedData = obj.Serialize();
-                    byte[] swap = new byte[originalLength];
-                    Buffer.BlockCopy(serializedData, 0, swap, 0, serializedData.Length);
-                    
                     swapData.Add(new SwapData
                     {
                         SaturnData = data,
-                        Data = swap
+                        Data = serializer.Serialize()
                     });
-                    
+
                     SaturnData.Clear();
                 }
 

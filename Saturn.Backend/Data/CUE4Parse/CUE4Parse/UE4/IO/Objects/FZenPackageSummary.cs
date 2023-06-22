@@ -31,21 +31,21 @@ namespace CUE4Parse.UE4.IO.Objects
         }
     }
 
-    public readonly struct FZenPackageSummary
+    public struct FZenPackageSummary
     {
-        public readonly uint bHasVersioningInfo;
-        public readonly uint HeaderSize;
-        public readonly FMappedName Name;
-        public readonly EPackageFlags PackageFlags;
-        public readonly uint CookedHeaderSize;
-        public readonly int ImportedPublicExportHashesOffset;
-        public readonly int ImportMapOffset;
-        public readonly int ExportMapOffset;
-        public readonly int ExportBundleEntriesOffset;
-        public readonly int GraphDataOffset = 0;
-        public readonly int DependencyBundleHeadersOffset = 0;
-        public readonly int DependencyBundleEntriesOffset = 0;
-        public readonly int ImportedPackageNamesOffset = 0;
+        public uint bHasVersioningInfo;
+        public uint HeaderSize;
+        public FMappedName Name;
+        public EPackageFlags PackageFlags;
+        public uint CookedHeaderSize;
+        public int ImportedPublicExportHashesOffset;
+        public int ImportMapOffset;
+        public int ExportMapOffset;
+        public int ExportBundleEntriesOffset;
+        public int GraphDataOffset = 0;
+        public int DependencyBundleHeadersOffset = 0;
+        public int DependencyBundleEntriesOffset = 0;
+        public int ImportedPackageNamesOffset = 0;
 
         public FZenPackageSummary(FArchive Ar)
         {
