@@ -16,7 +16,7 @@ internal sealed record TypeInfo
     public bool IsRuntimeType { get; }
     public bool IsStruct { get; }
     public bool IsEnum { get; }
-    public bool IsGenericType { get; }
+    public bool IsArray { get; }
     public bool IsPrimitive { get; }
     public bool IsNumeric { get; }
     public bool IsSigned { get; }
@@ -24,7 +24,6 @@ internal sealed record TypeInfo
     public int Size { get; }
     public string Name { get; }
     public TypeInfo? UnderlyingType { get; }
-    public ImmutableArray<TypeInfo> GenericParameters { get; }
     public ImmutableArray<EnumMemberInfo> EnumMembers { get; }
     public ImmutableArray<FieldInfo> Fields { get; }
     public ImmutableArray<MethodInfo> Methods { get; }
@@ -35,7 +34,7 @@ internal sealed record TypeInfo
         IsRuntimeType = type.Flags.HasFlag(BindingFlags.RuntimeInternal);
         IsStruct = type.Kind.HasFlag(TypeKind.Struct);
         IsEnum = type.Kind.HasFlag(TypeKind.Enum);
-        IsGenericType = type.Kind.HasFlag(TypeKind.GenericType);
+        IsArray = type.Kind.HasFlag(TypeKind.Array);
         IsPrimitive = type.Kind.HasFlag(TypeKind.Primitive);
         IsNumeric = type.Kind.HasFlag(TypeKind.Numeric);
         IsSigned = type.Kind.HasFlag(TypeKind.Signed);
@@ -85,16 +84,7 @@ internal sealed record TypeInfo
             methods.Add(info);
             _methods.Add(method, info);
         }
-        
-        var genericParameterCount = type.GenericParameters.Length;
-        var genericParameters = ImmutableArray.CreateBuilder<TypeInfo>();
-        for (var i = 0; i < genericParameterCount; i++)
-        {
-            var genericParameter = type.GenericParameters[i];
-            var genericParameterDefinition = metadata.Types.Types[genericParameter];
-            genericParameters.Add(TypeTracker.Add(genericParameterDefinition, metadata, this));
-        }
-        
+
         var staticConstructor = type.StaticConstructor;
         if (staticConstructor != -1)
         {
@@ -102,8 +92,7 @@ internal sealed record TypeInfo
             var staticConstructorInfo = new MethodInfo(staticConstructorDefinition, metadata, this);
             StaticConstructor = staticConstructorInfo;
         }
-
-        GenericParameters = genericParameters.ToImmutable();
+        
         EnumMembers = enumMembers.ToImmutable();
         Fields = fields.ToImmutable();
         Methods = methods.ToImmutable();
@@ -184,7 +173,6 @@ internal sealed record TypeInfo
     public string ToString(bool includeAttributes)
     {
         var builder = new StringBuilder();
-
         if (includeAttributes)
         {
             if (IsRuntimeType)
@@ -203,21 +191,6 @@ internal sealed record TypeInfo
         }
 
         builder.Append($"{Name}");
-        if (GenericParameters.Length > 0)
-        {
-            builder.Append('<');
-            for (var i = 0; i < GenericParameters.Length; i++)
-            {
-                builder.Append(GenericParameters[i].Name);
-                if (i != GenericParameters.Length - 1)
-                {
-                    builder.Append(", ");
-                }
-            }
-            
-            builder.Append('>');
-        }
-        
         return builder.ToString();
     }
 }
