@@ -9,8 +9,8 @@ public sealed partial class StructDeclarationSyntax : TypeDeclarationSyntax
     public SyntaxToken Identifier { get; }
     public StructBodySyntax Body { get; }
 
-    public StructDeclarationSyntax(SyntaxTree syntaxTree, ImmutableSyntaxList<SyntaxToken> modifiers, 
-                                   SyntaxToken structKeyword, SyntaxToken identifier, StructBodySyntax body)
+    public StructDeclarationSyntax(SyntaxTree syntaxTree, ImmutableSyntaxList<SyntaxToken> modifiers,
+                                   SyntaxToken structKeyword, SyntaxToken identifier,  StructBodySyntax body)
         : base(syntaxTree)
     {
         Modifiers = modifiers;

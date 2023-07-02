@@ -1,15 +1,17 @@
+using System;
 using System.Collections.Immutable;
 using System.Linq;
 using Radon.CodeAnalysis.Binding.Semantics;
 using Radon.CodeAnalysis.Binding.Semantics.Expressions;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax.Nodes;
+using Radon.CodeAnalysis.Syntax.Nodes.Clauses;
 
 namespace Radon.CodeAnalysis.Binding.Analyzers;
 
 internal abstract class Binder
 {
-    protected Scope? Scope { get; }
+    protected Scope? Scope { get; set; }
     internal DiagnosticBag Diagnostics { get; }
 
     private protected Binder(Scope? scope)
@@ -42,7 +44,7 @@ internal abstract class Binder
     
     public abstract BoundNode Bind(SyntaxNode node, params object[] args);
 
-    public bool Register(SemanticContext context, Symbol symbol)
+    protected bool Register(SemanticContext context, Symbol symbol)
     {
         if (Scope is null)
         {
@@ -59,7 +61,7 @@ internal abstract class Binder
         return true;
     }
 
-    public void Reregister<TSymbol>(SemanticContext context, TSymbol symbol, TSymbol newSymbol)
+    protected void Reregister<TSymbol>(SemanticContext context, TSymbol symbol, TSymbol newSymbol)
         where TSymbol : Symbol
     {
         if (Scope is null)
@@ -84,36 +86,121 @@ internal abstract class Binder
         }
     }
 
-    public bool TryResolve<TSymbol>(SemanticContext context, string name, out TSymbol? symbol)
+    protected bool TryResolve<TSymbol>(SemanticContext context, string name, out TSymbol? symbol, bool reportUnresolvedSymbol = true)
         where TSymbol : Symbol
     {
-        if (Scope is null)
+        try
         {
-            context.Diagnostics.ReportNullScope(context.Location);
+            if (Scope is null)
+            {
+                context.Diagnostics.ReportNullScope(context.Location);
+                symbol = null;
+                return false;
+            }
+        
+            if (Scope.TryLookupSymbol(name, out symbol!))
+            {
+                return TryResolveSymbol(context, ref symbol);
+            }
+
+            if (reportUnresolvedSymbol)
+            {
+                if (typeof(TSymbol).IsAssignableTo(typeof(TypeSymbol)))
+                {
+                    context.Diagnostics.ReportUndefinedType(context.Location, name);
+                }
+                else
+                {
+                    context.Diagnostics.ReportUnresolvedSymbol(context.Location, name);
+                }
+            }
+        
+            return false;
+        }
+        catch (Exception)
+        {
             symbol = null;
             return false;
         }
-        
-        if (Scope.TryLookupSymbol(name, out symbol!))
+    }
+
+    public bool TryResolveSymbol<TSymbol>(SemanticContext context, ref TSymbol symbol) 
+        where TSymbol : Symbol
+    {
+        if (typeof(TSymbol).IsAssignableTo(typeof(TypeSymbol)))
         {
-            Scope.AddSymbolReference(symbol, context.Location);
-            return true;
+            if (this is NamedTypeBinder ntb &&
+                ntb.CurrentMember == SymbolKind.Constructor)
+            {
+                return true; // The ref symbol should be the parent type, which is the needed type, therefore, we do not need to do anything.
+            }
+            
+            if (symbol is TemplateSymbol or PrimitiveTemplateSymbol)
+            {
+                ImmutableArray<TypeSymbol> typeArguments;
+                if (symbol is TemplateSymbol template && context.Tag is ImmutableArray<TypeSymbol> typeArgs)
+                {
+                    typeArguments = typeArgs;
+                }
+                else if (symbol is PrimitiveTemplateSymbol primitiveTemplate)
+                {
+                    typeArguments = primitiveTemplate.TypeArguments;
+                    template = primitiveTemplate.Template;
+                }
+                else
+                {
+                    throw new InvalidOperationException("The symbol is not a template symbol.");
+                }
+
+                var resolvedTypeArgs = ImmutableArray.CreateBuilder<TypeSymbol>();
+                foreach (var typeArg in typeArguments)
+                {
+                    if (typeArg is TypeParameterSymbol) // We can't build the template if we have unresolved type parameters.
+                    {
+                        if (TryResolve<TypeSymbol>(context, typeArg.Name, out var resolvedArg, false)) // We check if the type parameter has been resolved.
+                        {
+                            resolvedTypeArgs.Add(resolvedArg!);
+                            continue;
+                        }
+
+                        // If the type can't be built on the spot, it will likely be built when the template method/class is called/constructed.
+                        return true; // We return true because the type does exist, just we can't build it.
+                    }
+                    
+                    resolvedTypeArgs.Add(typeArg);
+                }
+
+                var templateSymbol = AssemblyBinder.Current.BuildTemplate(template, resolvedTypeArgs.ToImmutable());
+                symbol = (TSymbol)(object)templateSymbol;
+                return true;
+            }
+
+            if (symbol is TypeParameterSymbol typeParameter)
+            {
+                var boundTypeParameters = Scope!.GetSymbols<BoundTypeParameterSymbol>();
+                foreach (var tp in boundTypeParameters)
+                {
+                    if (tp.TypeParameter == typeParameter)
+                    {
+                        symbol = (TSymbol)(object)tp.BoundType;
+                        return true;
+                    }
+                }
+            }
+
+            if (symbol is BoundTypeParameterSymbol boundTypeParameter)
+            {
+                symbol = (TSymbol)(object)boundTypeParameter.BoundType;
+                return true;
+            }
         }
 
-        if (typeof(TSymbol) == typeof(TypeSymbol))
-        {
-            context.Diagnostics.ReportUndefinedType(context.Location, name);
-        }
-        else
-        {
-            context.Diagnostics.ReportUnresolvedSymbol(context.Location, name);
-        }
-        
-        return false;
+        Scope?.AddSymbolReference(symbol, context.Location);
+        return true;
     }
-    
-    public bool TryResolveMethod<TMethodSymbol>(SemanticContext context, TypeSymbol parentType, string name, 
-        ImmutableArray<BoundExpression> parameterTypes, out TMethodSymbol methodSymbol)
+
+    protected bool TryResolveMethod<TMethodSymbol>(SemanticContext context, TypeSymbol parentType, string name, 
+        ImmutableArray<TypeSymbol> typeArguments, ImmutableArray<BoundExpression> parameterTypes, SyntaxNode callSite, out TMethodSymbol methodSymbol)
         where TMethodSymbol : AbstractMethodSymbol
     {
         if (Scope is null)
@@ -124,8 +211,9 @@ internal abstract class Binder
         }
         
         // The method was not found in the current scope, so we need to check the parent type.
-        if (parentType.TryLookupMethod(name, parameterTypes, out var methodNotFound, out var cannotConvertType,
-                out var ambiguousCall, out var from, out var to, out var ambiguousCalls,
+        if (parentType.TryLookupMethod(this, name, typeArguments, parameterTypes, callSite, out var methodNotFound,
+                out var cannotConvertType, out var ambiguousCall, out var incorrectTypeArgumentCount,
+                out var expected, out var from, out var to, out var ambiguousCalls,
                 out methodSymbol))
         {
             Scope.AddSymbolReference(methodSymbol, context.Location);
@@ -147,6 +235,50 @@ internal abstract class Binder
             context.Diagnostics.ReportAmbiguousMethodCall(context.Location, ambiguousCalls);
         }
         
+        if (incorrectTypeArgumentCount)
+        {
+            context.Diagnostics.ReportIncorrectNumberOfTypeArguments(context.Location, name, expected, typeArguments.Length);
+        }
+        
         return false;
+    }
+
+    protected TypeSymbol BindTypeSyntax(TypeSyntax syntax)
+    {
+        if (syntax is ArrayTypeSyntax arraySyntax)
+        {
+            var type = BindTypeSyntax(arraySyntax.TypeSyntax);
+            var name = $"{type.Name}[]";
+            var context = new SemanticContext(syntax.Location, this, syntax, Diagnostics);
+            if (TryResolve<ArrayTypeSymbol>(context, name, out var array, false))
+            {
+                return array!;
+            }
+            
+            array = new ArrayTypeSymbol(type);
+            AssemblyBinder.Current.Register(context, array);
+            return array;
+        }
+        
+        var typeArguments = ImmutableArray.CreateBuilder<TypeSymbol>();
+        if (syntax.TypeArgumentList is not null)
+        {
+            foreach (var typeArgument in syntax.TypeArgumentList.Arguments)
+            {
+                var type = BindTypeSyntax(typeArgument);
+                typeArguments.Add(type);
+            }
+        }
+        
+        var typeContext = new SemanticContext(syntax.Location, this, syntax, Diagnostics)
+        {
+            Tag = typeArguments.ToImmutable()
+        };
+        if (!TryResolve<TypeSymbol>(typeContext, syntax.Identifier.Text, out var typeSymbol))
+        {
+            return TypeSymbol.Error;
+        }
+        
+        return typeSymbol!;
     }
 }

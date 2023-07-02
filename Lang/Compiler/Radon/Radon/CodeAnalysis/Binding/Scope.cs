@@ -1,12 +1,9 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using Radon.CodeAnalysis.Binding.Semantics.Conversions;
-using Radon.CodeAnalysis.Binding.Semantics.Expressions;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Text;
 
-namespace Radon.CodeAnalysis.Binding.Analyzers;
+namespace Radon.CodeAnalysis.Binding;
 
 public sealed class Scope
 {
@@ -122,5 +119,25 @@ public sealed class Scope
     {
         var hash = _symbols[symbol];
         return _symbolReferences[hash].ToImmutableArray();
+    }
+    
+    public ImmutableArray<TSymbol> GetSymbols<TSymbol>()
+        where TSymbol : Symbol
+    {
+        var symbols = new List<TSymbol>();
+        foreach (var (key, _) in _symbols)
+        {
+            if (key is TSymbol symbol)
+            {
+                symbols.Add(symbol);
+            }
+        }
+        
+        if (Parent is not null)
+        {
+            symbols.AddRange(Parent.GetSymbols<TSymbol>());
+        }
+        
+        return symbols.ToImmutableArray();
     }
 }

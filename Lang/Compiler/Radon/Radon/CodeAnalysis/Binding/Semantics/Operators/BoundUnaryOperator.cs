@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
 
-namespace Radon.CodeAnalysis.Binding.Semantics.Expressions;
+namespace Radon.CodeAnalysis.Binding.Semantics.Operators;
 
 internal sealed class BoundUnaryOperator
 {

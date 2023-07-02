@@ -7,9 +7,9 @@ internal enum TypeKind : byte
 {
     Struct,
     Enum,
-    GenericType,
     Primitive,
     Numeric,
     Signed,
     FloatingPoint,
+    Array
 }

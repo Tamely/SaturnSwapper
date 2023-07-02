@@ -1,6 +1,6 @@
 using Radon.CodeAnalysis.Symbols;
 
-namespace Radon.CodeAnalysis.Binding.Analyzers;
+namespace Radon.CodeAnalysis.Binding;
 
 internal readonly record struct SymbolHash
 {

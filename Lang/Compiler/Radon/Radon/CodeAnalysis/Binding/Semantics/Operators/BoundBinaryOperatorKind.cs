@@ -1,4 +1,4 @@
-namespace Radon.CodeAnalysis.Binding.Semantics.Expressions;
+namespace Radon.CodeAnalysis.Binding.Semantics.Operators;
 
 internal enum BoundBinaryOperatorKind
 {

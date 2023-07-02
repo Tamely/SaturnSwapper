@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using Radon.CodeAnalysis.Syntax;
 
@@ -29,6 +30,15 @@ public sealed class FieldSymbol : MemberSymbol
     {
         return new FieldSymbol(parentType, Name, Type, Modifiers);
     }
-    
+
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Name);
+        hash.Add(ParentType);
+        hash.Add(Type);
+        return hash.ToHashCode();
+    }
+
     public override string ToString() => Name;
 }

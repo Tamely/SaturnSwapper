@@ -1,5 +1,3 @@
-using Radon.CodeAnalysis.Binding.Semantics.Expressions;
-
 namespace Radon.CodeAnalysis.Syntax.Nodes.Expressions;
 
 public sealed partial class LiteralExpressionSyntax : ExpressionSyntax

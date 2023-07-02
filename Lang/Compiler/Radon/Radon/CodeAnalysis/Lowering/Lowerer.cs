@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Radon.CodeAnalysis.Binding.Semantics;
@@ -29,171 +30,167 @@ internal sealed class Lowerer
     private ImmutableArray<BoundType> LowerTypes()
     {
         var builder = ImmutableArray.CreateBuilder<BoundType>();
+#if DEBUG
+        // ReSharper disable once NotAccessedVariable
+        var counter = 0;
+#endif
         foreach (var type in _assembly.Types)
         {
             builder.Add(LowerType(type));
+            
+#if DEBUG
+            counter++;
+#endif
         }
         
         return builder.ToImmutable();
     }
     
-    private BoundType LowerType(BoundType type)
+    private BoundType LowerType(BoundType node)
     {
-        if (type is BoundStruct boundStruct)
+        return node switch
         {
-            return LowerStruct(boundStruct);
-        }
-        
-        if (type is BoundEnum boundEnum)
-        {
-            return LowerEnum(boundEnum);
-        }
-
-        if (type is BoundErrorType boundType)
-        {
-            return boundType;
-        }
-
-        throw new Exception($"Unexpected type {type.Kind}");
+            BoundStruct boundStruct => LowerStruct(boundStruct),
+            BoundEnum boundEnum => LowerEnum(boundEnum),
+            BoundErrorType boundType => boundType,
+            _ => throw new Exception($"Unexpected type {node.Kind}")
+        };
     }
 
-    private BoundStruct LowerStruct(BoundStruct boundStruct)
+    private BoundStruct LowerStruct(BoundStruct node)
     {
-        var members = ImmutableArray.CreateBuilder<BoundMember>();
-        var containsStaticConstructor = false;
-        foreach (var member in boundStruct.Members)
+        var structLowerer = new StructLowerer(node);
+        return structLowerer.Lower();
+    }
+    
+    private BoundEnum LowerEnum(BoundEnum node)
+    {
+        return node;
+    }
+}
+
+internal sealed class StructLowerer
+{
+    private readonly BoundStruct _boundStruct;
+    private readonly Dictionary<BoundField, BoundExpression> _loweredInitializers;
+    private readonly StatementLowerer _statementsLowerer;
+
+    public StructLowerer(BoundStruct boundStruct)
+    {
+        _boundStruct = boundStruct;
+        _loweredInitializers = new Dictionary<BoundField, BoundExpression>();
+        _statementsLowerer = new StatementLowerer();
+    }
+
+    public BoundStruct Lower()
+    {
+        var loweredMembers = new List<BoundMember>();
+        foreach (var member in _boundStruct.Members)
         {
-            if (member is BoundConstructor constructor &&
-                constructor.Symbol.Modifiers.Contains(SyntaxKind.StaticKeyword))
+            var loweredMember = LowerMember(member);
+            loweredMembers.Add(loweredMember);
+        }
+
+        var constructors = _boundStruct.Members.OfType<BoundConstructor>();
+        foreach (var constructor in constructors)
+        {
+            var statements = constructor.Statements;
+            // Add the lowered instance initializers to the start of the constructor
+            var boundStatements = new List<BoundStatement>();
+            foreach (var initializer in _loweredInitializers)
             {
-                containsStaticConstructor = true;
+                BoundExpression thisOrType;
+                if (constructor.Symbol.HasModifier(SyntaxKind.StaticKeyword))
+                {
+                    thisOrType = new BoundNameExpression(
+                        SyntaxNode.Empty,
+                        _boundStruct.TypeSymbol
+                    );
+                }
+                else
+                {
+                    thisOrType = new BoundThisExpression(
+                        SyntaxNode.Empty,
+                        _boundStruct.TypeSymbol
+                    );
+                }
+                
+                var assignment = new BoundAssignmentExpression(
+                    SyntaxNode.Empty,
+                    new BoundMemberAccessExpression(
+                        SyntaxNode.Empty,
+                        thisOrType,
+                        initializer.Key.Symbol
+                    ),
+                    initializer.Value
+                );
+                
+                boundStatements.Add(new BoundExpressionStatement(SyntaxNode.Empty, assignment));
             }
             
-            members.Add(LowerMember(member));
-        }
-        
-        var syntax = SyntaxNode.Empty;
-        ConstructorSymbol staticConstructorSymbol;
-        if (!containsStaticConstructor)
-        {
-            staticConstructorSymbol = new ConstructorSymbol(
-                boundStruct.Symbol,
-                ImmutableArray<ParameterSymbol>.Empty,
-                ImmutableArray.Create(SyntaxKind.StaticKeyword)
+            var statementsLowered = _statementsLowerer.LowerStatements(statements);
+            boundStatements.AddRange(statementsLowered);
+            var loweredConstructor = new BoundConstructor(
+                constructor.Syntax,
+                constructor.Symbol,
+                boundStatements.ToImmutableArray()
             );
-        }
-        else
-        {
-            staticConstructorSymbol = boundStruct.Members.OfType<BoundConstructor>()
-                .First(c => c.Symbol.Modifiers.Contains(SyntaxKind.StaticKeyword))
-                .Symbol;
-        }
-        
-        var staticConstructorStatements = ImmutableArray.CreateBuilder<BoundStatement>();
-        var fields = boundStruct.Members.OfType<BoundField>().Where(f => f.Symbol.Modifiers.Contains(SyntaxKind.StaticKeyword));
-        foreach (var field in fields)
-        {
-            var initializer = field.Initializer ?? new BoundDefaultExpression(SyntaxNode.Empty, field.Symbol.Type);
-            var assignment = new BoundExpressionStatement(
-                syntax,
-                new BoundAssignmentExpression(
-                    syntax,
-                    new BoundMemberAccessExpression(
-                        syntax,
-                        new BoundNameExpression(
-                            syntax,
-                            field.Symbol
-                        ),
-                        field.Symbol
-                    ),
-                    initializer
-                )
-            );
-                
-            staticConstructorStatements.Add(assignment);
-        }
-
-        var staticConstructor = new BoundConstructor(
-            syntax,
-            staticConstructorSymbol,
-            staticConstructorStatements.ToImmutable()
-        );
             
-        members.Add(staticConstructor);
+            loweredMembers.Add(loweredConstructor);
+        }
+        
+        return new BoundStruct(
+            _boundStruct.Syntax,
+            _boundStruct.Symbol,
+            loweredMembers.ToImmutableArray()
+        );
+    }
+    
+    private BoundMember LowerMember(BoundMember node)
+    {
+        return node switch
+        {
+            BoundMethod boundMethod => LowerMethod(boundMethod),
+            BoundConstructor boundConstructor => boundConstructor,
+            BoundField boundField => LowerField(boundField),
+            BoundErrorMember boundErrorMember => boundErrorMember,
+            _ => throw new Exception($"Unexpected member {node.Kind}")
+        };
+    }
+    
+    private BoundMember LowerMethod(BoundMethod node)
+    {
+        var loweredStatements = _statementsLowerer.LowerStatements(node.Statements);
+        return new BoundMethod(node.Syntax, node.Symbol, loweredStatements, node.Locals);
+    }
 
-        return new BoundStruct(boundStruct.Syntax, boundStruct.Symbol, members.ToImmutable());
-    }
-    
-    private BoundEnum LowerEnum(BoundEnum boundEnum)
+    private BoundMember LowerField(BoundField node)
     {
-        var members = ImmutableArray.CreateBuilder<BoundEnumMember>();
-        foreach (var member in boundEnum.Members)
-        {
-            members.Add((BoundEnumMember)LowerMember(member));
-        }
-        
-        return new BoundEnum(boundEnum.Syntax, boundEnum.Symbol, members.ToImmutable());
+        var expressionLowerer = new ExpressionLowerer();
+        var loweredInitializer = node.Initializer == null ? 
+            new BoundDefaultExpression(SyntaxNode.Empty, node.Symbol.Type) 
+            : expressionLowerer.Lower(node.Initializer);
+        _loweredInitializers.Add(node, loweredInitializer);
+        return new BoundField(node.Syntax, node.Symbol, loweredInitializer);
     }
-    
-    private BoundMember LowerMember(BoundMember member)
-    {
-        if (member is BoundMethod boundMethod)
-        {
-            return LowerMethod(boundMethod);
-        }
-        
-        if (member is BoundConstructor boundConstructor)
-        {
-            return LowerConstructor(boundConstructor);
-        }
-        
-        if (member is BoundField boundField)
-        {
-            return LowerField(boundField);
-        }
-        
-        if (member is BoundEnumMember boundEnumMember)
-        {
-            return boundEnumMember;
-        }
+}
 
-        if (member is BoundErrorMember boundErrorMember)
-        {
-            return boundErrorMember;
-        }
-        
-        throw new Exception($"Unexpected member {member.Kind}");
-    }
-    
-    private BoundMethod LowerMethod(BoundMethod boundMethod)
+internal sealed class StatementLowerer
+{
+    private readonly ExpressionLowerer _expressionLowerer;
+
+    public StatementLowerer()
     {
-        var loweredStatements = LowerStatements(boundMethod.Statements);
-        return new BoundMethod(boundMethod.Syntax, boundMethod.Symbol, loweredStatements, boundMethod.Locals);
+        _expressionLowerer = new ExpressionLowerer();
     }
     
-    private BoundConstructor LowerConstructor(BoundConstructor boundConstructor)
-    {
-        var loweredStatements = LowerStatements(boundConstructor.Statements);
-        return new BoundConstructor(boundConstructor.Syntax, boundConstructor.Symbol, loweredStatements);
-    }
-    
-    private BoundField LowerField(BoundField boundField)
-    {
-        if (boundField.Initializer is not null)
-        {
-            var loweredInitializer = LowerExpression(boundField.Initializer);
-            return new BoundField(boundField.Syntax, boundField.Symbol, loweredInitializer);
-        }
-        
-        return boundField;
-    }
-    
-    private ImmutableArray<BoundStatement> LowerStatements(ImmutableArray<BoundStatement> statements)
+    public ImmutableArray<BoundStatement> LowerStatements(ImmutableArray<BoundStatement> statements)
     {
         var builder = ImmutableArray.CreateBuilder<BoundStatement>();
         foreach (var statement in statements)
         {
-            builder.Add(LowerStatement(statement));
+            var loweredStatement = LowerStatement(statement);
+            builder.Add(loweredStatement);
         }
         
         return builder.ToImmutable();
@@ -201,32 +198,17 @@ internal sealed class Lowerer
 
     private BoundStatement LowerStatement(BoundStatement node)
     {
-        if (node is BoundBlockStatement boundBlockStatement)
+        return node switch
         {
-            return LowerBlockStatement(boundBlockStatement);
-        }
-        
-        if (node is BoundExpressionStatement boundExpressionStatement)
-        {
-            return LowerExpressionStatement(boundExpressionStatement);
-        }
-        
-        if (node is BoundSignStatement boundSignStatement)
-        {
-            return LowerSignStatement(boundSignStatement);
-        }
-        
-        if (node is BoundVariableDeclarationStatement boundVariableDeclarationStatement)
-        {
-            return LowerVariableDeclarationStatement(boundVariableDeclarationStatement);
-        }
-
-        if (node is BoundErrorStatement boundErrorStatement)
-        {
-            return boundErrorStatement;
-        }
-        
-        throw new Exception($"Unexpected statement {node.Kind}");
+            BoundBlockStatement boundBlockStatement => LowerBlockStatement(boundBlockStatement),
+            BoundErrorStatement boundErrorStatement => boundErrorStatement,
+            BoundExpressionStatement boundExpressionStatement => LowerExpressionStatement(boundExpressionStatement),
+            BoundReturnStatement boundReturnStatement => LowerReturnStatement(boundReturnStatement),
+            BoundSignStatement boundSignStatement => boundSignStatement,
+            BoundVariableDeclarationStatement boundVariableDeclarationStatement => LowerVariableDeclarationStatement(
+                boundVariableDeclarationStatement),
+            _ => throw new Exception($"Unexpected syntax {node.Kind}")
+        };
     }
     
     private BoundStatement LowerBlockStatement(BoundBlockStatement node)
@@ -237,104 +219,90 @@ internal sealed class Lowerer
     
     private BoundStatement LowerExpressionStatement(BoundExpressionStatement node)
     {
-        var loweredExpression = LowerExpression(node.Expression);
+        var loweredExpression = _expressionLowerer.Lower(node.Expression);
         return new BoundExpressionStatement(node.Syntax, loweredExpression);
     }
     
-    private BoundStatement LowerSignStatement(BoundSignStatement node)
+    private BoundStatement LowerReturnStatement(BoundReturnStatement node)
     {
-        return node;
+        if (node.Expression == null)
+        {
+            return node;
+        }
+        
+        var loweredExpression = _expressionLowerer.Lower(node.Expression);
+        return new BoundReturnStatement(node.Syntax, loweredExpression);
     }
     
     private BoundStatement LowerVariableDeclarationStatement(BoundVariableDeclarationStatement node)
     {
-        if (node.Initializer is null)
+        if (node.Initializer == null)
         {
             var initializer = new BoundDefaultExpression(node.Syntax, node.Variable.Type);
             return new BoundVariableDeclarationStatement(node.Syntax, node.Variable, initializer);
         }
         
-        var loweredInitializer = LowerExpression(node.Initializer);
+        var loweredInitializer = _expressionLowerer.Lower(node.Initializer);
         return new BoundVariableDeclarationStatement(node.Syntax, node.Variable, loweredInitializer);
     }
-    
-    private BoundExpression LowerExpression(BoundExpression node)
+}
+
+internal sealed class ExpressionLowerer
+{
+    public BoundExpression Lower(BoundExpression node)
     {
-        if (node is BoundAssignmentExpression boundAssignmentExpression)
+        return node switch
         {
-            return LowerAssignmentExpression(boundAssignmentExpression);
-        }
-        
-        if (node is BoundBinaryExpression boundBinaryExpression)
-        {
-            return LowerBinaryExpression(boundBinaryExpression);
-        }
-        
-        if (node is BoundImportExpression boundImportExpression)
-        {
-            return LowerImportExpression(boundImportExpression);
-        }
-        
-        if (node is BoundInvocationExpression boundInvocationExpression)
-        {
-            return LowerInvocationExpression(boundInvocationExpression);
-        }
-        
-        if (node is BoundLiteralExpression boundLiteralExpression)
-        {
-            return LowerLiteralExpression(boundLiteralExpression);
-        }
-        
-        if (node is BoundMemberAccessExpression boundMemberAccessExpression)
-        {
-            return LowerMemberAccessExpression(boundMemberAccessExpression);
-        }
-        
-        if (node is BoundNameExpression boundNameExpression)
-        {
-            return LowerNameExpression(boundNameExpression);
-        }
-        
-        if (node is BoundNewExpression boundNewExpression)
-        {
-            return LowerNewExpression(boundNewExpression);
-        }
-        
-        if (node is BoundThisExpression boundThisExpression)
-        {
-            return LowerThisExpression(boundThisExpression);
-        }
-        
-        if (node is BoundUnaryExpression boundUnaryExpression)
-        {
-            return LowerUnaryExpression(boundUnaryExpression);
-        }
-        
-        if (node is BoundErrorExpression boundErrorExpression)
-        {
-            return boundErrorExpression;
-        }
-        
-        throw new Exception($"Unexpected expression {node.Kind}");
+            BoundAssignmentExpression boundAssignmentExpression => LowerAssignmentExpression(boundAssignmentExpression),
+            BoundBinaryExpression boundBinaryExpression => LowerBinaryExpression(boundBinaryExpression),
+            BoundConversionExpression boundConversionExpression => LowerConversionExpression(boundConversionExpression),
+            BoundDefaultExpression boundDefaultExpression => boundDefaultExpression,
+            BoundElementAccessExpression boundElementAccessExpression => LowerElementAccessExpression(boundElementAccessExpression),
+            BoundErrorExpression boundErrorExpression => boundErrorExpression,
+            BoundImportExpression boundImportExpression => LowerImportExpression(boundImportExpression),
+            BoundInvocationExpression boundInvocationExpression => LowerInvocationExpression(boundInvocationExpression),
+            BoundLiteralExpression boundLiteralExpression => boundLiteralExpression,
+            BoundMemberAccessExpression boundMemberAccessExpression => LowerMemberAccessExpression(boundMemberAccessExpression),
+            BoundNameExpression boundNameExpression => LowerNameExpression(boundNameExpression),
+            BoundNewArrayExpression boundNewArrayExpression => LowerNewArrayExpression(boundNewArrayExpression),
+            BoundNewExpression boundNewExpression => LowerNewExpression(boundNewExpression),
+            BoundThisExpression boundThisExpression => boundThisExpression,
+            BoundUnaryExpression boundUnaryExpression => LowerUnaryExpression(boundUnaryExpression),
+            _ => throw new Exception($"Unexpected syntax {node.Kind}")
+        };
     }
     
     private BoundExpression LowerAssignmentExpression(BoundAssignmentExpression node)
     {
-        var loweredLeft = LowerExpression(node.Left);
-        var loweredRight = LowerExpression(node.Right);
+        var loweredLeft = Lower(node.Left);
+        var loweredRight = Lower(node.Right);
         return new BoundAssignmentExpression(node.Syntax, loweredLeft, loweredRight);
     }
     
     private BoundExpression LowerBinaryExpression(BoundBinaryExpression node)
     {
-        var loweredLeft = LowerExpression(node.Left);
-        var loweredRight = LowerExpression(node.Right);
+        var loweredLeft = Lower(node.Left);
+        var loweredRight = Lower(node.Right);
         return new BoundBinaryExpression(node.Syntax, loweredLeft, node.Op, loweredRight);
+    }
+    
+    private BoundExpression LowerConversionExpression(BoundConversionExpression node)
+    {
+        var loweredExpression = Lower(node.Expression);
+        return new BoundConversionExpression(node.Syntax, node.Type, loweredExpression);
+    }
+    
+    private BoundExpression LowerElementAccessExpression(BoundElementAccessExpression node)
+    {
+        var loweredExpression = Lower(node.Expression);
+        var loweredIndex = Lower(node.IndexExpression);
+        return new BoundElementAccessExpression(node.Syntax, node.Type, loweredExpression, loweredIndex);
     }
     
     private BoundExpression LowerImportExpression(BoundImportExpression node)
     {
-        return node;
+        var loweredPath = Lower(node.Path);
+        return new BoundImportExpression(node.Syntax, loweredPath);
     }
     
     private BoundExpression LowerInvocationExpression(BoundInvocationExpression node)
@@ -353,7 +321,7 @@ internal sealed class Lowerer
                     new BoundNameExpression(
                         node.Expression.Syntax,
                         symbol.ParentType
-                        ),
+                    ),
                     symbol
                 );
             }
@@ -371,88 +339,98 @@ internal sealed class Lowerer
         }
         else
         {
-            newExpression = LowerExpression(node.Expression);
+            newExpression = Lower(node.Expression);
         }
         
-        return new BoundInvocationExpression(node.Syntax, node.Method, newExpression, node.TypeMap, loweredArguments, node.Type);
-    }
-    
-    private ImmutableDictionary<ParameterSymbol, BoundExpression> LowerArguments(ImmutableDictionary<ParameterSymbol, BoundExpression> arguments)
-    {
-        var builder = ImmutableDictionary.CreateBuilder<ParameterSymbol, BoundExpression>();
-        foreach (var argument in arguments)
-        {
-            builder.Add(argument.Key, LowerExpression(argument.Value));
-        }
-        
-        return builder.ToImmutable();
-    }
-    
-    private BoundExpression LowerLiteralExpression(BoundLiteralExpression node)
-    {
-        return node;
+        return new BoundInvocationExpression(node.Syntax, node.Method, newExpression, loweredArguments, node.Type);
     }
     
     private BoundExpression LowerMemberAccessExpression(BoundMemberAccessExpression node)
     {
-        // Get the token before the first token of the member access expression
-        var tokens = node.Syntax.Dissolve();
-        var firstToken = tokens.First();
-        var previousToken = firstToken.GetPreviousToken();
-        if (node.Expression is BoundNameExpression name &&
-            previousToken != null &&
-            previousToken.Kind != SyntaxKind.DotToken &&
-            previousToken.Kind != SyntaxKind.CloseParenthesisToken)
+        if (node.Expression is BoundNameExpression { Symbol: MemberSymbol member })
         {
-            var symbol = name.Symbol;
-            if (symbol is MemberSymbol member)
+            if (member.HasModifier(SyntaxKind.StaticKeyword))
             {
-                if (member.HasModifier(SyntaxKind.StaticKeyword))
-                {
-                    return new BoundMemberAccessExpression(
-                        node.Syntax, 
-                        new BoundNameExpression(
-                            node.Syntax, 
-                            member.ParentType
-                        ), 
-                        node.Member
-                    );
-                }
-
                 return new BoundMemberAccessExpression(
                     node.Syntax, 
-                    new BoundThisExpression(
+                    new BoundNameExpression(
                         node.Syntax, 
                         member.ParentType
                     ), 
                     node.Member
                 );
             }
+
+            return new BoundMemberAccessExpression(
+                node.Syntax, 
+                new BoundThisExpression(
+                    node.Syntax, 
+                    member.ParentType
+                ), 
+                node.Member
+            );
         }
         
-        var loweredExpression = LowerExpression(node.Expression);
+        var loweredExpression = Lower(node.Expression);
         return new BoundMemberAccessExpression(node.Syntax, loweredExpression, node.Member);
     }
     
     private BoundExpression LowerNameExpression(BoundNameExpression node)
     {
-        return node;
+        if (node.Symbol is not MemberSymbol m)
+        {
+            return node;
+        }
+        
+        if (m.HasModifier(SyntaxKind.StaticKeyword))
+        {
+            return new BoundMemberAccessExpression(
+                node.Syntax, 
+                new BoundNameExpression(
+                    node.Syntax, 
+                    m.ParentType
+                ), 
+                m
+            );
+        }
+            
+        return new BoundMemberAccessExpression(
+            node.Syntax, 
+            new BoundThisExpression(
+                node.Syntax, 
+                m.ParentType
+            ), 
+            m
+        );
+    }
+    
+    private BoundExpression LowerNewArrayExpression(BoundNewArrayExpression node)
+    {
+        var loweredSize = Lower(node.SizeExpression);
+        return new BoundNewArrayExpression(node.Syntax, node.Type, loweredSize);
     }
     
     private BoundExpression LowerNewExpression(BoundNewExpression node)
     {
         var loweredArguments = LowerArguments(node.Arguments);
-        return new BoundNewExpression(node.Syntax, node.Type, node.TypeMap, node.Constructor, loweredArguments);
+        return new BoundNewExpression(node.Syntax, node.Type, node.Constructor, loweredArguments);
     }
     
-    private BoundExpression LowerThisExpression(BoundThisExpression node)
-    {
-        return node;
-    }
-
     private BoundExpression LowerUnaryExpression(BoundUnaryExpression node)
     {
-        var loweredOperand = LowerExpression(node.Operand);
+        var loweredOperand = Lower(node.Operand);
         return new BoundUnaryExpression(node.Syntax, node.Op, loweredOperand);
+    }
+    
+    private ImmutableArray<BoundExpression> LowerArguments(ImmutableArray<BoundExpression> arguments)
+    {
+        var builder = ImmutableArray.CreateBuilder<BoundExpression>();
+        foreach (var argument in arguments)
+        {
+            var loweredArgument = Lower(argument);
+            builder.Add(loweredArgument);
+        }
+        
+        return builder.ToImmutable();
     }
 }

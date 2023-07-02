@@ -1,8 +1,9 @@
+using Radon.CodeAnalysis.Binding.Analyzers;
 using Radon.CodeAnalysis.Syntax;
 using Radon.CodeAnalysis.Syntax.Nodes;
 using Radon.CodeAnalysis.Text;
 
-namespace Radon.CodeAnalysis.Binding.Analyzers;
+namespace Radon.CodeAnalysis.Binding;
 
 internal sealed class SemanticContext
 {
@@ -14,6 +15,7 @@ internal sealed class SemanticContext
     public SyntaxNode? Node { get; }
     public SyntaxTree? SyntaxTree { get; }
     public DiagnosticBag Diagnostics { get; }
+    public object? Tag { get; set; }
     
     public SemanticContext(TextLocation location, Binder? binder, SyntaxNode? node, DiagnosticBag diagnostics)
     {

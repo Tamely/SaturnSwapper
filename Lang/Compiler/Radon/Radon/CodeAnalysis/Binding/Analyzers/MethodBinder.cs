@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Radon.CodeAnalysis.Binding.Semantics;
@@ -24,10 +25,9 @@ internal sealed class MethodBinder : Binder
     public override BoundNode Bind(SyntaxNode node, params object[] args)
     {
         var methodContext = new SemanticContext(this, node, Diagnostics);
-        if (args.Length != 1 || 
-            args[0] is not AbstractMethodSymbol abstractMethodSymbol)
+        if (args is not [AbstractMethodSymbol abstractMethodSymbol])
         {
-            return new BoundErrorMember(node, methodContext);
+            throw new ArgumentException("Invalid arguments passed to method binder.");
         }
 
         if (abstractMethodSymbol is MethodSymbol methodSymbol)
@@ -37,6 +37,10 @@ internal sealed class MethodBinder : Binder
         if (abstractMethodSymbol is ConstructorSymbol constructorSymbol)
         {
             return BindConstructor(methodContext, (ConstructorDeclarationSyntax)node, constructorSymbol);
+        }
+        if (abstractMethodSymbol is TemplateMethodSymbol)
+        {
+            throw new Exception($"The binding of template methods is handled by the {nameof(TemplateMethodBinder)}.");
         }
         
         return new BoundErrorMember(node, methodContext);
@@ -48,12 +52,8 @@ internal sealed class MethodBinder : Binder
         {
             Register(context, parameter);
         }
-        
-        foreach (var typeParameter in symbol.TypeParameters)
-        {
-            Register(context, typeParameter);
-        }
-        
+
+        BindTypeSyntax(syntax.ReturnType);
         var body = syntax.Body;
         var statements = body.Statements;
         var statementBinder = new StatementBinder(this);

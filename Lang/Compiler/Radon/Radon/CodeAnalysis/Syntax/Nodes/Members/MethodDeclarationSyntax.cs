@@ -11,8 +11,6 @@ public sealed partial class MethodDeclarationSyntax : MemberDeclarationSyntax
     public SyntaxToken Identifier { get; }
     public ParameterListSyntax ParameterList { get; }
     public BlockStatementSyntax Body { get; }
-    /*public bool HasBody => Body != null;
-    public bool IsOperator => Modifiers.Any(x => x.Kind == SyntaxKind.OperatorKeyword);*/
     
     public MethodDeclarationSyntax(SyntaxTree syntaxTree, ImmutableSyntaxList<SyntaxToken> modifiers, TypeSyntax returnType, 
                                    SyntaxToken identifier, ParameterListSyntax parameterList, BlockStatementSyntax body) 

@@ -37,6 +37,15 @@ public sealed class EnumMemberSymbol : MemberSymbol
         return new EnumMemberSymbol(parentType, Name, Type, Value);
     }
 
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Name);
+        hash.Add(ParentType);
+        hash.Add(Type);
+        return hash.ToHashCode();
+    }
+
     internal void ReplaceValue(int value)
     {
         Value = value;

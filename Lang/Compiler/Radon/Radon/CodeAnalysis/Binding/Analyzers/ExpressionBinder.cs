@@ -4,11 +4,12 @@ using System.Globalization;
 using Radon.CodeAnalysis.Binding.Semantics;
 using Radon.CodeAnalysis.Binding.Semantics.Conversions;
 using Radon.CodeAnalysis.Binding.Semantics.Expressions;
+using Radon.CodeAnalysis.Binding.Semantics.Operators;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
 using Radon.CodeAnalysis.Syntax.Nodes;
-using Radon.CodeAnalysis.Syntax.Nodes.Clauses;
 using Radon.CodeAnalysis.Syntax.Nodes.Expressions;
+using Radon.CodeAnalysis.Syntax.Nodes.Statements;
 
 namespace Radon.CodeAnalysis.Binding.Analyzers;
 
@@ -18,13 +19,15 @@ internal sealed class ExpressionBinder : Binder
     private readonly TypeSymbol? _currentType;
     
     private bool _isBindingInvocation;
-    private ImmutableArray<BoundExpression> _argumentTypes;
-    
+    private ImmutableArray<BoundExpression> _arguments;
+    private ImmutableArray<TypeSymbol> _typeArguments;
+
     internal ExpressionBinder(Binder binder) 
         : base(binder)
     {
         _isBindingInvocation = false;
-        _argumentTypes = ImmutableArray<BoundExpression>.Empty;
+        _arguments = ImmutableArray<BoundExpression>.Empty;
+        _typeArguments = ImmutableArray<TypeSymbol>.Empty;
         if (binder is StatementBinder statementBinder)
         {
             _isStaticMethod = statementBinder.IsStaticMethod;
@@ -61,15 +64,35 @@ internal sealed class ExpressionBinder : Binder
             MemberAccessExpressionSyntax memberAccessExpressionSyntax => BindMemberAccessExpression(memberAccessExpressionSyntax, expressionContext),
             NameExpressionSyntax nameExpressionSyntax => BindNameExpression(nameExpressionSyntax, expressionContext),
             NewExpressionSyntax newExpressionSyntax => BindNewExpression(newExpressionSyntax, expressionContext),
+            NewArrayExpressionSyntax newArrayExpressionSyntax => BindNewArrayExpression(newArrayExpressionSyntax, expressionContext),
+            ParenthesizedExpressionSyntax parenthesizedExpressionSyntax => BindParenthesizedExpression(parenthesizedExpressionSyntax),
+            ElementAccessExpressionSyntax elementAccessExpressionSyntax => BindElementAccessExpression(elementAccessExpressionSyntax, expressionContext),
             ThisExpressionSyntax thisExpressionSyntax => BindThisExpression(thisExpressionSyntax, expressionContext),
-            DefaultExpressionSyntax defaultExpressionSyntax => BindDefaultExpression(defaultExpressionSyntax, expressionContext),
+            DefaultExpressionSyntax defaultExpressionSyntax => BindDefaultExpression(defaultExpressionSyntax),
             UnaryExpressionSyntax unaryExpressionSyntax => BindUnaryExpression(unaryExpressionSyntax, expressionContext),
             _ => new BoundErrorExpression(syntax, expressionContext)
         };
     }
 
-    public BoundExpression BindConversion(BoundExpression expression, TypeSymbol type, bool allowExplicit = false)
+    public BoundExpression BindConversion(BoundExpression expression, TypeSymbol type, ImmutableArray<TypeSymbol> typeArguments, bool allowExplicit = false)
     {
+        if (expression.Type == type)
+        {
+            return expression;
+        }
+        
+        if (type is TypeParameterSymbol t &&
+            typeArguments.Length > 0)
+        {
+            var context = new SemanticContext(this, expression.Syntax, Diagnostics);
+            type = typeArguments[t.Ordinal];
+            if (!TryResolveSymbol(context, ref type))
+            {
+                Diagnostics.ReportCannotConvert(expression.Syntax.Location, expression.Type, type);
+                return new BoundErrorExpression(expression.Syntax, context);
+            }
+        }
+        
         var conversion = Conversion.Classify(expression.Type, type);
         if (!conversion.Exists)
         {
@@ -193,7 +216,7 @@ internal sealed class ExpressionBinder : Binder
         // We don't have compound assignment yet
         var boundLeft = BindExpression(syntax.Left);
         var boundRight = BindExpression(syntax.Right);
-        var convertedRight = BindConversion(boundRight, boundLeft.Type);
+        var convertedRight = BindConversion(boundRight, boundLeft.Type, ImmutableArray<TypeSymbol>.Empty);
         return new BoundAssignmentExpression(syntax, boundLeft, convertedRight);
     }
     
@@ -201,7 +224,7 @@ internal sealed class ExpressionBinder : Binder
     {
         var boundLeft = BindExpression(syntax.Left);
         var boundRight = BindExpression(syntax.Right);
-        var convertedRight = BindConversion(boundRight, boundLeft.Type);
+        var convertedRight = BindConversion(boundRight, boundLeft.Type, ImmutableArray<TypeSymbol>.Empty);
         var boundOperator = BoundBinaryOperator.Bind(syntax.OperatorToken.Kind, boundLeft.Type, convertedRight.Type);
         if (boundOperator == null)
         {
@@ -226,30 +249,47 @@ internal sealed class ExpressionBinder : Binder
     
     private BoundExpression BindInvocationExpression(InvocationExpressionSyntax syntax, SemanticContext context)
     {
-        static MethodSymbol? StripMethodSymbol(BoundExpression expression)
+        static SyntaxToken GetMethodIdentifier(InvocationExpressionSyntax syntax)
         {
-            if (expression is BoundMemberAccessExpression memberAccessExpression)
+            return syntax.Expression switch
             {
-                return memberAccessExpression.Member as MethodSymbol;
-            }
-            
-            if (expression is BoundNameExpression nameExpression)
-            {
-                return (nameExpression.Symbol as MethodSymbol)!;
-            }
-            
-            return null;
+                NameExpressionSyntax nameExpression => nameExpression.IdentifierToken,
+                MemberAccessExpressionSyntax memberAccessExpression => memberAccessExpression.Name,
+                _ => throw new InvalidOperationException("Invalid invocation expression")
+            };
         }
         
-        var argumentTypes = ImmutableArray.CreateBuilder<BoundExpression>();
+        static AbstractMethodSymbol? StripMethodSymbol(BoundExpression expression)
+        {
+            return expression switch
+            {
+                BoundMemberAccessExpression memberAccessExpression =>
+                    memberAccessExpression.Member as AbstractMethodSymbol,
+                BoundNameExpression nameExpression => (nameExpression.Symbol as AbstractMethodSymbol)!,
+                _ => null
+            };
+        }
+        
+        var iArguments = ImmutableArray.CreateBuilder<BoundExpression>();
         foreach (var argument in syntax.ArgumentList.Arguments)
         {
             var boundArgument = BindExpression(argument);
-            argumentTypes.Add(boundArgument);
+            iArguments.Add(boundArgument);
         }
-        
+
+        var typeArgs = ImmutableArray.CreateBuilder<TypeSymbol>();
+        if (syntax.TypeArgumentList is { } typeArgList)
+        {
+            foreach (var typeArg in typeArgList.Arguments)
+            {
+                var boundTypeArg = BindTypeSyntax(typeArg);
+                typeArgs.Add(boundTypeArg);
+            }
+        }
+
+        _arguments = iArguments.ToImmutable();
+        _typeArguments = typeArgs.ToImmutable();
         _isBindingInvocation = true;
-        _argumentTypes = argumentTypes.ToImmutable();
         var boundExpression = BindExpression(syntax.Expression);
         _isBindingInvocation = false;
         if (boundExpression is BoundErrorExpression)
@@ -263,74 +303,33 @@ internal sealed class ExpressionBinder : Binder
             Diagnostics.ReportCannotInvoke(syntax.Expression.Location, boundExpression.Kind);
             return new BoundErrorExpression(syntax, context);
         }
-
-        // A type map is used to map type parameters to type arguments
-        var typeMap = TypeMap.Empty;
-        if (methodSymbol.TypeParameters.Length > 0)
-        {
-            if (syntax.TypeArgumentList is null)
-            {
-                Diagnostics.ReportTypeArgumentsRequired(syntax.Expression.Location, methodSymbol.Name, 
-                    methodSymbol.TypeParameters.Length);
-                return new BoundErrorExpression(syntax, context);
-            }
-            
-            if (syntax.TypeArgumentList.Arguments.Count != methodSymbol.TypeParameters.Length)
-            {
-                Diagnostics.ReportIncorrectNumberOfTypeArguments(syntax.TypeArgumentList.Location, methodSymbol.Name, 
-                    methodSymbol.TypeParameters.Length, syntax.TypeArgumentList.Arguments.Count);
-                return new BoundErrorExpression(syntax, context);
-            }
-            
-            for (var i = 0; i < syntax.TypeArgumentList.Arguments.Count; i++)
-            {
-                var typeArgument = BindTypeSyntax(syntax.TypeArgumentList.Arguments[i]);
-                if (typeArgument == TypeSymbol.Error)
-                {
-                    return new BoundErrorExpression(syntax, context);
-                }
-                
-                typeMap.AddBound(methodSymbol.TypeParameters[i], typeArgument); 
-            }
-        }
         
-        methodSymbol = methodSymbol.WithTypeParameters(typeMap);
-        var boundArguments = ImmutableDictionary.CreateBuilder<ParameterSymbol, BoundExpression>();
-        if (syntax.ArgumentList.Arguments.Count != methodSymbol.Parameters.Length)
+        if (methodSymbol.Parameters.Length != syntax.ArgumentList.Arguments.Count)
         {
-            Diagnostics.ReportIncorrectNumberOfArguments(syntax.ArgumentList.Location, methodSymbol.Name, 
+            Diagnostics.ReportIncorrectNumberOfArguments(GetMethodIdentifier(syntax).Location, methodSymbol.Name,
                 methodSymbol.Parameters.Length, syntax.ArgumentList.Arguments.Count);
             return new BoundErrorExpression(syntax, context);
         }
-        
+
+        var arguments = ImmutableArray.CreateBuilder<BoundExpression>();
         for (var i = 0; i < syntax.ArgumentList.Arguments.Count; i++)
         {
             var argument = syntax.ArgumentList.Arguments[i];
-            var parameter = methodSymbol.Parameters[i];
             var boundArgument = BindExpression(argument);
-            var parameterType = parameter.Type;
-            if (parameter.Type is TypeParameterSymbol typeParam)
-            {
-                parameterType = Conversion.ResolveGenericType(typeParam);
-            }
-
-            var convertedArgument = BindConversion(boundArgument, parameterType);
-            if (convertedArgument is BoundErrorExpression)
-            {
-                return new BoundErrorExpression(syntax, context);
-            }
-            
-            boundArguments.Add(parameter, convertedArgument);
+            var converted = BindConversion(boundArgument, methodSymbol.Parameters[i].Type, _typeArguments);
+            arguments.Add(converted);
         }
-
-        var returnType = methodSymbol.Type;
-        _argumentTypes = _argumentTypes.Clear();
-        return new BoundInvocationExpression(syntax, methodSymbol, boundExpression, typeMap, 
-            boundArguments.ToImmutable(), returnType);
+        
+        return new BoundInvocationExpression(syntax, methodSymbol, boundExpression, arguments.ToImmutable(), methodSymbol.Type);
     }
     
     private BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax, SemanticContext context)
     {
+        if (syntax.LiteralToken.Kind == SyntaxKind.EncryptedKeyword)
+        {
+            return new BoundLiteralExpression(syntax, TypeSymbol.String, "Encrypted");
+        }
+        
         var value = syntax.LiteralToken.Value;
         if (value is null)
         {
@@ -394,11 +393,18 @@ internal sealed class ExpressionBinder : Binder
         if (_isBindingInvocation)
         {
             var methodContext = new SemanticContext(syntax.Name.Location, this, syntax.Name, Diagnostics);
-            if (!TryResolveMethod<MethodSymbol>(methodContext, boundExpression.Type, memberName, _argumentTypes, out var methodSymbol))
+            if (!TryResolveMethod<AbstractMethodSymbol>(methodContext, boundExpression.Type, memberName, _typeArguments, 
+                    _arguments, syntax.Expression, out var methodSymbol))
             {
                 return new BoundErrorExpression(syntax, context);
             }
 
+            if (!methodSymbol.Modifiers.Contains(SyntaxKind.PublicKeyword) &&
+                _currentType != methodSymbol.ParentType)
+            {
+                Diagnostics.ReportCannotAccessNonPublicMember(syntax.Name.Location, memberName);
+            }
+            
             return new BoundMemberAccessExpression(syntax, boundExpression, methodSymbol);
         }
 
@@ -407,6 +413,12 @@ internal sealed class ExpressionBinder : Binder
         {
             Diagnostics.ReportUndefinedMember(syntax.Name.Location, memberName, boundExpression.Type);
             return new BoundErrorExpression(syntax, context);
+        }
+        
+        if (!memberSymbol.Modifiers.Contains(SyntaxKind.PublicKeyword) &&
+            _currentType != memberSymbol.ParentType)
+        {
+            Diagnostics.ReportCannotAccessNonPublicMember(syntax.Name.Location, memberName);
         }
         
         return new BoundMemberAccessExpression(syntax, boundExpression, memberSymbol);
@@ -429,7 +441,8 @@ internal sealed class ExpressionBinder : Binder
             // If the current type is null, then we will set it to null, and will try to find the method within the
             // current scope
             var type = _currentType ?? TypeSymbol.Error;
-            if (!TryResolveMethod<MethodSymbol>(symbolContext, type, name, _argumentTypes, out var methodSymbol))
+            if (!TryResolveMethod<AbstractMethodSymbol>(symbolContext, type, name, _typeArguments, _arguments, syntax,
+                    out var methodSymbol))
             {
                 return new BoundErrorExpression(syntax, context);
             }
@@ -447,93 +460,79 @@ internal sealed class ExpressionBinder : Binder
     
     private BoundExpression BindNewExpression(NewExpressionSyntax syntax, SemanticContext context)
     {
-        var argumentTypes = ImmutableArray.CreateBuilder<BoundExpression>();
+        var arguments = ImmutableArray.CreateBuilder<BoundExpression>();
         foreach (var argument in syntax.ArgumentList.Arguments)
         {
             var boundArgument = BindExpression(argument);
-            argumentTypes.Add(boundArgument);
+            arguments.Add(boundArgument);
         }
-        
-        var typeContext = new SemanticContext(syntax.Location, this, syntax, Diagnostics);
-        if (!TryResolve<TypeSymbol>(typeContext, syntax.Type.Identifier.Text, out var typeSymbol) ||
-            typeSymbol is null)
+
+        var type = BindTypeSyntax(syntax.Type);
+        if (type is not StructSymbol)
         {
+            Diagnostics.ReportCannotInstantiateNonStruct(syntax.Type.Location, type.Name);
             return new BoundErrorExpression(syntax, context);
         }
 
-        if (typeSymbol is not StructSymbol s)
-        {
-            Diagnostics.ReportCannotInstantiateNonStruct(syntax.Type.Location, typeSymbol.Name);
-            return new BoundErrorExpression(syntax, context);
-        }
-        
         var constructorContext = new SemanticContext(syntax.Location, this, syntax, Diagnostics);
-        if (!TryResolveMethod<ConstructorSymbol>(constructorContext, typeSymbol, ".ctor", argumentTypes.ToImmutable(), out var constructor))
+        if (!TryResolveMethod<ConstructorSymbol>(constructorContext, type, ".ctor", _typeArguments, 
+                arguments.ToImmutable(), syntax.NewKeyword, out var constructor))
         {
-            return new BoundErrorExpression(syntax, context);
-        }
-
-        var typeMap = TypeMap.Empty;
-        var typeArgumentList = syntax.Type.TypeArgumentList;
-        if (s.TypeParameters.Length > 0)
-        {
-            if (typeArgumentList is null)
-            {
-                Diagnostics.ReportTypeArgumentsRequired(syntax.Type.Location, constructor.Name, 
-                    constructor.TypeParameters.Length);
-                return new BoundErrorExpression(syntax, context);
-            }
-            
-            if (typeArgumentList.Arguments.Count != s.TypeParameters.Length)
-            {
-                Diagnostics.ReportIncorrectNumberOfTypeArguments(typeArgumentList.Location, constructor.Name, 
-                    constructor.TypeParameters.Length, typeArgumentList.Arguments.Count);
-                return new BoundErrorExpression(syntax, context);
-            }
-            
-            for (var i = 0; i < typeArgumentList.Arguments.Count; i++)
-            {
-                var typeArgument = BindTypeSyntax(typeArgumentList.Arguments[i]);
-                if (typeArgument == TypeSymbol.Error)
-                {
-                    return new BoundErrorExpression(syntax, context);
-                }
-                
-                typeMap.AddBound(s.TypeParameters[i], typeArgument);
-            }
-        }
-
-        s = s.WithTypeParameters(typeMap);
-        constructor = constructor.WithTypeParameters(typeMap);
-        var boundArguments = ImmutableDictionary.CreateBuilder<ParameterSymbol, BoundExpression>();
-        if (syntax.ArgumentList.Arguments.Count != constructor.Parameters.Length)
-        {
-            Diagnostics.ReportIncorrectNumberOfArguments(syntax.ArgumentList.Location, constructor.Name, 
-                constructor.Parameters.Length, syntax.ArgumentList.Arguments.Count);
             return new BoundErrorExpression(syntax, context);
         }
         
-        for (var i = 0; i < syntax.ArgumentList.Arguments.Count; i++)
-        {
-            var argument = syntax.ArgumentList.Arguments[i];
-            var parameter = constructor.Parameters[i];
-            var boundArgument = BindExpression(argument);
-            var parameterType = parameter.Type;
-            if (parameter.Type is TypeParameterSymbol typeParam)
-            {
-                parameterType = Conversion.ResolveGenericType(typeParam);
-            }
+        return new BoundNewExpression(syntax, type, constructor, arguments.ToImmutable());
+    }
 
-            var convertedArgument = BindConversion(boundArgument, parameterType);
-            if (convertedArgument is BoundErrorExpression)
-            {
-                return new BoundErrorExpression(syntax, context);
-            }
-            
-            boundArguments.Add(parameter, convertedArgument);
+    private BoundExpression BindNewArrayExpression(NewArrayExpressionSyntax syntax, SemanticContext context)
+    {
+        var type = BindTypeSyntax(syntax.Type);
+        if (type is not ArrayTypeSymbol array)
+        {
+            Diagnostics.ReportCannotInstantiateNonArray(syntax.Type.Location, type.Name);
+            return new BoundErrorExpression(syntax, context);
         }
 
-        return new BoundNewExpression(syntax, s, typeMap, constructor, boundArguments.ToImmutable());
+        if (syntax.Type.SizeExpression is not { } sizeExpr)
+        {
+            Diagnostics.ReportArrayMustHaveSize(syntax.Type.Location);
+            return new BoundErrorExpression(syntax, context);
+        }
+        
+        var size = BindExpression(sizeExpr);
+        return new BoundNewArrayExpression(syntax, array, size);
+    }
+    
+    private BoundExpression BindParenthesizedExpression(ParenthesizedExpressionSyntax syntax)
+    {
+        var boundExpression = BindExpression(syntax.Expression);
+        return boundExpression;
+    }
+
+    private BoundExpression BindElementAccessExpression(ElementAccessExpressionSyntax syntax, SemanticContext context)
+    {
+        var expression = BindExpression(syntax.Expression);
+        if (expression.Type == TypeSymbol.Error)
+        {
+            return new BoundErrorExpression(syntax, context);
+        }
+
+        if (expression.Type is not ArrayTypeSymbol array)
+        {
+            Diagnostics.ReportCannotIndexNonArray(syntax.Expression.Location, expression.Type.Name);
+            return new BoundErrorExpression(syntax, context);
+        }
+        
+        var indexExpression = BindExpression(syntax.IndexExpression);
+        var conversion = Conversion.Classify(indexExpression.Type, TypeSymbol.Int);
+        if (!conversion.Exists ||
+            conversion.IsExplicit)
+        {
+            Diagnostics.ReportIndexMustBeInteger(indexExpression.Syntax.Location);
+            return new BoundErrorExpression(syntax, context);
+        }
+        
+        return new BoundElementAccessExpression(syntax, array.ElementType, expression, indexExpression);
     }
     
     private BoundExpression BindThisExpression(ThisExpressionSyntax syntax, SemanticContext context)
@@ -552,15 +551,10 @@ internal sealed class ExpressionBinder : Binder
         return new BoundThisExpression(syntax, _currentType);
     }
     
-    private BoundExpression BindDefaultExpression(DefaultExpressionSyntax syntax, SemanticContext context)
+    private BoundExpression BindDefaultExpression(DefaultExpressionSyntax syntax)
     {
-        var typeContext = new SemanticContext(syntax.Location, this, syntax, Diagnostics);
-        if (!TryResolve<TypeSymbol>(typeContext, syntax.Type.Identifier.Text, out var typeSymbol))
-        {
-            return new BoundErrorExpression(syntax, context);
-        }
-        
-        return new BoundDefaultExpression(syntax, typeSymbol!);
+        var type = BindTypeSyntax(syntax.Type);
+        return new BoundDefaultExpression(syntax, type);
     }
     
     private BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax, SemanticContext context)
@@ -574,16 +568,5 @@ internal sealed class ExpressionBinder : Binder
         }
         
         return new BoundUnaryExpression(syntax, boundOperator, boundOperand);
-    }
-    
-    private TypeSymbol BindTypeSyntax(TypeSyntax syntax)
-    {
-        var typeContext = new SemanticContext(syntax.Location, this, syntax, Diagnostics);
-        if (!TryResolve<TypeSymbol>(typeContext, syntax.Identifier.Text, out var typeSymbol))
-        {
-            return TypeSymbol.Error;
-        }
-        
-        return typeSymbol!;
     }
 }

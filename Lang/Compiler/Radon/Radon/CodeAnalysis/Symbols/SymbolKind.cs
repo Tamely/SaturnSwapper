@@ -12,5 +12,8 @@ public enum SymbolKind
     EnumMember,
     LocalVariable,
     Parameter,
-    Error
+    Error,
+    Template,
+    TemplateMethod,
+    Array
 }

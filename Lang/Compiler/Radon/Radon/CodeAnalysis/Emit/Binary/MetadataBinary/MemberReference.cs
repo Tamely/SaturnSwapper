@@ -10,15 +10,13 @@ internal readonly struct MemberReference
     public readonly int ParentType;
     public readonly int ReturnType;
     public readonly int MemberDefinition;
-    public readonly int[] ParameterTypes;
-    
-    public MemberReference(BindingFlags flags, MemberType memberType, int parentType, int returnType, int memberDefinition, int[] parameterTypes)
+
+    public MemberReference(BindingFlags flags, MemberType memberType, int parentType, int returnType, int memberDefinition)
     {
         Flags = flags;
         MemberType = memberType;
         ParentType = parentType;
         ReturnType = returnType;
         MemberDefinition = memberDefinition;
-        ParameterTypes = parameterTypes;
     }
 }
