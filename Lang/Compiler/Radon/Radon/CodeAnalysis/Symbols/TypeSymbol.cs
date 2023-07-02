@@ -41,8 +41,7 @@ public abstract class TypeSymbol : Symbol
         SeekOrigin.AddEnumMember("Begin", 0);
         SeekOrigin.AddEnumMember("Current", 1);
         SeekOrigin.AddEnumMember("End", 2);
-
-        // TODO: Add members to Archive, List, and System
+        
         var typeParameterBuilder = new TypeParameterBuilder();
         {
             TemplateMethodSymbol writeMethod;
