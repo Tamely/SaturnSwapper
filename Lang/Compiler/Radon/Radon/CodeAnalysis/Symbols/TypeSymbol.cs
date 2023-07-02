@@ -222,18 +222,11 @@ public abstract class TypeSymbol : Symbol
     }
     
     internal bool TryLookupMethod<TMethodSymbol>(Binder binder, string name, ImmutableArray<TypeSymbol> typeArguments,
-        ImmutableArray<BoundExpression> arguments, SyntaxNode callSite, out bool methodNotFound, out bool cannotConvertType, 
-        out bool ambiguousCall, out bool incorrectTypeArgumentCount, out int expected, out TypeSymbol? from, out TypeSymbol? to, 
+        ImmutableArray<BoundExpression> arguments, SyntaxNode callSite, out bool methodNotFound, 
         out ImmutableArray<TMethodSymbol> ambiguousCalls, out TMethodSymbol methodSymbol) 
         where TMethodSymbol : AbstractMethodSymbol
     {
         methodNotFound = false;
-        cannotConvertType = false;
-        ambiguousCall = false;
-        incorrectTypeArgumentCount = false;
-        expected = 0;
-        from = null;
-        to = null;
         ambiguousCalls = ImmutableArray<TMethodSymbol>.Empty;
         methodSymbol = null!;
         var possibleCandidates = new List<(TMethodSymbol Method, TypeSymbol From, TypeSymbol To)>();
@@ -253,8 +246,7 @@ public abstract class TypeSymbol : Symbol
                 {
                     if (templateMethod.TypeParameters.Length != typeArguments.Length)
                     {
-                        incorrectTypeArgumentCount = true;
-                        expected = templateMethod.TypeParameters.Length;
+                        binder.Diagnostics.ReportIncorrectNumberOfTypeArguments(callSite.Location, name, templateMethod.TypeParameters.Length, typeArguments.Length);
                         goto failed;
                     }
 
@@ -270,32 +262,6 @@ public abstract class TypeSymbol : Symbol
                         method = (TMethodSymbol)(object)typeBinder.BuildTemplateMethod(templateMethod, typeArguments, callSite);
                         parameterTypes = method.Parameters.Select(p => p.Type).ToList();
                     }
-                    
-                    /*var types = ImmutableArray.CreateBuilder<TypeSymbol>();
-                    foreach (var parameter in templateMethod.TypeParameters)
-                    {
-                        var type = parameter.Type;
-                        if (type is TypeParameterSymbol t)
-                        {
-                            var index = templateMethod.TypeParameters.IndexOf(t);
-                            if (index < 0 || index >= typeArguments.Length)
-                            {
-                                goto failed;
-                            }
-                            
-                            type = typeArguments[index];
-                        }
-                        
-                        var context = SemanticContext.CreateEmpty(binder, binder.Diagnostics);
-                        if (!binder.TryResolveSymbol(context, ref type))
-                        {
-                            goto failed;
-                        }
-
-                        types.Add(type);
-                    } 
-                    
-                    parameterTypes = types.ToImmutable();*/
                 }
                 
                 if (method.Parameters.Length != arguments.Length)
@@ -312,6 +278,7 @@ public abstract class TypeSymbol : Symbol
                         (conversion.IsIdentity ||
                          conversion.IsImplicit)))
                     {
+                        binder.Diagnostics.ReportCannotConvert(argument.Syntax.Location, argument.Type, parameterType);
                         possibleCandidates.Add((method, argument.Type, parameterType));
                         goto failed;
                     }
@@ -323,6 +290,7 @@ public abstract class TypeSymbol : Symbol
             }
         }
 
+        var ambiguousCall = false;
         if (possibleCandidates.Count == 0 &&
             ambiguousCandidates.Count == 0)
         {
@@ -346,16 +314,9 @@ public abstract class TypeSymbol : Symbol
                 
                 ambiguousCalls = ambiguousCandidates.ToImmutableArray();
             }
-            else if (possibleCandidates.Count == 1)
-            {
-                var (_, fromType, toType) = possibleCandidates[0];
-                from = fromType;
-                to = toType;
-                cannotConvertType = true;
-            }
         }
         
-        return !methodNotFound && !ambiguousCall && !cannotConvertType && !incorrectTypeArgumentCount;
+        return !methodNotFound && !ambiguousCall;
     }
     
     public TypeSymbol WithMembers(ImmutableArray<MemberSymbol> members)

@@ -211,10 +211,8 @@ internal abstract class Binder
         }
         
         // The method was not found in the current scope, so we need to check the parent type.
-        if (parentType.TryLookupMethod(this, name, typeArguments, parameterTypes, callSite, out var methodNotFound,
-                out var cannotConvertType, out var ambiguousCall, out var incorrectTypeArgumentCount,
-                out var expected, out var from, out var to, out var ambiguousCalls,
-                out methodSymbol))
+        if (parentType.TryLookupMethod(this, name, typeArguments, parameterTypes, callSite, out var methodNotFound, 
+                out var ambiguousCalls, out methodSymbol))
         {
             Scope.AddSymbolReference(methodSymbol, context.Location);
             return true;
@@ -225,21 +223,11 @@ internal abstract class Binder
             context.Diagnostics.ReportUnresolvedMethod(context.Location, name, parameterTypes.Select(x => x.Type).ToImmutableArray());
         }
 
-        if (cannotConvertType)
-        {
-            context.Diagnostics.ReportCannotConvert(context.Location, from!, to!);
-        }
-
-        if (ambiguousCall)
+        if (ambiguousCalls.Length > 1)
         {
             context.Diagnostics.ReportAmbiguousMethodCall(context.Location, ambiguousCalls);
         }
-        
-        if (incorrectTypeArgumentCount)
-        {
-            context.Diagnostics.ReportIncorrectNumberOfTypeArguments(context.Location, name, expected, typeArguments.Length);
-        }
-        
+
         return false;
     }
 
