@@ -33,11 +33,4 @@ public sealed class SyntaxToken : SyntaxNode
     {
         return Enumerable.Empty<SyntaxNode>();
     }
-    
-    public SyntaxToken? GetPreviousToken()
-    {
-        var parentTokens = Parent.Dissolve();
-        var index = parentTokens.IndexOf(this);
-        return index == 0 ? null : parentTokens[index - 1];
-    }
 }
