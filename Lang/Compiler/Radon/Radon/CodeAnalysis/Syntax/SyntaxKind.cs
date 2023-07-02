@@ -16,7 +16,7 @@ public sealed class SyntaxKind
 #region Special Kinds
     
     public static readonly SyntaxKind BadToken =
-        new(nameof(BadToken), null, SKAttributes.Invalid);
+        new(nameof(BadToken), SKAttributes.Invalid, SKAttributes.Token, SKAttributes.Trivia);
     public static readonly SyntaxKind EndOfFileToken =
         new(nameof(EndOfFileToken), "\0", SKAttributes.IsFixed, SKAttributes.Token);
     
@@ -27,17 +27,17 @@ public sealed class SyntaxKind
 #region Trivia Kinds
     
     public static readonly SyntaxKind WhitespaceTrivia =
-        new(nameof(WhitespaceTrivia));
+        new(nameof(WhitespaceTrivia), SKAttributes.Trivia);
     public static readonly SyntaxKind LineBreakTrivia =
-        new(nameof(LineBreakTrivia));
+        new(nameof(LineBreakTrivia), SKAttributes.Trivia);
     public static readonly SyntaxKind SingleLineCommentTrivia =
-        new(nameof(SingleLineCommentTrivia));
+        new(nameof(SingleLineCommentTrivia), SKAttributes.Trivia);
     public static readonly SyntaxKind MultiLineCommentTrivia =
-        new(nameof(MultiLineCommentTrivia));
+        new(nameof(MultiLineCommentTrivia), SKAttributes.Trivia);
     public static readonly SyntaxKind SkippedTextTrivia =
-        new(nameof(SkippedTextTrivia));
+        new(nameof(SkippedTextTrivia), SKAttributes.Trivia);
     public static readonly SyntaxKind DirectiveTrivia =
-        new(nameof(DirectiveTrivia));
+        new(nameof(DirectiveTrivia), SKAttributes.Trivia);
     
 #endregion
     
@@ -203,28 +203,38 @@ public sealed class SyntaxKind
         new(nameof(StructKeyword), "struct", SKAttributes.Keyword, SKAttributes.TypeKeyword);
     public static readonly SyntaxKind EnumKeyword =
         new(nameof(EnumKeyword), "enum", SKAttributes.Keyword, SKAttributes.TypeKeyword);
+    public static readonly SyntaxKind TemplateKeyword =
+        new(nameof(TemplateKeyword), "template", SKAttributes.Keyword, SKAttributes.TypeKeyword);
     public static readonly SyntaxKind NewKeyword =
         new(nameof(NewKeyword), "new", SKAttributes.Keyword);
     public static readonly SyntaxKind ThisKeyword =
         new(nameof(ThisKeyword), "this", SKAttributes.Keyword);
     public static readonly SyntaxKind TrueKeyword =
-        new(nameof(TrueKeyword), "true", SKAttributes.Keyword);
+        new(nameof(TrueKeyword), "true", SKAttributes.Keyword,SKAttributes.Literal);
     public static readonly SyntaxKind FalseKeyword =
-        new(nameof(FalseKeyword), "false", SKAttributes.Keyword);
+        new(nameof(FalseKeyword), "false", SKAttributes.Keyword, SKAttributes.Literal);
     public static readonly SyntaxKind DefaultKeyword =
         new(nameof(DefaultKeyword), "default", SKAttributes.Keyword);
-
+    public static readonly SyntaxKind EncryptedKeyword =
+        new(nameof(EncryptedKeyword), "encrypted", SKAttributes.Keyword, SKAttributes.Literal);
+    
     // Modifiers
     public static readonly SyntaxKind StaticKeyword =
         new(nameof(StaticKeyword), "static", SKAttributes.Modifier, SKAttributes.TypeModifier);
     public static readonly SyntaxKind RuntimeInternalKeyword =
         new(nameof(RuntimeInternalKeyword), "__runtimeinternal", SKAttributes.Modifier, SKAttributes.TypeModifier); // Keywords for internal use will be prefixed with __
-    public static readonly SyntaxKind OperatorKeyword =
-        new(nameof(OperatorKeyword), "operator", SKAttributes.Modifier);
+    public static readonly SyntaxKind PublicKeyword =
+        new(nameof(PublicKeyword), "public", SKAttributes.Modifier, SKAttributes.TypeModifier);
+    public static readonly SyntaxKind PrivateKeyword =
+        new(nameof(PrivateKeyword), "private", SKAttributes.Modifier, SKAttributes.TypeModifier);
 
     // Directive Keywords
     public static readonly SyntaxKind IncludeKeyword =
         new(nameof(IncludeKeyword), "include", SKAttributes.Keyword, SKAttributes.DirectiveOperator);
+    
+    // Flow Control
+    public static readonly SyntaxKind ReturnKeyword =
+        new(nameof(ReturnKeyword), "return", SKAttributes.Keyword, SKAttributes.FlowControl);
 
 #endregion
     
@@ -254,8 +264,14 @@ public sealed class SyntaxKind
         new(nameof(TypeArgumentList), null, SKAttributes.Node);
     public static readonly SyntaxKind ArgumentList =
         new(nameof(ArgumentList), null, SKAttributes.Node);
-    
-#endregion
+    public static readonly SyntaxKind TypeParameterList =
+        new(nameof(TypeParameterList), null, SKAttributes.Node);
+    public static readonly SyntaxKind TypeParameter =
+        new(nameof(TypeParameter), null, SKAttributes.Node);
+    public static readonly SyntaxKind ArrayType =
+        new(nameof(ArrayType), null, SKAttributes.Node);
+
+    #endregion
     
     // Directives
     
@@ -300,6 +316,10 @@ public sealed class SyntaxKind
         new(nameof(ThisExpression), null, SKAttributes.Node, SKAttributes.Expression);
     public static readonly SyntaxKind DefaultExpression =
         new(nameof(DefaultExpression), null, SKAttributes.Node, SKAttributes.Expression);
+    public static readonly SyntaxKind NewArrayExpression =
+        new(nameof(NewArrayExpression), null, SKAttributes.Node, SKAttributes.Expression);
+    public static readonly SyntaxKind ElementAccessExpression =
+        new(nameof(ElementAccessExpression), null, SKAttributes.Node, SKAttributes.Expression);
 
 #endregion
     
@@ -315,6 +335,8 @@ public sealed class SyntaxKind
         new(nameof(BlockStatement), null, SKAttributes.Node, SKAttributes.Statement);
     public static readonly SyntaxKind SignStatement =
         new(nameof(SignStatement), null, SKAttributes.Node, SKAttributes.Statement);
+    public static readonly SyntaxKind ReturnStatement =
+        new(nameof(ReturnStatement), null, SKAttributes.Node, SKAttributes.Statement);
     public static readonly SyntaxKind InvalidStatement =
         new(nameof(InvalidStatement), null, SKAttributes.Node, SKAttributes.Statement);
     
@@ -324,15 +346,17 @@ public sealed class SyntaxKind
     
 #region Member Declarations
 
-   public static readonly SyntaxKind EnumMemberDeclaration =
+    public static readonly SyntaxKind EnumMemberDeclaration =
         new(nameof(EnumMemberDeclaration), null, SKAttributes.Node, SKAttributes.MemberDeclaration);
-   public static readonly SyntaxKind InvalidMemberDeclaration =
+    public static readonly SyntaxKind InvalidMemberDeclaration =
         new(nameof(InvalidMemberDeclaration), null, SKAttributes.Node, SKAttributes.MemberDeclaration);
-   public static readonly SyntaxKind MethodDeclaration =
+    public static readonly SyntaxKind MethodDeclaration =
         new(nameof(MethodDeclaration), null, SKAttributes.Node, SKAttributes.MemberDeclaration);
-   public static readonly SyntaxKind FieldDeclaration =
+    public static readonly SyntaxKind TemplateMethodDeclaration =
+        new(nameof(TemplateMethodDeclaration), null, SKAttributes.Node, SKAttributes.MemberDeclaration);
+    public static readonly SyntaxKind FieldDeclaration =
         new(nameof(FieldDeclaration), null, SKAttributes.Node, SKAttributes.MemberDeclaration);
-   public static readonly SyntaxKind ConstructorDeclaration =
+    public static readonly SyntaxKind ConstructorDeclaration =
         new(nameof(ConstructorDeclaration), null, SKAttributes.Node, SKAttributes.MemberDeclaration);
 
 #endregion
@@ -345,6 +369,8 @@ public sealed class SyntaxKind
         new(nameof(StructDeclaration), null, SKAttributes.Node, SKAttributes.TypeDeclaration);
     public static readonly SyntaxKind EnumDeclaration =
         new(nameof(EnumDeclaration), null, SKAttributes.Node, SKAttributes.TypeDeclaration);
+    public static readonly SyntaxKind TemplateDeclaration =
+        new(nameof(TemplateDeclaration), null, SKAttributes.Node, SKAttributes.TypeDeclaration);
     public static readonly SyntaxKind InvalidTypeDeclaration =
         new(nameof(InvalidTypeDeclaration), null, SKAttributes.Node, SKAttributes.TypeDeclaration);
     
@@ -358,6 +384,11 @@ public sealed class SyntaxKind
 
     private SyntaxKind(string name, string? text = null)
         : this(name, text, Array.Empty<SyntaxKindAttribute>())
+    {
+    }
+    
+    private SyntaxKind(string name, params SyntaxKindAttribute[] attributes)
+        : this(name, null, attributes)
     {
     }
 
