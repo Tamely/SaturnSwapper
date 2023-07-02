@@ -15,6 +15,7 @@ namespace Radon.CodeAnalysis.Binding.Analyzers;
 
 internal sealed class AssemblyBinder : Binder
 {
+    private readonly object _lock;
     private readonly List<TemplateBinder> _templateBinders;
     public static AssemblyBinder Current { get; private set; } = null!;
     public AssemblySymbol Assembly { get; }
@@ -22,6 +23,7 @@ internal sealed class AssemblyBinder : Binder
     internal AssemblyBinder() 
         : base((Scope?)null)
     {
+        _lock = new object();
         _templateBinders = new List<TemplateBinder>();
         Assembly = new AssemblySymbol(string.Empty);
         Current = this;
