@@ -10,7 +10,7 @@ namespace Radon.Runtime.RuntimeSystem;
 
 internal sealed class ManagedRuntime
 {
-    public static ManagedRuntime System { get; private set; }
+    public static ManagedRuntime System { get; private set; } = null!;
     public AssemblyInfo AssemblyInfo { get; }
     public Dictionary<TypeInfo, RuntimeType> Types { get; }
     public ImmutableDictionary<TypeInfo, RuntimeType> PrimitiveTypes { get; }
