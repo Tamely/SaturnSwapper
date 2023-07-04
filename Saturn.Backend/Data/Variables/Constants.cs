@@ -60,6 +60,11 @@ namespace Saturn.Backend.Data.Variables
                         },
                         new ChangelogChange()
                         {
+                            Summary = "Error Mitigation",
+                            Description = "The swapper throws much less errors now."
+                        },
+                        new ChangelogChange()
+                        {
                             Summary = "Added icons to skins",
                             Description = "Skins now swap icons in game (Saturn+ only)."
                         },

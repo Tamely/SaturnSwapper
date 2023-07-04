@@ -99,13 +99,13 @@
             await File.WriteAllTextAsync(Constants.DataPath + LobbySwaps.Name + ".json", JsonConvert.SerializeObject(LobbySwaps));
         }
         Constants.isClosingCorrectly = true;
-        
+
+        await Task.Delay(1000); // Wait 1 second for everything to load
         Process.Start(new ProcessStartInfo
         {
-            FileName = "cmd.exe",
-            Arguments = "/c \"start " + Constants.ExternalPath + "Saturn.Launcher.exe\"",
-            WindowStyle = ProcessWindowStyle.Hidden,
-            CreateNoWindow = true
+            FileName = Constants.ExternalPath + "Saturn.Launcher.exe",
+            CreateNoWindow = false,
+            UseShellExecute = false
         });
     }
 

@@ -3,6 +3,9 @@
 @using Saturn.Backend.Data
 @using System.Threading
 @using System.Diagnostics
+@using System.IO
+@using Newtonsoft.Json
+@using Saturn.Backend.Data.Discord
 @using Saturn.Backend.Data.FortniteCentral
 @using Saturn.Backend.Data.Services
 @using Saturn.Backend.Data.Swapper.Generation
@@ -83,6 +86,9 @@
         }
         
         DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", stateToGoTo.ToString().Split("S_")[1]);
+        
+        if (DiscordUtilities.Member != null && !File.Exists(Constants.ExternalPath + "user.json"))
+            File.WriteAllText(Constants.ExternalPath + "user.json", JsonConvert.SerializeObject(DiscordUtilities.Member, Formatting.None));
         
         await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOut", stateFrom);
         Constants.State = stateToGoTo;
