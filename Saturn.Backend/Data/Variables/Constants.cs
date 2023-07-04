@@ -161,6 +161,7 @@ namespace Saturn.Backend.Data.Variables
         public static List<string> ConvertedIDs = new();
         public static bool CanLobbySwap = false;
         public static bool ShouldLobbySwap = false;
+        public static bool IsRemoving = false;
         
         public static SaturnState State = SaturnState.S_Installer;
         public static SaturnState CosmeticState = SaturnState.S_Skin;

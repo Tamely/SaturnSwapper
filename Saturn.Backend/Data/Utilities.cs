@@ -24,6 +24,13 @@ namespace Saturn.Backend.Data
     {
         public static async Task SwapPreset(PresetModel preset, IJSRuntime _jsRuntime)
         {
+            // There's a race condition from how HTML's OnClick handler works
+            if (Constants.IsRemoving)
+            {
+                Constants.IsRemoving = false;
+                return;
+            }
+            
             SaturnData.Clear();
 
             if (!Constants.isKeyValid)
