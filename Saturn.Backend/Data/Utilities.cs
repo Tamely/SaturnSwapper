@@ -90,18 +90,7 @@ namespace Saturn.Backend.Data
             
                 if (Constants.CanLobbySwap && Constants.ShouldLobbySwap && Constants.isPlus)
                 {
-                    switch (Constants.CosmeticState)
-                    {
-                        case SaturnState.S_Skin:
-                            await FileLogic.ConvertLobby("/game/athena/items/cosmetics/characters/" + item.OptionModel.ID + "." + item.OptionModel.ID, "/game/athena/items/cosmetics/characters/" + item.ItemModel.ID + "." + item.ItemModel.ID);
-                            break;
-                        case SaturnState.S_Backbling:
-                            await FileLogic.ConvertLobby("/game/athena/items/cosmetics/backpacks/" + item.OptionModel.ID + "." + item.OptionModel.ID, "/game/athena/items/cosmetics/backpacks/" + item.ItemModel.ID + "." + item.ItemModel.ID);
-                            break;
-                        case SaturnState.S_Pickaxe:
-                            await FileLogic.ConvertLobby("/game/athena/items/cosmetics/pickaxes/" + item.OptionModel.ID + "." + item.OptionModel.ID, "/game/athena/items/cosmetics/pickaxes/" + item.ItemModel.ID + "." + item.ItemModel.ID);
-                            break;
-                    }
+                    await FileLogic.ConvertLobby(item.OptionModel.ID, item.ItemModel.ID);
                     SaturnData.Clear();
                 }
                 else if (Constants.isPlus && Constants.ShouldLobbySwap)

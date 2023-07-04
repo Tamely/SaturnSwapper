@@ -235,7 +235,8 @@
         if (currentlySwapping) return;
         currentlySwapping = true;
         
-        Constants.SelectedDisplayItem.Description = "Swapping from " + Constants.SelectedOption.Name + " to " + Constants.SelectedDisplayItem.Name;
+        if (Constants.SelectedDisplayItem != null && Constants.SelectedDisplayItem != null && Constants.SelectedOption != null)
+            Constants.SelectedDisplayItem.Description = "Swapping from " + Constants.SelectedOption.Name + " to " + Constants.SelectedDisplayItem.Name;
         StateHasChanged();
         
         Constants.CurrentSwaps.Add(new()
@@ -248,7 +249,8 @@
 
         foreach (var characterPart in Constants.SelectedOption.CharacterParts.Where(characterPart => Constants.SelectedItem!.CharacterParts.ContainsKey(characterPart.Key)))
         {
-            Constants.SelectedDisplayItem.Description = "Swapping asset: " + Path.GetFileName(characterPart.Value.Path.Split('.')[0] + ".uasset");
+            if (Constants.SelectedDisplayItem != null && Constants.SelectedDisplayItem != null && Constants.SelectedOption != null)
+                Constants.SelectedDisplayItem.Description = "Swapping asset: " + Path.GetFileName(characterPart.Value.Path.Split('.')[0] + ".uasset");
             StateHasChanged();
 
             var oldPkg = await Constants.Provider.SavePackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
@@ -275,7 +277,8 @@
 
         foreach (var characterPart in Constants.SelectedOption.CharacterParts.Where(characterPart => !Constants.SelectedItem!.CharacterParts.ContainsKey(characterPart.Key)))
         {
-            Constants.SelectedDisplayItem.Description = "Swapping asset: " + Path.GetFileName(characterPart.Value.Path.Split('.')[0] + ".uasset");
+            if (Constants.SelectedDisplayItem != null && Constants.SelectedDisplayItem != null && Constants.SelectedOption != null)
+                Constants.SelectedDisplayItem.Description = "Swapping asset: " + Path.GetFileName(characterPart.Value.Path.Split('.')[0] + ".uasset");
             StateHasChanged();
             
             var oldPkg = await Constants.Provider.SavePackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
@@ -304,41 +307,40 @@
 
         await FileLogic.Convert(swapData);
         
-        if (Constants.CanLobbySwap && Constants.ShouldLobbySwap && Constants.isPlus)
+        if (Constants.CanLobbySwap && Constants.ShouldLobbySwap && Constants.isPlus && Constants.SelectedDisplayItem != null && Constants.SelectedOption != null)
         {
             Constants.SelectedDisplayItem.Description = "Attempting to lobby swap";
             StateHasChanged();
-            switch (Constants.CosmeticState)
-            {
-                case SaturnState.S_Skin:
-                    await FileLogic.ConvertLobby("/game/athena/items/cosmetics/characters/" + Constants.SelectedOption.ID + "." + Constants.SelectedOption.ID, "/game/athena/items/cosmetics/characters/" + Constants.SelectedDisplayItem.ID + "." + Constants.SelectedDisplayItem.ID);
-                    break;
-                case SaturnState.S_Backbling:
-                    await FileLogic.ConvertLobby("/game/athena/items/cosmetics/backpacks/" + Constants.SelectedOption.ID + "." + Constants.SelectedOption.ID, "/game/athena/items/cosmetics/backpacks/" + Constants.SelectedDisplayItem.ID + "." + Constants.SelectedDisplayItem.ID);
-                    break;
-                case SaturnState.S_Pickaxe:
-                    await FileLogic.ConvertLobby("/game/athena/items/cosmetics/pickaxes/" + Constants.SelectedOption.ID + "." + Constants.SelectedOption.ID, "/game/athena/items/cosmetics/pickaxes/" + Constants.SelectedDisplayItem.ID + "." + Constants.SelectedDisplayItem.ID);
-                    break;
-            }
+            await FileLogic.ConvertLobby(Constants.SelectedOption.ID, Constants.SelectedDisplayItem.ID);
             SaturnData.Clear();
         }
-        else if (Constants.isPlus && Constants.ShouldLobbySwap)
+        else if (Constants.isPlus && Constants.ShouldLobbySwap && Constants.SelectedDisplayItem != null)
         {
             Constants.SelectedDisplayItem.Description = "Unable to lobby swap at this time... pakchunk0 was unable to be mounted.";
             StateHasChanged();
             Logger.Log("Unable to lobby swap at this time... pakchunk0 was unable to be mounted.", LogLevel.Error);
         }
-        
-        Constants.SelectedDisplayItem.Description = "Swapped from " + Constants.SelectedOption.Name + " to " + Constants.SelectedDisplayItem.Name;
-        StateHasChanged();
 
-        if (string.IsNullOrWhiteSpace(Constants.SelectedOption.Name) || string.IsNullOrWhiteSpace(Constants.SelectedItem.Name))
+        if (Constants.SelectedDisplayItem != null && Constants.SelectedOption != null)
         {
-            Constants.SelectedDisplayItem.Description = "The cosmetic has swapped as successfully as it could, but something went wrong. Restart Saturn and reswap if the swap didn't apply.";
+            Constants.SelectedDisplayItem.Description = "Swapped from " + Constants.SelectedOption.Name + " to " + Constants.SelectedDisplayItem.Name;
             StateHasChanged();
         }
 
-        Constants.ConvertedIDs.Add(Constants.SelectedItem!.ID);
+        if (Constants.SelectedOption != null && Constants.SelectedItem != null)
+        {
+            if (string.IsNullOrWhiteSpace(Constants.SelectedOption.Name) || string.IsNullOrWhiteSpace(Constants.SelectedItem.Name))
+            {
+                Constants.SelectedDisplayItem.Description = "The cosmetic has swapped as successfully as it could, but something went wrong. Restart Saturn and reswap if the swap didn't apply.";
+                StateHasChanged();
+            }
+        }
+
+        if (Constants.SelectedItem != null)
+        {
+            Constants.ConvertedIDs.Add(Constants.SelectedItem.ID);
+        }
+        
         StateHasChanged();
         Constants.SelectedOption = new();
         Constants.SelectedItem = new();
