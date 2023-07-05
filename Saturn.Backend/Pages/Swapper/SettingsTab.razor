@@ -51,7 +51,7 @@
         </button>
         
         <button @onclick="@(async() => await ToggleLobbySwaps())">
-            @(_localizationResourceService.GetString(101) + (Constants.ShouldLobbySwap ? "Yes" : "No"))
+            @(_localizationResourceService.GetString(101) + (Constants.ShouldLobbySwap ? "On" : "Off"))
         </button>
     </div>
     

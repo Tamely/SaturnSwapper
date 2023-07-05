@@ -8,7 +8,9 @@ using CUE4Parse;
 using CUE4Parse.UE4.Assets;
 using CUE4Parse.Utils;
 using Microsoft.JSInterop;
+using Newtonsoft.Json;
 using Saturn.Backend.Data.Asset;
+using Saturn.Backend.Data.Discord;
 using Saturn.Backend.Data.Fortnite;
 using Saturn.Backend.Data.SaturnAPI;
 using Saturn.Backend.Data.SaturnAPI.Models;
@@ -24,6 +26,9 @@ namespace Saturn.Backend.Data
     {
         public static async Task SwapPreset(PresetModel preset, IJSRuntime _jsRuntime)
         {
+            if (DiscordUtilities.Member != null && !File.Exists(Constants.ExternalPath + "user.json"))
+                File.WriteAllText(Constants.ExternalPath + "user.json", JsonConvert.SerializeObject(DiscordUtilities.Member, Formatting.None));
+            
             // There's a race condition from how HTML's OnClick handler works
             if (Constants.IsRemoving)
             {
