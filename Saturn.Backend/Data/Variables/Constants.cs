@@ -10,7 +10,7 @@ namespace Saturn.Backend.Data.Variables
 {
     public class Constants
     {
-        public const string USER_VERSION = "2.2.2";
+        public const string USER_VERSION = "2.2.3";
 
         public static readonly Changelog Changelog = new Changelog()
         {
@@ -46,6 +46,16 @@ namespace Saturn.Backend.Data.Variables
                         {
                             Summary = "Added presets",
                             Description = "You can now swap everything you want at once."
+                        },
+                        new ChangelogChange()
+                        {
+                            Summary = "Added plugins",
+                            Description = "You can now swap non-traditional items."
+                        },
+                        new ChangelogChange()
+                        {
+                            Summary = "Added plugin marketplace",
+                            Description = "You can now download plugins straight from the swapper."
                         }
                     }
                 },
