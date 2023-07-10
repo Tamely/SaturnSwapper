@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using Radon.CodeAnalysis.Syntax;
 
@@ -24,6 +25,15 @@ public sealed class ErrorMemberSymbol : MemberSymbol
     {
         return this;
     }
-    
+
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Name);
+        hash.Add(ParentType);
+        hash.Add(Type);
+        return hash.ToHashCode();
+    }
+
     public override string ToString() => Name;
 }

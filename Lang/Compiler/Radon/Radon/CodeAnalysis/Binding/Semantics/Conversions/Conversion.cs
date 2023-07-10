@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using Radon.CodeAnalysis.Binding.Analyzers;
 using Radon.CodeAnalysis.Binding.Semantics.Expressions;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
@@ -27,6 +28,12 @@ internal sealed class Conversion
     
     public static Conversion Classify(TypeSymbol from, TypeSymbol to)
     {
+        if (from is TypeParameterSymbol &&
+            to is TypeParameterSymbol)
+        {
+            return Identity;
+        }
+        
         if (from == to &&
             from is not TypeParameterSymbol &&
             to is not TypeParameterSymbol)
@@ -36,101 +43,12 @@ internal sealed class Conversion
 
         if (from != TypeSymbol.Error && to != TypeSymbol.Error)
         {
-            /*TypeParameterSymbol? typeParameter = null;
-            TypeSymbol? other = null;
-            if (from is TypeParameterSymbol fromTypeParam)
+            if (IsNumericType(from) && IsNumericType(to))
             {
-                if (fromTypeParam.TypeMap.IsUnbound(fromTypeParam))
-                {
-                    return Identity; // this is identity because it is unbound
-                }
-                
-                typeParameter = fromTypeParam;
-                other = to;
-            }
-            else if (to is TypeParameterSymbol toTypeParam)
-            {
-                if (toTypeParam.TypeMap.IsUnbound(toTypeParam))
-                {
-                    return Identity; // this is identity because it is unbound
-                }
-                
-                typeParameter = toTypeParam;
-                other = from;
+                return ClassifyNumericConversion(from, to);
             }
 
-            if (typeParameter != null && other != null)
-            {
-                var bound = typeParameter.TypeMap.GetType(typeParameter);
-                return Classify(bound, other);
-            }*/
-
-            var fromGeneric = false;
-            var toGeneric = false;
-            var fromUnbound = false;
-            var toUnbound = false;
-            var fromType = from;
-            var toType = to;
-            if (from is not TypeParameterSymbol &&
-                to is TypeParameterSymbol t)
-            {
-                toGeneric = true;
-                if (t.TypeMap.IsUnbound(t))
-                {
-                    toUnbound = true;
-                }
-                
-                toType = ResolveGenericType(to);
-            }
-            else if (from is TypeParameterSymbol t1 &&
-                     to is not TypeParameterSymbol)
-            {
-                fromGeneric = true;
-                if (t1.TypeMap.IsUnbound(t1))
-                {
-                    fromUnbound = true;
-                }
-                
-                fromType = ResolveGenericType(from);
-            }
-            
-            if (fromUnbound && toUnbound)
-            {
-                return None;
-            }
-            
-            if (fromType == toType)
-            {
-                return Identity;
-            }
-
-            if (fromGeneric && toGeneric)
-            {
-                switch (fromUnbound)
-                {
-                    case true when toUnbound:
-                        return Identity;
-                    case true when !toUnbound:
-                        return Explicit;
-                    case false when toUnbound:
-                        return Implicit;
-                }
-            }
-            else if (!fromGeneric && toGeneric)
-            {
-                return Implicit;
-            }
-            else if (fromGeneric && !toGeneric)
-            {
-                return Explicit;
-            }
-
-            if (IsNumericType(fromType) && IsNumericType(toType))
-            {
-                return ClassifyNumericConversion(fromType, toType);
-            }
-
-            if (IsNumericType(fromType) && toType == TypeSymbol.String)
+            if (IsNumericType(from) && to == TypeSymbol.String)
             {
                 return Explicit;
             }
@@ -138,62 +56,26 @@ internal sealed class Conversion
 
         return None;
     }
-    
-    public static Conversion Classify(BoundExpression from, TypeSymbol to)
-    {
-        var fromType = ResolveGenericType(from.Type);
-        var toType = ResolveGenericType(to);
-        if (fromType == TypeSymbol.Error ||
-            toType == TypeSymbol.Error)
-        {
-            if (fromType == TypeSymbol.Error &&
-                toType == TypeSymbol.Error)
-            {
-                return Classify(from.Type, to);
-            }
-    
-            if (fromType == TypeSymbol.Error)
-            {
-                return Classify(from.Type, toType);
-            }
-    
-            if (toType == TypeSymbol.Error)
-            {
-                return Classify(fromType, to);
-            }
-        }
 
-        if (from is BoundLiteralExpression literal)
+    public static Conversion Classify(Binder binder, BoundExpression from, TypeSymbol to)
+    {
+        if (IsNumericType(from.Type) && IsNumericType(to) &&
+            from is BoundLiteralExpression literal)
         {
-            // In these cases, we need to handle cases like:
-            // Method<byte>(100) where 100 is a literal of type sbyte, but can be implicitly converted to byte.
+            var value = Convert.ToDouble(literal.Value);
+            var validTypes = GetTypeRange(value);
+            if (validTypes.Contains(to))
+            {
+                return Implicit;
+            }
             
-            // We essentially need to see if the literal falls within the range of the type.
-            if (literal.Syntax is LiteralExpressionSyntax literalSyntax &&
-                literalSyntax.LiteralToken.Kind == SyntaxKind.NumberToken)
-            {
-                var value = Convert.ToDouble(literalSyntax.LiteralToken.Value);
-                var validTypeConversion = GetTypeRange(value);
-                if (validTypeConversion.Contains(toType))
-                {
-                    return Implicit;
-                }
-
-                return Explicit;
-            }
+            return Explicit;
         }
         
-        return Classify(fromType, toType);
-    }
-
-    public static TypeSymbol ResolveGenericType(TypeSymbol type)
-    {
-        if (type is TypeParameterSymbol typeParameter)
-        {
-            return ResolveGenericType(typeParameter.TypeMap.GetType(typeParameter));
-        }
-        
-        return type;
+        var fromType = from.Type;
+        binder.TryResolveSymbol(SemanticContext.Empty, ref fromType);
+        binder.TryResolveSymbol(SemanticContext.Empty, ref to);
+        return Classify(fromType, to);
     }
 
     private static ImmutableArray<TypeSymbol> GetTypeRange(double value)
@@ -284,7 +166,7 @@ internal sealed class Conversion
         {
             var fromSize = GetNumericTypeSize(from);
             var toSize = GetNumericTypeSize(to);
-            if (fromSize >= toSize)
+            if (fromSize > toSize)
             {
                 return Explicit;
             }

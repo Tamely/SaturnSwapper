@@ -48,7 +48,7 @@ namespace Saturn.Backend.Data.SaturnAPI
             if (File.Exists(Constants.APICachePath + "index" + url.Replace("/", "").Replace("?", "").Replace("&", "")))
             {
                 data = JsonConvert.DeserializeObject<CacheModel<T>>(await File.ReadAllTextAsync(Constants.APICachePath + "index" + url.Replace("/", "").Replace("?", "").Replace("&", "")));
-                if (data?.Expiration > DateTime.UtcNow && url != "/" && url != "/api/v1/Saturn/Dependencies")
+                if (data?.Expiration > DateTime.UtcNow && url != "/" && url != "/api/v1/Saturn/Dependencies" && url != "/api/v1/Saturn/PluginMarketplace")
                     return data.Data;
 
                 File.Delete(Constants.APICachePath + "index" + url.Replace("/", "").Replace("?", "").Replace("&", ""));

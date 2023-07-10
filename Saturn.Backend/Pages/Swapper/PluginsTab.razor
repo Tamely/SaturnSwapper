@@ -1,0 +1,142 @@
+﻿@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Data.Variables
+@using Saturn.Backend.Data.FortniteCentral
+@using Saturn.Backend.Data.SaturnAPI.Models
+@using Radon.Runtime
+@using Saturn.Backend.Data.Plugins.TEMPORARY
+@using System.IO
+@using System.Net
+@using Newtonsoft.Json
+@using Saturn.Backend.Data.Plugins.Marketplace
+@using Saturn.Backend.Data.SaturnAPI
+
+@inject IJSRuntime _jsRuntime;
+@inject IFortniteCentralService _fortniteCentralService;
+@inject LocalizationResourceService _localizationResourceService
+@inject ISaturnAPIService _saturnAPIService
+
+<PluginsSidebar/>
+<div class="tab-page" id="plugin-page" style="display: none">
+    @switch (Constants.CosmeticState)
+    {
+        case SaturnState.S_Plugin:
+            if (Constants.OwnedPlugins.Count == 0)
+            {
+                <div class="tab-message">
+                    <div class="text">
+                        <h1>@NoPluginsKoomoji</h1>
+                        <h3>You don't have any installed plugins</h3>
+                        <h3>Download them from the marketplace!</h3>
+                    </div>
+                </div>
+            }
+            else
+            {
+                foreach (var plugin in Constants.OwnedPlugins)
+                {
+                    <div id="@(plugin.Name + "-section")" class="section hoverable" @onclick="@(async () => await Swap(plugin))">
+                        <img src=@(plugin.Icon ?? "https://image.fnbr.co/outfit/5ab15c3e0499b850d8511de4/icon_192.png") alt="Icon"/>
+                        <div class="name">
+                            <h1>@(plugin.Name + $" (v{plugin.Version ?? "1.0.0"})")</h1>
+                            <h3>@("By: " + plugin.Author + " | " + plugin.Description)</h3>
+                        </div>
+                    </div>
+                }
+            }
+            break;
+        case SaturnState.S_Marketplace:
+            foreach (var plugin in Marketplace)
+            {
+                <div id="@(plugin.Name + "-section")" class="section hoverable" @onclick="@(async () => await Download(plugin))">
+                    <img src=@(plugin.Icon ?? "https://image.fnbr.co/outfit/5ab15c3e0499b850d8511de4/icon_192.png") alt="Icon"/>
+                    <div class="name">
+                        <h1>@(plugin.Name)</h1>
+                        <h3>@("By: " + plugin.Author + " | " + plugin.Description)</h3>
+                        @if (!string.IsNullOrWhiteSpace(plugin.Image))
+                        {
+                            <img src="@plugin.Image"/>
+                        }
+                    </div>
+                </div>
+            }
+            break;
+    }
+</div>
+
+@code {
+    
+    private string NoPluginsKoomoji = "(⇀‸↼‶)";
+    private List<MarketplaceModel> Marketplace = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        ChangeState();
+
+        if (File.Exists(Constants.BasePath + "Plugin.json"))
+        {
+            Plugin plugin = JsonConvert.DeserializeObject<Plugin>(File.ReadAllText(Constants.BasePath + "Plugin.json"));
+            File.WriteAllBytes(Constants.PluginPath + "Plugin.saturn", new PluginSerializer(plugin).Data());
+        }
+
+        await RefreshPlugins();
+        Marketplace = await _saturnAPIService.ReturnEndpointAsync<List<MarketplaceModel>>("/api/v1/Saturn/PluginMarketplace");
+    }
+
+    private async Task ChangeState()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(500);
+        }
+    }
+
+    private async Task RefreshPlugins()
+    {
+        Constants.OwnedPlugins = new();
+        foreach (var file in Directory.EnumerateFiles(Constants.PluginPath))
+        {
+            if (!file.EndsWith(".saturn")) continue;
+
+            PluginDeserializer deserializer = new PluginDeserializer(await File.ReadAllBytesAsync(file));
+            Constants.OwnedPlugins.Add(deserializer.DeserializedPlugin());
+        }
+    }
+
+    List<string> SwappedPlugins = new();
+    private async Task Swap(Plugin plugin)
+    {
+        if (!SwappedPlugins.Contains(plugin.Name))
+        {
+            await Convert(plugin);
+            SwappedPlugins.Add(plugin.Name);
+            return;
+        }
+
+        await Revert(plugin);
+        SwappedPlugins.Remove(plugin.Name);
+    }
+    
+    private async Task Download(MarketplaceModel plugin)
+    {
+        plugin.Description = $"Downloading {plugin.Name}...";
+        if (!File.Exists(Path.Join(Constants.PluginPath, plugin.Name + ".saturn")))
+        {
+            WebClient wc = new WebClient();
+            wc.DownloadFileAsync(new Uri(plugin.PluginURL), Path.Join(Constants.PluginPath, plugin.Name + ".saturn"));
+        }
+        plugin.Description = $"Successfully downloaded {plugin.Name}! You can now swap it in your library!";
+        await Task.Delay(1000);
+        await RefreshPlugins();
+    }
+
+    private async Task Convert(Plugin plugin)
+    {
+        await PluginLogic.Convert(plugin);
+    }
+
+    private async Task Revert(Plugin plugin)
+    {
+        await PluginLogic.Revert(plugin);
+    }
+}

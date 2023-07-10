@@ -167,7 +167,11 @@ public class FileLogic
         }
 
         ItemModel item = new ItemModel();
-        item.Name = Constants.SelectedOption.Name + " to " + Constants.SelectedItem.Name;
+        if (Constants.SelectedOption.Name is "Plugin" or "AssetImporter")
+            item.Name = Constants.SelectedItem.Name;
+        else
+            item.Name = Constants.SelectedOption.Name + " to " + Constants.SelectedItem.Name;
+        
         item.Swaps = new Swap[swapData.Sum(x => ChunkData(x.Data).Count * 6 + 1)];
         int swapIndex = 0;
             

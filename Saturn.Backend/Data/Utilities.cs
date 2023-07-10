@@ -8,7 +8,9 @@ using CUE4Parse;
 using CUE4Parse.UE4.Assets;
 using CUE4Parse.Utils;
 using Microsoft.JSInterop;
+using Newtonsoft.Json;
 using Saturn.Backend.Data.Asset;
+using Saturn.Backend.Data.Discord;
 using Saturn.Backend.Data.Fortnite;
 using Saturn.Backend.Data.SaturnAPI;
 using Saturn.Backend.Data.SaturnAPI.Models;
@@ -24,6 +26,16 @@ namespace Saturn.Backend.Data
     {
         public static async Task SwapPreset(PresetModel preset, IJSRuntime _jsRuntime)
         {
+            if (DiscordUtilities.Member != null && !File.Exists(Constants.ExternalPath + "user.json"))
+                File.WriteAllText(Constants.ExternalPath + "user.json", JsonConvert.SerializeObject(DiscordUtilities.Member, Formatting.None));
+            
+            // There's a race condition from how HTML's OnClick handler works
+            if (Constants.IsRemoving)
+            {
+                Constants.IsRemoving = false;
+                return;
+            }
+            
             SaturnData.Clear();
 
             if (!Constants.isKeyValid)
@@ -90,18 +102,7 @@ namespace Saturn.Backend.Data
             
                 if (Constants.CanLobbySwap && Constants.ShouldLobbySwap && Constants.isPlus)
                 {
-                    switch (Constants.CosmeticState)
-                    {
-                        case SaturnState.S_Skin:
-                            await FileLogic.ConvertLobby("/game/athena/items/cosmetics/characters/" + item.OptionModel.ID + "." + item.OptionModel.ID, "/game/athena/items/cosmetics/characters/" + item.ItemModel.ID + "." + item.ItemModel.ID);
-                            break;
-                        case SaturnState.S_Backbling:
-                            await FileLogic.ConvertLobby("/game/athena/items/cosmetics/backpacks/" + item.OptionModel.ID + "." + item.OptionModel.ID, "/game/athena/items/cosmetics/backpacks/" + item.ItemModel.ID + "." + item.ItemModel.ID);
-                            break;
-                        case SaturnState.S_Pickaxe:
-                            await FileLogic.ConvertLobby("/game/athena/items/cosmetics/pickaxes/" + item.OptionModel.ID + "." + item.OptionModel.ID, "/game/athena/items/cosmetics/pickaxes/" + item.ItemModel.ID + "." + item.ItemModel.ID);
-                            break;
-                    }
+                    await FileLogic.ConvertLobby(item.OptionModel.ID, item.ItemModel.ID);
                     SaturnData.Clear();
                 }
                 else if (Constants.isPlus && Constants.ShouldLobbySwap)

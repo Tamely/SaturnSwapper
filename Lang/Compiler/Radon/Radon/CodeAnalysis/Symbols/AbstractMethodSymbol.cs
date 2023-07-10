@@ -5,7 +5,6 @@ namespace Radon.CodeAnalysis.Symbols;
 
 public abstract class AbstractMethodSymbol : MemberSymbol
 {
-    public abstract ImmutableArray<TypeParameterSymbol> TypeParameters { get; }
     public abstract ImmutableArray<ParameterSymbol> Parameters { get; }
     public abstract override TypeSymbol Type { get; }
     
@@ -41,11 +40,6 @@ public abstract class AbstractMethodSymbol : MemberSymbol
             return false;
         }
         
-        if (method.TypeParameters.Length != TypeParameters.Length)
-        {
-            return false;
-        }
-        
         if (method.Parameters.Length != Parameters.Length)
         {
             return false;
@@ -58,8 +52,9 @@ public abstract class AbstractMethodSymbol : MemberSymbol
     {
         var hash = new HashCode();
         hash.Add(Name);
-        hash.Add(TypeParameters.Length);
-        hash.Add(Parameters.Length);
+        hash.Add(ParentType);
+        hash.Add(Type);
+        hash.Add(Parameters);
         return hash.ToHashCode();
     }
 }

@@ -2,10 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Text;
 using Radon.CodeAnalysis.Binding.Semantics;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
+using Radon.CodeAnalysis.Syntax.Nodes;
 using Radon.CodeAnalysis.Text;
 
 namespace Radon.CodeAnalysis;
@@ -14,6 +16,7 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
 {
     private readonly List<Diagnostic> _diagnostics;
     private readonly bool _disabled;
+    private bool _block;
 
     public int Count => _diagnostics.Count;
     
@@ -33,35 +36,107 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
         return GetEnumerator();
     }
 
+    public override string ToString()
+    {
+        return $"Errors: {Count}";
+    }
+
+    public void Block()
+    {
+        _block = true;
+    }
+
+    public void Unblock()
+    {
+        _block = false;
+    }
+
     private static string GetText(SyntaxKind kind)
     {
-        return kind == SyntaxKind.EndOfFileToken ? "end of file" : $"{kind.Text}";
+        if (kind == SyntaxKind.EndOfFileToken)
+        {
+            return "end of file";
+        }
+        
+        if (kind.Text == null)
+        {
+            return kind.ToString().ToLower().Replace("token", string.Empty);
+        }
+        
+        return kind.Text;
     }
     
     public void AddRange(IEnumerable<Diagnostic> diagnostics)
     {
-        _diagnostics.AddRange(diagnostics);
-    }
-    
-    private void ReportError(TextLocation location, string message, ErrorCode code)
-    {
-        if (_disabled)
+        if (_disabled || _block)
         {
             return;
         }
         
-        var diagnostic = Diagnostic.Error(location, message, code);
+        _diagnostics.AddRange(diagnostics);
+    }
+
+    private static string? GetMethod()
+    {
+        var stackTrace = new StackTrace();
+        var frame = stackTrace.GetFrame(3); // Skip this method, and the caller of this method.
+        if (frame is null)
+        {
+            return null;
+        }
+        
+        var method = frame.GetMethod();
+        if (method is null)
+        {
+            return null;
+        }
+        
+        var sb = new StringBuilder();
+        // Something like: [Namespcae]Type.Method(Parameters)
+        // E.g: [Radon.CodeAnalysis.Binding.Semantics]TypeBinder.Bind(SyntaxNode, Object[])
+        sb.Append('[');
+        sb.Append(method.DeclaringType?.Namespace);
+        sb.Append(']');
+        sb.Append(method.DeclaringType?.Name);
+        sb.Append('.');
+        sb.Append(method.Name);
+        sb.Append('(');
+        var parameters = method.GetParameters();
+        for (var i = 0; i < parameters.Length; i++)
+        {
+            var parameter = parameters[i];
+            sb.Append(parameter.ParameterType.Name);
+            if (i != parameters.Length - 1)
+            {
+                sb.Append(", ");
+            }
+        }
+        
+        sb.Append(')');
+        return sb.ToString();
+    }
+    
+    private void ReportError(TextLocation location, string message, ErrorCode code)
+    {
+        if (_disabled || _block)
+        {
+            return;
+        }
+
+        var methodString = GetMethod();
+        var diagnostic = Diagnostic.Error(location, message, code, methodString);
         _diagnostics.Add(diagnostic);
     }
     
     private void ReportWarning(TextLocation location, string message, ErrorCode code)
     {
-        if (_disabled)
+        if (_disabled || _block)
         {
             return;
         }
         
-        var diagnostic = Diagnostic.Warning(location, message, code);
+        var methodString = GetMethod();
+        var diagnostic = Diagnostic.Warning(location, message, code, methodString);
         _diagnostics.Add(diagnostic);
     }
 
@@ -133,7 +208,7 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
             for (var i = 0; i < dynamicList.Count; i++)
             {
                 var expectedKind = dynamicList[i];
-                var name = expectedKind.ToString().ToLower().Replace("token", string.Empty);
+                var name = GetText(expectedKind);
                 var indefiniteArticle = "aeiou".Contains(name[0]) ? "an" : "a";
                 var expectedKindText = $"{indefiniteArticle} {name}";
                 sb.Append(expectedKindText);
@@ -152,9 +227,16 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
         return sb.ToString();
     }
     
-    public void ReportUnexpectedToken(TextLocation location, SyntaxKind kind)
+    public void ReportExpectedToken(TextLocation location, SyntaxKind kind)
     {
-        var message = $"Unexpected token '{GetText(kind)}'.";
+        var expectedKindText = GetText(kind);
+        var message = $"Expected '{expectedKindText}'.";
+        ReportError(location, message, ErrorCode.ExpectedToken);
+    }
+    
+    public void ReportUnexpectedToken(TextLocation location, string text)
+    {
+        var message = $"Unexpected token '{text}'.";
         ReportError(location, message, ErrorCode.UnexpectedToken);
     }
     
@@ -162,9 +244,9 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
     {
         var expectedKindText = expectedKind.Text;
         var isDynamic = expectedKindText == null;
-        if (isDynamic)
+        if (expectedKindText == null)
         {
-            var name = expectedKind.ToString().ToLower().Replace("token", string.Empty);
+            var name = GetText(expectedKind);
             var indefiniteArticle = "aeiou".Contains(name[0]) ? "an" : "a";
             expectedKindText = $"{indefiniteArticle} {name}";
         }
@@ -199,11 +281,10 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
 
     public void ReportInternalCompilerError(Exception e)
     {
-        string exceptionMessage;
-#if true
-        exceptionMessage = e.ToString();
+#if DEBUG
+        var exceptionMessage = e.ToString();
 #else
-        exceptionMessage = e.Message;
+        var exceptionMessage = e.Message;
 #endif
         var message = $"Internal compiler error: '{exceptionMessage}'";
         ReportError(TextLocation.Empty, message, ErrorCode.InternalError);
@@ -241,22 +322,10 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
         ReportError(location, message, ErrorCode.InvalidTypeDeclaration);
     }
 
-    public void ReportInvalidMemberDeclaration(TextLocation location, string text)
-    {
-        var message = $"Invalid member declaration '{text}'.";
-        ReportError(location, message, ErrorCode.InvalidMemberDeclaration);
-    }
-
     public void ReportInvalidTypeStart(TextLocation location, string text)
     {
         var message = $"Invalid type start '{text}'. Expected type modifier or type keyword.";
         ReportError(location, message, ErrorCode.InvalidTypeStart);
-    }
-
-    public void ReportInvalidIncludePath(string text)
-    {
-        var message = $"Invalid include path '{text}'.";
-        ReportError(TextLocation.Empty, message, ErrorCode.InvalidIncludePath);
     }
 
     public void ReportCannotGoUpDirectory()
@@ -277,18 +346,6 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
         ReportError(location, message, ErrorCode.CircularInclude);
     }
 
-    public void ReportRuntimeInternalMethodWithBody(TextLocation location)
-    {
-        const string message = "Runtime internal method cannot have a body.";
-        ReportError(location, message, ErrorCode.RuntimeInternalMethodWithBody);
-    }
-
-    public void ReportCannotOverloadAssignmentOperator(TextLocation location, string text)
-    {
-        var message = $"Cannot overload assignment operator '{text}'.";
-        ReportError(location, message, ErrorCode.CannotOverloadAssignmentOperator);
-    }
-
     public void ReportNullScope(TextLocation location)
     {
         const string message = "Null scope.";
@@ -297,7 +354,7 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
 
     public void ReportSymbolAlreadyDeclared(TextLocation location, string name)
     {
-        var message = $"Symbol '{name}'is already declared.";
+        var message = $"Symbol '{name}' is already declared.";
         ReportError(location, message, ErrorCode.SymbolAlreadyDeclared);
     }
 
@@ -323,12 +380,6 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
     {
         var message = $"Undefined type '{text}'.";
         ReportError(location, message, ErrorCode.UndefinedType);
-    }
-    
-    public void ReportMissingMethodBody(TextLocation location)
-    {
-        const string message = "Missing method body.";
-        ReportError(location, message, ErrorCode.MissingMethodBody);
     }
 
     public void ReportUndefinedBinaryOperator(TextLocation location, string text, TypeSymbol left, TypeSymbol right)
@@ -421,12 +472,6 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
         ReportError(location, message, ErrorCode.IncorrectNumberOfTypeArguments);
     }
 
-    public void ReportTypeArgumentsRequired(TextLocation location, string method, int length)
-    {
-        var message = $"Type arguments required for method '{method}'. Expected {length}.";
-        ReportError(location, message, ErrorCode.TypeArgumentsRequired);
-    }
-
     public void ReportIncorrectNumberOfArguments(TextLocation location, string method, int parametersLength, int argumentsCount)
     {
         var message = $"Incorrect number of arguments for method '{method}'. Expected {parametersLength}, provided {argumentsCount}.";
@@ -479,5 +524,83 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
     {
         var message = $"Cannot instantiate non-struct '{name}'.";
         ReportError(location, message, ErrorCode.CannotInstantiateNonStruct);
+    }
+    
+    public void ReportCouldNotBindTemplateMethod(TextLocation location, string name)
+    {
+        var message = $"Could not bind template method '{name}'.";
+        ReportError(location, message, ErrorCode.CouldNotBindTemplateMethod);
+    }
+    
+    public void ReportCannotInstantiateNonArray(TextLocation location, string name)
+    {
+        var message = $"Cannot instantiate non-array '{name}'.";
+        ReportError(location, message, ErrorCode.CannotInstantiateNonArray);
+    }
+
+    public void ReportIndexMustBeInteger(TextLocation location)
+    {
+        const string message = "Index must be integer.";
+        ReportError(location, message, ErrorCode.IndexMustBeInteger);
+    }
+
+    public void ReportCannotIndexNonArray(TextLocation location, string name)
+    {
+        var message = $"Cannot index non-array '{name}'.";
+        ReportError(location, message, ErrorCode.CannotIndexNonArray);
+    }
+
+    public void ReportArrayMustHaveSize(TextLocation location)
+    {
+        const string message = "Array initializer must have size specified.";
+        ReportError(location, message, ErrorCode.ArrayMustHaveSize);
+    }
+
+    public void ReportCannotReturnExpressionFromVoidMethod(TextLocation location)
+    {
+        const string message = "Cannot return an expression from a void method.";
+        ReportError(location, message, ErrorCode.CannotReturnExpressionFromVoidMethod);
+    }
+
+    public void ReportMustReturnExpressionFromNonVoidMethod(TextLocation location)
+    {
+        const string message = "Must return an expression from a non-void method.";
+        ReportError(location, message, ErrorCode.MustReturnExpressionFromNonVoidMethod);
+    }
+
+    public void ReportSignKeyMustBeString(TextLocation location)
+    {
+        const string message = "Sign key must be of type 'string'.";
+        ReportError(location, message, ErrorCode.SignKeyMustBeString);
+    }
+
+    public void ReportSignValueMustBeStringBoolOrNumeric(TextLocation location)
+    {
+        const string message = "Sign value must be of type 'string', 'bool', or any numeric type.";
+        ReportError(location, message, ErrorCode.SignValueMustBeStringBoolOrNumeric);
+    }
+
+    public void ReportNullConstantValue(TextLocation location)
+    {
+        const string message = "Constant value is null.";
+        ReportError(location, message, ErrorCode.NullConstantValue);
+    }
+
+    public void ReportCannotHaveBothPublicAndPrivateModifier(TextLocation location)
+    {
+        const string message = "Cannot have both public and private modifier.";
+        ReportError(location, message, ErrorCode.CannotHaveBothPublicAndPrivateModifier);
+    }
+
+    public void ReportDuplicateModifier(TextLocation location, SyntaxKind modifier)
+    {
+        var message = $"Duplicate modifier '{modifier.Text}'.";
+        ReportError(location, message, ErrorCode.DuplicateModifier);
+    }
+
+    public void ReportCannotAccessNonPublicMember(TextLocation location, string name)
+    {
+        var message = $"Cannot access non-public member '{name}'.";
+        ReportError(location, message, ErrorCode.CannotAccessNonPublicMember);
     }
 }

@@ -11,19 +11,10 @@
         <ProjectReference Include="..\Radon.Generator\Radon.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="ArmDot.Client" Version="2023.10.0" />
-      <PackageReference Include="ArmDot.Engine.MSBuildTasks" Version="2023.10.0" />
-      <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.1" />
-      <PackageReference Include="System.Collections.Immutable" Version="6.0.0" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.1" />
+        <PackageReference Include="System.Collections.Immutable" Version="8.0.0-preview.5.23280.8" />
     </ItemGroup>
     <ItemGroup>
         <InternalsVisibleTo Include="Radon.Runtime" />
-        <AssemblyAttribute Include="ArmDot.Client.VirtualizeCodeAttribute" />
     </ItemGroup>
-    <Target Name="Protect" AfterTargets="AfterCompile" BeforeTargets="BeforePublish">
-        <ItemGroup>
-            <Assemblies Include="$(ProjectDir)$(IntermediateOutputPath)$(TargetFileName)" />
-        </ItemGroup>
-        <ArmDot.Engine.MSBuildTasks.ObfuscateTask Inputs="@(Assemblies)" ReferencePaths="@(_ResolveAssemblyReferenceResolvedFiles->'%(RootDir)%(Directory)')" SkipAlreadyObfuscatedAssemblies="true" />
-    </Target>
 </Project>

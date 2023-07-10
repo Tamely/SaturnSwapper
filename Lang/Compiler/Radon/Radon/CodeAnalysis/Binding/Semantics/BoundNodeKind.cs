@@ -6,7 +6,6 @@ internal enum BoundNodeKind
     AssignmentExpression,
     BinaryExpression,
     ImportExpression,
-    InvalidExpression,
     InvocationExpression,
     LiteralExpression,
     MemberAccessExpression,
@@ -32,5 +31,10 @@ internal enum BoundNodeKind
     ConversionExpression,
     Enum,
     EnumMember,
-    DefaultExpression
+    DefaultExpression,
+    Template,
+    TemplateMethod,
+    NewArrayExpression,
+    ElementAccessExpression,
+    ReturnStatement
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using CUE4Parse.FileProvider;
+using Saturn.Backend.Data.Plugins.TEMPORARY;
 using Saturn.Backend.Data.SaturnAPI.Models;
 using Saturn.Backend.Data.SaturnConfig.Models;
 using Saturn.Backend.Data.Swapper.Swapping.Models;
@@ -9,7 +10,7 @@ namespace Saturn.Backend.Data.Variables
 {
     public class Constants
     {
-        public const string USER_VERSION = "2.2.2";
+        public const string USER_VERSION = "2.2.3";
 
         public static readonly Changelog Changelog = new Changelog()
         {
@@ -45,6 +46,16 @@ namespace Saturn.Backend.Data.Variables
                         {
                             Summary = "Added presets",
                             Description = "You can now swap everything you want at once."
+                        },
+                        new ChangelogChange()
+                        {
+                            Summary = "Added plugins",
+                            Description = "You can now swap non-traditional items."
+                        },
+                        new ChangelogChange()
+                        {
+                            Summary = "Added plugin marketplace",
+                            Description = "You can now download plugins straight from the swapper."
                         }
                     }
                 },
@@ -57,6 +68,11 @@ namespace Saturn.Backend.Data.Variables
                         {
                             Summary = "Fixed",
                             Description = "The swapper has been fixed for the new season."
+                        },
+                        new ChangelogChange()
+                        {
+                            Summary = "Error Mitigation",
+                            Description = "The swapper throws much less errors now."
                         },
                         new ChangelogChange()
                         {
@@ -160,7 +176,8 @@ namespace Saturn.Backend.Data.Variables
 
         public static List<string> ConvertedIDs = new();
         public static bool CanLobbySwap = false;
-        public static bool ShouldLobbySwap = false;
+        public static bool ShouldLobbySwap = true;
+        public static bool IsRemoving = false;
         
         public static SaturnState State = SaturnState.S_Installer;
         public static SaturnState CosmeticState = SaturnState.S_Skin;
@@ -169,7 +186,8 @@ namespace Saturn.Backend.Data.Variables
         
         public const int CHUNK_SIZE = 500;
         public static int ChunkIndex = 0;
-        
+
+        public static List<Plugin> OwnedPlugins = new();
         public static List<List<DisplayItemModel>> ChunkedItems = new();
         public static DisplayItemModel SelectedDisplayItem = new();
         public static SaturnItemModel SelectedItem = new();

@@ -30,4 +30,5 @@ public static class SKAttributes
     public static readonly SyntaxKindAttribute DirectiveOperator = nameof(DirectiveOperator);
     public static readonly SyntaxKindAttribute DirectiveModifier = nameof(DirectiveModifier);
     public static readonly SyntaxKindAttribute CompilationUnit = nameof(CompilationUnit);
+    public static readonly SyntaxKindAttribute FlowControl = nameof(FlowControl);
 }

@@ -27,8 +27,7 @@ internal sealed class StatementBinder : Binder
         var statementContext = new SemanticContext(this, node, Diagnostics);
         if (!_hasRun)
         {
-            if (args.Length != 1 || 
-                args[0] is not AbstractMethodSymbol abstractMethodSymbol)
+            if (args is not [AbstractMethodSymbol abstractMethodSymbol])
             {
                 return new BoundErrorStatement(node, statementContext);
             }
@@ -38,27 +37,16 @@ internal sealed class StatementBinder : Binder
         }
 
         _hasRun = true;
-        if (node.Kind == SyntaxKind.BlockStatement)
-        {
-            return BindBlockStatement((BlockStatementSyntax)node);
-        }
-        
-        if (node.Kind == SyntaxKind.ExpressionStatement)
-        {
-            return BindExpressionStatement((ExpressionStatementSyntax)node);
-        }
 
-        if (node.Kind == SyntaxKind.SignStatement)
+        return node switch
         {
-            return BindSignStatement((SignStatementSyntax)node);
-        }
-
-        if (node.Kind == SyntaxKind.VariableDeclaration)
-        {
-            return BindVariableDeclaration((VariableDeclarationSyntax)node);
-        }
-
-        return new BoundErrorStatement(node, statementContext);
+            BlockStatementSyntax blockStatement => BindBlockStatement(blockStatement),
+            ExpressionStatementSyntax expressionStatement => BindExpressionStatement(expressionStatement),
+            SignStatementSyntax signStatement => BindSignStatement(signStatement),
+            VariableDeclarationSyntax variableDeclaration => BindVariableDeclaration(variableDeclaration),
+            ReturnStatementSyntax returnStatement => BindReturnStatement(returnStatement),
+            _ => new BoundErrorStatement(node, statementContext)
+        };
     }
     
     private BoundStatement BindBlockStatement(BlockStatementSyntax syntax)
@@ -85,26 +73,49 @@ internal sealed class StatementBinder : Binder
     
     private BoundStatement BindSignStatement(SignStatementSyntax syntax)
     {
-        var keyToken = syntax.KeyStringToken;
-        var valueToken = syntax.ValueStringToken;
-        var key = keyToken.Text;
-        var value = valueToken.Text;
+        var expressionBinder = new ExpressionBinder(this);
+        var boundKey = (BoundExpression)expressionBinder.Bind(syntax.KeyExpression);
+        var boundValue = (BoundExpression)expressionBinder.Bind(syntax.ValueExpression);
+        if (boundKey.Type != TypeSymbol.String)
+        {
+            Diagnostics.ReportSignKeyMustBeString(syntax.KeyExpression.Location);
+            return new BoundErrorStatement(syntax, new SemanticContext(this, syntax, Diagnostics));
+        }
+        
+        if (boundValue.Type != TypeSymbol.String &&
+            boundValue.Type != TypeSymbol.Bool &&
+            !TypeSymbol.GetNumericTypes().Contains(boundValue.Type))
+        {
+            Diagnostics.ReportSignValueMustBeStringBoolOrNumeric(syntax.ValueExpression.Location);
+            return new BoundErrorStatement(syntax, new SemanticContext(this, syntax, Diagnostics));
+        }
+        
+        if (boundKey.ConstantValue is null ||
+            boundValue.ConstantValue is null)
+        {
+            Diagnostics.ReportNullConstantValue(syntax.Location);
+            return new BoundErrorStatement(syntax, new SemanticContext(this, syntax, Diagnostics));
+        }
+
+        var key = boundKey.ConstantValue.Value.ToString();
+        var value = boundValue.ConstantValue.Value.ToString();
+        if (key is null ||
+            value is null)
+        {
+            Diagnostics.ReportNullConstantValue(syntax.Location);
+            return new BoundErrorStatement(syntax, new SemanticContext(this, syntax, Diagnostics));
+        }
+        
         return new BoundSignStatement(syntax, key, value);
     }
     
     private BoundStatement BindVariableDeclaration(VariableDeclarationSyntax syntax)
     {
-        var type = syntax.Type;
+        var type = BindTypeSyntax(syntax.Type);
         var declarator = syntax.Declarator;
-        var typeContext = new SemanticContext(this, type, Diagnostics);
-        if (!TryResolve<TypeSymbol>(typeContext, type.Identifier.Text, out var typeSymbol))
-        {
-            typeSymbol = TypeSymbol.Error;
-        }
-        
         var variable = declarator.Identifier.Text;
         var initializer = declarator.Initializer;
-        var variableSymbol = new LocalVariableSymbol(variable, typeSymbol!);
+        var variableSymbol = new LocalVariableSymbol(variable, type);
         var variableContext = new SemanticContext(this, declarator.Identifier, Diagnostics);
         if (!Register(variableContext, variableSymbol))
         {
@@ -119,8 +130,37 @@ internal sealed class StatementBinder : Binder
         
         var expressionBinder = new ExpressionBinder(this);
         var boundInitializer = (BoundExpression)expressionBinder.Bind(initializer);
-        var boundConversion = expressionBinder.BindConversion(boundInitializer, typeSymbol!, true);
+        var boundConversion = expressionBinder.BindConversion(boundInitializer, type, ImmutableArray<TypeSymbol>.Empty);
         Diagnostics.AddRange(expressionBinder.Diagnostics);
         return new BoundVariableDeclarationStatement(syntax, variableSymbol, boundConversion);
+    }
+
+    private BoundStatement BindReturnStatement(ReturnStatementSyntax syntax)
+    {
+        var expression = syntax.Expression;
+        if (MethodSymbol?.Type == TypeSymbol.Void &&
+            expression is not null)
+        {
+            Diagnostics.ReportCannotReturnExpressionFromVoidMethod(syntax.Expression!.Location);
+            return new BoundErrorStatement(syntax, new SemanticContext(this, syntax, Diagnostics));
+        }
+        
+        if (MethodSymbol?.Type != TypeSymbol.Void &&
+            expression is null)
+        {
+            Diagnostics.ReportMustReturnExpressionFromNonVoidMethod(syntax.ReturnKeyword.Location);
+            return new BoundErrorStatement(syntax, new SemanticContext(this, syntax, Diagnostics));
+        }
+        
+        if (expression is null)
+        {
+            return new BoundReturnStatement(syntax, null);
+        }
+        
+        var expressionBinder = new ExpressionBinder(this);
+        var boundExpression = (BoundExpression)expressionBinder.Bind(expression);
+        var boundConversion = expressionBinder.BindConversion(boundExpression, MethodSymbol!.Type, ImmutableArray<TypeSymbol>.Empty);
+        Diagnostics.AddRange(expressionBinder.Diagnostics);
+        return new BoundReturnStatement(syntax, boundConversion);
     }
 }

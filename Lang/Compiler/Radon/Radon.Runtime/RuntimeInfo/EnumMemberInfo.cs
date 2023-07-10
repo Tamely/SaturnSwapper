@@ -1,5 +1,4 @@
 using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
-using Radon.Runtime.RuntimeSystem.Objects;
 
 namespace Radon.Runtime.RuntimeInfo;
 

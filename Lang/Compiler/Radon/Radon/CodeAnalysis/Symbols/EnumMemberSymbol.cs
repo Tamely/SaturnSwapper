@@ -19,7 +19,7 @@ public sealed class EnumMemberSymbol : MemberSymbol
         ParentType = parentType;
         Name = name;
         UnderlyingType = type;
-        Modifiers = ImmutableArray<SyntaxKind>.Empty;
+        Modifiers = ImmutableArray.Create(SyntaxKind.PublicKeyword);
         Value = value;
         if (!Modifiers.Contains(SyntaxKind.StaticKeyword))
         {
@@ -35,6 +35,15 @@ public sealed class EnumMemberSymbol : MemberSymbol
     public override MemberSymbol WithParentType(TypeSymbol parentType)
     {
         return new EnumMemberSymbol(parentType, Name, Type, Value);
+    }
+
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Name);
+        hash.Add(ParentType);
+        hash.Add(Type);
+        return hash.ToHashCode();
     }
 
     internal void ReplaceValue(int value)

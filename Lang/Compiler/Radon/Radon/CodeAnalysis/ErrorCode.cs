@@ -17,18 +17,15 @@ public enum ErrorCode
     
     // Parser Errors
     UnexpectedToken,
+    ExpectedToken,
     UnfinishedDirective,
     IncludePathDoesNotExist,
     InvalidTypeDeclaration,
-    InvalidMemberDeclaration,
     InvalidTypeStart,
     InvalidIncludePath,
     DuplicateInclude,
     CircularInclude,
-    RuntimeInternalMethodWithBody,
-    CannotOverloadAssignmentOperator,
-    MissingMethodBody,
-    
+
     // ReSharper disable once InconsistentNaming
     // ReSharper disable once UnusedMember.Global
     BINDING_ERROR = 2000, // This is just used to set the starting point for the binding error codes.
@@ -54,9 +51,21 @@ public enum ErrorCode
     CycleInStructLayout,
     EnumMemberMustHaveConstantValue,
     IncorrectNumberOfTypeArguments,
-    TypeArgumentsRequired,
     IncorrectNumberOfArguments,
     UnresolvedMethod,
     AmbiguousMethodCall,
-    CannotInstantiateNonStruct
+    CannotInstantiateNonStruct,
+    CouldNotBindTemplateMethod,
+    CannotInstantiateNonArray,
+    IndexMustBeInteger,
+    CannotIndexNonArray,
+    ArrayMustHaveSize,
+    CannotReturnExpressionFromVoidMethod,
+    MustReturnExpressionFromNonVoidMethod,
+    SignKeyMustBeString,
+    SignValueMustBeStringBoolOrNumeric,
+    NullConstantValue,
+    CannotHaveBothPublicAndPrivateModifier,
+    DuplicateModifier,
+    CannotAccessNonPublicMember
 }

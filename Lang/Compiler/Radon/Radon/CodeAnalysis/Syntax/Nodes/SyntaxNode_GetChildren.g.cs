@@ -28,6 +28,25 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Clauses
     }
 }
 
+namespace Radon.CodeAnalysis.Syntax.Nodes.Clauses
+{
+    public partial class ArrayTypeSyntax
+    {
+        public override SyntaxKind Kind => SyntaxKind.ArrayType;
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return TypeSyntax;
+            yield return OpenBracketToken;
+            if (SizeExpression != null)
+            {
+                yield return SizeExpression;
+            }
+            
+            yield return CloseBracketToken;
+        }
+    }
+}
+
 namespace Radon.CodeAnalysis.Syntax.Nodes.Expressions
 {
     public partial class AssignmentExpressionSyntax
@@ -70,6 +89,11 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Statements
             }
             
             yield return CloseBraceToken;
+            if (SemicolonToken != null)
+            {
+                yield return SemicolonToken;
+            }
+            
         }
     }
 }
@@ -119,6 +143,21 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Expressions
             yield return DefaultKeyword;
             yield return ColonToken;
             yield return Type;
+        }
+    }
+}
+
+namespace Radon.CodeAnalysis.Syntax.Nodes.Expressions
+{
+    public partial class ElementAccessExpressionSyntax
+    {
+        public override SyntaxKind Kind => SyntaxKind.ElementAccessExpression;
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return Expression;
+            yield return OpenBracketToken;
+            yield return IndexExpression;
+            yield return CloseBracketToken;
         }
     }
 }
@@ -190,6 +229,7 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Statements
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             yield return Expression;
+            yield return SemicolonToken;
         }
     }
 }
@@ -208,6 +248,7 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Members
             
             yield return Type;
             yield return VariableDeclarator;
+            yield return SemicolonToken;
         }
     }
 }
@@ -289,6 +330,7 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Statements
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             yield return Token;
+            yield return SemicolonToken;
         }
     }
 }
@@ -388,6 +430,19 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Expressions
 
 namespace Radon.CodeAnalysis.Syntax.Nodes.Expressions
 {
+    public partial class NewArrayExpressionSyntax
+    {
+        public override SyntaxKind Kind => SyntaxKind.NewArrayExpression;
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return NewKeyword;
+            yield return Type;
+        }
+    }
+}
+
+namespace Radon.CodeAnalysis.Syntax.Nodes.Expressions
+{
     public partial class NewExpressionSyntax
     {
         public override SyntaxKind Kind => SyntaxKind.NewExpression;
@@ -473,6 +528,24 @@ namespace Radon.CodeAnalysis.Syntax.Nodes
 
 namespace Radon.CodeAnalysis.Syntax.Nodes.Statements
 {
+    public partial class ReturnStatementSyntax
+    {
+        public override SyntaxKind Kind => SyntaxKind.ReturnStatement;
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return ReturnKeyword;
+            if (Expression != null)
+            {
+                yield return Expression;
+            }
+            
+            yield return SemicolonToken;
+        }
+    }
+}
+
+namespace Radon.CodeAnalysis.Syntax.Nodes.Statements
+{
     public partial class SignStatementSyntax
     {
         public override SyntaxKind Kind => SyntaxKind.SignStatement;
@@ -480,9 +553,14 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Statements
         {
             yield return SignKeyword;
             yield return ColonToken;
-            yield return KeyStringToken;
+            yield return KeyExpression;
             yield return CommaToken;
-            yield return ValueStringToken;
+            yield return ValueExpression;
+            if (SemicolonToken != null)
+            {
+                yield return SemicolonToken;
+            }
+            
         }
     }
 }
@@ -524,6 +602,48 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.TypeDeclarations
     }
 }
 
+namespace Radon.CodeAnalysis.Syntax.Nodes.TypeDeclarations
+{
+    public partial class TemplateDeclarationSyntax
+    {
+        public override SyntaxKind Kind => SyntaxKind.TemplateDeclaration;
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            foreach (var child in Modifiers)
+            {
+                yield return child;
+            }
+            
+            yield return TemplateKeyword;
+            yield return Identifier;
+            yield return TypeParameterList;
+            yield return Body;
+        }
+    }
+}
+
+namespace Radon.CodeAnalysis.Syntax.Nodes.Members
+{
+    public partial class TemplateMethodDeclarationSyntax
+    {
+        public override SyntaxKind Kind => SyntaxKind.TemplateMethodDeclaration;
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            foreach (var child in Modifiers)
+            {
+                yield return child;
+            }
+            
+            yield return TemplateKeyword;
+            yield return ReturnType;
+            yield return Identifier;
+            yield return TypeParameterList;
+            yield return ParameterList;
+            yield return Body;
+        }
+    }
+}
+
 namespace Radon.CodeAnalysis.Syntax.Nodes.Expressions
 {
     public partial class ThisExpressionSyntax
@@ -550,6 +670,36 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Clauses
             }
             
             yield return GreaterThanToken;
+        }
+    }
+}
+
+namespace Radon.CodeAnalysis.Syntax.Nodes.Clauses
+{
+    public partial class TypeParameterListSyntax
+    {
+        public override SyntaxKind Kind => SyntaxKind.TypeParameterList;
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return LessThanToken;
+            foreach (var child in Parameters.GetWithSeparators())
+            {
+                yield return child;
+            }
+            
+            yield return GreaterThanToken;
+        }
+    }
+}
+
+namespace Radon.CodeAnalysis.Syntax.Nodes.Clauses
+{
+    public partial class TypeParameterSyntax
+    {
+        public override SyntaxKind Kind => SyntaxKind.TypeParameter;
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return Identifier;
         }
     }
 }
@@ -593,6 +743,7 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Statements
         {
             yield return Type;
             yield return Declarator;
+            yield return SemicolonToken;
         }
     }
 }

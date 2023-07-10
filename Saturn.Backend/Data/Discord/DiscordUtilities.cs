@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Web;
+using CUE4Parse.Utils;
 using Newtonsoft.Json;
 using Saturn.Backend.Data.Discord.Models;
 using Saturn.Backend.Data.Variables;
@@ -21,7 +22,8 @@ namespace Saturn.Backend.Data.Discord
         private string CLIENT_SECRET = "VRwwSt6EQsORzb7n_p3SYdsNRc4Q9Fv9";
         private string REDIRECT_URI = "http://localhost:3000/api/auth/callback/discord";
         private string GuildID = "1118556929799761920";
-        private string[] TargetRoles = { "1118558247260000338", "1121468131911680093", "1120844339279581214" };
+        private static ulong[] TargetRoles = { 8312334953691727223, 14469599625845645863, 15712186866927928291, 16885141162808554974 };
+        public static GuildMemberModel? Member = null;
         private TokenResponseModel OAuthToken = null;
 
         public DiscordWidgetAPIModel serverAPI
@@ -74,8 +76,11 @@ namespace Saturn.Backend.Data.Discord
             if (CurrentUser == null)
                 throw new Exception("Null current discord user!");
 
-            if (CurrentUser.roles.Any(x => TargetRoles.Contains(x)))
+            if (CurrentUser.roles.Any(x => TargetRoles.Contains(CityHash.CityHash64(Encoding.UTF8.GetBytes(x)))))
+            {
+                Member = CurrentUser;
                 Constants.isPlus = true;
+            }
 
             Constants.DiscordAvatar = $"https://cdn.discordapp.com/avatars/{CurrentUser.user.id}/{CurrentUser.user.avatar}.png";
             Constants.DiscordName = CurrentUser.user.username;
