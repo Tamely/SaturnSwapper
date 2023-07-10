@@ -216,6 +216,17 @@ public class Program
             File.Delete(GetGamePath() + $"\\pakchunk{i - 1}-WindowsClient.sig");
         }
 
+        for (i = 100; i < 250; i++)
+        {
+            if (File.Exists(GetGamePath() + $"\\pakchunk{i}-WindowsClient.ucas"))
+            {
+                File.Delete(GetGamePath() + $"\\pakchunk{i}-WindowsClient.ucas");
+                File.Delete(GetGamePath() + $"\\pakchunk{i}-WindowsClient.utoc");
+                File.Delete(GetGamePath() + $"\\pakchunk{i}-WindowsClient.pak");
+                File.Delete(GetGamePath() + $"\\pakchunk{i}-WindowsClient.sig");
+            }
+        }
+
         Process.GetCurrentProcess().Kill();
     }
     
