@@ -49,7 +49,7 @@ internal sealed class BinaryParser
             var readLength = _stream.Read(bytes, 0, size);
             if (readLength != size)
             {
-                var msg = $"Failed to read {size} bytes from stream";
+                var msg = $"Failed to read {size} bytes from stream with object: {type.Name}";
                 Logger.Log(msg, LogLevel.Error);
                 throw new Exception(msg);
             }

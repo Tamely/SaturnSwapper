@@ -5,7 +5,7 @@
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
         <LangVersion>11</LangVersion>
-        <TargetFramework>net6.0-windows</TargetFramework>
+        <TargetFramework>net7.0-windows</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -41,12 +41,6 @@
         <PackageReference Include="System.Xml.XmlSerializer" Version="4.3.0" />
         <PackageReference Include="Zstandard.Net" Version="1.1.7" />
         <PackageReference Include="ZstdSharp.Port" Version="0.7.2" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-            <_Parameter1>SSPN.Runtime.Tests</_Parameter1>
-        </AssemblyAttribute>
     </ItemGroup>
     
     <ItemGroup>
@@ -347,6 +341,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\EpicManifestParser\EpicManifestParser.csproj" />
+      <ProjectReference Include="..\Lang\Compiler\Radon\Radon.Runtime\Radon.Runtime.csproj" />
     </ItemGroup>
 
     <Target Name="PreBuild" BeforeTargets="PreBuildEvent">

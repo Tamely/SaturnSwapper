@@ -24,12 +24,11 @@ internal sealed class ProgramBinder : Binder
 
     public override BoundNode Bind(SyntaxNode? node, params object[] args)
     {
-        var modifiers = ImmutableArray.Create(SyntaxKind.StaticKeyword);
+        var modifiers = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.StaticKeyword);
         var programTypeSymbol = new StructSymbol("<$Program>", ImmutableArray<MemberSymbol>.Empty, _assembly,
             modifiers);
         var mainMethodSymbol = new MethodSymbol(programTypeSymbol, "<$Main>", TypeSymbol.Void, 
-            ImmutableArray<TypeParameterSymbol>.Empty, ImmutableArray<ParameterSymbol>.Empty, 
-            modifiers);
+            ImmutableArray<ParameterSymbol>.Empty, modifiers);
 
         programTypeSymbol = (StructSymbol)programTypeSymbol.WithMembers(ImmutableArray.Create<MemberSymbol>(mainMethodSymbol));
         CreateArchiveVariables();

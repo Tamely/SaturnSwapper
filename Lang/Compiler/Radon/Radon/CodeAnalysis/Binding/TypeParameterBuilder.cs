@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Radon.CodeAnalysis.Symbols;
 
@@ -5,29 +6,29 @@ namespace Radon.CodeAnalysis.Binding;
 
 internal sealed class TypeParameterBuilder
 {
-    private TypeMap _typeMap;
-
+    private List<TypeParameterSymbol> _typeParameters;
     public TypeParameterBuilder()
     {
-        _typeMap = TypeMap.Empty;
+        _typeParameters = new List<TypeParameterSymbol>();
     }
-        
+
     public ImmutableArray<TypeParameterSymbol> Build()
     {
-        if (_typeMap.Count == 0)
+        if (_typeParameters.Count == 0)
         {
             return ImmutableArray<TypeParameterSymbol>.Empty;
         }
-        
-        var result = _typeMap.Keys.ToImmutableArray();
-        _typeMap = new TypeMap();
-        return result;
+
+        var typeParameters = _typeParameters.ToImmutableArray();
+        _typeParameters.Clear();
+        return typeParameters;
     }
 
     public TypeParameterSymbol AddTypeParameter(string name)
     {
-        var typeParameter = TypeMap.CreateTypeParameter(name, _typeMap.Count, _typeMap); 
-        _typeMap.AddUnbound(typeParameter);
+        var ordinal = _typeParameters.Count;
+        var typeParameter = new TypeParameterSymbol(name, ordinal);
+        _typeParameters.Add(typeParameter);
         return typeParameter;
     }
 }

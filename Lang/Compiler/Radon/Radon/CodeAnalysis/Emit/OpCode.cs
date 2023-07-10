@@ -46,26 +46,26 @@ public enum OpCode : ushort
     // Loads the field of an object pushed onto the stack onto the evaluation stack
     Ldfld = (((Ldarg ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount,
 
-    // Loads the static field specified onto the evaluation stack
-    Ldsfld = (((Ldfld ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount,
+    // Replaces the value of a field on the current instance or type with a new value
+    Stfld = (((Ldfld ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount,
     
-    Ldenum = (((Ldsfld ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount,
+    // Loads the static field specified onto the evaluation stack
+    Ldsfld = (((Stfld ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount,
+
+    // Replaces the static field specified with a new value
+    Stsfld = (((Ldsfld ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount,
+    
+    // Loads the values of an enum member onto the evaluation stack
+    Ldenum = (((Stsfld ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount,
 
     // Loads the current instance onto the evaluation stack
     Ldthis = (((Ldenum ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount | NoOperandMask,
-
-    // Replaces the value of a field on the current instance or type with a new value
-    Stfld = (((Ldthis ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount,
-
-    // Replaces the static field specified with a new value
-    Stsfld = (((Stfld ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount,
-
+    
     // Loads the element at a specified offset from an object, array or a value type onto the evaluation stack as the type specified in the instruction
-    Ldelem = (((Stsfld ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount,
+    Ldelem = (((Ldthis ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount,
 
     // Replaces the value at the specified index from the array or value type with a new value
     Stelem = ((((Ldelem ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount) | NoOperandMask,
-
 
     // Calls a method specified in the instruction
     Call = (((Stelem ^ NoOperandMask) >> ShiftAmount) + 1) << ShiftAmount,

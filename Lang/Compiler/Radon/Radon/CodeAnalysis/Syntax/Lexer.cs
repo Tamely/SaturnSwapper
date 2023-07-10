@@ -44,7 +44,7 @@ internal sealed class Lexer
 
     public SyntaxToken Lex()
     {
-        ReadTrivia(leading: true);
+        ReadTrivia(true);
         
         var leadingTrivia = _triviaBuilder.ToImmutable();
         var tokenStart = _position;
@@ -53,9 +53,18 @@ internal sealed class Lexer
         
         var tokenKind = _kind;
         var tokenValue = _value;
+        if (tokenKind == SyntaxKind.TrueKeyword)
+        {
+            tokenValue = true;
+        }
+        else if (tokenKind == SyntaxKind.FalseKeyword)
+        {
+            tokenValue = false;
+        }
+        
         var tokenLength = _position - tokenStart;
         
-        ReadTrivia(leading: false);
+        ReadTrivia(false);
         
         var trailingTrivia = _triviaBuilder.ToImmutable();
         var tokenText = _kind.TryGetAttribute(SKAttributes.IsFixed, out _) 

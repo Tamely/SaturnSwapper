@@ -17,7 +17,7 @@
         <Description>The most advanced fortnite skin swapper</Description>
         <AssemblyVersion>2.2</AssemblyVersion>
         <FileVersion>2.2.0</FileVersion>
-        <TargetFramework>net6.0-windows</TargetFramework>
+        <TargetFramework>net7.0-windows</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">

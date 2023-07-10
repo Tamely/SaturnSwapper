@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using CUE4Parse.FileProvider;
+using Saturn.Backend.Data.Plugins.TEMPORARY;
 using Saturn.Backend.Data.SaturnAPI.Models;
 using Saturn.Backend.Data.SaturnConfig.Models;
 using Saturn.Backend.Data.Swapper.Swapping.Models;
@@ -175,7 +176,8 @@ namespace Saturn.Backend.Data.Variables
         
         public const int CHUNK_SIZE = 500;
         public static int ChunkIndex = 0;
-        
+
+        public static List<Plugin> OwnedPlugins = new();
         public static List<List<DisplayItemModel>> ChunkedItems = new();
         public static DisplayItemModel SelectedDisplayItem = new();
         public static SaturnItemModel SelectedItem = new();

@@ -9,13 +9,18 @@ namespace Radon.CodeAnalysis.Syntax.Nodes;
 
 public abstract class SyntaxNode
 {
-    public static readonly SyntaxNode Empty = new EmptySyntaxNode();
+    public static SyntaxNode Empty => new EmptySyntaxNode();
     public abstract SyntaxKind Kind { get; }
 
     public virtual TextSpan Span
     {
         get
         {
+            if (this is EmptySyntaxNode)
+            {
+                return TextSpan.Empty;
+            }
+            
             var first = GetChildren().First().Span;
             var last = GetChildren().Last().Span;
             return TextSpan.FromBounds(first.Start, last.End);

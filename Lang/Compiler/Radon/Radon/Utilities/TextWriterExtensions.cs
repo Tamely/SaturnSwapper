@@ -57,34 +57,34 @@ public static class TextWriterExtensions
 
     public static void WriteDiagnostics(this TextWriter writer, IEnumerable<Diagnostic> diagnostics)
     {
-        /*foreach (var diagnostic in diagnostics)
-        {
-            writer.SetForeground(diagnostic.IsWarning ? ConsoleColor.Yellow : ConsoleColor.Red);
-            writer.WriteLine(diagnostic);
-        }
-        
-        writer.ResetColor();
-        writer.WriteLine();*/
-        foreach (var diagnostic in diagnostics.Where(d => d.Location.Text == null))
-        {
-            var messageColor = diagnostic.IsWarning ? ConsoleColor.DarkYellow : ConsoleColor.DarkRed;
-            writer.SetForeground(messageColor);
-            writer.WriteLine(diagnostic.Message);
-            writer.ResetColor();
-        }
-
-        foreach (var diagnostic in diagnostics.Where(d => d.Location.Text != null)
-                                              .OrderBy(d => d.Location.FileName)
-                                              .ThenBy(d => d.Location.Span.Start)
-                                              .ThenBy(d => d.Location.Span.Length))
+        var diagEnumerable = diagnostics as Diagnostic[] ?? diagnostics.ToArray();
+        foreach (var diagnostic in diagEnumerable.OrderBy(d => d.Location.FileName)
+                     .ThenBy(d => d.Location.Span.Start)
+                     .ThenBy(d => d.Location.Span.Length))
         {
             var messageColor = diagnostic.IsWarning ? ConsoleColor.DarkYellow : ConsoleColor.DarkRed;
             var locationColor = ConsoleColor.DarkGray;
 
             var lineIndex = diagnostic.Location.Text.GetLineIndex(diagnostic.Location.Span.Start);
+            // Get the text of the span
+            var text = diagnostic.Location.Text;
+            var errorText = text.ToString(diagnostic.Location.Span);
+            // Check if it's a newline \n or \r\n
+            
             var line = diagnostic.Location.Text.Lines[lineIndex];
+            //var isWhitespace = string.IsNullOrWhiteSpace(errorText);
             var character = diagnostic.Location.Span.Start - line.Start + 1;
-
+            if (errorText is "\n" or "\r\n")
+            {
+                // If it is, set the character to 1 past the end of the line
+                character = line.Length + 1;
+            }
+            /*else if (isWhitespace)
+            {
+                // If it's whitespace, set the character to the first non-whitespace character
+                character++;
+            }*/
+            
             writer.SetForeground(locationColor);
             writer.Write($"({diagnostic.Location.FileName}, {lineIndex + 1}, {character}): ");
             writer.ResetColor();
@@ -98,8 +98,18 @@ public static class TextWriterExtensions
             writer.Write('\t');
             writer.WriteLine(line.ToString());
             writer.Write('\t');
+
+            writer.SetForeground(ConsoleColor.Cyan);
             writer.WriteLine(new string(' ', character - 1) + "^");
             writer.ResetColor();
+            
+#if DEBUG
+            writer.WriteLine();
+            writer.SetForeground(ConsoleColor.Blue);
+            writer.WriteLine(diagnostic.SourceMethod);
+            writer.WriteLine();
+            writer.ResetColor();
+#endif
         }
         
         writer.WriteLine();
@@ -108,7 +118,7 @@ public static class TextWriterExtensions
 
 public static class ObjectExtensions
 {
-    private static Dictionary<Type, bool> _cachedTypes = new();
+    private static readonly Dictionary<Type, bool> CachedTypes = new();
     
     public static unsafe T Encrypt<T>(this object value, long key)
     {
@@ -144,9 +154,9 @@ public static class ObjectExtensions
     public static bool IsUnmanaged(this Type type)
     {
         // ReSharper disable once CanSimplifyDictionaryLookupWithTryGetValue
-        if (_cachedTypes.ContainsKey(type))
+        if (CachedTypes.ContainsKey(type))
         {
-            return _cachedTypes[type];
+            return CachedTypes[type];
         }
 
         bool result;
@@ -164,7 +174,7 @@ public static class ObjectExtensions
                 .All(f => IsUnmanaged(f.FieldType));
         }
         
-        _cachedTypes.Add(type, result);
+        CachedTypes.Add(type, result);
         return result;
     }
 }

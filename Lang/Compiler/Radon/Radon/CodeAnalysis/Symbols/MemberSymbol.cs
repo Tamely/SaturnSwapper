@@ -13,4 +13,5 @@ public abstract class MemberSymbol : Symbol
     
     public abstract MemberSymbol WithType(TypeSymbol type);
     public abstract MemberSymbol WithParentType(TypeSymbol parentType);
+    public abstract override int GetHashCode();
 }

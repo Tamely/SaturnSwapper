@@ -164,6 +164,7 @@ public class LocalizationResourceService
         { 110, "Please join Saturn's guilded server!" },
         { 111, "This would help you stay updated on what's happening with the swapper!" },
         { 112, "Join Saturn" },
+        { 113, "Plugins" },
     };
     
     private Dictionary<int, string> ItalianStringTable = new()
@@ -281,6 +282,7 @@ public class LocalizationResourceService
         { 110, "Unitevi al server guilded di Saturn!" },
         { 111, "Questo vi aiuterà a rimanere aggiornati su ciò che accade con lo swapper!" },
         { 112, "Unisciti a Saturno" },
+        { 113, "Plugins" },
     };
     
     private Dictionary<int, string> SpanishStringTable = new()
@@ -398,6 +400,7 @@ public class LocalizationResourceService
         { 110, "Únete al servidor guilded de Saturno." },
         { 111, "Esto te ayudará a estar al día de lo que ocurre con el swapper." },
         { 112, "Únete a Saturno" },
+        { 113, "Plugins" },
     };
     
     private Dictionary<int, string> PortugueseStringTable = new()
@@ -515,6 +518,7 @@ public class LocalizationResourceService
         { 110, "Juntem-se ao servidor guilded de Saturno!" },
         { 111, "Isto ajudá-lo-á a manter-se actualizado sobre o que está a acontecer com o permutador!" },
         { 112, "Juntar-se a Saturno" },
+        { 113, "Plugins" },
     };
     
     private Dictionary<int, string> FrenchStringTable = new()
@@ -632,6 +636,7 @@ public class LocalizationResourceService
         { 110, "Rejoignez le serveur guilded de Saturn!" },
         { 111, "Cela vous permettra de rester au courant de ce qui se passe avec l'échangiste!" },
         { 112, "Rejoindre Saturne" },
+        { 113, "Plugins" },
     };
     
     private Dictionary<int, string> GermanStringTable = new()
@@ -749,6 +754,7 @@ public class LocalizationResourceService
         { 110, "Bitte treten Sie dem Saturn-Guilded-Server bei!" },
         { 111, "So bleiben Sie auf dem Laufenden, was mit dem Swapper passiert!" },
         { 112, "Saturn beitreten" },
+        { 113, "Plugins" },
     };
     
     private Dictionary<int, string> RussianStringTable = new()
@@ -866,6 +872,7 @@ public class LocalizationResourceService
         { 110, "Пожалуйста, присоединяйтесь к guilded-серверу Сатурна!" },
         { 111, "Это поможет вам быть в курсе того, что происходит с обменщиком!" },
         { 112, "Присоединиться к Сатурну" },
+        { 113, "Плагины" },
     };
     
     private Dictionary<int, string> UkrainianStringTable = new()
@@ -983,6 +990,7 @@ public class LocalizationResourceService
         { 110, "Будь ласка, приєднуйтесь до сервера Guilded Сатурна!" },
         { 111, "Це допоможе вам залишатися в курсі того, що відбувається зі своппером!" },
         { 112, "Приєднуйтесь до Сатурна" },
+        { 113, "Плагіни" },
     };
     
     public string GetString(int id)

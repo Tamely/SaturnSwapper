@@ -8,19 +8,16 @@ internal sealed class BoundInvocationExpression : BoundExpression
 {
     public override BoundNodeKind Kind => BoundNodeKind.InvocationExpression;
     public override TypeSymbol Type { get; }
-    public MethodSymbol Method { get; }
+    public AbstractMethodSymbol Method { get; }
     public BoundExpression Expression { get; }
-    public TypeMap TypeMap { get; }
-    public ImmutableDictionary<ParameterSymbol, BoundExpression> Arguments { get; }
+    public ImmutableArray<BoundExpression> Arguments { get; }
 
-    public BoundInvocationExpression(SyntaxNode syntax, MethodSymbol method, BoundExpression expression, TypeMap typeMap, 
-                                     ImmutableDictionary<ParameterSymbol, BoundExpression> arguments, 
-                                     TypeSymbol returnType)
+    public BoundInvocationExpression(SyntaxNode syntax, AbstractMethodSymbol method, BoundExpression expression,
+                                     ImmutableArray<BoundExpression> arguments, TypeSymbol returnType)
         : base(syntax)
     {
         Method = method;
         Expression = expression;
-        TypeMap = typeMap;
         Arguments = arguments;
         Type = returnType;
     }

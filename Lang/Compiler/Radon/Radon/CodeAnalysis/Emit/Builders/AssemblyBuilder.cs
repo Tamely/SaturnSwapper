@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Microsoft.CodeAnalysis;
 using Radon.CodeAnalysis.Binding.Semantics;
 using Radon.CodeAnalysis.Binding.Semantics.Expressions;
 using Radon.CodeAnalysis.Binding.Semantics.Members;
+using Radon.CodeAnalysis.Binding.Semantics.Operators;
 using Radon.CodeAnalysis.Binding.Semantics.Statements;
 using Radon.CodeAnalysis.Binding.Semantics.Types;
 using Radon.CodeAnalysis.Emit.Binary;
@@ -13,6 +15,9 @@ using Radon.CodeAnalysis.Emit.Comparers;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
 using Radon.Utilities;
+using Metadata = Radon.CodeAnalysis.Emit.Binary.MetadataBinary.Metadata;
+using SymbolKind = Radon.CodeAnalysis.Symbols.SymbolKind;
+using TypeKind = Radon.CodeAnalysis.Emit.Binary.MetadataBinary.TypeKind;
 
 namespace Radon.CodeAnalysis.Emit.Builders;
 
@@ -37,7 +42,7 @@ internal sealed class AssemblyBuilder
     private readonly Dictionary<Method, BoundMethod> _unfinishedMethodMap;
     private readonly Dictionary<Method, BoundConstructor> _unfinishedConstructorMap;
     private readonly Dictionary<TypeSymbol, TypeDefinition> _typeSymbolMap;
-    private readonly Dictionary<MethodSymbol, Method> _methodSymbolMap;
+    private readonly Dictionary<AbstractMethodSymbol, Method> _allMethodSymbolMap;
     private readonly Dictionary<ConstructorSymbol, Method> _constructorSymbolMap;
     private readonly Dictionary<FieldSymbol, Field> _fieldSymbolMap;
     private readonly Dictionary<EnumMemberSymbol, EnumMember> _enumMemberSymbolMap;
@@ -70,7 +75,7 @@ internal sealed class AssemblyBuilder
         _unfinishedMethodMap = new Dictionary<Method, BoundMethod>();
         _unfinishedConstructorMap = new Dictionary<Method, BoundConstructor>();
         _typeSymbolMap = new Dictionary<TypeSymbol, TypeDefinition>();
-        _methodSymbolMap = new Dictionary<MethodSymbol, Method>(methodSymbolComparer);
+        _allMethodSymbolMap = new Dictionary<AbstractMethodSymbol, Method>(methodSymbolComparer);
         _constructorSymbolMap = new Dictionary<ConstructorSymbol, Method>(methodSymbolComparer);
         _fieldSymbolMap = new Dictionary<FieldSymbol, Field>();
         _enumMemberSymbolMap = new Dictionary<EnumMemberSymbol, EnumMember>();
@@ -206,7 +211,7 @@ internal sealed class AssemblyBuilder
         }
 
         var guid = _assembly.Assembly.AssemblyId;
-        BuildMetadata();
+        CollectMetadata();
         foreach (var method in _unfinishedMethodMap.Keys)
         {
             BuildMethod(method);
@@ -240,9 +245,16 @@ internal sealed class AssemblyBuilder
     private void CollectMetadata()
     {
         var types = _assembly.Types;
+#if DEBUG
+        // ReSharper disable once NotAccessedVariable
+        var counter = 0;
+#endif
         foreach (var type in types)
         {
             BuildType(type.TypeSymbol);
+#if DEBUG
+            counter++;
+#endif
         }
     }
 
@@ -257,6 +269,7 @@ internal sealed class AssemblyBuilder
         var index = _typeDefinitionTable.Count;
         var flags = BuildFlags(type.Modifiers);
         var underlyingType = -1;
+        var isArray = false;
         TypeKind kind;
         if (type is StructSymbol)
         {
@@ -267,95 +280,79 @@ internal sealed class AssemblyBuilder
             kind = TypeKind.Enum;
             underlyingType = BuildType(e.UnderlyingType);
         }
+        else if (type is ArrayTypeSymbol a)
+        {
+            kind = TypeKind.Array;
+            underlyingType = BuildType(a.ElementType);
+            isArray = true;
+        }
         else
         {
-            kind = TypeKind.GenericType;
+            throw new Exception($"Unknown type {type}");
         }
 
-        if (TypeSymbol.GetPrimitiveTypes().Contains(type))
+        if (!isArray)
         {
-            kind |= TypeKind.Primitive;
-        }
-
-        if (TypeSymbol.GetNumericTypes().Contains(type))
-        {
-            kind |= TypeKind.Numeric;
-            if (TypeSymbol.GetSignedNumericTypes().Contains(type))
+            // Because array are their own thing, and cannot be primitive or numeric. They are simply arrays.
+            if (TypeSymbol.GetPrimitiveTypes().Contains(type))
             {
-                kind |= TypeKind.Signed;
+                kind |= TypeKind.Primitive;
             }
-            
-            if (TypeSymbol.GetFloatingPointTypes().Contains(type))
-            {
-                kind |= TypeKind.FloatingPoint;
-            }
-        }
 
-        var genericParameters = Array.Empty<int>();
-        if (type is StructSymbol s)
-        {
-            if (s.TypeParameters.Length > 0)
+            if (TypeSymbol.GetNumericTypes().Contains(type))
             {
-                genericParameters = new int[s.TypeParameters.Length];
-                for (var i = 0; i < s.TypeParameters.Length; i++)
+                kind |= TypeKind.Numeric;
+                if (TypeSymbol.GetSignedNumericTypes().Contains(type))
                 {
-                    var typeParameter = s.TypeParameters[i];
-                    var typeParameterIndex = BuildType(typeParameter);
-                    genericParameters[i] = typeParameterIndex;
+                    kind |= TypeKind.Signed;
+                }
+                
+                if (TypeSymbol.GetFloatingPointTypes().Contains(type))
+                {
+                    kind |= TypeKind.FloatingPoint;
                 }
             }
         }
 
         var name = AddString(type.Name);
-        var fieldCount = type.Members.Count(m => m is FieldSymbol);
         var fieldStartOffset = _fieldTable.Count;
-        foreach (var member in type.Members)
+        var fields = type.Members.OfType<FieldSymbol>().ToList();
+        foreach (var field in fields)
         {
-            if (member is FieldSymbol field)
-            {
-                BuildField(field, index);
-            }
+            BuildField(field, index);
         }
         
-        var enumMemberCount = type.Members.Count(m => m is EnumMemberSymbol);
         var enumMemberStartOffset = _enumMemberTable.Count;
-        foreach (var member in type.Members)
+        var enumMembers = type.Members.OfType<EnumMemberSymbol>().ToList();
+        foreach (var enumMember in enumMembers)
         {
-            if (member is EnumMemberSymbol enumMember)
-            {
-                BuildEnumMember(enumMember, index);
-            }
+            BuildEnumMember(enumMember, index);
         }
-
-        var methodCount = type.Members.Count(m => m is MethodSymbol);
+        
         var methodStartOffset = _methodTable.Count;
-        foreach (var member in type.Members)
+        var methods = type.Members.OfType<MethodSymbol>().ToList();
+        foreach (var method in methods)
         {
-            if (member is MethodSymbol method)
-            {
-                BuildMethod(method, type, index);
-            }
+            BuildMethod(method, type, index);
         }
 
         var constructorCount = type.Members.Count(m => m is ConstructorSymbol);
         var constructorStartOffset = _methodTable.Count;
         var staticConstructorOffset = -1;
-        foreach (var member in type.Members)
+        var constructors = type.Members.OfType<ConstructorSymbol>().ToList();
+        foreach (var constructor in constructors)
         {
-            if (member is ConstructorSymbol constructor)
+            if (constructor.Modifiers.Contains(SyntaxKind.StaticKeyword))
             {
-                if (constructor.Modifiers.Contains(SyntaxKind.StaticKeyword))
-                {
-                    staticConstructorOffset = _methodTable.Count;
-                }
-                
-                BuildConstructor(constructor, type, index);
+                staticConstructorOffset = _methodTable.Count;
             }
+            
+            BuildConstructor(constructor, type, index);
         }
 
         var size = type.Size;
-        var typeDefinition = new TypeDefinition(flags, kind, name, size, genericParameters, underlyingType, fieldCount,
-            fieldStartOffset, enumMemberCount, enumMemberStartOffset, methodCount, methodStartOffset, 
+        var typeDefinition = new TypeDefinition(flags, kind, name, size, isArray, underlyingType, fields.Count,
+            fieldStartOffset, enumMembers.Count, enumMemberStartOffset, methods.Count, methodStartOffset, 
             constructorCount, constructorStartOffset, staticConstructorOffset);
         
         _typeSymbolMap.Add(type, typeDefinition);
@@ -415,7 +412,7 @@ internal sealed class AssemblyBuilder
             parameterStartOffset, -1, -1, -1, -1);
         _unfinishedMethodMap.Add(unfinishedMethod, boundMethod);
         _methodTable.Add(unfinishedMethod);
-        _methodSymbolMap.Add(method, unfinishedMethod);
+        _allMethodSymbolMap.Add(method, unfinishedMethod);
     }
     
     private void BuildConstructor(ConstructorSymbol constructor, TypeSymbol parentType, int parentTypeIndex)
@@ -445,6 +442,7 @@ internal sealed class AssemblyBuilder
         _unfinishedConstructorMap.Add(unfinishedConstructor, boundConstructor);
         _methodTable.Add(unfinishedConstructor);
         _constructorSymbolMap.Add(constructor, unfinishedConstructor);
+        _allMethodSymbolMap.Add(constructor, unfinishedConstructor);
     }
     
     private void BuildParameter(ParameterSymbol parameter, TypeSymbol parentType, int parentTypeIndex)
@@ -471,11 +469,26 @@ internal sealed class AssemblyBuilder
             {
                 flags |= BindingFlags.RuntimeInternal;
             }
+            
+            if (modifier == SyntaxKind.PublicKeyword)
+            {
+                flags |= BindingFlags.Public;
+            }
+            
+            if (modifier == SyntaxKind.PrivateKeyword)
+            {
+                flags |= BindingFlags.Private;
+            }
         }
 
         if (!flags.HasFlag(BindingFlags.Static))
         {
             flags |= BindingFlags.Instance;
+        }
+
+        if (!flags.HasFlag(BindingFlags.Public))
+        {
+            flags |= BindingFlags.Private;
         }
         
         return flags;
@@ -502,16 +515,6 @@ internal sealed class AssemblyBuilder
         _methodTable[index] = finishedMethod;
     }
 
-    private TypeSymbol ResolveGenericType(TypeSymbol typeSymbol)
-    {
-        if (typeSymbol is TypeParameterSymbol typeParameterSymbol)
-        {
-            return ResolveGenericType(typeParameterSymbol.TypeMap.GetType(typeParameterSymbol));
-        }
-        
-        return typeSymbol;
-    }
-    
     internal sealed class MethodEmitter
     {
         private readonly AssemblyBuilder _builder;
@@ -594,6 +597,9 @@ internal sealed class AssemblyBuilder
                 case BoundVariableDeclarationStatement variableDeclarationStatement:
                     EmitVariableDeclarationStatement(variableDeclarationStatement);
                     break;
+                case BoundReturnStatement returnStatement:
+                    EmitReturnStatement(returnStatement);
+                    break;
             }
         }
         
@@ -648,11 +654,34 @@ internal sealed class AssemblyBuilder
             
             EmitExpression(variableDeclarationStatement.Initializer);
             var name = _builder.AddString(variableDeclarationStatement.Variable.Name);
-            var type = _builder.BuildType(_builder.ResolveGenericType(variableDeclarationStatement.Variable.Type));
+            var type = _builder.BuildType(variableDeclarationStatement.Variable.Type);
             var local = new Local(BindingFlags.None, name, type);
             _localTable.Add(local);
             var localIndex = _localTable.Count - 1;
             EmitInstruction(OpCode.Stloc, localIndex);
+        }
+        
+        private void EmitReturnStatement(BoundReturnStatement returnStatement)
+        {
+            /*
+             * IL:
+             * 1. Emit the expression.
+             * 2. Return the result.
+             *
+             * e.g
+             *
+             * return 1;
+             * > becomes
+             * ldc 1 // load constant at constant pool index 1
+             * ret // return the result
+            */
+            
+            if (returnStatement.Expression is not null)
+            {
+                EmitExpression(returnStatement.Expression);
+            }
+            
+            EmitInstruction(OpCode.Ret);
         }
 
         private void EmitExpression(BoundExpression expression)
@@ -688,6 +717,12 @@ internal sealed class AssemblyBuilder
                     break;
                 case BoundNewExpression newExpression:
                     EmitNewExpression(newExpression);
+                    break;
+                case BoundNewArrayExpression newArrayExpression:
+                    EmitNewArrayExpression(newArrayExpression);
+                    break;
+                case BoundElementAccessExpression elementAccessExpression:
+                    EmitElementAccessExpression(elementAccessExpression);
                     break;
                 case BoundThisExpression:
                     EmitThisExpression();
@@ -735,13 +770,13 @@ internal sealed class AssemblyBuilder
         private void EmitConversionExpression(BoundConversionExpression expression)
         {
             EmitExpression(expression.Expression);
-            var type = _builder.BuildType(_builder.ResolveGenericType(expression.Type));
+            var type = _builder.BuildType(expression.Type);
             EmitInstruction(OpCode.Conv, type);
         }
         
         private void EmitDefaultExpression(BoundDefaultExpression expression)
         {
-            var type = _builder.BuildType(_builder.ResolveGenericType(expression.Type));
+            var type = _builder.BuildType(expression.Type);
             EmitInstruction(OpCode.Lddft, type);
         }
         
@@ -754,9 +789,9 @@ internal sealed class AssemblyBuilder
         private void EmitInvocationExpression(BoundInvocationExpression expression)
         {
             var method = expression.Method;
-            var emittedMethod = _builder._methodSymbolMap[method];
+            var emittedMethod = _builder._allMethodSymbolMap[method];
             var methodIndex = _builder._methodTable.IndexOf(emittedMethod);
-            var arguments = expression.Arguments.Values.ToImmutableArray();
+            var arguments = expression.Arguments;
 
             // Arguments are pushed onto the stack in reverse order.
             for (var i = arguments.Length - 1; i >= 0; i--)
@@ -765,18 +800,10 @@ internal sealed class AssemblyBuilder
                 EmitExpression(argument);
             }
 
-            var returnType = _builder.BuildType(_builder.ResolveGenericType(expression.Type));
-            var parameterTypes = new int[method.Parameters.Length];
-            for (var i = 0; i < parameterTypes.Length; i++)
-            {
-                var parameter = method.Parameters[i];
-                var parameterType = _builder.BuildType(_builder.ResolveGenericType(parameter.Type));
-                parameterTypes[i] = parameterType;
-            }
-            
-            var parentType = _builder.BuildType(_builder.ResolveGenericType(method.ParentType));
+            var returnType = _builder.BuildType(expression.Type);
+            var parentType = _builder.BuildType(method.ParentType);
             var memberReference = new MemberReference(BindingFlags.None, MemberType.Method, parentType, returnType, 
-                methodIndex, parameterTypes);
+                methodIndex);
             var memberReferenceIndex = _builder.AddToList(_builder._memberReferenceTable, memberReference);
             EmitInstruction(OpCode.Call, memberReferenceIndex);
         }
@@ -815,10 +842,10 @@ internal sealed class AssemblyBuilder
             var field = (FieldSymbol)expression.Member;
             var emittedField = _builder._fieldSymbolMap[field];
             var fieldIndex = _builder._fieldTable.IndexOf(emittedField);
-            var fieldType = _builder.BuildType(_builder.ResolveGenericType(field.Type));
-            var parentType = _builder.BuildType(_builder.ResolveGenericType(field.ParentType));
+            var fieldType = _builder.BuildType(field.Type);
+            var parentType = _builder.BuildType(field.ParentType);
             var memberReference = new MemberReference(BindingFlags.None, MemberType.Field, parentType, fieldType, 
-                fieldIndex, Array.Empty<int>());
+                fieldIndex);
             var memberReferenceIndex = _builder.AddToList(_builder._memberReferenceTable, memberReference);
             if (isStatic)
             {
@@ -836,10 +863,10 @@ internal sealed class AssemblyBuilder
             var enumMember = (EnumMemberSymbol)expression.Member;
             var emittedEnumMember = _builder._enumMemberSymbolMap[enumMember];
             var enumMemberIndex = _builder._enumMemberTable.IndexOf(emittedEnumMember);
-            var enumMemberType = _builder.BuildType(_builder.ResolveGenericType(enumMember.Type));
-            var enumParentType = _builder.BuildType(_builder.ResolveGenericType(enumMember.ParentType));
+            var enumMemberType = _builder.BuildType(enumMember.Type);
+            var enumParentType = _builder.BuildType(enumMember.ParentType);
             var memberReference = new MemberReference(BindingFlags.None, MemberType.EnumMember, enumParentType, enumMemberType, 
-                enumMemberIndex, Array.Empty<int>());
+                enumMemberIndex);
             var memberReferenceIndex = _builder.AddToList(_builder._memberReferenceTable, memberReference);
             EmitInstruction(OpCode.Ldenum, memberReferenceIndex);
         }
@@ -865,7 +892,7 @@ internal sealed class AssemblyBuilder
             var constructor = expression.Constructor;
             var emittedConstructor = _builder._constructorSymbolMap[constructor];
             var constructorIndex = _builder._methodTable.IndexOf(emittedConstructor);
-            var arguments = expression.Arguments.Values.ToImmutableArray();
+            var arguments = expression.Arguments;
 
             // Arguments are pushed onto the stack in reverse order.
             for (var i = arguments.Length - 1; i >= 0; i--)
@@ -874,34 +901,27 @@ internal sealed class AssemblyBuilder
                 EmitExpression(argument);
             }
 
-            var returnType = _builder.BuildType(_builder.ResolveGenericType(expression.Type));
-            var parameterTypes = new int[constructor.Parameters.Length];
-            for (var i = 0; i < parameterTypes.Length; i++)
-            {
-                var parameter = constructor.Parameters[i];
-                var parameterType = _builder.BuildType(_builder.ResolveGenericType(parameter.Type));
-                parameterTypes[i] = parameterType;
-            }
-            
-            var typeArguments = new int[expression.TypeMap.Count];
-            var index = 0;
-            foreach (var (typeParam, typeArg) in expression.TypeMap)
-            {
-                if (typeArg is null)
-                {
-                    throw new InvalidOperationException($"Type argument for type parameter {typeParam.Name} is null.");
-                }
-                
-                var typeArgument = _builder.BuildType(_builder.ResolveGenericType(typeArg));
-                typeArguments[index] = typeArgument;
-                index++;
-            }
-            
-            var memberReference = new MemberReference(BindingFlags.None, MemberType.Constructor, returnType, returnType, constructorIndex, parameterTypes);
+            var returnType = _builder.BuildType(expression.Type);
+            var memberReference = new MemberReference(BindingFlags.None, MemberType.Constructor, returnType, 
+                returnType, constructorIndex);
             var memberReferenceIndex = _builder.AddToList(_builder._memberReferenceTable, memberReference);
-            var typeReference = new TypeReference(BindingFlags.None, returnType, memberReferenceIndex, typeArguments);
+            var typeReference = new TypeReference(BindingFlags.None, returnType, memberReferenceIndex);
             var typeReferenceIndex = _builder.AddToList(_builder._typeReferenceTable, typeReference);
             EmitInstruction(OpCode.Newobj, typeReferenceIndex);
+        }
+        
+        private void EmitNewArrayExpression(BoundNewArrayExpression expression)
+        {
+            var arrayType = _builder.BuildType(expression.Type);
+            EmitExpression(expression.SizeExpression);
+            EmitInstruction(OpCode.Newarr, arrayType);
+        }
+        
+        private void EmitElementAccessExpression(BoundElementAccessExpression expression)
+        {
+            EmitExpression(expression.Expression); // Array instance
+            EmitExpression(expression.IndexExpression);
+            EmitInstruction(_isAssigning ? OpCode.Stelem : OpCode.Ldelem);
         }
         
         private void EmitLocalExpression(BoundNameExpression expression)
@@ -939,4 +959,3 @@ internal sealed class AssemblyBuilder
         }
     }
 }
-

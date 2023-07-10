@@ -6,11 +6,13 @@ public sealed partial class VariableDeclarationSyntax : StatementSyntax
 {
     public TypeSyntax Type { get; }
     public VariableDeclaratorSyntax Declarator { get; }
+    public override SyntaxToken SemicolonToken { get; }
     
-    public VariableDeclarationSyntax(SyntaxTree syntaxTree, TypeSyntax type, VariableDeclaratorSyntax declarator)
+    public VariableDeclarationSyntax(SyntaxTree syntaxTree, TypeSyntax type, VariableDeclaratorSyntax declarator, SyntaxToken semicolonToken)
         : base(syntaxTree)
     {
         Type = type;
         Declarator = declarator;
+        SemicolonToken = semicolonToken;
     }
 }
