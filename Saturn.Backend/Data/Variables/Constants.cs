@@ -1,9 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using CUE4Parse.FileProvider;
+using CUE4Parse.UE4.AssetRegistry.Objects;
+using CUE4Parse.UE4.Assets.Exports.Texture;
 using Saturn.Backend.Data.Plugins.TEMPORARY;
 using Saturn.Backend.Data.SaturnAPI.Models;
 using Saturn.Backend.Data.SaturnConfig.Models;
+using Saturn.Backend.Data.Swapper.Assets;
+using Saturn.Backend.Data.Swapper.Generation;
 using Saturn.Backend.Data.Swapper.Swapping.Models;
 
 namespace Saturn.Backend.Data.Variables
@@ -178,6 +183,13 @@ namespace Saturn.Backend.Data.Variables
         public static bool CanLobbySwap = false;
         public static bool ShouldLobbySwap = true;
         public static bool IsRemoving = false;
+        
+        public static List<AssetSelectorItem> Outfits = new();
+
+        public static AssetHandler Handler = new();
+        public static List<FAssetData> AssetDataBuffers = new();
+        public static RarityCollection[] RarityData = new RarityCollection[8];
+        public static UTexture2D PlaceholderTexture;
         
         public static SaturnState State = SaturnState.S_Installer;
         public static SaturnState CosmeticState = SaturnState.S_Skin;

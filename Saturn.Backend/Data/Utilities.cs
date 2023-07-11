@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CUE4Parse;
 using CUE4Parse.UE4.Assets;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Objects.GameplayTags;
+using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.Utils;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
@@ -19,6 +23,7 @@ using Saturn.Backend.Data.Swapper.Core.Models;
 using Saturn.Backend.Data.Swapper.Swapping;
 using Saturn.Backend.Data.Swapper.Swapping.Models;
 using Saturn.Backend.Data.Variables;
+using SkiaSharp;
 
 namespace Saturn.Backend.Data
 {
@@ -132,6 +137,41 @@ namespace Saturn.Backend.Data
         }
         
         public static string GetHWID() => System.Security.Principal.WindowsIdentity.GetCurrent().User.Value;
+        
+        public static string TitleCase(this string text)
+        {
+            var textInfo = CultureInfo.CurrentCulture.TextInfo;
+            return textInfo.ToTitleCase(text);
+        }
+        
+        public static T GetOrDefault<T>(this UObject obj, params string[] names)
+        {
+            foreach (var name in names)
+            {
+                if (obj.Properties.Any(x => x.Name.Text.Equals(name)))
+                {
+                    return obj.GetOrDefault<T>(name);
+                }
+            }
+
+            return default;
+        }
+
+        public static FName? GetValueOrDefault(this FGameplayTagContainer tags, string category, FName def = default)
+        {
+            return tags.GameplayTags is not { Length: > 0 } ? def : tags.GameplayTags.FirstOrDefault(it => it.Text.StartsWith(category), def);
+        }
+
+        public static bool ContainsAny(this FGameplayTagContainer tags, params string[] check)
+        {
+            return check.Any(x => tags.ContainsAny(x));
+        }
+
+        public static bool ContainsAny(this FGameplayTagContainer tags, string check)
+        {
+            if (tags.GameplayTags is null) return false;
+            return tags.GameplayTags.Any(x => x.Text.Contains(check));
+        }
 
         public static string GetKeyFromValue(this Dictionary<string, string> dict, string value)
         {

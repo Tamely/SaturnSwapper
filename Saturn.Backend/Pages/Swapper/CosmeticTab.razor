@@ -49,7 +49,7 @@
             </div>
         </div>
     }
-    else if (Constants.ChunkedItems.Count == 0 || Constants.ChunkedItems[0].Count == 0)
+    else if (false && (Constants.ChunkedItems.Count == 0 || Constants.ChunkedItems[0].Count == 0))
     {
         <div class="tab-message">
             <div class="text">
@@ -61,10 +61,10 @@
     }
     else
     {
-        @foreach (var item in Constants.ChunkedItems[Constants.ChunkIndex])
+        foreach (var item in Constants.Outfits)
         {
-            <div id="@(item.ID + "-section")" class="section hoverable" @onclick="@(async () => await DecideWhatPathToDo(item))">
-                <img src=@($"https://fortnite-api.com/images/cosmetics/br/{item.ID}/smallicon.png") alt="Icon"/>
+            <div id="@(item.ID + "-section")" class="section hoverable">
+                <img src=@(item.GetHTMLImage()) alt="Icon"/>
                 @if (FaultyIDs.Keys.Contains(item.ID))
                 {
                     <div class="icon-overlay">
@@ -72,7 +72,7 @@
                     </div>
                 }
                 <div class="name">
-                    <h1>@item.Name</h1>
+                    <h1>@item.DisplayName</h1>
 
                     @if (FaultyIDs.Keys.Contains(item.ID))
                     {
