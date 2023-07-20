@@ -20,14 +20,14 @@ internal sealed class ManagedByte : ManagedPrimitive<byte>
         PrimValue = value;
     }
     
-    public unsafe ManagedByte(byte[] value)
+    public ManagedByte(byte[] value)
     {
+        Type = ManagedRuntime.System.GetType("byte");
         if (value.Length != Size)
         {
             throw new ArgumentException($"Value must be {Size} bytes long", nameof(value));
         }
         
-        Type = ManagedRuntime.System.GetType("byte");
         PrimValue = GetValueAs<byte>(value);
     }
     

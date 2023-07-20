@@ -174,7 +174,7 @@ internal sealed class AssemblyBinder : Binder
         }
         
         var diagnostics = Diagnostics.ToImmutableArray();
-        var assembly = new BoundAssembly(SyntaxNode.Empty, Assembly, boundTypes.ToImmutableArray(), diagnostics);
+        var assembly = new BoundAssembly(SyntaxNode.Empty, Assembly, boundTypes.ToImmutableArray(), diagnostics, Scope);
         var lowerer = new Lowerer(assembly);
         var loweredAssembly = lowerer.Lower();
         return loweredAssembly;

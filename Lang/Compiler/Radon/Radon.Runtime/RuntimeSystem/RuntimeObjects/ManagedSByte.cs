@@ -22,12 +22,12 @@ internal sealed class ManagedSByte : ManagedPrimitive<sbyte>
 
     public unsafe ManagedSByte(byte[] value)
     {
+        Type = ManagedRuntime.System.GetType("sbyte");
         if (value.Length != Size)
         {
             throw new ArgumentException($"Value must be {Size} bytes long", nameof(value));
         }
         
-        Type = ManagedRuntime.System.GetType("sbyte");
         fixed (byte* ptr = value)
         {
             PrimValue = *(sbyte*)ptr;

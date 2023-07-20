@@ -8,15 +8,15 @@ internal readonly struct EnumMember
     public readonly BindingFlags Flags;
     public readonly int Name;
     public readonly int Type;
-    public readonly int Value;
+    public readonly int ValueIndex;
     public readonly int Parent;
     
-    public EnumMember(BindingFlags flags, int name, int type, int value, int parent)
+    public EnumMember(BindingFlags flags, int name, int type, int valueIndex, int parent)
     {
         Flags = flags;
         Name = name;
         Type = type;
-        Value = value;
+        ValueIndex = valueIndex;
         Parent = parent;
     }
 }

@@ -1,5 +1,5 @@
 #define PARSE_ONLY
-//#undef PARSE_ONLY
+#undef PARSE_ONLY
 
 using Radon.CodeAnalysis;
 using Radon.CodeAnalysis.Syntax;
@@ -35,13 +35,13 @@ public static class Program
             var diagnostics = compilation.Diagnostics;
             if (diagnostics.Any())
             {
-                Log("Diagnostics were found...", ConsoleColor.Red);
+                Log("Diagnostics were found!", ConsoleColor.Red);
                 Console.WriteLine();
                 Console.Out.WriteDiagnostics(diagnostics);
             }
             else
             {
-                Log("No diagnostics were found...", ConsoleColor.Green);
+                Log("No diagnostics were found!", ConsoleColor.Green);
                 var root = syntaxTree.Root;
                 
 #if DEBUG
@@ -64,12 +64,12 @@ public static class Program
                 var bytes = compilation.Compile(out diagnostics);
                 if (bytes == null)
                 {
-                    Log("Compilation failed...", ConsoleColor.Red);
+                    Log("Compilation failed!", ConsoleColor.Red);
                     Console.Out.WriteDiagnostics(diagnostics);
                     continue;
                 }
                 
-                Log("Compilation succeeded...", ConsoleColor.Green);
+                Log("Compilation succeeded!", ConsoleColor.Green);
                 Log($"Writing to {sourceText.FileName}.csp...", ConsoleColor.Cyan);
                 File.WriteAllBytes(sourceText.FileName + ".csp", bytes);
                 Log("Done!", ConsoleColor.Green);

@@ -90,8 +90,14 @@ internal sealed class NamedTypeBinder : TypeBinder
                     Register(context, typeParameter);
                 }
 
+                var orderedTypeParameters = new TypeParameterSymbol[typeParameters.Count];
+                foreach (var (typeParameter, _) in typeParameters)
+                {
+                    orderedTypeParameters[typeParameter.Ordinal] = typeParameter;
+                }
+                
                 var type = new TemplateSymbol(name, ImmutableArray<MemberSymbol>.Empty, _assembly,
-                                              ImmutableArray<SyntaxKind>.Empty, typeParameters.Keys.ToImmutableArray(), 
+                                              ImmutableArray<SyntaxKind>.Empty, orderedTypeParameters.ToImmutableArray(), 
                                               this);
                 _type = type;
                 return type;
@@ -265,7 +271,7 @@ internal sealed class NamedTypeBinder : TypeBinder
             var constructor = new ConstructorSymbol(_type, ImmutableArray<ParameterSymbol>.Empty, ImmutableArray<SyntaxKind>.Empty);
             _type.AddMember(constructor);
             _defaultConstructor =
-                new BoundConstructor(SyntaxNode.Empty, constructor, ImmutableArray<BoundStatement>.Empty);
+                new BoundConstructor(SyntaxNode.Empty, constructor, ImmutableArray<BoundStatement>.Empty, ImmutableArray<LocalVariableSymbol>.Empty);
             _boundMembers.Add(_defaultConstructor);
         }
     }
@@ -561,8 +567,9 @@ internal sealed class NamedTypeBinder : TypeBinder
                 Diagnostics.ReportEnumMemberMustHaveConstantValue(syntax.Location, enumMemberSymbol.Name);
                 return new BoundEnumMember(syntax, enumMemberSymbol);
             }
-            
-            enumMemberSymbol.ReplaceValue(expression.ConstantValue?.Value as int? ?? _previousValue++);
+
+            var value = Convert.ToInt32(expression.ConstantValue?.Value ?? _previousValue++);
+            enumMemberSymbol.ReplaceValue(value);
         }
         
         return new BoundEnumMember(syntax, enumMemberSymbol);

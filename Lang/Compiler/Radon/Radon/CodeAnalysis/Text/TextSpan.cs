@@ -24,7 +24,7 @@ public readonly struct TextSpan
     {
         return span.Start < End && Start < span.End;
     }
-    
+
     public override string ToString()
     {
         return $"{Start}..{End}";

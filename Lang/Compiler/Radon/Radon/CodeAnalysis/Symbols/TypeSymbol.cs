@@ -237,11 +237,12 @@ public abstract class TypeSymbol : Symbol
                 method.Name == name)
             {
                 var parameterTypes = new List<TypeSymbol>();
-                foreach (var parameter in method.Parameters)
+                for (var i = 0; i < method.Parameters.Length; i++)
                 {
+                    var parameter = method.Parameters[i];
                     parameterTypes.Add(parameter.Type);
                 }
-                
+
                 if (method is TemplateMethodSymbol templateMethod)
                 {
                     if (templateMethod.TypeParameters.Length != typeArguments.Length)
@@ -260,7 +261,11 @@ public abstract class TypeSymbol : Symbol
                         }
                         
                         method = (TMethodSymbol)(object)typeBinder.BuildTemplateMethod(templateMethod, typeArguments, callSite);
-                        parameterTypes = method.Parameters.Select(p => p.Type).ToList();
+                        for (var i = 0; i < method.Parameters.Length; i++)
+                        {
+                            var parameter = method.Parameters[i];
+                            parameterTypes[i] = parameter.Type;
+                        }
                     }
                 }
                 
@@ -271,6 +276,10 @@ public abstract class TypeSymbol : Symbol
                 
                 for (var i = 0; i < method.Parameters.Length; i++)
                 {
+                    // TODO: When type parameters are used as the type of a parameter, they sometimes get place out of order.
+                    // TODO: This suggest a race condition somewhere.
+                    // TODO: To combat this, we can ensure the type parameters are always in the same order.
+                    // TODO: by using ordinals and other tricks.
                     var parameterType = parameterTypes[i];
                     var argument = arguments[i];
                     var conversion = Conversion.Classify(binder, argument, parameterType);
@@ -280,6 +289,7 @@ public abstract class TypeSymbol : Symbol
                     {
                         binder.Diagnostics.ReportCannotConvert(argument.Syntax.Location, argument.Type, parameterType);
                         possibleCandidates.Add((method, argument.Type, parameterType));
+                        ambiguousCandidates.Add(method);
                         goto failed;
                     }
                 }

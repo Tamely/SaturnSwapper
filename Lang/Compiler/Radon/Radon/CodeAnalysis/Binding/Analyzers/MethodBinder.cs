@@ -86,6 +86,6 @@ internal sealed class MethodBinder : Binder
         }
         
         Diagnostics.AddRange(statementBinder.Diagnostics);
-        return new BoundConstructor(syntax, symbol, boundStatements.ToImmutableArray());
+        return new BoundConstructor(syntax, symbol, boundStatements.ToImmutableArray(), statementBinder.Locals);
     }
 }

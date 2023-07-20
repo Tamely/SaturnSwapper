@@ -11,7 +11,7 @@ internal sealed record EnumMemberInfo : IMemberInfo
     public EnumMemberInfo(EnumMember enumMember, Metadata metadata, TypeInfo parent)
     {
         Name = metadata.Strings.Strings[enumMember.Name];
-        var constant = metadata.Constants.Constants[enumMember.Value];
+        var constant = metadata.Constants.Constants[enumMember.ValueIndex];
         var type = metadata.Types.Types[enumMember.Type];
         var size = type.Size;
         var bytes = new byte[size];

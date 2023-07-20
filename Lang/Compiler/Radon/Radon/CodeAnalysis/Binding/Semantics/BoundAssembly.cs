@@ -11,11 +11,13 @@ internal sealed class BoundAssembly : BoundNode
     public AssemblySymbol? Assembly { get; }
     public ImmutableArray<BoundType> Types { get; }
     public ImmutableArray<Diagnostic> Diagnostics { get; }
-    internal BoundAssembly(SyntaxNode syntax, AssemblySymbol? assembly, ImmutableArray<BoundType> types, ImmutableArray<Diagnostic> diagnostics) 
+    public Scope? Scope { get; }
+    internal BoundAssembly(SyntaxNode syntax, AssemblySymbol? assembly, ImmutableArray<BoundType> types, ImmutableArray<Diagnostic> diagnostics, Scope? scope) 
         : base(syntax)
     {
         Assembly = assembly;
         Types = types;
         Diagnostics = diagnostics;
+        Scope = scope;
     }
 }

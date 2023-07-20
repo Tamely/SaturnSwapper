@@ -11,4 +11,6 @@ internal abstract class BoundType : BoundNode
     {
         TypeSymbol = typeSymbol;
     }
+    
+    public override string ToString() => TypeSymbol.ToString();
 }

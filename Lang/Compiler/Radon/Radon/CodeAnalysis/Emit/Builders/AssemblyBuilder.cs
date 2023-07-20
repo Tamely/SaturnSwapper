@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Microsoft.CodeAnalysis;
 using Radon.CodeAnalysis.Binding.Semantics;
 using Radon.CodeAnalysis.Binding.Semantics.Expressions;
 using Radon.CodeAnalysis.Binding.Semantics.Members;
@@ -15,14 +14,17 @@ using Radon.CodeAnalysis.Emit.Comparers;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
 using Radon.Utilities;
-using Metadata = Radon.CodeAnalysis.Emit.Binary.MetadataBinary.Metadata;
-using SymbolKind = Radon.CodeAnalysis.Symbols.SymbolKind;
-using TypeKind = Radon.CodeAnalysis.Emit.Binary.MetadataBinary.TypeKind;
 
 namespace Radon.CodeAnalysis.Emit.Builders;
 
 internal sealed class AssemblyBuilder
 {
+    private readonly TypeDefinitionComparer _typeDefinitionComparer;
+    private readonly MethodComparer _methodComparer;
+    private readonly FieldComparer _fieldComparer;
+    private readonly EnumMemberComparer _enumMemberComparer;
+    private readonly LocalComparer _localComparer;
+    private readonly ParameterComparer _parameterComparer;
     private AssemblyFlags _flags;
     private readonly BoundAssembly _assembly;
     private readonly List<string> _stringTable;
@@ -50,12 +52,18 @@ internal sealed class AssemblyBuilder
     private readonly Dictionary<ParameterSymbol, Parameter> _parameterSymbolMap;
     private readonly Dictionary<TypeSymbol, Dictionary<MethodSymbol, BoundMethod>> _methodMap;
     private readonly Dictionary<TypeSymbol, Dictionary<ConstructorSymbol, BoundConstructor>> _constructorMap;
-
+    
     public AssemblyBuilder(BoundAssembly assembly)
     {
         var methodSymbolComparer = new MethodSymbolComparer();
         var random = new Random();
 
+        _typeDefinitionComparer = new TypeDefinitionComparer();
+        _methodComparer = new MethodComparer();
+        _fieldComparer = new FieldComparer();
+        _enumMemberComparer = new EnumMemberComparer();
+        _localComparer = new LocalComparer();
+        _parameterComparer = new ParameterComparer();
         _flags = AssemblyFlags.None;
         _assembly = assembly;
         _stringTable = new List<string>();
@@ -107,19 +115,20 @@ internal sealed class AssemblyBuilder
         }
     }
     
-    private int AddToList<T>(IList<T> list, T value)
+    private static int AddToList<T>(ICollection<T> list, T value)
     {
-        var index = list.IndexOf(value);
-        if (index == -1)
+        var index = list.IndexOf(value, null);
+        if (index != -1)
         {
-            index = list.Count;
-            list.Add(value);
+            return index;
         }
-
+        
+        index = list.Count;
+        list.Add(value);
         return index;
     }
     
-    private int AddRangeToList<T>(List<T> list, IEnumerable<T> values)
+    private static int AddRangeToList<T>(List<T> list, IEnumerable<T> values)
     {
         var index = list.Count;
         list.AddRange(values);
@@ -245,16 +254,9 @@ internal sealed class AssemblyBuilder
     private void CollectMetadata()
     {
         var types = _assembly.Types;
-#if DEBUG
-        // ReSharper disable once NotAccessedVariable
-        var counter = 0;
-#endif
         foreach (var type in types)
         {
             BuildType(type.TypeSymbol);
-#if DEBUG
-            counter++;
-#endif
         }
     }
 
@@ -263,7 +265,7 @@ internal sealed class AssemblyBuilder
         // Check if type has already been built
         if (_typeSymbolMap.TryGetValue(type, out var typeDef))
         {
-            return _typeDefinitionTable.IndexOf(typeDef);
+            return _typeDefinitionTable.IndexOf(typeDef, _typeDefinitionComparer);
         }
         
         var index = _typeDefinitionTable.Count;
@@ -271,24 +273,24 @@ internal sealed class AssemblyBuilder
         var underlyingType = -1;
         var isArray = false;
         TypeKind kind;
-        if (type is StructSymbol)
+        switch (type)
         {
-            kind = TypeKind.Struct;
-        }
-        else if (type is EnumSymbol e)
-        {
-            kind = TypeKind.Enum;
-            underlyingType = BuildType(e.UnderlyingType);
-        }
-        else if (type is ArrayTypeSymbol a)
-        {
-            kind = TypeKind.Array;
-            underlyingType = BuildType(a.ElementType);
-            isArray = true;
-        }
-        else
-        {
-            throw new Exception($"Unknown type {type}");
+            case StructSymbol:
+                kind = TypeKind.Struct;
+                break;
+            case EnumSymbol e:
+                kind = TypeKind.Enum;
+                underlyingType = BuildType(e.UnderlyingType);
+                break;
+            case ArrayTypeSymbol a:
+                kind = TypeKind.Array;
+                underlyingType = BuildType(a.ElementType);
+                isArray = true;
+                break;
+            case BoundTypeParameterSymbol b:
+                return BuildType(b.BoundType);
+            default:
+                throw new Exception($"Unknown type {type}");
         }
 
         if (!isArray)
@@ -351,7 +353,7 @@ internal sealed class AssemblyBuilder
         }
 
         var size = type.Size;
-        var typeDefinition = new TypeDefinition(flags, kind, name, size, isArray, underlyingType, fields.Count,
+        var typeDefinition = new TypeDefinition(flags, kind, name, size, underlyingType, fields.Count,
             fieldStartOffset, enumMembers.Count, enumMemberStartOffset, methods.Count, methodStartOffset, 
             constructorCount, constructorStartOffset, staticConstructorOffset);
         
@@ -380,7 +382,7 @@ internal sealed class AssemblyBuilder
         var name = AddString(enumMember.Name);
         var type = BuildType(enumMember.UnderlyingType);
         var valueIndex = EmitConstant(enumMember.Value, enumMember.UnderlyingType);
-        var enumMemberDefinition = new EnumMember(flags, type, name, valueIndex, parentTypeIndex);
+        var enumMemberDefinition = new EnumMember(flags, name, type, valueIndex, parentTypeIndex);
         _enumMemberTable.Add(enumMemberDefinition);
         _enumMemberSymbolMap.Add(enumMember, enumMemberDefinition);
     }
@@ -510,12 +512,13 @@ internal sealed class AssemblyBuilder
             throw new Exception("Method not found.");
         }
 
-        var index = _methodTable.IndexOf(method);
+        var index = _methodTable.IndexOf(method, _methodComparer);
         var finishedMethod = methodEmitter.EmitMethod();
         _methodTable[index] = finishedMethod;
+        _allMethodSymbolMap[methodEmitter.Symbol] = finishedMethod;
     }
 
-    internal sealed class MethodEmitter
+    private sealed class MethodEmitter
     {
         private readonly AssemblyBuilder _builder;
         private readonly ImmutableArray<BoundStatement> _statements;
@@ -523,6 +526,9 @@ internal sealed class AssemblyBuilder
         private readonly List<Local> _localTable;
         private readonly List<Instruction> _instructionTable;
         private bool _isAssigning;
+
+        public AbstractMethodSymbol Symbol { get; }
+        
         public MethodEmitter(AssemblyBuilder builder, BoundMethod boundMethod, Method method)
         {
             _builder = builder;
@@ -537,6 +543,9 @@ internal sealed class AssemblyBuilder
                 _localTable.Add(emittedLocal);
                 _builder._localSymbolMap.Add(local, emittedLocal);
             }
+            
+            _isAssigning = false;
+            Symbol = boundMethod.Symbol;
         }
         
         public MethodEmitter(AssemblyBuilder builder, BoundConstructor boundConstructor, Method method)
@@ -546,6 +555,16 @@ internal sealed class AssemblyBuilder
             _method = method;
             _localTable = new List<Local>();
             _instructionTable = new List<Instruction>();
+            foreach (var local in boundConstructor.Locals)
+            {
+                var emittedLocal = new Local(BindingFlags.None, _builder.AddString(local.Name), 
+                    _builder.BuildType(local.Type));
+                _localTable.Add(emittedLocal);
+                _builder._localSymbolMap.Add(local, emittedLocal);
+            }
+            
+            _isAssigning = false;
+            Symbol = boundConstructor.Symbol;
         }
 
         public Method EmitMethod()
@@ -790,7 +809,7 @@ internal sealed class AssemblyBuilder
         {
             var method = expression.Method;
             var emittedMethod = _builder._allMethodSymbolMap[method];
-            var methodIndex = _builder._methodTable.IndexOf(emittedMethod);
+            var methodIndex = _builder._methodTable.IndexOf(emittedMethod, _builder._methodComparer);
             var arguments = expression.Arguments;
 
             // Arguments are pushed onto the stack in reverse order.
@@ -804,7 +823,7 @@ internal sealed class AssemblyBuilder
             var parentType = _builder.BuildType(method.ParentType);
             var memberReference = new MemberReference(BindingFlags.None, MemberType.Method, parentType, returnType, 
                 methodIndex);
-            var memberReferenceIndex = _builder.AddToList(_builder._memberReferenceTable, memberReference);
+            var memberReferenceIndex = AddToList(_builder._memberReferenceTable, memberReference);
             EmitInstruction(OpCode.Call, memberReferenceIndex);
         }
 
@@ -841,12 +860,12 @@ internal sealed class AssemblyBuilder
         {
             var field = (FieldSymbol)expression.Member;
             var emittedField = _builder._fieldSymbolMap[field];
-            var fieldIndex = _builder._fieldTable.IndexOf(emittedField);
+            var fieldIndex = _builder._fieldTable.IndexOf(emittedField, _builder._fieldComparer);
             var fieldType = _builder.BuildType(field.Type);
             var parentType = _builder.BuildType(field.ParentType);
             var memberReference = new MemberReference(BindingFlags.None, MemberType.Field, parentType, fieldType, 
                 fieldIndex);
-            var memberReferenceIndex = _builder.AddToList(_builder._memberReferenceTable, memberReference);
+            var memberReferenceIndex = AddToList(_builder._memberReferenceTable, memberReference);
             if (isStatic)
             {
                 EmitInstruction(_isAssigning ? OpCode.Stsfld : OpCode.Ldsfld, memberReferenceIndex);
@@ -862,12 +881,12 @@ internal sealed class AssemblyBuilder
         {
             var enumMember = (EnumMemberSymbol)expression.Member;
             var emittedEnumMember = _builder._enumMemberSymbolMap[enumMember];
-            var enumMemberIndex = _builder._enumMemberTable.IndexOf(emittedEnumMember);
+            var enumMemberIndex = _builder._enumMemberTable.IndexOf(emittedEnumMember, _builder._enumMemberComparer);
             var enumMemberType = _builder.BuildType(enumMember.Type);
             var enumParentType = _builder.BuildType(enumMember.ParentType);
             var memberReference = new MemberReference(BindingFlags.None, MemberType.EnumMember, enumParentType, enumMemberType, 
                 enumMemberIndex);
-            var memberReferenceIndex = _builder.AddToList(_builder._memberReferenceTable, memberReference);
+            var memberReferenceIndex = AddToList(_builder._memberReferenceTable, memberReference);
             EmitInstruction(OpCode.Ldenum, memberReferenceIndex);
         }
         
@@ -891,7 +910,7 @@ internal sealed class AssemblyBuilder
         {
             var constructor = expression.Constructor;
             var emittedConstructor = _builder._constructorSymbolMap[constructor];
-            var constructorIndex = _builder._methodTable.IndexOf(emittedConstructor);
+            var constructorIndex = _builder._methodTable.IndexOf(emittedConstructor, _builder._methodComparer);
             var arguments = expression.Arguments;
 
             // Arguments are pushed onto the stack in reverse order.
@@ -904,9 +923,9 @@ internal sealed class AssemblyBuilder
             var returnType = _builder.BuildType(expression.Type);
             var memberReference = new MemberReference(BindingFlags.None, MemberType.Constructor, returnType, 
                 returnType, constructorIndex);
-            var memberReferenceIndex = _builder.AddToList(_builder._memberReferenceTable, memberReference);
+            var memberReferenceIndex = AddToList(_builder._memberReferenceTable, memberReference);
             var typeReference = new TypeReference(BindingFlags.None, returnType, memberReferenceIndex);
-            var typeReferenceIndex = _builder.AddToList(_builder._typeReferenceTable, typeReference);
+            var typeReferenceIndex = AddToList(_builder._typeReferenceTable, typeReference);
             EmitInstruction(OpCode.Newobj, typeReferenceIndex);
         }
         
@@ -928,7 +947,7 @@ internal sealed class AssemblyBuilder
         {
             var local = (LocalVariableSymbol)expression.Symbol;
             var emittedLocal = _builder._localSymbolMap[local];
-            var localIndex = _builder._localTable.IndexOf(emittedLocal);
+            var localIndex = _builder._localTable.IndexOf(emittedLocal, _builder._localComparer);
             EmitInstruction(_isAssigning ? OpCode.Stloc : OpCode.Ldloc, localIndex);
         }
         
@@ -936,7 +955,7 @@ internal sealed class AssemblyBuilder
         {
             var parameter = (ParameterSymbol)expression.Symbol;
             var emittedParameter = _builder._parameterSymbolMap[parameter];
-            var parameterIndex = _builder._parameterTable.IndexOf(emittedParameter);
+            var parameterIndex = _builder._parameterTable.IndexOf(emittedParameter, _builder._parameterComparer);
             EmitInstruction(OpCode.Ldarg, parameterIndex);
         }
         
