@@ -5,6 +5,7 @@ using System.Text;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.IO.Objects;
 using CUE4Parse.UE4.Objects.UObject;
+using CUE4Parse.Utils;
 using GenericReader;
 
 namespace Saturn.Backend.Data.Asset;
@@ -163,6 +164,11 @@ public class Deserializer
         Ar.Position = Summary.ExportMapOffset;
         ExportMap = new FExportMapEntry[ExportCount];
         LoadExportMap(Ar);
+    }
+
+    public void Invalidate()
+    {
+        ModifiedNameMap[^2] = new FNameEntrySerialized("Tamely");
     }
 
     private void LoadExportMap(GenericBufferReader Ar)

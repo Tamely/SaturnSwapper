@@ -3,6 +3,9 @@
 @using Saturn.Backend.Data
 @using System.Threading
 @using System.Diagnostics
+@using System.IO
+@using Newtonsoft.Json
+@using Saturn.Backend.Data.Discord
 @using Saturn.Backend.Data.FortniteCentral
 @using Saturn.Backend.Data.Services
 @using Saturn.Backend.Data.Swapper.Generation
@@ -14,6 +17,10 @@
 <ul class="sidebar">
     <li id="cosmetic-li" onclick="@(async() => await SwitchState("cosmetic"))">
         <h6><i class="fas fa-user"></i> @_localizationResourceService.GetString(56)</h6>
+    </li>
+    
+    <li id="plugin-li" onclick="@(async() => await SwitchState("plugin"))">
+        <h6><i class="fas fa-plug"></i> @_localizationResourceService.GetString(113)</h6>
     </li>
     
     <li id="asset-li" onclick="@(async() => await SwitchState("asset"))">
@@ -56,6 +63,7 @@
             SaturnState.S_Settings => "settings",
             SaturnState.S_Dash => "dash",
             SaturnState.S_SelectCosmetics => "cosmetic",
+            SaturnState.S_Plugin => "plugin",
             _ => "cosmetic"
         };
         
@@ -65,6 +73,7 @@
             "asset" => SaturnState.S_Importer,
             "settings" => SaturnState.S_Settings,
             "dash" => SaturnState.S_Dash,
+            "plugin" => SaturnState.S_Plugin,
             _ => SaturnState.S_Skin
         };
         
@@ -74,15 +83,26 @@
         if (stateToGoTo == SaturnState.S_Skin)
         {
             Logger.Log("Generating cosmetics!");
+            /*
             Constants.ChunkedItems = (await new SkinGenerator().Generate()).OrderBy(x => x.ID).ToList()
                 .Select((x, i) => new { Index = i, Value = x })
                 .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
                 .Select(x => x.Select(v => v.Value).ToList())
-                .ToList();
+                .ToList();*/
+            await Constants.Handler.Initialize();
+            Constants.Outfits.RemoveAll(x => x == null);
             Logger.Log("Done!");
         }
         
         DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", stateToGoTo.ToString().Split("S_")[1]);
+        
+        if (DiscordUtilities.Member != null && !File.Exists(Constants.ExternalPath + "user.json"))
+            File.WriteAllText(Constants.ExternalPath + "user.json", JsonConvert.SerializeObject(DiscordUtilities.Member, Formatting.None));
+
+        if (stateToGoTo == SaturnState.S_Plugin)
+        {
+            Constants.CosmeticState = SaturnState.S_Plugin;
+        }
         
         await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOut", stateFrom);
         Constants.State = stateToGoTo;

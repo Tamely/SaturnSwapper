@@ -22,12 +22,12 @@ internal sealed class ManagedInt : ManagedPrimitive<int>
     
     public unsafe ManagedInt(byte[] value)
     {
-        Type = ManagedRuntime.System.GetType("int");
         if (value.Length != Size)
         {
             throw new ArgumentException($"Value must be {Size} bytes long", nameof(value));
         }
         
+        Type = ManagedRuntime.System.GetType("int");
         fixed (byte* ptr = value)
         {
             PrimValue = *(int*)ptr;

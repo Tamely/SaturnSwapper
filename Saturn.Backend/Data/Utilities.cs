@@ -1,14 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CUE4Parse;
 using CUE4Parse.UE4.Assets;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Objects.GameplayTags;
+using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.Utils;
 using Microsoft.JSInterop;
+using Newtonsoft.Json;
 using Saturn.Backend.Data.Asset;
+using Saturn.Backend.Data.Discord;
 using Saturn.Backend.Data.Fortnite;
 using Saturn.Backend.Data.SaturnAPI;
 using Saturn.Backend.Data.SaturnAPI.Models;
@@ -17,6 +23,7 @@ using Saturn.Backend.Data.Swapper.Core.Models;
 using Saturn.Backend.Data.Swapper.Swapping;
 using Saturn.Backend.Data.Swapper.Swapping.Models;
 using Saturn.Backend.Data.Variables;
+using SkiaSharp;
 
 namespace Saturn.Backend.Data
 {
@@ -24,6 +31,16 @@ namespace Saturn.Backend.Data
     {
         public static async Task SwapPreset(PresetModel preset, IJSRuntime _jsRuntime)
         {
+            if (DiscordUtilities.Member != null && !File.Exists(Constants.ExternalPath + "user.json"))
+                File.WriteAllText(Constants.ExternalPath + "user.json", JsonConvert.SerializeObject(DiscordUtilities.Member, Formatting.None));
+            
+            // There's a race condition from how HTML's OnClick handler works
+            if (Constants.IsRemoving)
+            {
+                Constants.IsRemoving = false;
+                return;
+            }
+            
             SaturnData.Clear();
 
             if (!Constants.isKeyValid)
@@ -90,18 +107,7 @@ namespace Saturn.Backend.Data
             
                 if (Constants.CanLobbySwap && Constants.ShouldLobbySwap && Constants.isPlus)
                 {
-                    switch (Constants.CosmeticState)
-                    {
-                        case SaturnState.S_Skin:
-                            await FileLogic.ConvertLobby("/game/athena/items/cosmetics/characters/" + item.OptionModel.ID + "." + item.OptionModel.ID, "/game/athena/items/cosmetics/characters/" + item.ItemModel.ID + "." + item.ItemModel.ID);
-                            break;
-                        case SaturnState.S_Backbling:
-                            await FileLogic.ConvertLobby("/game/athena/items/cosmetics/backpacks/" + item.OptionModel.ID + "." + item.OptionModel.ID, "/game/athena/items/cosmetics/backpacks/" + item.ItemModel.ID + "." + item.ItemModel.ID);
-                            break;
-                        case SaturnState.S_Pickaxe:
-                            await FileLogic.ConvertLobby("/game/athena/items/cosmetics/pickaxes/" + item.OptionModel.ID + "." + item.OptionModel.ID, "/game/athena/items/cosmetics/pickaxes/" + item.ItemModel.ID + "." + item.ItemModel.ID);
-                            break;
-                    }
+                    await FileLogic.ConvertLobby(item.OptionModel.ID, item.ItemModel.ID);
                     SaturnData.Clear();
                 }
                 else if (Constants.isPlus && Constants.ShouldLobbySwap)
@@ -131,6 +137,41 @@ namespace Saturn.Backend.Data
         }
         
         public static string GetHWID() => System.Security.Principal.WindowsIdentity.GetCurrent().User.Value;
+        
+        public static string TitleCase(this string text)
+        {
+            var textInfo = CultureInfo.CurrentCulture.TextInfo;
+            return textInfo.ToTitleCase(text);
+        }
+        
+        public static T GetOrDefault<T>(this UObject obj, params string[] names)
+        {
+            foreach (var name in names)
+            {
+                if (obj.Properties.Any(x => x.Name.Text.Equals(name)))
+                {
+                    return obj.GetOrDefault<T>(name);
+                }
+            }
+
+            return default;
+        }
+
+        public static FName? GetValueOrDefault(this FGameplayTagContainer tags, string category, FName def = default)
+        {
+            return tags.GameplayTags is not { Length: > 0 } ? def : tags.GameplayTags.FirstOrDefault(it => it.Text.StartsWith(category), def);
+        }
+
+        public static bool ContainsAny(this FGameplayTagContainer tags, params string[] check)
+        {
+            return check.Any(x => tags.ContainsAny(x));
+        }
+
+        public static bool ContainsAny(this FGameplayTagContainer tags, string check)
+        {
+            if (tags.GameplayTags is null) return false;
+            return tags.GameplayTags.Any(x => x.Text.Contains(check));
+        }
 
         public static string GetKeyFromValue(this Dictionary<string, string> dict, string value)
         {

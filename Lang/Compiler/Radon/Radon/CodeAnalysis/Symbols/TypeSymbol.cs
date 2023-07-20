@@ -237,12 +237,11 @@ public abstract class TypeSymbol : Symbol
                 method.Name == name)
             {
                 var parameterTypes = new List<TypeSymbol>();
-                for (var i = 0; i < method.Parameters.Length; i++)
+                foreach (var parameter in method.Parameters)
                 {
-                    var parameter = method.Parameters[i];
                     parameterTypes.Add(parameter.Type);
                 }
-
+                
                 if (method is TemplateMethodSymbol templateMethod)
                 {
                     if (templateMethod.TypeParameters.Length != typeArguments.Length)
@@ -261,11 +260,7 @@ public abstract class TypeSymbol : Symbol
                         }
                         
                         method = (TMethodSymbol)(object)typeBinder.BuildTemplateMethod(templateMethod, typeArguments, callSite);
-                        for (var i = 0; i < method.Parameters.Length; i++)
-                        {
-                            var parameter = method.Parameters[i];
-                            parameterTypes[i] = parameter.Type;
-                        }
+                        parameterTypes = method.Parameters.Select(p => p.Type).ToList();
                     }
                 }
                 
@@ -285,7 +280,6 @@ public abstract class TypeSymbol : Symbol
                     {
                         binder.Diagnostics.ReportCannotConvert(argument.Syntax.Location, argument.Type, parameterType);
                         possibleCandidates.Add((method, argument.Type, parameterType));
-                        ambiguousCandidates.Add(method);
                         goto failed;
                     }
                 }

@@ -1,16 +1,43 @@
 ﻿using System.Diagnostics;
+using System.Text;
 using Newtonsoft.Json;
 
 namespace Saturn.Launcher;
 
+public class GuildMemberModel
+{
+    public string avatar { get; set; }
+    public object communication_disabled_until { get; set; }
+    public int flags { get; set; }
+    public bool is_pending { get; set; }
+    public DateTime joined_at { get; set; }
+    public string nick { get; set; }
+    public bool pending { get; set; }
+    public object premium_since { get; set; }
+    public string[] roles { get; set; }
+    public object user { get; set; }
+    public bool mute { get; set; }
+    public bool deaf { get; set; }
+}
+
 public class Program
 {
     private static Dictionary<string, List<(long, byte[])>> currentSwapBackups = new();
+    private static ulong[] TargetRoles = { 8312334953691727223, 14469599625845645863, 15712186866927928291, 16885141162808554974 };
+    private static readonly string USER_PATH = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "/Saturn/Externals/user.json";
     public static void Main(string[] args)
     {
         foreach (var process in Process.GetProcesses())
             if (process.ProcessName == "Saturn")
                 process.Kill();
+
+        bool isPlus = false;
+        if (File.Exists(USER_PATH))
+        {
+            GuildMemberModel user = JsonConvert.DeserializeObject<GuildMemberModel>(File.ReadAllText(USER_PATH)) ?? new GuildMemberModel();
+            isPlus = user.roles.Any(x => TargetRoles.Contains(CityHash.CityHash64(Encoding.UTF8.GetBytes(x))));
+            File.Delete(USER_PATH);
+        }
         
         Console.ForegroundColor = ConsoleColor.White;
 
@@ -62,6 +89,7 @@ public class Program
         {
             if (file.Extension != ".json") continue;
             ItemModel item = JsonConvert.DeserializeObject<ItemModel>(File.ReadAllText(file.FullName));
+            if (item.Name == "Lobby Swaps" && !isPlus) continue;
             
             Console.ForegroundColor = ConsoleColor.DarkCyan;
             Console.Write(">> ");
@@ -186,6 +214,17 @@ public class Program
             File.Delete(GetGamePath() + $"\\pakchunk{i - 1}-WindowsClient.utoc");
             File.Delete(GetGamePath() + $"\\pakchunk{i - 1}-WindowsClient.pak");
             File.Delete(GetGamePath() + $"\\pakchunk{i - 1}-WindowsClient.sig");
+        }
+
+        for (i = 100; i < 250; i++)
+        {
+            if (File.Exists(GetGamePath() + $"\\pakchunk{i}-WindowsClient.ucas"))
+            {
+                File.Delete(GetGamePath() + $"\\pakchunk{i}-WindowsClient.ucas");
+                File.Delete(GetGamePath() + $"\\pakchunk{i}-WindowsClient.utoc");
+                File.Delete(GetGamePath() + $"\\pakchunk{i}-WindowsClient.pak");
+                File.Delete(GetGamePath() + $"\\pakchunk{i}-WindowsClient.sig");
+            }
         }
 
         Process.GetCurrentProcess().Kill();

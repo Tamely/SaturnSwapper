@@ -76,7 +76,6 @@ internal sealed class StatementBinder : Binder
         var expressionBinder = new ExpressionBinder(this);
         var boundKey = (BoundExpression)expressionBinder.Bind(syntax.KeyExpression);
         var boundValue = (BoundExpression)expressionBinder.Bind(syntax.ValueExpression);
-        Diagnostics.AddRange(expressionBinder.Diagnostics);
         if (boundKey.Type != TypeSymbol.String)
         {
             Diagnostics.ReportSignKeyMustBeString(syntax.KeyExpression.Location);

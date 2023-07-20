@@ -56,10 +56,17 @@ namespace CUE4Parse.UE4.AssetRegistry
 
             for (int i = 0; i < Reader.NameMap.Length; i++)
             {
-                if (Reader.NameMap[i].Name.ToLower() == searchPath.ToLower().Split('.')[0]) searchPackageIdx = i;
-                if (Reader.NameMap[i].Name.ToLower() == searchPath.ToLower().Split('.')[1]) searchAssetIdx = i;
-                if (Reader.NameMap[i].Name.ToLower() == replacePath.ToLower().Split('.')[0]) replacePackageIdx = i;
-                if (Reader.NameMap[i].Name.ToLower() == replacePath.ToLower().Split('.')[1]) replaceAssetIdx = i;
+                if (String.Equals(Reader.NameMap[i].Name, searchPath, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    searchPackageIdx = i - 1;
+                    searchAssetIdx = i;
+                }
+
+                if (String.Equals(Reader.NameMap[i].Name, replacePath, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    replacePackageIdx = i - 1;
+                    replaceAssetIdx = i;
+                }
                 
                 if (searchPackageIdx is not -1 && searchAssetIdx is not -1 && replacePackageIdx is not -1 && replaceAssetIdx is not -1) break;
             }

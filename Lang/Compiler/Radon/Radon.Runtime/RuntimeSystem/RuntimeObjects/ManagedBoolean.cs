@@ -22,12 +22,12 @@ internal sealed class ManagedBoolean : ManagedPrimitive<bool>
     
     public unsafe ManagedBoolean(byte[] value)
     {
-        Type = ManagedRuntime.System.GetType("bool");
         if (value.Length != Size)
         {
             throw new ArgumentException($"Value must be {Size} bytes long", nameof(value));
         }
         
+        Type = ManagedRuntime.System.GetType("bool");
         fixed (byte* ptr = value)
         {
             PrimValue = *(bool*)ptr;

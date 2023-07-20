@@ -79,14 +79,12 @@ public static class TextWriterExtensions
                 // If it is, set the character to 1 past the end of the line
                 character = line.Length + 1;
             }
-            
-            // If the position is the end of the file, set the character to 1 past the end of the line
-            
-            if (diagnostic.Location.Span.Start == text.Length - 1)
+            /*else if (isWhitespace)
             {
-                character = line.Length + 1;
-            }
-
+                // If it's whitespace, set the character to the first non-whitespace character
+                character++;
+            }*/
+            
             writer.SetForeground(locationColor);
             writer.Write($"({diagnostic.Location.FileName}, {lineIndex + 1}, {character}): ");
             writer.ResetColor();

@@ -41,17 +41,11 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
         return $"Errors: {Count}";
     }
 
-    /// <summary>
-    /// Blocks the diagnostic bag from reporting diagnostics.
-    /// </summary>
     public void Block()
     {
         _block = true;
     }
 
-    /// <summary>
-    /// Unblocks the diagnostic bag from reporting diagnostics.
-    /// </summary>
     public void Unblock()
     {
         _block = false;

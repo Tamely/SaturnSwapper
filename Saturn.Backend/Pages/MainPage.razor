@@ -3,12 +3,11 @@
 @using Saturn.Backend.Pages.Swapper
 @using System.IO
 @using System.Net
-@using CUE4Parse
-@using CUE4Parse.UE4.Assets
-@using CUE4Parse.Utils
+@using CUE4Parse.FileProvider.Objects
+@using CUE4Parse.UE4.AssetRegistry
+@using CUE4Parse.UE4.Assets.Exports.Texture
 @using Newtonsoft.Json
 @using Saturn.Backend.Data
-@using Saturn.Backend.Data.Asset
 @using Saturn.Backend.Data.Fortnite
 @using Saturn.Backend.Data.FortniteCentral
 @using Saturn.Backend.Data.FortniteCentral.Models
@@ -17,8 +16,7 @@
 @using Saturn.Backend.Data.SaturnAPI.Models
 @using Saturn.Backend.Data.SaturnConfig
 @using Saturn.Backend.Data.Swapper
-@using Saturn.Backend.Data.Swapper.Core.Models
-@using Saturn.Backend.Data.Swapper.Swapping
+@using Saturn.Backend.Data.Swapper.Assets
 @using Saturn.Backend.Data.Variables
 @inherits LayoutComponentBase
 
@@ -48,7 +46,7 @@
             await Task.Delay(500);
         }
     }
-
+    
     protected override async Task OnInitializedAsync()
     {
         UpdateState();
@@ -140,6 +138,46 @@
         // Initialize provider
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(108));
         Constants.Provider = new SaturnFileProvider(_fortniteCentralService).Provider;
+        Constants.Provider.LoadLocalization();
+        Constants.Provider.LoadVirtualPaths();
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(114));
+        var rarityData = await Constants.Provider.LoadObjectAsync("FortniteGame/Content/Balance/RarityData");
+        for (int i = 0; i < 8; i++)
+        {
+            Constants.RarityData[i] = rarityData.GetByIndex<RarityCollection>(i);
+        }
+
+        async Task LoadAssetRegistry(GameFile file)
+        {
+            var assetArchive = await file.TryCreateReaderAsync();
+            if (assetArchive is not null)
+            {
+                try
+                {
+                    var assetRegistry = new FAssetRegistryState(assetArchive);
+                    Constants.AssetDataBuffers.AddRange(assetRegistry.PreallocatedAssetDataBuffers);
+                    Logger.Log($"Loaded Asset Registry: {file.Path}");
+                }
+                catch
+                {
+                    Logger.Log($"Failed to load Asset Registry: {file.Path}", LogLevel.Error);
+                }
+            }
+        }
+
+        var assetRegistries = Constants.Provider.Files.Where(x => x.Key.Contains("AssetRegistry", StringComparison.OrdinalIgnoreCase)).ToList();
+        foreach (var (_, file) in assetRegistries)
+        {
+            await LoadAssetRegistry(file);
+        }
+
+        if (assetRegistries.Count == 0)
+        {
+            Logger.Log("Failed to load asset registry, please ensure your game is up to date");
+        }
+
+        Constants.PlaceholderTexture = await Constants.Provider.TryLoadObjectAsync<UTexture2D>("FortniteGame/Content/Athena/Prototype/Textures/T_Placeholder_Generic");
 
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(82));
 

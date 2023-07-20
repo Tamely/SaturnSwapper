@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Immutable;
-using System.Linq;
 using Radon.CodeAnalysis.Binding.Semantics;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax.Nodes;
-using Radon.Utilities;
 
 namespace Radon.CodeAnalysis.Binding.Analyzers;
 
@@ -23,20 +21,10 @@ internal sealed class TemplateBinder : TypeBinder
         for (var i = 0; i < template.TypeParameters.Length; i++)
         {
             var typeParameter = template.TypeParameters[i];
-            /*if (template.TypeParameters[i].Ordinal != i)
-            {
-                Console.WriteLine($"Ordinal mismatch: {template.TypeParameters[i].Name} has ordinal {template.TypeParameters[i].Ordinal}, not {i}");
-            }*/
-            
-            if (typeParameter is null)
-            {
-                throw new InvalidOperationException();
-            }
-            
             var typeArgument = typeArguments[i];
             Register(context, new BoundTypeParameterSymbol(typeParameter, typeArgument));
         }
-
+        
         foreach (var member in template.Members)
         {
             Register(context, member);

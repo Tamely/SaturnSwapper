@@ -16,6 +16,6 @@ internal sealed class MemberReferenceInfo
         var parentType = TypeTracker.Add(parent, metadata, null);
         ParentType = parentType;
         ReturnType = TypeTracker.Add(type, metadata, null);
-        MemberInfo = parentType.GetByRef<IMemberInfo>(MemberType, memberReference, false);
+        MemberInfo = parentType.GetByRef<IMemberInfo>(MemberType, memberReference);
     }
 }

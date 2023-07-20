@@ -5,7 +5,6 @@ using System.Linq;
 using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 using Radon.Runtime.RuntimeInfo;
 using Radon.Runtime.RuntimeSystem.RuntimeObjects;
-using Radon.Utilities;
 
 namespace Radon.Runtime.RuntimeSystem;
 
@@ -14,11 +13,13 @@ internal sealed class ManagedRuntime
     public static ManagedRuntime System { get; private set; } = null!;
     public AssemblyInfo AssemblyInfo { get; }
     public Dictionary<TypeInfo, RuntimeType> Types { get; }
+    public ImmutableDictionary<TypeInfo, RuntimeType> PrimitiveTypes { get; }
     public ManagedRuntime(AssemblyInfo assemblyInfo)
     {
         System = this;
         AssemblyInfo = assemblyInfo;
         Types = new Dictionary<TypeInfo, RuntimeType>();
+        var builder = ImmutableDictionary.CreateBuilder<TypeInfo, RuntimeType>();
         foreach (var type in assemblyInfo.Types)
         {
             if (Types.ContainsKey(type))
@@ -28,14 +29,20 @@ internal sealed class ManagedRuntime
             
             var runtimeType = new RuntimeType(type);
             Types.Add(type, runtimeType);
+            if (type.IsPrimitive)
+            {
+                builder.Add(type, runtimeType);
+            }
         }
-
+        
         foreach (var type in Types.Values)
         {
             type.Initialize();
         }
+        
+        PrimitiveTypes = builder.ToImmutable();
     }
-
+    
     public RuntimeType GetType(TypeInfo typeInfo)
     {
         if (Types.TryGetValue(typeInfo, out var type))
@@ -43,19 +50,18 @@ internal sealed class ManagedRuntime
             return type;
         }
         
-        return CreateType(typeInfo);
+        throw new InvalidOperationException($"Type {typeInfo.Name} does not exist.");
     }
 
     public RuntimeType GetType(string name)
     {
         var typeInfo = Types.Keys.FirstOrDefault(x => x.Name == name);
-        if (typeInfo is not null)
+        if (typeInfo is null)
         {
-            return GetType(typeInfo);
+            throw new InvalidOperationException($"Type {name} does not exist.");
         }
-
-        var typeDefinition = GetDefinitionByName(name);
-        return GetType(typeDefinition);
+        
+        return GetType(typeInfo);
     }
 
     public RuntimeType GetType(TypeDefinition definition)
@@ -63,40 +69,9 @@ internal sealed class ManagedRuntime
         var typeInfo = Types.Keys.FirstOrDefault(x => x.Definition == definition);
         if (typeInfo is null)
         {
-            var type = AssemblyInfo.Types.FirstOrDefault(x => x.Definition == definition);
-            typeInfo = type ?? throw new InvalidOperationException($"Type {definition.Name} does not exist.");
+            throw new InvalidOperationException($"Type {definition.Name} does not exist.");
         }
         
         return GetType(typeInfo);
-    }
-    
-    private RuntimeType CreateType(TypeInfo typeInfo)
-    {
-        if (Types.TryGetValue(typeInfo, out var type))
-        {
-            return type;
-        }
-        
-        var runtimeType = new RuntimeType(typeInfo);
-        Types.Add(typeInfo, runtimeType);
-        return runtimeType;
-    }
-
-    private TypeDefinition GetDefinitionByName(string name)
-    {
-        var metadata = AssemblyInfo.Metadata;
-        var nameIndex = metadata.Strings.Strings.IndexOf(name, StringComparer.Ordinal);
-        if (nameIndex == -1)
-        {
-            throw new InvalidOperationException($"Type {name} does not exist.");
-        }
-        
-        var typeDefinition = metadata.Types.Types.FirstOrDefault(x => x.Name == nameIndex);
-        if (typeDefinition == default)
-        {
-            throw new InvalidOperationException($"Type {name} does not exist.");
-        }
-        
-        return typeDefinition;
     }
 }

@@ -22,12 +22,12 @@ internal sealed class ManagedFloat : ManagedPrimitive<float>
     
     public unsafe ManagedFloat(byte[] value)
     {
-        Type = ManagedRuntime.System.GetType("float");
         if (value.Length != Size)
         {
             throw new ArgumentException($"Value must be {Size} bytes long", nameof(value));
         }
         
+        Type = ManagedRuntime.System.GetType("float");
         fixed (byte* ptr = value)
         {
             PrimValue = *(float*)ptr;

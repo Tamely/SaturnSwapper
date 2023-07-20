@@ -1,4 +1,4 @@
-public template KeyValuePair<TKey, TValue>
+template KeyValuePair<TKey, TValue>
 {
     public TKey Key;
     public TValue Value;
@@ -10,7 +10,7 @@ public template KeyValuePair<TKey, TValue>
     }
 }
 
-public template Dictionary<TKey, TValue>
+template Dictionary<TKey, TValue>
 {
     private list<KeyValuePair<TKey, TValue>> _list;
 
@@ -23,21 +23,4 @@ public template Dictionary<TKey, TValue>
     {
         _list.Add(new KeyValuePair<TKey, TValue>(key, value));
     }
-}
-
-public template List<T>
-{
-    private T[] _items;
-
-    public List()
-    {
-        _items = new T[0];
-    }
-}
-
-public enum MyEnum
-{
-    A = 10,
-    B = 20,
-    C = 30
 }

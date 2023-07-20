@@ -1,0 +1,94 @@
+﻿.library-item-container {
+    position: absolute;
+    left: 2.75rem;
+
+    display: inline-flex;
+    height: 39rem;
+    padding: 0.0625rem 0rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.625rem;
+    flex-shrink: 0;
+}
+.library-item {
+    width: 100%;
+    height: 15.152vh;
+    display: inline-block;
+}
+.library-top-icon {
+    margin-left: 1rem;
+    margin-top: 0.63rem;
+    
+    width: 2.5rem;
+    height: 2.5rem;
+    flex-shrink: 0;
+
+    border-radius: 0.625rem;
+}
+.library-item-top {
+    
+    height: 3.75rem;
+    flex-shrink: 0;
+    border-radius: 0.625rem 0.625rem 0rem 0rem;
+    background: linear-gradient(180deg, #181B1E 100%, #202427 100%);
+}
+.library-item-bottom {
+    width: 100%;
+    height: 15.152vh;
+    flex-shrink: 0;
+    border-radius: 0.848vw;
+    background: #403F53;
+}
+.library-delete-button {
+    width: 1.875rem;
+    height: 1.875rem;
+    flex-shrink: 0;
+}
+.library-plugin-description {
+    display: flex;
+    width: 66.6875rem;
+    height: 1.25rem;
+    flex-direction: column;
+    flex-shrink: 0;
+
+    color: #FFF;
+    font-size: 0.9375rem;
+    font-family: Nunito, sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+}
+.library-plugin-name {
+    margin-left: 4.44rem;
+    margin-top: 0.56rem;
+
+    display: flex;
+    width: 60.0625rem;
+    height: 1.6875rem;
+    flex-direction: column;
+    flex-shrink: 0;
+
+    color: #FFF;
+    font-size: 1.25rem;
+    font-family: Nunito, sans-serif;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+}
+.library-plugin-author {
+    margin-left: 4.44rem;
+    margin-top: 2.25rem;
+
+    display: flex;
+    width: 60.0625rem;
+    height: 0.875rem;
+    flex-direction: column;
+    flex-shrink: 0;
+
+    color: rgba(225, 225, 225, 0.40);
+    font-size: 0.625rem;
+    font-family: Nunito, sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+}
