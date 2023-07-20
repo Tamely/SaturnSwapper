@@ -276,10 +276,6 @@ public abstract class TypeSymbol : Symbol
                 
                 for (var i = 0; i < method.Parameters.Length; i++)
                 {
-                    // TODO: When type parameters are used as the type of a parameter, they sometimes get place out of order.
-                    // TODO: This suggest a race condition somewhere.
-                    // TODO: To combat this, we can ensure the type parameters are always in the same order.
-                    // TODO: by using ordinals and other tricks.
                     var parameterType = parameterTypes[i];
                     var argument = arguments[i];
                     var conversion = Conversion.Classify(binder, argument, parameterType);
