@@ -19,12 +19,8 @@ public sealed class EnumMemberSymbol : MemberSymbol
         ParentType = parentType;
         Name = name;
         UnderlyingType = type;
-        Modifiers = ImmutableArray.Create(SyntaxKind.PublicKeyword);
+        Modifiers = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.StaticKeyword);
         Value = value;
-        if (!Modifiers.Contains(SyntaxKind.StaticKeyword))
-        {
-            Modifiers = Modifiers.Add(SyntaxKind.StaticKeyword);
-        }
     }
     
     public override MemberSymbol WithType(TypeSymbol type)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Radon.CodeAnalysis.Binding.Semantics;
@@ -6,11 +7,13 @@ using Radon.CodeAnalysis.Binding.Semantics.Expressions;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax.Nodes;
 using Radon.CodeAnalysis.Syntax.Nodes.Clauses;
+using Radon.Utilities;
 
 namespace Radon.CodeAnalysis.Binding.Analyzers;
 
 internal abstract class Binder
 {
+    private static readonly object Lock = new();
     protected Scope? Scope { get; set; }
     internal DiagnosticBag Diagnostics { get; }
 
@@ -89,38 +92,41 @@ internal abstract class Binder
     protected bool TryResolve<TSymbol>(SemanticContext context, string name, out TSymbol? symbol, bool reportUnresolvedSymbol = true)
         where TSymbol : Symbol
     {
-        try
+        lock (Constants.Lock)
         {
-            if (Scope is null)
+            try
             {
-                context.Diagnostics.ReportNullScope(context.Location);
+                if (Scope is null)
+                {
+                    context.Diagnostics.ReportNullScope(context.Location);
+                    symbol = null;
+                    return false;
+                }
+            
+                if (Scope.TryLookupSymbol(name, out symbol!))
+                {
+                    return TryResolveSymbol(context, ref symbol);
+                }
+
+                if (reportUnresolvedSymbol)
+                {
+                    if (typeof(TSymbol).IsAssignableTo(typeof(TypeSymbol)))
+                    {
+                        context.Diagnostics.ReportUndefinedType(context.Location, name);
+                    }
+                    else
+                    {
+                        context.Diagnostics.ReportUnresolvedSymbol(context.Location, name);
+                    }
+                }
+            
+                return false;
+            }
+            catch (Exception)
+            {
                 symbol = null;
                 return false;
             }
-        
-            if (Scope.TryLookupSymbol(name, out symbol!))
-            {
-                return TryResolveSymbol(context, ref symbol);
-            }
-
-            if (reportUnresolvedSymbol)
-            {
-                if (typeof(TSymbol).IsAssignableTo(typeof(TypeSymbol)))
-                {
-                    context.Diagnostics.ReportUndefinedType(context.Location, name);
-                }
-                else
-                {
-                    context.Diagnostics.ReportUnresolvedSymbol(context.Location, name);
-                }
-            }
-        
-            return false;
-        }
-        catch (Exception)
-        {
-            symbol = null;
-            return false;
         }
     }
 
@@ -152,25 +158,27 @@ internal abstract class Binder
                     throw new InvalidOperationException("The symbol is not a template symbol.");
                 }
 
-                var resolvedTypeArgs = ImmutableArray.CreateBuilder<TypeSymbol>();
-                foreach (var typeArg in typeArguments)
+                var resolvedTypeArgs = new TypeSymbol[typeArguments.Length];
+                for (var i = 0; i < typeArguments.Length; i++)
                 {
+                    var typeArg = typeArguments[i];
                     if (typeArg is TypeParameterSymbol) // We can't build the template if we have unresolved type parameters.
                     {
-                        if (TryResolve<TypeSymbol>(context, typeArg.Name, out var resolvedArg, false)) // We check if the type parameter has been resolved.
+                        if (TryResolve<TypeSymbol>(context, typeArg.Name, out var resolvedArg,
+                                false)) // We check if the type parameter has been resolved.
                         {
-                            resolvedTypeArgs.Add(resolvedArg!);
+                            resolvedTypeArgs[i] = resolvedArg!;
                             continue;
                         }
 
                         // If the type can't be built on the spot, it will likely be built when the template method/class is called/constructed.
                         return true; // We return true because the type does exist, just we can't build it.
                     }
-                    
-                    resolvedTypeArgs.Add(typeArg);
+
+                    resolvedTypeArgs[i] = typeArg;
                 }
 
-                var templateSymbol = AssemblyBinder.Current.BuildTemplate(template, resolvedTypeArgs.ToImmutable());
+                var templateSymbol = AssemblyBinder.Current.BuildTemplate(template, resolvedTypeArgs.ToImmutableArray());
                 symbol = (TSymbol)(object)templateSymbol;
                 return true;
             }
@@ -257,11 +265,12 @@ internal abstract class Binder
                 typeArguments.Add(type);
             }
         }
-        
+
         var typeContext = new SemanticContext(syntax.Location, this, syntax, Diagnostics)
         {
             Tag = typeArguments.ToImmutable()
         };
+
         if (!TryResolve<TypeSymbol>(typeContext, syntax.Identifier.Text, out var typeSymbol))
         {
             return TypeSymbol.Error;
