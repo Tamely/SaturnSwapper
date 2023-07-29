@@ -49,8 +49,7 @@ public class Serializer
         // Name map meta
         asset.AddRange(BitConverter.GetBytes(_data.ModifiedNameMap.Count));
         asset.AddRange(BitConverter.GetBytes(numStringBytes));
-        asset.AddRange(BitConverter.GetBytes(_data.ModifiedNameMap[0].hashVersion));
-        
+
         // NameMap
         foreach (var name in _data.ModifiedNameMap)
             asset.AddRange(BitConverter.GetBytes(CityHash.CityHash64(Encoding.UTF8.GetBytes(name.Name.ToLower()))));

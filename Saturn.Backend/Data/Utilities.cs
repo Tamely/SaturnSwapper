@@ -1,13 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using CUE4Parse;
+using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Exports.Material.Parameters;
+using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.GameplayTags;
 using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.Utils;
@@ -155,6 +160,72 @@ namespace Saturn.Backend.Data
             }
 
             return default;
+        }
+        
+        public static bool CheckEncoding(this string value, Encoding encoding)
+        {
+            bool retCode;
+            var charArray = value.ToCharArray();
+            byte[] bytes = new byte[charArray.Length];
+            for (int i = 0; i < charArray.Length; i++)
+            {
+                bytes[i] = (byte)charArray[i];
+            }
+            retCode = string.Equals(encoding.GetString(bytes, 0, bytes.Length), value, StringComparison.InvariantCulture);
+            return retCode;
+        }
+        
+        public static bool AddUnique<T>(this List<T> list, T item)
+        {
+            if (list.Contains(item)) return false;
+            list.Add(item);
+            return true;
+        }
+
+        public static bool AddUnique<T>(this ObservableCollection<T> list, T item)
+        {
+            if (list.Contains(item)) return false;
+            list.Add(item);
+            return true;
+        }
+        
+        public static FLinearColor ToLinearColor(this FStaticComponentMaskParameter componentMask)
+        {
+            return new FLinearColor
+            {
+                R = componentMask.R ? 1 : 0,
+                G = componentMask.G ? 1 : 0,
+                B = componentMask.B ? 1 : 0,
+                A = componentMask.A ? 1 : 0
+            };
+        }
+        
+        public static bool TryLoadObjectExports(this AbstractFileProvider provider, string path, out IEnumerable<UObject> exports)
+        {
+            exports = Enumerable.Empty<UObject>();
+            try
+            {
+                exports = provider.LoadAllObjects(path);
+            }
+            catch (KeyNotFoundException)
+            {
+                return false;
+            }
+
+            return true;
+        }
+        
+        public static bool TryLoadEditorData<T>(this UObject asset, out T? editorData) where T : UObject
+        {
+            var path = asset.GetPathName().SubstringBeforeLast(".") + ".o.uasset";
+            if (Constants.Provider.TryLoadObjectExports(path, out var exports))
+            {
+                editorData = exports.FirstOrDefault() as T;
+                return editorData is not null;
+            }
+
+            editorData = default;
+            return false;
         }
 
         public static FName? GetValueOrDefault(this FGameplayTagContainer tags, string category, FName def = default)

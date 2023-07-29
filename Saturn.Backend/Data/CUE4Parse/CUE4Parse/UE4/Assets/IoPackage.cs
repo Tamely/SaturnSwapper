@@ -39,36 +39,6 @@ namespace CUE4Parse.UE4.Assets
         public int ToExportBundleIndex;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    public struct FDependencyBundleHeader
-    {
-        public int FirstEntryIndex;
-        public uint[,] EntryCount = new uint[(int)EExportCommandType.ExportCommandType_Count, (int)EExportCommandType.ExportCommandType_Count];
-
-        public FDependencyBundleHeader(FAssetArchive Ar)
-        {
-            FirstEntryIndex = Ar.Read<int>();
-            for (int i = 0; i < (int)EExportCommandType.ExportCommandType_Count; i++)
-            {
-                for (int j = 0; j < (int)EExportCommandType.ExportCommandType_Count; j++)
-                {
-                    EntryCount[i, j] = Ar.Read<uint>();
-                }
-            }
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct FDependencyBundleEntry
-    {
-        public FPackageIndex LocalImportOrExportIndex;
-
-        public FDependencyBundleEntry(FAssetArchive Ar)
-        {
-            LocalImportOrExportIndex = new FPackageIndex(Ar);
-        }
-    }
-
     [SkipObjectRegistration]
     public sealed class IoPackage : AbstractUePackage
     {
@@ -101,11 +71,7 @@ namespace CUE4Parse.UE4.Assets
         // Graph Data <= UE 5.2
         private List<FInternalArc> InternalArcs = new();
         private List<List<FExternalArc>> ExternalArcs = new();
-        
-        // Graph Data > UE 5.2
-        private List<FDependencyBundleHeader> DependencyBundleHeaders = new();
-        private List<FDependencyBundleEntry> DependencyBundleEntries = new();
-        
+
 
         public long TotalSize { get; }
 
@@ -241,17 +207,6 @@ namespace CUE4Parse.UE4.Assets
                 else
                 {
                     exportBundleHeaders = null;
-                    
-                    // Graph Data
-                    foreach (var _ in exportBundleEntries)
-                    {
-                        DependencyBundleHeaders.Add(new FDependencyBundleHeader(uassetAr));
-                    }
-                    
-                    foreach (var _ in exportBundleEntries)
-                    {
-                        DependencyBundleEntries.Add(new FDependencyBundleEntry(uassetAr));
-                    }
                 }
 
                 importedPackageIds = storeEntry?.ImportedPackages ?? Array.Empty<FPackageId>();

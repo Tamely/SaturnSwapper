@@ -15,6 +15,6 @@ public class StyleSelectorItem
         OptionData = option;
         DisplayName = option.GetOrDefault("VariantName", new FText("Unknown Style")).Text.ToLower().TitleCase();
         if (string.IsNullOrWhiteSpace(DisplayName)) DisplayName = "Unknown Style";
-        IconSource = previewBitmap.Encode(SKEncodedImageFormat.Png, 100);
+        IconSource = previewBitmap.Encode(SKEncodedImageFormat.Png, 1);
     }
 }

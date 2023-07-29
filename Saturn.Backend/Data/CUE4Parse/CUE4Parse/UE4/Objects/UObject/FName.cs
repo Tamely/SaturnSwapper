@@ -32,11 +32,6 @@ namespace CUE4Parse.UE4.Objects.UObject
             _name = name;
         }
 
-        public ulong GetHashVersion()
-        {
-            return _name.hashVersion;
-        }
-        
         public bool IsNone => Text == "None";
 
         public readonly FNameComparisonMethod ComparisonMethod;

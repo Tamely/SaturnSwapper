@@ -92,13 +92,13 @@ public class Deserializer
             {
                 if (ModifiedNameMap[i].Name == search.Split('.')[0] && !bFoundFirst)
                 {
-                    ModifiedNameMap[i] = new FNameEntrySerialized(replace.Split('.')[0], ModifiedNameMap[i].hashVersion);
+                    ModifiedNameMap[i] = new FNameEntrySerialized(replace.Split('.')[0]);
                     bFoundFirst = true;
                 }
 
                 if (ModifiedNameMap[i].Name == search.Split('.')[1] && !bFoundSecond)
                 {
-                    ModifiedNameMap[i] = new FNameEntrySerialized(replace.Split('.')[1], ModifiedNameMap[i].hashVersion);
+                    ModifiedNameMap[i] = new FNameEntrySerialized(replace.Split('.')[1]);
                     bFoundSecond = true;
                 }
             }
@@ -115,7 +115,7 @@ public class Deserializer
             {
                 if (ModifiedNameMap[i].Name == search)
                 {
-                    ModifiedNameMap[i] = new FNameEntrySerialized(replace, ModifiedNameMap[i].hashVersion);
+                    ModifiedNameMap[i] = new FNameEntrySerialized(replace);
                     bFound = true;
                 }
             }
@@ -212,10 +212,7 @@ public class Deserializer
             var header = headers[i];
             var length = (int) header.Length;
             var s = header.IsUtf16 ? new string(Ar.ReadArray<char>(length)) : Encoding.UTF8.GetString(Ar.ReadBytes(length));
-            entries[i] = new FNameEntrySerialized(s)
-            {
-                hashVersion = hashVersion
-            };
+            entries[i] = new FNameEntrySerialized(s);
         }
 
         return entries;

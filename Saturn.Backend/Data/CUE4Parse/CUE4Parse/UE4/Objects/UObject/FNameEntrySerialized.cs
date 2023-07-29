@@ -10,7 +10,6 @@ namespace CUE4Parse.UE4.Objects.UObject
     public struct FNameEntrySerialized
     {
         public string? Name;
-        public ulong hashVersion;
 #if NAME_HASHES
         public readonly ushort NonCasePreservingHash;
         public readonly ushort CasePreservingHash;
@@ -29,14 +28,11 @@ namespace CUE4Parse.UE4.Objects.UObject
                 Ar.Position += 4;
 #endif
             }
-
-            hashVersion = 0;
         }
 
-        public FNameEntrySerialized(string name, ulong HashVersion = 0)
+        public FNameEntrySerialized(string name)
         {
             Name = name;
-            hashVersion = HashVersion;
         }
 
         public override string ToString() => Name ?? "None";
@@ -61,8 +57,8 @@ namespace CUE4Parse.UE4.Objects.UObject
             }
 
             Ar.Position += sizeof(uint); // var numStringBytes = Ar.Read<uint>();
-            var hashVersion = Ar.Read<ulong>();
-
+            Ar.Position += sizeof(ulong); // var hashVersion = Ar.Read<ulong>();
+            
             Ar.Position += num * sizeof(ulong); // var hashes = Ar.ReadArray<ulong>(num);
             var headers = Ar.ReadArray<FSerializedNameHeader>(num);
             var entries = new FNameEntrySerialized[num];
@@ -71,10 +67,7 @@ namespace CUE4Parse.UE4.Objects.UObject
                 var header = headers[i];
                 var length = (int) header.Length;
                 var s = header.IsUtf16 ? new string(Ar.ReadArray<char>(length)) : Encoding.UTF8.GetString(Ar.ReadBytes(length));
-                entries[i] = new FNameEntrySerialized(s)
-                {
-                    hashVersion = hashVersion
-                };
+                entries[i] = new FNameEntrySerialized(s);
             }
 
             return entries;

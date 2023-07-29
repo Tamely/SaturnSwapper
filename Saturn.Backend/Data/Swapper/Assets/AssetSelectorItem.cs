@@ -1,16 +1,20 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using CUE4Parse_Conversion.Textures;
 using CUE4Parse.GameTypes.FN.Enums;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Texture;
+using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.Core.i18N;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.GameplayTags;
 using CUE4Parse.Utils;
+using Saturn.Backend.Data.Swapper.Styles;
 using Saturn.Backend.Data.Variables;
 using SkiaSharp;
 
@@ -84,7 +88,34 @@ public class AssetSelectorItem
             fullCanvas.DrawBitmap(iconBitmap, 0, 0);
         }
 
-        FullSource = FullBitmap.Encode(SKEncodedImageFormat.Png, 100);
+        FullSource = FullBitmap.Encode(SKEncodedImageFormat.Png, 1);
+    }
+
+    public async Task OnSelected()
+    {
+        List<StyleSelector> Styles = new();
+        var styles = Asset.GetOrDefault("ItemVariants", Array.Empty<UObject>());
+        foreach (var style in styles)
+        {
+            var channel = style.GetOrDefault("VariantChannelName", new FText("Unknown")).Text.ToLower().TitleCase();
+            var optionsName = style.ExportType switch
+            {
+                "FortCosmeticCharacterPartVariant" => "PartOptions",
+                "FortCosmeticMaterialVariant" => "MaterialOptions",
+                "FortCosmeticParticleVariant" => "ParticleOptions",
+                "FortCosmeticMeshVariant" => "MeshOptions",
+                _ => null
+            };
+            
+            if (optionsName is null) continue;
+
+            var options = style.Get<FStructFallback[]>(optionsName);
+            if (options.Length == 0) continue;
+
+            var styleSelector = new StyleSelector(channel, options, IconBitmap);
+            if (styleSelector.Options.Items.Count == 0) continue;
+            Styles.Add(styleSelector);
+        }
     }
 
     public string GetHTMLImage()
