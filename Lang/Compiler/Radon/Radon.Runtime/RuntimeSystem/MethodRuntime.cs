@@ -44,11 +44,9 @@ internal readonly struct MethodRuntime
     {
         switch (_method.IsStatic)
         {
-            case true when
-                _instance is not null:
+            case true when _instance is not NullObject:
                 throw new InvalidOperationException("Cannot invoke a static method on an instance.");
-            case false when
-                _instance is null:
+            case false when _instance is NullObject:
                 throw new InvalidOperationException("Cannot invoke an instance method on a null instance.");
         }
         

@@ -6,15 +6,20 @@ namespace Radon.Utilities;
 
 public static class EnumerableExtentions
 {
-    public static int IndexOf<T>(this IEnumerable<T> enumerable, T element)
+    public static int IndexOf<T>(this IEnumerable<T> enumerable, T element, IEqualityComparer<T>? comparer)
     {
+        comparer ??= EqualityComparer<T>.Default;
         var index = 0;
         foreach (var item in enumerable)
         {
-            if (EqualityComparer<T>.Default.Equals(item, element))
+            if (comparer.Equals(item, element))
+            {
                 return index;
+            }
+            
             index++;
         }
+        
         return -1;
     }
 }

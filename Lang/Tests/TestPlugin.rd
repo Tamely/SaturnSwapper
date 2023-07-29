@@ -1,6 +1,7 @@
-#include "TestStructs.rd"
+#include "TestTemplates.rd"
 
 sign: "Author", "Fin"
+sign: encrypted, true
 
 from_ar = import "Path/To/Asset"
 to_ar = import "Path/To/OtherAsset"
@@ -18,3 +19,8 @@ list<string> stringList = new list<string>()
 stringList.Add("Hello")
 stringList.Add(" ")
 stringList.Add("World!")
+
+Template<int> intTemplate = new Template<int>()
+Dictionary<string, int> dict = new Dictionary<string, int>()
+dict.Add("Hello", 10)
+dict.Add("World", 20)

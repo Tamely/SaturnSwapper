@@ -247,6 +247,10 @@ internal sealed class Lexer
                               .OrderByDescending(k => k.Text!.Length);
         foreach (var kind in kinds)
         {
+            // We need this because say we had a variable call "enum1", it would parse the enum keyword,
+            // then the number 1, instead of the "enum1" identifier
+            var mustBeSeparated = kind.TryGetAttribute(SKAttributes.Keyword, out _) ||
+                                      kind.TryGetAttribute(SKAttributes.Literal, out _);
             var text = kind.Text!;
             if (text.Length == 0)
             {
@@ -267,14 +271,35 @@ internal sealed class Lexer
 
                 if (done)
                 {
-                    _kind = kind;
-                    _position += text.Length;
-                    return;
+                    var isSeparated = true;
+                    if (mustBeSeparated)
+                    {
+                        var pos = _position;
+                        _position = _start + text.Length;
+                        ReadTrivia(false);
+                        var trivia = _triviaBuilder.ToImmutable();
+                        if (trivia.Length == 0)
+                        {
+                            isSeparated = false;
+                        }
+                        
+                        _position = pos;
+                    }
+                    
+                    if (isSeparated)
+                    {
+                        _kind = kind;
+                        _position += text.Length;
+                        return;
+                    }
+                    
+                    // If it isn't separated, then it's probably and identifier
+                    break;
                 }
             }
         }
 
-        if (char.IsNumber(Current))
+        if (char.IsDigit(Current))
         {
             while (char.IsDigit(Current))
             {

@@ -37,15 +37,14 @@ internal sealed class ExpressionBinder : Binder
 
     public override BoundNode Bind(SyntaxNode node, params object[] args)
     {
-        var expressionContext = new SemanticContext(this, node, Diagnostics);
         if (args.Length > 0)
         {
-            return new BoundErrorExpression(node, expressionContext);
+            throw new ArgumentException($"No arguments should be passed to {nameof(ExpressionBinder)}.{nameof(Bind)} method.");
         }
 
         if (node is not ExpressionSyntax syntax)
         {
-            return new BoundErrorExpression(node, expressionContext);
+            throw new ArgumentException("The node must be an expression syntax node.");
         }
         
         return BindExpression(syntax);
@@ -70,13 +69,25 @@ internal sealed class ExpressionBinder : Binder
             ThisExpressionSyntax thisExpressionSyntax => BindThisExpression(thisExpressionSyntax, expressionContext),
             DefaultExpressionSyntax defaultExpressionSyntax => BindDefaultExpression(defaultExpressionSyntax),
             UnaryExpressionSyntax unaryExpressionSyntax => BindUnaryExpression(unaryExpressionSyntax, expressionContext),
-            _ => new BoundErrorExpression(syntax, expressionContext)
+            _ => throw new ArgumentOutOfRangeException(nameof(syntax),
+                $"The syntax node {syntax.Kind} is not supported by the {nameof(ExpressionBinder)} class.")
         };
     }
 
     public BoundExpression BindConversion(BoundExpression expression, TypeSymbol type, ImmutableArray<TypeSymbol> typeArguments, bool allowExplicit = false)
     {
-        if (expression.Type == type)
+        var expressionType = expression.Type;
+        if (expressionType is BoundTypeParameterSymbol typeParamExpr)
+        {
+            expressionType = typeParamExpr.BoundType;
+        }
+        
+        if (type is BoundTypeParameterSymbol typeParam)
+        {
+            type = typeParam.BoundType;
+        }
+
+        if (expressionType == type)
         {
             return expression;
         }
@@ -88,18 +99,18 @@ internal sealed class ExpressionBinder : Binder
             type = typeArguments[t.Ordinal];
             if (!TryResolveSymbol(context, ref type))
             {
-                Diagnostics.ReportCannotConvert(expression.Syntax.Location, expression.Type, type);
+                Diagnostics.ReportCannotConvert(expression.Syntax.Location, expressionType, type);
                 return new BoundErrorExpression(expression.Syntax, context);
             }
         }
         
-        var conversion = Conversion.Classify(expression.Type, type);
+        var conversion = Conversion.Classify(expressionType, type);
         if (!conversion.Exists)
         {
             if (expression.Type != TypeSymbol.Error &&
                 type != TypeSymbol.Error)
             {
-                Diagnostics.ReportCannotConvert(expression.Syntax.Location, expression.Type, type);
+                Diagnostics.ReportCannotConvert(expression.Syntax.Location, expressionType, type);
             }
             
             return new BoundErrorExpression(expression.Syntax, new SemanticContext(this, expression.Syntax, Diagnostics));
@@ -127,7 +138,7 @@ internal sealed class ExpressionBinder : Binder
         
         if (!allowExplicit && conversion.IsExplicit)
         {
-            Diagnostics.ReportCannotConvertImplicitly(expression.Syntax.Location, expression.Type, type);
+            Diagnostics.ReportCannotConvertImplicitly(expression.Syntax.Location, expressionType, type);
             return new BoundErrorExpression(expression.Syntax, new SemanticContext(this, expression.Syntax, Diagnostics));
         }
         
@@ -271,12 +282,14 @@ internal sealed class ExpressionBinder : Binder
         }
         
         var iArguments = ImmutableArray.CreateBuilder<BoundExpression>();
+        Diagnostics.Block();
         foreach (var argument in syntax.ArgumentList.Arguments)
         {
             var boundArgument = BindExpression(argument);
             iArguments.Add(boundArgument);
         }
-
+        
+        Diagnostics.Unblock();
         var typeArgs = ImmutableArray.CreateBuilder<TypeSymbol>();
         if (syntax.TypeArgumentList is { } typeArgList)
         {
@@ -452,6 +465,7 @@ internal sealed class ExpressionBinder : Binder
 
         if (!TryResolve<Symbol>(symbolContext, name, out var symbol))
         {
+            Diagnostics.ReportUnresolvedSymbol(syntax.Location, name);
             return new BoundErrorExpression(syntax, context);
         }
         

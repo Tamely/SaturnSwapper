@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Linq;
+using Radon.CodeAnalysis.Binding;
 using Radon.CodeAnalysis.Binding.Analyzers;
 using Radon.CodeAnalysis.Binding.Semantics;
 using Radon.CodeAnalysis.Binding.Semantics.Types;
@@ -17,6 +18,7 @@ public sealed class Compilation
     private readonly bool _proceedWithCompilation = true;
     public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
     public ImmutableArray<Diagnostic> Diagnostics { get; }
+    public Scope AssemblyScope => _boundTree.Scope ?? new Scope(null);
     public Compilation(SyntaxTree syntaxTree)
     {
         var syntaxTrees = ImmutableArray.CreateBuilder<SyntaxTree>();
@@ -38,7 +40,7 @@ public sealed class Compilation
     {
         if (!_proceedWithCompilation)
         {
-            return new BoundAssembly(SyntaxNode.Empty, null, ImmutableArray<BoundType>.Empty, Diagnostics);
+            return new BoundAssembly(SyntaxNode.Empty, null, ImmutableArray<BoundType>.Empty, Diagnostics, null);
         }
         
         try
@@ -51,7 +53,7 @@ public sealed class Compilation
         {
             var diagnosticBag = new DiagnosticBag();
             diagnosticBag.ReportInternalCompilerError(e);
-            return new BoundAssembly(SyntaxNode.Empty, null, ImmutableArray<BoundType>.Empty, diagnosticBag.ToImmutableArray());
+            return new BoundAssembly(SyntaxNode.Empty, null, ImmutableArray<BoundType>.Empty, diagnosticBag.ToImmutableArray(), null);
         }
     }
     

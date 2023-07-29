@@ -213,7 +213,7 @@ internal sealed class PrimitiveTypeBinder : TypeBinder
             MethodSymbol method => new BoundMethod(syntax, method, ImmutableArray<BoundStatement>.Empty,
                 ImmutableArray<LocalVariableSymbol>.Empty),
             ConstructorSymbol constructor => new BoundConstructor(syntax, constructor,
-                ImmutableArray<BoundStatement>.Empty),
+                ImmutableArray<BoundStatement>.Empty, ImmutableArray<LocalVariableSymbol>.Empty),
             TemplateMethodSymbol templateMethod => new BoundTemplateMethod(syntax, templateMethod,
                 ImmutableArray<BoundStatement>.Empty, ImmutableArray<LocalVariableSymbol>.Empty),
             _ => throw new Exception($"Unexpected member: {member.GetType()}")

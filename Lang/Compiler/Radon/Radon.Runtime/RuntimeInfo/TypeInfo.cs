@@ -12,6 +12,7 @@ internal sealed record TypeInfo
     private readonly Dictionary<EnumMember, EnumMemberInfo> _enumMembers;
     private readonly Dictionary<Field, FieldInfo> _fields;
     private readonly Dictionary<Method, MethodInfo> _methods;
+    private readonly Dictionary<Method, MethodInfo> _constructors;
     private readonly Metadata _metadata;
     public bool IsRuntimeType { get; }
     public bool IsStruct { get; }
@@ -27,6 +28,7 @@ internal sealed record TypeInfo
     public ImmutableArray<EnumMemberInfo> EnumMembers { get; }
     public ImmutableArray<FieldInfo> Fields { get; }
     public ImmutableArray<MethodInfo> Methods { get; }
+    public ImmutableArray<MethodInfo> Constructors { get; }
     public MethodInfo? StaticConstructor { get; }
     public TypeDefinition Definition { get; }
     public TypeInfo(TypeDefinition type, Metadata metadata)
@@ -51,6 +53,7 @@ internal sealed record TypeInfo
         _enumMembers = new Dictionary<EnumMember, EnumMemberInfo>();
         _fields = new Dictionary<Field, FieldInfo>();
         _methods = new Dictionary<Method, MethodInfo>();
+        _constructors = new Dictionary<Method, MethodInfo>();
         _metadata = metadata;
         var enumMembers = ImmutableArray.CreateBuilder<EnumMemberInfo>();
         var enumMemberCount = type.EnumMemberCount;
@@ -85,6 +88,17 @@ internal sealed record TypeInfo
             _methods.Add(method, info);
         }
 
+        var constructors = ImmutableArray.CreateBuilder<MethodInfo>();
+        var constructorCount = type.ConstructorCount;
+        var firstConstructor = type.ConstructorStartOffset;
+        for (var i = 0; i < constructorCount; i++)
+        {
+            var constructor = metadata.Methods.Methods[firstConstructor + i];
+            var info = new MethodInfo(constructor, metadata, this);
+            constructors.Add(info);
+            _constructors.Add(constructor, info);
+        }
+        
         var staticConstructor = type.StaticConstructor;
         if (staticConstructor != -1)
         {
@@ -96,72 +110,80 @@ internal sealed record TypeInfo
         EnumMembers = enumMembers.ToImmutable();
         Fields = fields.ToImmutable();
         Methods = methods.ToImmutable();
+        Constructors = constructors.ToImmutable();
     }
 
-    public T GetByRef<T>(MemberType type, MemberReference reference)
+    public T GetByRef<T>(MemberType type, MemberReference reference, bool checkType = true)
         where T : IMemberInfo
     {
-        if (type != reference.MemberType)
+        try
         {
-            throw new ArgumentException("Member reference type does not match the type of the member.", nameof(reference));
+            if (type != reference.MemberType)
+            {
+                throw new ArgumentException("Member reference type does not match the type of the member.", nameof(reference));
+            }
+            
+            switch (type)
+            {
+                case MemberType.Field:
+                    if (typeof(T) != typeof(FieldInfo) && checkType)
+                    {
+                        throw new ArgumentException("Type parameter must be FieldInfo.", nameof(T));
+                    }
+                    
+                    var field = _metadata.Fields.Fields[reference.MemberDefinition];
+                    if (!_fields.TryGetValue(field, out var fieldInfo))
+                    {
+                        throw new InvalidOperationException("Field not found.");
+                    }
+                    
+                    return (T)(object)fieldInfo;
+                case MemberType.Method:
+                    if (typeof(T) != typeof(MethodInfo) && checkType)
+                    {
+                        throw new ArgumentException("Type parameter must be MethodInfo.", nameof(T));
+                    }
+                    
+                    var method = _metadata.Methods.Methods[reference.MemberDefinition];
+                    if (!_methods.TryGetValue(method, out var methodInfo))
+                    {
+                        throw new InvalidOperationException("Method not found.");
+                    }
+                    
+                    return (T)(object)methodInfo;
+                case MemberType.Constructor:
+                    if (typeof(T) != typeof(MethodInfo) && checkType)
+                    {
+                        throw new ArgumentException("Type parameter must be MethodInfo.", nameof(T));
+                    }
+                    
+                    var constructor = _metadata.Methods.Methods[reference.MemberDefinition];
+                    if (!_constructors.TryGetValue(constructor, out var constructorInfo))
+                    {
+                        throw new InvalidOperationException("Constructor not found.");
+                    }
+                    
+                    return (T)(object)constructorInfo;
+                case MemberType.EnumMember:
+                    if (typeof(T) != typeof(EnumMemberInfo) && checkType)
+                    {
+                        throw new ArgumentException("Type parameter must be EnumMemberInfo.", nameof(T));
+                    }
+                    
+                    var enumMember = _metadata.EnumMembers.Members[reference.MemberDefinition];
+                    if (!_enumMembers.TryGetValue(enumMember, out var enumMemberInfo))
+                    {
+                        throw new InvalidOperationException("Enum member not found.");
+                    }
+                    
+                    return (T)(object)enumMemberInfo;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(type), type, null);
+            }
         }
-        
-        switch (type)
+        catch (Exception e)
         {
-            case MemberType.Field:
-                if (typeof(T) != typeof(FieldInfo))
-                {
-                    throw new ArgumentException("Type parameter must be FieldInfo.", nameof(T));
-                }
-                
-                var field = _metadata.Fields.Fields[reference.MemberDefinition];
-                if (!_fields.TryGetValue(field, out var fieldInfo))
-                {
-                    throw new InvalidOperationException("Field not found.");
-                }
-                
-                return (T)(object)fieldInfo;
-            case MemberType.Method:
-                if (typeof(T) != typeof(MethodInfo))
-                {
-                    throw new ArgumentException("Type parameter must be MethodInfo.", nameof(T));
-                }
-                
-                var method = _metadata.Methods.Methods[reference.MemberDefinition];
-                if (!_methods.TryGetValue(method, out var methodInfo))
-                {
-                    throw new InvalidOperationException("Method not found.");
-                }
-                
-                return (T)(object)methodInfo;
-            case MemberType.Constructor:
-                if (typeof(T) != typeof(MethodInfo))
-                {
-                    throw new ArgumentException("Type parameter must be MethodInfo.", nameof(T));
-                }
-                
-                var constructor = _metadata.Methods.Methods[reference.MemberDefinition];
-                if (!_methods.TryGetValue(constructor, out var constructorInfo))
-                {
-                    throw new InvalidOperationException("Constructor not found.");
-                }
-                
-                return (T)(object)constructorInfo;
-            case MemberType.EnumMember:
-                if (typeof(T) != typeof(EnumMemberInfo))
-                {
-                    throw new ArgumentException("Type parameter must be EnumMemberInfo.", nameof(T));
-                }
-                
-                var enumMember = _metadata.EnumMembers.Members[reference.MemberDefinition];
-                if (!_enumMembers.TryGetValue(enumMember, out var enumMemberInfo))
-                {
-                    throw new InvalidOperationException("Enum member not found.");
-                }
-                
-                return (T)(object)enumMemberInfo;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(type), type, null);
+            throw new Exception($"Failed to get member '{type}' by reference", e);
         }
     }
 

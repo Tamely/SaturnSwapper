@@ -22,12 +22,12 @@ internal sealed class ManagedUShort : ManagedPrimitive<ushort>
     
     public unsafe ManagedUShort(byte[] value)
     {
+        Type = ManagedRuntime.System.GetType("ushort");
         if (value.Length != Size)
         {
             throw new ArgumentException($"Value must be {Size} bytes long", nameof(value));
         }
         
-        Type = ManagedRuntime.System.GetType("ushort");
         fixed (byte* ptr = value)
         {
             PrimValue = *(ushort*)ptr;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Radon.CodeAnalysis.Emit;
 using System.Reflection;
@@ -7,6 +8,8 @@ namespace Radon.Runtime.RuntimeSystem.RuntimeObjects;
 
 internal interface IRuntimeObject
 {
+    private static Type[] CachedPrims = Array.Empty<Type>();
+    
     public int Size { get; } // Size in bytes; -1 if dynamic
     public RuntimeType Type { get; } // Type of the object
     public object? Value { get; } // Value of the object
@@ -117,20 +120,41 @@ internal interface IRuntimeObject
     private static IRuntimeObject CreatePrimitive(RuntimeType type, byte[]? data)
     {
         // Get all types that derive from ManagedPrimitive<T>
-        var primitiveTypes = typeof(ManagedPrimitive<>).Assembly.GetTypes()
-            .Where(x => x.IsSubclassOf(typeof(ManagedPrimitive<>)));
+        // Get all types
+        if (CachedPrims.Length == 0)
+        {
+            var types = typeof(ManagedPrimitive<>).Assembly.GetTypes();
+            var primitiveTypes = new List<Type>();
+            foreach (var t in types)
+            {
+                var baseType = t.BaseType;
+                var primitiveType = typeof(ManagedPrimitive);
+                if (baseType is null)
+                {
+                    continue;
+                }
+                
+                if (baseType.IsSubclassOf(primitiveType) && !t.IsAbstract)
+                {
+                    primitiveTypes.Add(t);
+                }
+            }
+
+            CachedPrims = primitiveTypes.ToArray();
+        }
+
         // Get the primitive type where the IRuntimeObject.Type field is equal to the "type" parameter
-        foreach (var prim in primitiveTypes)
+        foreach (var prim in CachedPrims)
         {
             var defaultPrim = Activator.CreateInstance(prim);
-            var field = prim.GetField("Type", BindingFlags.Public | BindingFlags.Instance);
-            var fieldType = (RuntimeType?)field?.GetValue(defaultPrim);
-            if (fieldType is null)
+            var property = prim.GetProperty("Type", BindingFlags.Public | BindingFlags.Instance);
+            var propertyType = (RuntimeType?)property?.GetValue(defaultPrim);
+            if (propertyType is null)
             {
                 continue;
             }
             
-            if (fieldType.TypeInfo == type.TypeInfo)
+            if (propertyType.TypeInfo == type.TypeInfo)
             {
                 // Create an instance of the primitive type
                 var primInstance = data is null ? defaultPrim : Activator.CreateInstance(prim, data);

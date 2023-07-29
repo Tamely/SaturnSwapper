@@ -22,12 +22,12 @@ internal sealed class ManagedDouble : ManagedPrimitive<double>
     
     public unsafe ManagedDouble(byte[] value)
     {
+        Type = ManagedRuntime.System.GetType("double");
         if (value.Length != Size)
         {
             throw new ArgumentException($"Value must be {Size} bytes long", nameof(value));
         }
         
-        Type = ManagedRuntime.System.GetType("double");
         fixed (byte* ptr = value)
         {
             PrimValue = *(double*)ptr;
