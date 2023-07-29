@@ -8,6 +8,9 @@ public class SoftObjectFactory
 {
     public static SoftObjectPropertyData Create(string value, string substring = "")
     {
+        if (FactoryUtils.ASSET == null)
+            throw new Exception("FactoryUtils.ASSET is null. Did you forget to set it?");
+        
         SoftObjectPropertyData data = new();
 
         FactoryUtils.ASSET.AddNameReference(new FString(value));
