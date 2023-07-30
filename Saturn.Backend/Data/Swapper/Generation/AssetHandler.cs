@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using CUE4Parse.UE4.AssetRegistry.Objects;
@@ -18,7 +19,7 @@ public class AssetHandler
     public readonly AssetHandlerData SkinHandler = new()
     {
         AssetType = EAssetType.Outfit,
-        TargetCollection = Constants.Outfits,
+        TargetCollection = Constants.Cosmetics,
         ClassNames = new List<string> { "AthenaCharacterItemDefinition" },
         RemoveList = new List<string>() { "_NPC", "_TBD", "CID_VIP", "_Creative", "_SG" },
         IconGetter = asset =>
@@ -33,9 +34,56 @@ public class AssetHandler
         }
     };
 
+    public readonly AssetHandlerData BackpackHandler = new()
+    {
+        AssetType = EAssetType.Backpack,
+        TargetCollection = Constants.Cosmetics,
+        ClassNames = new List<string> { "AthenaBackpackItemDefinition" },
+        RemoveList = new List<string> { "_STWHeroNoDefaultBackpack", "_TEST", "Dev_", "_NPC", "_TBD" },
+        IconGetter = asset => asset.GetOrDefault<UTexture2D?>("SmallPreviewImage", "LargePreviewImage")
+    };
+    
+    public readonly AssetHandlerData PickaxeHandler = new()
+    {
+        AssetType = EAssetType.Pickaxe,
+        TargetCollection = Constants.Cosmetics,
+        ClassNames = new List<string> { "AthenaPickaxeItemDefinition" },
+        RemoveList = new List<string> { "Dev_", "TBD_" },
+        IconGetter = asset =>
+        {
+            asset.TryGetValue(out UTexture2D? previewImage, "SmallPreviewImage", "LargePreviewImage");
+            if (asset.TryGetValue(out UObject heroDef, "WeaponDefinition"))
+            {
+                heroDef.TryGetValue(out previewImage, "SmallPreviewImage", "LargePreviewImage");
+            }
+
+            return previewImage;
+        }
+    };
+
+    public readonly AssetHandlerData GliderHandler = new()
+    {
+        AssetType = EAssetType.Glider,
+        TargetCollection = Constants.Cosmetics,
+        ClassNames = new List<string> { "AthenaGliderItemDefinition" },
+        RemoveList = { },
+        IconGetter = asset => asset.GetOrDefault<UTexture2D?>("SmallPreviewImage", "LargePreviewImage")
+    };
+    
+    public readonly AssetHandlerData DanceHandler = new()
+    {
+        AssetType = EAssetType.Dance,
+        TargetCollection = Constants.Cosmetics,
+        ClassNames = new List<string> { "AthenaDanceItemDefinition" },
+        RemoveList = { "_CT", "_NPC" },
+        IconGetter = asset => asset.GetOrDefault<UTexture2D?>("SmallPreviewImage", "LargePreviewImage")
+    };
+
+    public AssetHandlerData Handler;
     public async Task Initialize()
     {
-        await SkinHandler.Execute();
+        Handler = SkinHandler;
+        await Handler.Execute();
     }
 }
 
@@ -57,6 +105,7 @@ public class AssetHandlerData
         HasStarted = true;
         
         var items = Constants.AssetDataBuffers.Where(x => ClassNames.Any(y => x.AssetClass.Text.Equals(y, StringComparison.OrdinalIgnoreCase))).ToList();
+        Constants.CosmeticCount = items.Count;
         
         // We want to prioritize Random first because of parallel list positions not syncing
         var random = items.FirstOrDefault(x => x.AssetName.Text.Contains("Random", StringComparison.OrdinalIgnoreCase));
@@ -65,7 +114,10 @@ public class AssetHandlerData
             items.Remove(random);
             await Load(random, AssetType, true);
         }
+
+        items = items.OrderBy(x => Path.GetFileNameWithoutExtension(x.ObjectPath.SubstringAfter('_'))).ToList(); // so we're consistent with the tabs
         
+        items.RemoveRange(Constants.ChunkIndex * Constants.CHUNK_SIZE, items.Count - Constants.ChunkIndex * Constants.CHUNK_SIZE - Constants.CHUNK_SIZE);
         await Parallel.ForEachAsync(items, async (data, token) =>
         {
             try
@@ -77,6 +129,10 @@ public class AssetHandlerData
                 Logger.Log($"Failed to load {data.ObjectPath}", LogLevel.Error);
             }
         });
+        
+        TargetCollection.RemoveAll(x => x == null);
+        TargetCollection = TargetCollection.OrderBy(x => x.ID).ToList();
+        HasStarted = false;
     }
 
     private async Task Load(FAssetData data, EAssetType type, bool random = false, string? descriptionOverride = null)

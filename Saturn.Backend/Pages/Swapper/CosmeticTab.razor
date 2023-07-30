@@ -49,7 +49,7 @@
             </div>
         </div>
     }
-    else if (false && (Constants.ChunkedItems.Count == 0 || Constants.ChunkedItems[0].Count == 0))
+    else if (Constants.CosmeticCount == 0)
     {
         <div class="tab-message">
             <div class="text">
@@ -59,9 +59,19 @@
             </div>
         </div>
     }
+    else if (Constants.Cosmetics.Count < Constants.CHUNK_SIZE)
+    {
+        <div class="tab-message">
+            <div class="text">
+                <h1>@NoCosmeticsKoomoji</h1>
+                <h3>Generating cosmetics</h3>
+                <h3>Please be patient</h3>
+            </div>
+        </div>
+    }
     else
     {
-        foreach (var item in Constants.Outfits)
+        foreach (var item in Constants.Cosmetics)
         {
             <div id="@(item.ID + "-section")" class="section hoverable">
                 <img src=@(item.GetHTMLImage()) alt="Icon"/>
@@ -96,9 +106,9 @@
             </div>
         }
 
-        @if (Constants.ChunkIndex == 0 && Constants.ChunkIndex != Constants.ChunkedItems.Count - 1)
+        if (Constants.ChunkIndex == 0 && Constants.ChunkIndex != (int)Math.Floor((double)Constants.CosmeticCount / Constants.CHUNK_SIZE) - 1)
         {
-            <div id="@("next-section")" class="section hoverable" @onclick="@(() => Constants.ChunkIndex++)">
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexUp())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/Character_HeadhunterStar/smallicon.png") alt="Icon"/>
                 <div class="name">
                     <h1>@_localizationResourceService.GetString(29)</h1>
@@ -106,9 +116,9 @@
                 </div>
             </div>
         }
-        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex == Constants.ChunkedItems.Count - 1)
+        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex == (int)Math.Floor((double)Constants.CosmeticCount / Constants.CHUNK_SIZE) - 1)
         {
-            <div id="@("next-section")" class="section hoverable" @onclick="@(() => Constants.ChunkIndex--)">
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexDown())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>
                 <div class="name">
                     <h1>@_localizationResourceService.GetString(31)</h1>
@@ -116,9 +126,9 @@
                 </div>
             </div>
         }
-        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex != Constants.ChunkedItems.Count - 1)
+        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex != (int)Math.Floor((double)Constants.CosmeticCount / Constants.CHUNK_SIZE) - 1)
         {
-            <div id="@("next-section")" class="section hoverable" @onclick="@(() => Constants.ChunkIndex--)">
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexDown())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>
                 <div class="name">
                     <h1>@_localizationResourceService.GetString(31)</h1>
@@ -126,7 +136,7 @@
                 </div>
             </div>
 
-            <div id="@("next-section")" class="section hoverable" @onclick="@(() => Constants.ChunkIndex++)">
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexUp())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/Character_HeadhunterStar/smallicon.png") alt="Icon"/>
                 <div class="name">
                     <h1>@_localizationResourceService.GetString(29)</h1>
@@ -144,14 +154,21 @@
     private string UpdateBackgroundUrl = "/img/banner.png";
     private string NoCosmeticsKoomoji = "(⇀‸↼‶)";
 
+    private async Task IndexUp()
+    {
+        Constants.ChunkIndex++;
+        await Constants.Handler.Handler.Execute();
+    }
+    
+    private async Task IndexDown()
+    {
+        Constants.ChunkIndex++;
+        await Constants.Handler.Handler.Execute();
+    }
+
     private async Task AddCosmetics()
     {
         Logger.Log("Generating cosmetics!");
-        Constants.ChunkedItems = (await new SkinGenerator().Generate()).OrderBy(x => x.ID).ToList()
-            .Select((x, i) => new { Index = i, Value = x })
-            .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
-            .Select(x => x.Select(v => v.Value).ToList())
-            .ToList();
         Logger.Log("Done!");
 
         DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", "Selecting Cosmetics");
@@ -173,7 +190,7 @@
         while (true)
         {
             StateHasChanged();
-            await Task.Delay(500);
+            await Task.Delay(50);
         }
     }
 

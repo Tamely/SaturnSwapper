@@ -60,36 +60,7 @@ namespace CUE4Parse_Conversion.Textures.BC
 
         private static void PrepareDllFile()
         {
-            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("CUE4Parse_Conversion.Resources.Detex.dll");
-            if (stream == null)
-                throw new MissingManifestResourceException("Couldn't find Detex.dll in Embedded Resources");
-            var ba = new byte[(int)stream.Length];
-            stream.Read(ba, 0, (int)stream.Length);
-
-            bool fileOk;
-            var dllFile = Constants.DETEX_DLL_NAME;
-
-            using (var sha1 = new SHA1CryptoServiceProvider())
-            {
-                var fileHash = BitConverter.ToString(sha1.ComputeHash(ba)).Replace("-", string.Empty);
-
-                if (File.Exists(dllFile))
-                {
-                    var bb = File.ReadAllBytes(dllFile);
-                    var fileHash2 = BitConverter.ToString(sha1.ComputeHash(bb)).Replace("-", string.Empty);
-
-                    fileOk = fileHash == fileHash2;
-                }
-                else
-                {
-                    fileOk = false;
-                }
-            }
-
-            if (!fileOk)
-            {
-                File.WriteAllBytes(dllFile, ba);
-            }
+            
         }
     }
 }

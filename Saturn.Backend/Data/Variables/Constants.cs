@@ -183,8 +183,9 @@ namespace Saturn.Backend.Data.Variables
         public static bool CanLobbySwap = false;
         public static bool ShouldLobbySwap = true;
         public static bool IsRemoving = false;
-        
-        public static List<AssetSelectorItem> Outfits = new();
+
+        public static int CosmeticCount = -1;
+        public static List<AssetSelectorItem> Cosmetics = new();
 
         public static AssetHandler Handler = new();
         public static List<FAssetData> AssetDataBuffers = new();
@@ -196,11 +197,10 @@ namespace Saturn.Backend.Data.Variables
         
         public static DefaultFileProvider Provider;
         
-        public const int CHUNK_SIZE = 500;
+        public const int CHUNK_SIZE = 250;
         public static int ChunkIndex = 0;
 
         public static List<Plugin> OwnedPlugins = new();
-        public static List<List<DisplayItemModel>> ChunkedItems = new();
         public static DisplayItemModel SelectedDisplayItem = new();
         public static SaturnItemModel SelectedItem = new();
         public static SaturnItemModel SelectedOption = new();

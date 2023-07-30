@@ -28,8 +28,10 @@ public class Program
     public static void Main(string[] args)
     {
         foreach (var process in Process.GetProcesses())
-            if (process.ProcessName == "Saturn")
+        {
+            if (process.ProcessName.Contains("Saturn") && !process.ProcessName.Contains("Launcher"))
                 process.Kill();
+        }
 
         bool isPlus = false;
         if (File.Exists(USER_PATH))

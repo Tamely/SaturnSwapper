@@ -83,14 +83,9 @@
         if (stateToGoTo == SaturnState.S_Skin)
         {
             Logger.Log("Generating cosmetics!");
-            /*
-            Constants.ChunkedItems = (await new SkinGenerator().Generate()).OrderBy(x => x.ID).ToList()
-                .Select((x, i) => new { Index = i, Value = x })
-                .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
-                .Select(x => x.Select(v => v.Value).ToList())
-                .ToList();*/
+            Constants.Handler.Handler = Constants.Handler.SkinHandler;
+            Constants.Cosmetics.Clear();
             await Constants.Handler.Initialize();
-            Constants.Outfits.RemoveAll(x => x == null);
             Logger.Log("Done!");
         }
         
