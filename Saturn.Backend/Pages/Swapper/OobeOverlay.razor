@@ -146,7 +146,7 @@ else if (!_oobeService.OobeType.HasFlag(OobeType.Done) && Constants.State == Sat
         await _oobeService.AddFlag(OobeType.ClickEndPickCosmetics);
         
         Data.Logger.Log("Generating cosmetics!");
-        Constants.Handler.Handler = Constants.Handler.SkinHandler;
+        await Constants.Handler.SwitchHandler(Constants.Handler.SkinHandler);
         await Constants.Handler.Handler.Execute();
         Data.Logger.Log("Done!");
 

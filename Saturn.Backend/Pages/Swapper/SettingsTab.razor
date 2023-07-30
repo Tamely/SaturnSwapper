@@ -127,7 +127,7 @@
         };
         
         Logger.Log("Generating cosmetics!");
-        Constants.Handler.Handler = Constants.Handler.SkinHandler;
+        await Constants.Handler.SwitchHandler(Constants.Handler.SkinHandler);
         await Constants.Handler.Handler.Execute();
         Logger.Log("Done!");
 

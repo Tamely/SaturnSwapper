@@ -50,7 +50,7 @@
         
         StateHasChanged();
 
-        Constants.Handler.Handler = Constants.CosmeticState switch
+        await Constants.Handler.SwitchHandler(Constants.CosmeticState switch
         {
             SaturnState.S_Pickaxe => Constants.Handler.PickaxeHandler,
             SaturnState.S_Emote => Constants.Handler.DanceHandler,
@@ -58,8 +58,8 @@
             SaturnState.S_Backbling => Constants.Handler.BackpackHandler,
             SaturnState.S_Glider => Constants.Handler.GliderHandler,
             _ => Constants.Handler.Handler
-        };
-        
+        });
+
         Constants.Cosmetics.Clear();
         await Constants.Handler.Handler.Execute();
         StateHasChanged();
@@ -79,23 +79,23 @@
         {
             case SaturnState.S_Pickaxe:
                 await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "pickaxe");
-                Constants.Handler.Handler = Constants.Handler.PickaxeHandler;
+                await Constants.Handler.SwitchHandler(Constants.Handler.PickaxeHandler);
                 break;
             case SaturnState.S_Emote:
                 await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "emote");
-                Constants.Handler.Handler = Constants.Handler.DanceHandler;
+                await Constants.Handler.SwitchHandler(Constants.Handler.DanceHandler);
                 break;
             case SaturnState.S_Skin:
                 await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "skin");
-                Constants.Handler.Handler = Constants.Handler.SkinHandler;
+                await Constants.Handler.SwitchHandler(Constants.Handler.SkinHandler);
                 break;
             case SaturnState.S_Backbling:
                 await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "backbling");
-                Constants.Handler.Handler = Constants.Handler.BackpackHandler;
+                await Constants.Handler.SwitchHandler(Constants.Handler.BackpackHandler);
                 break;
             case SaturnState.S_Glider:
                 await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "glider");
-                Constants.Handler.Handler = Constants.Handler.GliderHandler;
+                await Constants.Handler.SwitchHandler(Constants.Handler.GliderHandler);
                 break;
         }
 

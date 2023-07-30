@@ -9,6 +9,7 @@ using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Objects.Core.i18N;
 using CUE4Parse.Utils;
+using Microsoft.AspNetCore.Components.Forms;
 using Saturn.Backend.Data.Swapper.Assets;
 using Saturn.Backend.Data.Variables;
 
@@ -79,15 +80,34 @@ public class AssetHandler
         IconGetter = asset => asset.GetOrDefault<UTexture2D?>("SmallPreviewImage", "LargePreviewImage")
     };
 
-    public AssetHandlerData Handler;
+    public AssetHandlerData Handler { get; private set; }
+
+    public async Task SwitchHandler(AssetHandlerData Handler)
+    {
+       this.Handler = (AssetHandlerData)Handler.Clone();
+    }
+
+    public async Task Reset()
+    {
+        await SwitchHandler(Handler.AssetType switch
+        {
+            EAssetType.Outfit => SkinHandler,
+            EAssetType.Backpack => BackpackHandler,
+            EAssetType.Pickaxe => PickaxeHandler,
+            EAssetType.Glider => GliderHandler,
+            EAssetType.Dance => DanceHandler,
+            _ => SkinHandler
+        });
+    }
+    
     public async Task Initialize()
     {
-        Handler = SkinHandler;
+        await SwitchHandler(SkinHandler);
         await Handler.Execute();
     }
 }
 
-public class AssetHandlerData
+public class AssetHandlerData : ICloneable
 {
     public bool HasStarted { get; private set; }
     public Pauser PauseState { get; } = new();
@@ -116,19 +136,19 @@ public class AssetHandlerData
         }
 
         items = items.OrderBy(x => Path.GetFileNameWithoutExtension(x.ObjectPath.SubstringAfter('_'))).ToList(); // so we're consistent with the tabs
-        
-        items.RemoveRange(Constants.ChunkIndex * Constants.CHUNK_SIZE, items.Count - Constants.ChunkIndex * Constants.CHUNK_SIZE - Constants.CHUNK_SIZE);
-        await Parallel.ForEachAsync(items, async (data, token) =>
+        items = items.Chunk(Constants.CHUNK_SIZE).ToArray()[Constants.ChunkIndex].ToList();
+
+        foreach (var item in items)
         {
             try
             {
-                await Load(data, AssetType);
+                await Load(item, AssetType);
             }
             catch (Exception e)
             {
-                Logger.Log($"Failed to load {data.ObjectPath}", LogLevel.Error);
+                Logger.Log($"Failed to load {item.ObjectPath}", LogLevel.Error);
             }
-        });
+        }
         
         TargetCollection.RemoveAll(x => x == null);
         TargetCollection = TargetCollection.OrderBy(x => x.ID).ToList();
@@ -143,12 +163,17 @@ public class AssetHandlerData
 
     private async Task Load(UObject asset, EAssetType type, bool random = false, string? descriptionOverride = null)
     {
-        await PauseState.WaitIfPaused();
+        //await PauseState.WaitIfPaused();
         
         var previewImage = IconGetter(asset);
         previewImage ??= Constants.PlaceholderTexture;
         if (previewImage is null) return;
         
         TargetCollection.Add(new AssetSelectorItem(asset, previewImage, type, random, DisplayNameGetter?.Invoke(asset), descriptionOverride, RemoveList.Any(x => asset.Name.Contains(x, StringComparison.OrdinalIgnoreCase))));
+    }
+
+    public object Clone()
+    {
+        return this.MemberwiseClone();
     }
 }

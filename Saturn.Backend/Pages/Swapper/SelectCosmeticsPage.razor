@@ -126,13 +126,19 @@
     
     private async Task IndexUp()
     {
+        Constants.CosmeticCount = -1;
+        Constants.Cosmetics.Clear();
         Constants.ChunkIndex++;
+        await Constants.Handler.Reset();
         await Constants.Handler.Handler.Execute();
     }
     
     private async Task IndexDown()
     {
-        Constants.ChunkIndex++;
+        Constants.CosmeticCount = -1;
+        Constants.Cosmetics.Clear();
+        Constants.ChunkIndex--;
+        await Constants.Handler.Reset();
         await Constants.Handler.Handler.Execute();
     }
 
