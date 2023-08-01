@@ -59,6 +59,8 @@ public static class ExportHelpers
                     Enum.TryParse(hatType.Text.Replace("ECustomHatType::ECustomHatType_", string.Empty), out headMorphType);
                 }
 
+                exportPart.MorphName = headMorphType.ToString();
+
                 if (additionalData.ExportType.Equals("CustomCharacterHeadData"))
                 {
                     foreach (var type in Enum.GetValues<ECustomHatType>())

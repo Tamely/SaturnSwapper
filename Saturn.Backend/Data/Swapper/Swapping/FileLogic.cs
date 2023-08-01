@@ -10,6 +10,7 @@ using Saturn.Backend.Data.Compression;
 using Saturn.Backend.Data.Fortnite;
 using Saturn.Backend.Data.FortniteCentral;
 using Saturn.Backend.Data.SaturnAPI.Models;
+using Saturn.Backend.Data.Swapper.Assets;
 using Saturn.Backend.Data.Swapper.Core.Models;
 using Saturn.Backend.Data.Swapper.Swapping.Models;
 using Saturn.Backend.Data.Variables;
@@ -148,29 +149,29 @@ public class FileLogic
         
         CompressionBase compression = new Oodle();
 
-        if (string.IsNullOrWhiteSpace(Constants.SelectedItem.Name))
+        if (string.IsNullOrWhiteSpace(Constants.SelectedItem.DisplayName))
         {
-            Constants.SelectedItem = new SaturnItemModel()
+            Constants.SelectedItem = new AssetSelectorItem()
             {
-                Name = "AssetImporter",
+                DisplayName = "AssetImporter",
                 ID = "AssetImporter"
             };
         }
         
-        if (string.IsNullOrWhiteSpace(Constants.SelectedOption.Name))
+        if (string.IsNullOrWhiteSpace(Constants.SelectedOption.DisplayName))
         {
-            Constants.SelectedOption = new SaturnItemModel()
+            Constants.SelectedOption = new AssetSelectorItem()
             {
-                Name = "AssetImporter",
+                DisplayName = "AssetImporter",
                 ID = "AssetImporter"
             };
         }
 
         ItemModel item = new ItemModel();
-        if (Constants.SelectedOption.Name is "Plugin" or "AssetImporter")
-            item.Name = Constants.SelectedItem.Name;
+        if (Constants.SelectedOption.DisplayName is "Plugin" or "AssetImporter")
+            item.Name = Constants.SelectedItem.DisplayName;
         else
-            item.Name = Constants.SelectedOption.Name + " to " + Constants.SelectedItem.Name;
+            item.Name = Constants.SelectedOption.DisplayName + " to " + Constants.SelectedItem.DisplayName;
         
         item.Swaps = new Swap[swapData.Sum(x => ChunkData(x.Data).Count * 6 + 1)];
         int swapIndex = 0;

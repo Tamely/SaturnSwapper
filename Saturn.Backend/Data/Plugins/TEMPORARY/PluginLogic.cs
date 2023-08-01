@@ -9,6 +9,7 @@ using CUE4Parse;
 using Saturn.Backend.Data.Asset;
 using Saturn.Backend.Data.Fortnite;
 using Saturn.Backend.Data.SaturnAPI.Models;
+using Saturn.Backend.Data.Swapper.Assets;
 using Saturn.Backend.Data.Swapper.Core.Models;
 using Saturn.Backend.Data.Swapper.Swapping;
 using Saturn.Backend.Data.Variables;
@@ -96,15 +97,15 @@ public class PluginLogic
             SaturnData.Clear();
         }
         
-        Constants.SelectedOption = new SaturnItemModel()
+        Constants.SelectedOption = new AssetSelectorItem()
         {
-            Name = "Plugin",
+            DisplayName = "Plugin",
             ID = "Plugin"
         };
         
-        Constants.SelectedItem = new SaturnItemModel()
+        Constants.SelectedItem = new AssetSelectorItem()
         {
-            Name = plugin.Name,
+            DisplayName = plugin.Name,
             ID = plugin.Name
         };
         

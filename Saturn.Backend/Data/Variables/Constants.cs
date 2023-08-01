@@ -201,9 +201,8 @@ namespace Saturn.Backend.Data.Variables
         public static int ChunkIndex = 0;
 
         public static List<Plugin> OwnedPlugins = new();
-        public static DisplayItemModel SelectedDisplayItem = new();
-        public static SaturnItemModel SelectedItem = new();
-        public static SaturnItemModel SelectedOption = new();
+        public static AssetSelectorItem SelectedItem = new();
+        public static AssetSelectorItem SelectedOption = new();
 
         public static List<string> PotentialOptions = new();
 

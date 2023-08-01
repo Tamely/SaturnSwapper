@@ -154,22 +154,69 @@ public class AssetHandlerData : ICloneable
         TargetCollection = TargetCollection.OrderBy(x => x.ID).ToList();
         HasStarted = false;
     }
+    
+    public async Task<List<AssetSelectorItem>> ExecuteWithFileBias(IEnumerable<string> AllowedFileNames)
+    {
+        if (HasStarted) return new();
+        HasStarted = true;
+
+        List<AssetSelectorItem> ReturnValue = new();
+        
+        var items = Constants.AssetDataBuffers.Where(x => ClassNames.Any(y => x.AssetClass.Text.Equals(y, StringComparison.OrdinalIgnoreCase))).ToList();
+
+        items.RemoveAll(i => !AllowedFileNames.Any(x => i.ObjectPath.ToLower().Contains(x)));
+
+        foreach (var item in items)
+        {
+            try
+            {
+                await LoadWithCustomReturn(ReturnValue, item, AssetType);
+            }
+            catch (Exception e)
+            {
+                Logger.Log($"Failed to load {item.ObjectPath}", LogLevel.Error);
+            }
+        }
+        
+        ReturnValue.RemoveAll(x => x == null);
+        ReturnValue = ReturnValue.OrderBy(x => x.ID).ToList();
+        HasStarted = false;
+
+        return ReturnValue;
+    }
 
     private async Task Load(FAssetData data, EAssetType type, bool random = false, string? descriptionOverride = null)
     {
         var asset = await Constants.Provider.LoadObjectAsync(data.ObjectPath);
         await Load(asset, type, random, descriptionOverride);
     }
+    
+    private async Task LoadWithCustomReturn(List<AssetSelectorItem> collection, FAssetData data, EAssetType type, bool random = false, string? descriptionOverride = null)
+    {
+        var asset = await Constants.Provider.LoadObjectAsync(data.ObjectPath);
+        await LoadWithCustomReturn(collection, asset, type, random, descriptionOverride);
+    }
 
     private async Task Load(UObject asset, EAssetType type, bool random = false, string? descriptionOverride = null)
     {
-        //await PauseState.WaitIfPaused();
+        await PauseState.WaitIfPaused();
         
         var previewImage = IconGetter(asset);
         previewImage ??= Constants.PlaceholderTexture;
         if (previewImage is null) return;
         
         TargetCollection.Add(new AssetSelectorItem(asset, previewImage, type, random, DisplayNameGetter?.Invoke(asset), descriptionOverride, RemoveList.Any(x => asset.Name.Contains(x, StringComparison.OrdinalIgnoreCase))));
+    }
+    
+    private async Task LoadWithCustomReturn(List<AssetSelectorItem> collection, UObject asset, EAssetType type, bool random = false, string? descriptionOverride = null)
+    {
+        await PauseState.WaitIfPaused();
+        
+        var previewImage = IconGetter(asset);
+        previewImage ??= Constants.PlaceholderTexture;
+        if (previewImage is null) return;
+        
+        collection.Add(new AssetSelectorItem(asset, previewImage, type, random, DisplayNameGetter?.Invoke(asset), descriptionOverride, RemoveList.Any(x => asset.Name.Contains(x, StringComparison.OrdinalIgnoreCase))));
     }
 
     public object Clone()

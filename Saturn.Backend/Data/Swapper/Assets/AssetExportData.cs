@@ -14,7 +14,9 @@ namespace Saturn.Backend.Data.Swapper.Assets;
 
 public class AssetExportData : ExportDataBase
 {
+    public List<ExportPart> ExportParts = new();
     public List<ExportMesh> Parts = new();
+    public List<ExportPart> StyleExportParts = new();
     public List<ExportMesh> StyleParts = new();
     public List<ExportMaterial> StyleMaterials = new();
     public List<ExportMeshOverride> StyleMeshes = new();
@@ -42,13 +44,13 @@ public class AssetExportData : ExportDataBase
                         }
                     }
 
-                    ExportHelpers.CharacterParts(parts, data.Parts);
+                    data.ExportParts = ExportHelpers.CharacterParts(parts, data.Parts);
                     break;
                 }
                 case EAssetType.Backpack:
                 {
                     var parts = asset.GetOrDefault("CharacterParts", Array.Empty<UObject>());
-                    ExportHelpers.CharacterParts(parts, data.Parts);
+                    data.ExportParts = ExportHelpers.CharacterParts(parts, data.Parts);
                     break;
                 }
                 case EAssetType.Glider:
@@ -155,7 +157,7 @@ public static class AssetExportExtensions
 
     private static void ExportStyleData(FStructFallback style, AssetExportData data)
     {
-        ExportHelpers.CharacterParts(style.GetOrDefault("VariantParts", Array.Empty<UObject>()), data.StyleParts);
+        data.StyleExportParts = ExportHelpers.CharacterParts(style.GetOrDefault("VariantParts", Array.Empty<UObject>()), data.StyleParts);
         ExportHelpers.OverrideMaterials(style.GetOrDefault("VariantMaterials", Array.Empty<FStructFallback>()), data.StyleMaterials);
         ExportHelpers.OverrideMeshes(style.GetOrDefault("VariantMeshes", Array.Empty<FStructFallback>()), data.StyleMeshes);
         ExportHelpers.OverrideParameters(style.GetOrDefault("VariantMaterialParams", Array.Empty<FStructFallback>()), data.StyleMaterialParams);

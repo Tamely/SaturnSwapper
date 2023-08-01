@@ -12,6 +12,7 @@
 @using CUE4Parse.Utils
 @using Saturn.Backend.Data
 @using Saturn.Backend.Data.Asset
+@using Saturn.Backend.Data.Swapper.Assets
 @using Saturn.Backend.Data.Swapper.Core.Models
 @using Saturn.Backend.Data.Swapper.Swapping
 @using SaturnData = CUE4Parse.SaturnData
@@ -73,7 +74,7 @@
     {
         foreach (var item in Constants.Cosmetics)
         {
-            <div id="@(item.ID + "-section")" class="section hoverable">
+            <div id="@(item.ID + "-section")" class="section hoverable" @onclick="@(async() => await DecideWhatPathToDo(item))">
                 <img src=@(item.GetHTMLImage()) alt="Icon"/>
                 @if (FaultyIDs.Keys.Contains(item.ID))
                 {
@@ -211,9 +212,8 @@
         }
     }
 
-    private async Task DecideWhatPathToDo(DisplayItemModel item)
+    private async Task DecideWhatPathToDo(AssetSelectorItem item)
     {
-        if (item.Name == "Please wait...") return;
         if (Constants.ConvertedIDs.Contains(item.ID))
         {
             await Revert(item);
@@ -224,14 +224,14 @@
         }
     }
 
-    private async Task Revert(DisplayItemModel item)
+    private async Task Revert(AssetSelectorItem item)
     {
-        item.Description = "Starting to revert " + item.Name;
+        item.Description = "Starting to revert " + item.DisplayName;
         StateHasChanged();
 
         await FileLogic.Revert(item.ID);
 
-        item.Description = "Reverted " + item.Name;
+        item.Description = "Reverted " + item.DisplayName;
         Constants.ConvertedIDs.Remove(item.ID);
         StateHasChanged();
         
@@ -244,7 +244,7 @@
         if (!Constants.isKeyValid)
         {
             await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "key");
-            Constants.SelectedDisplayItem.Description = "Key check failed!";
+            Constants.SelectedItem.Description = "Key check failed!";
             Constants.SelectedItem = new();
             Constants.SelectedOption = new();
             return;
@@ -258,6 +258,7 @@
         if (currentlySwapping) return;
         currentlySwapping = true;
         
+        /*
         if (Constants.SelectedDisplayItem != null && Constants.SelectedDisplayItem != null && Constants.SelectedOption != null)
             Constants.SelectedDisplayItem.Description = "Swapping from " + Constants.SelectedOption.Name + " to " + Constants.SelectedDisplayItem.Name;
         StateHasChanged();
@@ -363,7 +364,7 @@
         {
             Constants.ConvertedIDs.Add(Constants.SelectedItem.ID);
         }
-        
+        */
         StateHasChanged();
         Constants.SelectedOption = new();
         Constants.SelectedItem = new();
@@ -372,7 +373,7 @@
 
     private bool _handled = false;
 
-    private async Task ShowOptionMenu(DisplayItemModel item)
+    private async Task ShowOptionMenu(AssetSelectorItem item)
     {
         if (_handled) return;
         _handled = true;
@@ -381,35 +382,14 @@
         StateHasChanged();
 
         await Task.Delay(50); // Need to display the text
-
-        SaturnItemModel completeItem;
-
-        switch (Constants.CosmeticState)
-        {
-            case SaturnState.S_Skin:
-                completeItem = await new SkinGenerator().GetItemData(item);
-                break;
-            case SaturnState.S_Backbling:
-                completeItem = await new BackblingGenerator().GetItemData(item);
-                break;
-            case SaturnState.S_Emote:
-                completeItem = await new EmoteGenerator().GetItemData(item);
-                break;
-            case SaturnState.S_Pickaxe:
-                completeItem = await new PickaxeGenerator().GetItemData(item);
-                break;
-            case SaturnState.S_Glider:
-                completeItem = await new GliderGenerator().GetItemData(item);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-
-        Constants.SelectedDisplayItem = item;
-
-        OptionModal.SetItem(completeItem);
-        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "option");
         
+        item.OptionHandler = await OptionHandler.CreateCharacterPartOptions(item, new List<FStructFallback>());
+        
+        Constants.SelectedItem = item;
+
+        OptionModal.UpdateItemInfo();
+        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "option");
+
         _handled = false;
     }
 

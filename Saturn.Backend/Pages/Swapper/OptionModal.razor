@@ -2,6 +2,8 @@
 @using Saturn.Backend.Data
 @using Saturn.Backend.Data.SaturnAPI.Models
 @using Saturn.Backend.Data.Services
+@using Saturn.Backend.Data.Swapper.Assets
+@using Saturn.Backend.Data.Swapper.Generation
 
 @inject IJSRuntime _jsRuntime
 @inject LocalizationResourceService _localizationResourceService
@@ -17,12 +19,12 @@
             <p class="modal-desc">@(_localizationResourceService.GetString(54) + OptionDescription)</p>
         </div>
         
-        @foreach (var item in BaseItem?.Options ?? new List<SaturnItemModel>())
+        @foreach (var item in (BaseItem.OptionHandler ?? new OptionHandler()).PerfectOptions ?? new List<AssetSelectorItem>())
         {
             <div id="@(item.ID + "-section")" class="section hoverable" onclick="@(async() => await SelectItem(item))">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/{item.ID}/smallicon.png") alt="Icon"/>
                 <div class="name">
-                    <h1>@item.Name</h1>
+                    <h1>@item.DisplayName</h1>
                     <h3>@item.Description</h3>
                 </div>
             </div>
@@ -32,7 +34,7 @@
 
 
 @code {
-    public static SaturnItemModel? BaseItem = null;
+    private static AssetSelectorItem BaseItem = new();
     private static string OptionTitle = "TBD";
     private static string OptionDescription = "To be determined...";
 
@@ -50,17 +52,16 @@
         ChangeState();
     }
 
-    public static void SetItem(SaturnItemModel item)
+    public static void UpdateItemInfo()
     {
-        Constants.SelectedItem = item;
-        BaseItem = item;
-        OptionTitle = item.Name + " Options";
-        OptionDescription = item.Name;
+        BaseItem = Constants.SelectedItem;
+        OptionTitle = Constants.SelectedItem.DisplayName + " Options";
+        OptionDescription = Constants.SelectedItem.DisplayName;
     }
 
-    private async Task SelectItem(SaturnItemModel item)
+    private async Task SelectItem(AssetSelectorItem item)
     {
-        BaseItem = null;
+        BaseItem = new AssetSelectorItem();
         Constants.SelectedOption = item;
         await _jsRuntime.InvokeVoidAsync("saturn.modalManager.hideModal", "option");
     }

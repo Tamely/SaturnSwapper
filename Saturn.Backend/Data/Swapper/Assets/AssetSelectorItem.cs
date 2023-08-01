@@ -14,8 +14,10 @@ using CUE4Parse.UE4.Objects.Core.i18N;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.GameplayTags;
 using CUE4Parse.Utils;
+using Saturn.Backend.Data.Swapper.Generation;
 using Saturn.Backend.Data.Swapper.Styles;
 using Saturn.Backend.Data.Variables;
+using Serilog;
 using SkiaSharp;
 
 namespace Saturn.Backend.Data.Swapper.Assets;
@@ -38,9 +40,12 @@ public class AssetSelectorItem
     public EFortRarity Rarity { get; set; }
     public int SeasonNumber { get; set; }
     public string Series { get; set; }
-    
+    public List<StyleSelector> Styles { get; set; }
+    public OptionHandler OptionHandler { get; set; }
+
     public bool HiddenAsset;
 
+    public AssetSelectorItem() {}
     public AssetSelectorItem(UObject asset, UTexture2D previewTexture, EAssetType type, bool isRandomSelector = false,
         FText? displayNameOverride = null, string? descriptionOverride = null, bool hiddenAsset = false)
     {
@@ -93,7 +98,7 @@ public class AssetSelectorItem
 
     public async Task OnSelected()
     {
-        List<StyleSelector> Styles = new();
+        Styles = new();
         var styles = Asset.GetOrDefault("ItemVariants", Array.Empty<UObject>());
         foreach (var style in styles)
         {
@@ -116,6 +121,38 @@ public class AssetSelectorItem
             if (styleSelector.Options.Items.Count == 0) continue;
             Styles.Add(styleSelector);
         }
+    }
+
+    public async Task<ExportDataBase> ExportAssets()
+    {
+        var allStyles = new List<FStructFallback>();
+        var styles = Asset.GetOrDefault("ItemVariants", Array.Empty<UObject>());
+        foreach (var style in styles)
+        {
+            var optionsName = style.ExportType switch
+            {
+                "FortCosmeticCharacterPartVariant" => "PartOptions",
+                "FortCosmeticMaterialVariant" => "MaterialOptions",
+                "FortCosmeticParticleVariant" => "ParticleOptions",
+                _ => null
+            };
+
+            if (optionsName is null) continue;
+
+            var options = style.Get<FStructFallback[]>(optionsName);
+            if (optionsName.Length == 0) continue;
+
+            allStyles.AddRange(options);
+        }
+
+        ExportDataBase exportData = Type switch
+        {
+            _ => await AssetExportData.Create(Asset, Type, allStyles.ToArray())
+        };
+
+        Logger.Log($"Finished exporting all assets for {DisplayName}");
+
+        return exportData;
     }
 
     public string GetHTMLImage()
