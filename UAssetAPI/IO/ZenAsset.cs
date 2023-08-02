@@ -689,7 +689,7 @@ namespace UAssetAPI.IO
             
             newAsset.nameMapIndexList[(int)newAsset.MappedName.NameIndex] = nameMap[(int)MappedName.NameIndex];
             newAsset.nameMapIndexList[(int)newAsset.MappedName.NameIndex - 1] = nameMap[(int)MappedName.NameIndex - 1];
-            FixNameMapLookupIfNeeded();
+            newAsset.FixNameMapLookupIfNeeded();
 
             for (int i = 0; i < newAsset.Exports.Count; i++)
             {

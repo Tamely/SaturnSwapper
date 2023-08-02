@@ -355,6 +355,19 @@ body {
     grid-column-start: 1;
 }
 
+.flex-box {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+.flex-box .additional-info {
+    padding: .5%;
+    border: 1px solid #ffba3b;
+    border-radius: .25em;
+    transition-property: transform, opacity;
+    color: #ffba3b
+}
+
 /* sections */
 .section {
     display: flex;

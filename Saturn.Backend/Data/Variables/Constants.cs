@@ -179,7 +179,6 @@ namespace Saturn.Backend.Data.Variables
         // These aren't really constants but :shrug:
         public static string DiscordAvatar = "img/Saturn.png";
         public static string DiscordName = Environment.UserName;
-        public static string DiscordDiscriminator = "0000";
 
         public static List<string> ConvertedIDs = new();
         public static bool CanLobbySwap = false;

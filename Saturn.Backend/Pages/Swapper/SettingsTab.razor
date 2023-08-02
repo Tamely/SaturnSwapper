@@ -4,6 +4,7 @@
 @using System.IO
 @using Saturn.Backend.Data.Fortnite
 @using System.Diagnostics
+@using System.Threading
 @using Newtonsoft.Json
 @using Saturn.Backend.Data
 @using Saturn.Backend.Data.Compression
@@ -22,17 +23,25 @@
     <div class="section vertical" id="user-settings">
         <h1>@_localizationResourceService.GetString(95)</h1>
         
-        <img class="avatar" src="@Constants.DiscordAvatar" alt="Avatar"/>
-        @if (Constants.isPlus)
+        @if (Constants.DiscordName != Environment.UserName)
         {
-            <div class="additional-info">
-                <h3>SATURN+</h3>
+            <div class="flex-box">
+                <img class="avatar" src="@Constants.DiscordAvatar" alt="Avatar"/>
+                @if (Constants.isPlus)
+                {
+                    <div class="additional-info">
+                        <h3>SATURN+</h3>
+                    </div>
+                }
             </div>
+            <span>@(Constants.DiscordName)</span>
         }
-        <span>@(Constants.DiscordName + "#" + Constants.DiscordDiscriminator)</span>
-        <button @onclick="@(async() => await CheckSaturnPlus())">
-            @_localizationResourceService.GetString(99)
-        </button>
+        else
+        {
+            <button @onclick="@(async() => await CheckSaturnPlus())">
+                @_localizationResourceService.GetString(99)
+            </button>
+        }
     </div>
     
     <div class="section vertical" id="swapper-settings">
@@ -68,11 +77,27 @@
 </div>
 
 @code {
+    private async Task UpdateState()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(500);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        UpdateState();
+    }
+
     private async Task CheckSaturnPlus()
     {
-        new DiscordUtilities();
-        StateHasChanged();
-        Constants.isKeyValid |= Constants.isPlus;
+        new Thread(() =>
+        {
+            new DiscordUtilities();
+            Constants.isKeyValid |= Constants.isPlus;
+        }).Start();
     }
 
     private async Task LaunchFortnite()
