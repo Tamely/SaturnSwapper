@@ -186,6 +186,7 @@ namespace Saturn.Backend.Data.Variables
         public static bool IsRemoving = false;
 
         public static int CosmeticCount = -1;
+        public static int ChunkCount = 0;
         public static List<AssetSelectorItem> Cosmetics = new();
 
         public static AssetHandler Handler = new();

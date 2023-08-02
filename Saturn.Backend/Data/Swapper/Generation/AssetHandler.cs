@@ -136,7 +136,9 @@ public class AssetHandlerData : ICloneable
         }
 
         items = items.OrderBy(x => Path.GetFileNameWithoutExtension(x.ObjectPath.SubstringAfter('_'))).ToList(); // so we're consistent with the tabs
-        items = items.Chunk(Constants.CHUNK_SIZE).ToArray()[Constants.ChunkIndex].ToList();
+        var chunked = items.Chunk(Constants.CHUNK_SIZE).ToArray();
+        Constants.ChunkCount = chunked.Length;
+        items = chunked[Constants.ChunkIndex].ToList();
 
         foreach (var item in items)
         {
@@ -152,6 +154,34 @@ public class AssetHandlerData : ICloneable
         
         TargetCollection.RemoveAll(x => x == null);
         TargetCollection = TargetCollection.OrderBy(x => x.ID).ToList();
+        HasStarted = false;
+    }
+    
+    public async Task Execute(string pattern)
+    {
+        if (HasStarted) return;
+        HasStarted = true;
+        
+        var items = Constants.AssetDataBuffers.Where(x => ClassNames.Any(y => x.AssetClass.Text.Equals(y, StringComparison.OrdinalIgnoreCase))).ToList();
+
+        items = items.OrderBy(x => Path.GetFileNameWithoutExtension(x.ObjectPath.SubstringAfter('_'))).ToList(); // so we're consistent with the tabs
+
+        foreach (var item in items)
+        {
+            try
+            {
+                await Load(pattern, item, AssetType);
+            }
+            catch (Exception e)
+            {
+                Logger.Log($"Failed to load {item.ObjectPath}", LogLevel.Error);
+            }
+        }
+        
+        TargetCollection.RemoveAll(x => x == null);
+        TargetCollection = TargetCollection.OrderBy(x => x.ID).ToList();
+        Constants.CosmeticCount = TargetCollection.Count;
+        Constants.ChunkCount = 1;
         HasStarted = false;
     }
     
@@ -184,6 +214,12 @@ public class AssetHandlerData : ICloneable
 
         return ReturnValue;
     }
+    
+    private async Task Load(string pattern, FAssetData data, EAssetType type, bool random = false, string? descriptionOverride = null)
+    {
+        var asset = await Constants.Provider.LoadObjectAsync(data.ObjectPath);
+        await Load(pattern, asset, type, random, descriptionOverride);
+    }
 
     private async Task Load(FAssetData data, EAssetType type, bool random = false, string? descriptionOverride = null)
     {
@@ -197,6 +233,25 @@ public class AssetHandlerData : ICloneable
         await LoadWithCustomReturn(collection, asset, type, random, descriptionOverride);
     }
 
+    private async Task Load(string pattern, UObject asset, EAssetType type, bool random = false, string? descriptionOverride = null)
+    {
+        await PauseState.WaitIfPaused();
+        
+        var previewImage = IconGetter(asset);
+        previewImage ??= Constants.PlaceholderTexture;
+        if (previewImage is null) return;
+
+        var item = new AssetSelectorItem(asset, previewImage, type, random, DisplayNameGetter?.Invoke(asset), descriptionOverride, RemoveList.Any(x => asset.Name.Contains(x, StringComparison.OrdinalIgnoreCase)));
+
+        if (item.DisplayName.ToLower().Contains(pattern.ToLower()) 
+            || item.ID.ToLower().Contains(pattern.ToLower()) 
+            || item.Description.ToLower().Contains(pattern.ToLower()))
+        {
+            Logger.Log($"Item: {item.DisplayName} | {item.ID} | {item.Description} | works!");
+            TargetCollection.Add(item);
+        }
+    }
+    
     private async Task Load(UObject asset, EAssetType type, bool random = false, string? descriptionOverride = null)
     {
         await PauseState.WaitIfPaused();

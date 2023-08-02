@@ -65,7 +65,7 @@
             </div>
         </div>
     }
-    else if (Constants.Cosmetics.Count < Constants.CHUNK_SIZE)
+    else if (Constants.Handler.Handler.HasStarted)
     {
         <div class="tab-message">
             <div class="text">
@@ -112,7 +112,7 @@
             </div>
         }
 
-        if (Constants.ChunkIndex == 0 && Constants.ChunkIndex != (int)Math.Floor((double)Constants.CosmeticCount / Constants.CHUNK_SIZE) - 1)
+        if (Constants.ChunkIndex == 0 && Constants.ChunkIndex != Constants.ChunkCount - 1)
         {
             <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexUp())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/Character_HeadhunterStar/smallicon.png") alt="Icon"/>
@@ -122,7 +122,7 @@
                 </div>
             </div>
         }
-        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex == (int)Math.Floor((double)Constants.CosmeticCount / Constants.CHUNK_SIZE) - 1)
+        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex == Constants.ChunkCount - 1)
         {
             <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexDown())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>
@@ -132,7 +132,7 @@
                 </div>
             </div>
         }
-        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex != (int)Math.Floor((double)Constants.CosmeticCount / Constants.CHUNK_SIZE) - 1)
+        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex != Constants.ChunkCount - 1)
         {
             <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexDown())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>

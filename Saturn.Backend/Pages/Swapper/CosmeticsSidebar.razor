@@ -41,27 +41,29 @@
 </ul>
 
 @code {
-    private static string SearchPattern = "";
+    private string SearchPattern = "";
 
-    private async Task FilterItems(KeyboardEventArgs key)
+    private async Task FilterItems(KeyboardEventArgs key, int count = 0)
     {
         if (key.Code != "Enter")
             return;
         
         StateHasChanged();
+        await Task.Delay(250);
+        StateHasChanged();
 
-        await Constants.Handler.SwitchHandler(Constants.CosmeticState switch
-        {
-            SaturnState.S_Pickaxe => Constants.Handler.PickaxeHandler,
-            SaturnState.S_Emote => Constants.Handler.DanceHandler,
-            SaturnState.S_Skin => Constants.Handler.SkinHandler,
-            SaturnState.S_Backbling => Constants.Handler.BackpackHandler,
-            SaturnState.S_Glider => Constants.Handler.GliderHandler,
-            _ => Constants.Handler.Handler
-        });
-
+        Constants.CosmeticCount = -1;
         Constants.Cosmetics.Clear();
-        await Constants.Handler.Handler.Execute();
+        await Constants.Handler.Reset();
+        if (string.IsNullOrWhiteSpace(SearchPattern))
+        {
+            await Constants.Handler.Handler.Execute();
+        }
+        else
+        {
+            await Constants.Handler.Handler.Execute(SearchPattern);
+        }
+        await Task.Delay(250);
         StateHasChanged();
     }
     
