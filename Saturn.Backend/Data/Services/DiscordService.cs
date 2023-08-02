@@ -16,7 +16,7 @@ public sealed class DiscordService
 
 public class DiscordHandler
 {
-    private const string APP_ID = "1121469600631103551";
+    private const string APP_ID = "1136322806292942868";
 
     private RichPresence _currentPresence;
     private readonly DiscordRpcClient _client = new(APP_ID);
@@ -24,13 +24,13 @@ public class DiscordHandler
 
     private readonly Assets _staticAssets = new()
     {
-        LargeImageKey = "templogo",
+        LargeImageKey = "saturn",
         LargeImageText = $"v{Constants.USER_VERSION}"
     };
 
     private readonly Button[] _buttons =
     {
-        new() { Label = "Join Saturn", Url = "https://guilded.gg/Saturn" }
+        new() { Label = "Join Saturn", Url = "https://discord.io/SaturnSwapper" }
     };
 
     public void Initialize()
