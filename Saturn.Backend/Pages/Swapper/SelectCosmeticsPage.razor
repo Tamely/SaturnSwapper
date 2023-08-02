@@ -20,101 +20,101 @@
     </div>
     
     @if (Constants.Cosmetics.Count == 0)
-         {
-             <div class="tab-message">
-                 <div class="text">
-                     <h1>@NoCosmeticsKoomoji</h1>
-                     <h3>@_localizationResourceService.GetString(26)</h3>
-                     <h3>@_localizationResourceService.GetString(27)</h3>
-                 </div>
+    {
+        <div class="tab-message">
+             <div class="text">
+                 <h1>@NoCosmeticsKoomoji</h1>
+                 <h3>@_localizationResourceService.GetString(26)</h3>
+                 <h3>@_localizationResourceService.GetString(27)</h3>
              </div>
-         }
-         else if (Constants.Cosmetics.Count < Constants.CHUNK_SIZE)
-         {
-             <div class="tab-message">
-                 <div class="text">
-                     <h1>@NoCosmeticsKoomoji</h1>
-                     <h3>Generating cosmetics</h3>
-                     <h3>Please be patient</h3>
-                 </div>
+        </div>
+    }
+    else if (Constants.Handler.Handler.HasStarted && !Constants.Handler.Handler.IsOption)
+    {
+         <div class="tab-message">
+             <div class="text">
+                 <h1>@NoCosmeticsKoomoji</h1>
+                 <h3>Generating cosmetics</h3>
+                 <h3>Please be patient</h3>
              </div>
-         }
-         else
-         {
-             foreach (var item in Constants.Cosmetics)
-             {
-                 <div id="@(item.ID + "-section")" class="section hoverable" @onclick="@(async() => await AddPotentialOption(item))">
-                     <img src=@(item.GetHTMLImage()) alt="Icon"/>
-                     @if (FaultyIDs.Keys.Contains(item.ID))
-                     {
-                         <div class="icon-overlay">
-                             <i class="fas fa-exclamation-triangle"></i>
-                         </div>
-                     }
-                     <div class="name">
-                         <h1>@item.DisplayName</h1>
-     
-                         @if (FaultyIDs.Keys.Contains(item.ID))
-                         {
-                             <h3 style="opacity: 1; color: #ffba3b">
-                                 @FaultyIDs[item.ID]
-                             </h3>
-                         }
-                         else
-                         {
-                             <h3>
-                                 @item.Description
-                             </h3>
-                         }
-                     </div>
-                     @if (Constants.ConvertedIDs.Contains(item.ID))
-                     {
-                         <div class="item-info">
-                             <h3>@_localizationResourceService.GetString(33)</h3>
-                         </div>
-                     }
-                 </div>
-             }
-     
-             if (Constants.ChunkIndex == 0 && Constants.ChunkIndex != (int)Math.Floor((double)Constants.CosmeticCount / Constants.CHUNK_SIZE) - 1)
-             {
-                 <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexUp())">
-                     <img src=@($"https://fortnite-api.com/images/cosmetics/br/Character_HeadhunterStar/smallicon.png") alt="Icon"/>
-                     <div class="name">
-                         <h1>@_localizationResourceService.GetString(29)</h1>
-                         <h3>@_localizationResourceService.GetString(30)</h3>
-                     </div>
-                 </div>
-             }
-             else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex == (int)Math.Floor((double)Constants.CosmeticCount / Constants.CHUNK_SIZE) - 1)
-             {
-                 <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexDown())">
-                     <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>
-                     <div class="name">
-                         <h1>@_localizationResourceService.GetString(31)</h1>
-                         <h3>@_localizationResourceService.GetString(32)</h3>
-                     </div>
-                 </div>
-             }
-             else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex != (int)Math.Floor((double)Constants.CosmeticCount / Constants.CHUNK_SIZE) - 1)
-             {
-                 <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexDown())">
-                     <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>
-                     <div class="name">
-                         <h1>@_localizationResourceService.GetString(31)</h1>
-                         <h3>@_localizationResourceService.GetString(32)</h3>
-                     </div>
-                 </div>
-     
-                 <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexUp())">
-                     <img src=@($"https://fortnite-api.com/images/cosmetics/br/Character_HeadhunterStar/smallicon.png") alt="Icon"/>
-                     <div class="name">
-                         <h1>@_localizationResourceService.GetString(29)</h1>
-                         <h3>@_localizationResourceService.GetString(30)</h3>
-                     </div>
-                 </div>
-             }
-         }
+         </div>
+    }
+    else
+    {
+        foreach (var item in Constants.Cosmetics)
+        {
+            <div id="@(item.ID + "-section")" class="section hoverable" @onclick="@(async () => await AddPotentialOption(item))">
+                <img src=@(item.GetHTMLImage()) alt="Icon"/>
+                @if (FaultyIDs.Keys.Contains(item.ID))
+                {
+                    <div class="icon-overlay">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                }
+                <div class="name">
+                    <h1>@item.DisplayName</h1>
+
+                    @if (FaultyIDs.Keys.Contains(item.ID))
+                    {
+                        <h3 style="opacity: 1; color: #ffba3b">
+                            @FaultyIDs[item.ID]
+                        </h3>
+                    }
+                    else
+                    {
+                        <h3>
+                            @item.Description
+                        </h3>
+                    }
+                </div>
+                @if (Constants.ConvertedIDs.Contains(item.ID))
+                {
+                    <div class="item-info">
+                        <h3>@_localizationResourceService.GetString(33)</h3>
+                    </div>
+                }
+            </div>
+        }
+
+        if (Constants.ChunkIndex == 0 && Constants.ChunkIndex != Constants.ChunkCount - 1)
+        {
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async () => await IndexUp())">
+                <img src=@($"https://fortnite-api.com/images/cosmetics/br/Character_HeadhunterStar/smallicon.png") alt="Icon"/>
+                <div class="name">
+                    <h1>@_localizationResourceService.GetString(29)</h1>
+                    <h3>@_localizationResourceService.GetString(30)</h3>
+                </div>
+            </div>
+        }
+        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex == Constants.ChunkCount - 1)
+        {
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async () => await IndexDown())">
+                <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>
+                <div class="name">
+                    <h1>@_localizationResourceService.GetString(31)</h1>
+                    <h3>@_localizationResourceService.GetString(32)</h3>
+                </div>
+            </div>
+        }
+        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex != Constants.ChunkCount - 1)
+        {
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async () => await IndexDown())">
+                <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>
+                <div class="name">
+                    <h1>@_localizationResourceService.GetString(31)</h1>
+                    <h3>@_localizationResourceService.GetString(32)</h3>
+                </div>
+            </div>
+
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async () => await IndexUp())">
+                <img src=@($"https://fortnite-api.com/images/cosmetics/br/Character_HeadhunterStar/smallicon.png") alt="Icon"/>
+                <div class="name">
+                    <h1>@_localizationResourceService.GetString(29)</h1>
+                    <h3>@_localizationResourceService.GetString(30)</h3>
+                </div>
+            </div>
+        }
+    }
 </div>
 
 @code {
@@ -152,7 +152,7 @@
         while (true)
         {
             StateHasChanged();
-            await Task.Delay(500);
+            await Task.Delay(50);
         }
     }
 
