@@ -451,11 +451,6 @@ namespace UAssetAPI.IO
             int graphDataHeaderCount = (DependencyBundleEntriesOffset - DependencyBundleHeadersOffset) / 20;
             int graphDataEntryCount = (ImportedPackageNamesOffset - DependencyBundleEntriesOffset) / 4;
 
-            if (graphDataHeaderCount != graphDataEntryCount)
-            {
-                throw new Exception("Graph data entry and header length aren't equivalent!");
-            }
-            
             reader.BaseStream.Position = DependencyBundleHeadersOffset;
             DependencyBundleHeaders = reader.ReadArray(graphDataHeaderCount, () => new FDependencyBundleHeader(reader));
             

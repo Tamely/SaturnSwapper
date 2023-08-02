@@ -447,7 +447,7 @@ body {
 /* tab message */
 .tab-message {
     position: absolute;
-    left: 33%;
+    left: 43vw;
     top: 50%;
     user-select: none;
 }
