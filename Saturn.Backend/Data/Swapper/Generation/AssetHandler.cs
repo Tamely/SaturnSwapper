@@ -110,6 +110,7 @@ public class AssetHandler
 public class AssetHandlerData : ICloneable
 {
     public bool HasStarted { get; private set; }
+    public bool IsOption { get; private set; }
     public Pauser PauseState { get; } = new();
 
     public EAssetType AssetType;
@@ -189,6 +190,7 @@ public class AssetHandlerData : ICloneable
     {
         if (HasStarted) return new();
         HasStarted = true;
+        IsOption = true;
 
         List<AssetSelectorItem> ReturnValue = new();
         
@@ -211,6 +213,7 @@ public class AssetHandlerData : ICloneable
         ReturnValue.RemoveAll(x => x == null);
         ReturnValue = ReturnValue.OrderBy(x => x.ID).ToList();
         HasStarted = false;
+        IsOption = false;
 
         return ReturnValue;
     }
