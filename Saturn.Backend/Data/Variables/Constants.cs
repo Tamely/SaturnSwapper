@@ -10,6 +10,8 @@ using Saturn.Backend.Data.SaturnConfig.Models;
 using Saturn.Backend.Data.Swapper.Assets;
 using Saturn.Backend.Data.Swapper.Generation;
 using Saturn.Backend.Data.Swapper.Swapping.Models;
+using UAssetAPI.UnrealTypes;
+using UAssetAPI.Unversioned;
 
 namespace Saturn.Backend.Data.Variables
 {
@@ -204,9 +206,14 @@ namespace Saturn.Backend.Data.Variables
         public static AssetSelectorItem SelectedItem = new();
         public static AssetSelectorItem SelectedOption = new();
 
+        public static Usmap Mappings;
+        public static EngineVersion EngineVersion;
+
         public static List<string> PotentialOptions = new();
 
         public static List<Swaps> CurrentSwaps = new();
         public static List<ItemModel> CurrentLobbySwaps = new();
+
+        public static Dictionary<string, AssetExportData> AssetCache = new();
     }
 }

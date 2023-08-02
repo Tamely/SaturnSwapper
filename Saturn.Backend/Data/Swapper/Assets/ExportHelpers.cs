@@ -35,6 +35,7 @@ public static class ExportHelpers
             if (convertedMesh.LODs.Count <= 0) continue;
 
             var exportPart = new ExportPart();
+            exportPart.Path = part.GetPathName();
             exportPart.MeshPath = skeletalMesh.GetPathName();
 
             exportPart.NumLods = convertedMesh.LODs.Count;

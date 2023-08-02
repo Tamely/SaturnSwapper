@@ -54,6 +54,7 @@ namespace Saturn.Backend.Data
                 return;
             }
 
+            /*
             foreach (var item in preset.PresetSwaps)
             {
                 List<SwapData> swapData = new();
@@ -119,7 +120,7 @@ namespace Saturn.Backend.Data
                 {
                     Logger.Log("Unable to lobby swap at this time... pakchunk0 was unable to be mounted.", LogLevel.Error);
                 }
-            }
+            }*/
             
             await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "finished");
         }

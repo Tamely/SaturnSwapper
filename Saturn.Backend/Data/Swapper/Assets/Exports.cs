@@ -23,6 +23,7 @@ public class ExportMeshOverride : ExportMesh
 
 public class ExportPart : ExportMesh
 {
+    public string Path;
     public string Part;
     public string? MorphName;
     public string? SocketName;

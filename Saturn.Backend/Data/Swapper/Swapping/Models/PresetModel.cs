@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Saturn.Backend.Data.SaturnAPI.Models;
+using Saturn.Backend.Data.Swapper.Assets;
 
 namespace Saturn.Backend.Data.Swapper.Swapping.Models;
 
@@ -11,6 +12,6 @@ public class PresetModel
 
 public class Swaps
 {
-    public SaturnItemModel OptionModel { get; set; }
-    public SaturnItemModel ItemModel { get; set; }
+    public AssetSelectorItem OptionModel { get; set; }
+    public AssetSelectorItem ItemModel { get; set; }
 }

@@ -183,34 +183,16 @@
         }
 
         Constants.PlaceholderTexture = await Constants.Provider.TryLoadObjectAsync<UTexture2D>("FortniteGame/Content/Athena/Prototype/Textures/T_Placeholder_Generic");
+        
+        Constants.EngineVersion = EngineVersion.VER_UE5_3;
+        Constants.Mappings = new Usmap(Constants.MappingsPath + mappings[0].FileName);
 
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(82));
 
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerWelcomeOut");
 
         await _oobeService.ConfigureOobe();
-        
-        var pkg = await Constants.Provider.SavePackageAsync("FortniteGame/Content/Athena/Heroes/Meshes/Bodies/CP_015_Athena_Body.uasset");
-        byte[] byteData = pkg.Values.First();
 
-        AssetBinaryReader reader = new AssetBinaryReader(byteData);
-        ZenAsset asset = new ZenAsset(reader, EngineVersion.VER_UE5_3, new Usmap(Constants.MappingsPath + mappings[0].FileName));
-
-        FactoryUtils.ASSET = asset;
-        var BaseSkeletonData = SoftObjectFactory.Create("/Game/Characters/Player/Female/Medium/Base/SK_M_Female_Base_Skeleton.SK_M_Female_Base_Skeleton");
-        var BaseSkeletonArray = ArrayFactory.Create(new[] { BaseSkeletonData });
-
-        var SecondSkeletonData = SoftObjectFactory.Create("/Game/Characters/Player/Female/Medium/Bodies/F_Med_Soldier_01/Meshes/F_Med_Soldier_01_Skeleton_AnimBP.F_Med_Soldier_01_Skeleton_AnimBP_C");
-        var SecondSkeletonArray = ArrayFactory.Create(new[] { BaseSkeletonData, SecondSkeletonData });
-
-        if (!asset.Swap(BaseSkeletonArray, SecondSkeletonArray))
-        {
-            throw new Exception("Couldn't find base array!");
-        }
-        
-        File.WriteAllBytes(Constants.BasePath + "Original.uasset", byteData);
-        asset.Write(Constants.BasePath + "Serialized.uasset");
-        
         Constants.State = SaturnState.S_Dash;
 
         while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "dash")) {}

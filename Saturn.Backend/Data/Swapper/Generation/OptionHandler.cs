@@ -13,10 +13,19 @@ public class OptionHandler
     public List<AssetSelectorItem> PerfectOptions { get; set; }
     public List<AssetSelectorItem> Options { get; set; }
 
-    private async Task<AssetExportData> GenerateOptionDataWithFix(AssetSelectorItem option)
+    public async Task<AssetExportData> GenerateOptionDataWithFix(AssetSelectorItem option)
     {
-        AssetExportData exportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>());
-        FixPartData(exportData);
+        AssetExportData exportData;
+        if (Constants.AssetCache.TryGetValue(option.ID, out var value))
+        {
+            exportData = value;
+        }
+        else
+        {
+            exportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>());
+            FixPartData(exportData);
+            Constants.AssetCache.Add(option.ID, exportData);
+        }
         return exportData;
     }
 
@@ -65,16 +74,27 @@ public class OptionHandler
         AssetExportData exportData = await AssetExportData.Create(item.Asset, item.Type, styles.ToArray());
         FixPartData(exportData);
 
+        Constants.AssetCache[item.ID] = exportData;
+
         await Constants.Handler.Reset();
         List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(Constants.PotentialOptions);
 
         await Parallel.ForEachAsync(options, async (option, token) =>
         {
             bool isPerfect = true;
-
-            AssetExportData optionExportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>());
-            FixPartData(optionExportData);
             
+            AssetExportData optionExportData;
+            if (Constants.AssetCache.TryGetValue(option.ID, out var value))
+            {
+                optionExportData = value;
+            }
+            else
+            {
+                optionExportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>());
+                FixPartData(optionExportData);
+                Constants.AssetCache.Add(option.ID, optionExportData);
+            }
+
             if (exportData.ExportParts.Any(part => optionExportData.ExportParts.All(optionPart => optionPart.Part != part.Part)))
             {
                 return;

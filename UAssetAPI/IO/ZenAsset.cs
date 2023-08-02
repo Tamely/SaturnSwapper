@@ -682,13 +682,13 @@ namespace UAssetAPI.IO
         {
             if (Exports.Count != newAsset.Exports.Count)
                 throw new Exception("ExportMap length mismatch");
-
+            
             var nameMap = GetNameMapIndexList();
             int sizeToAdd = nameMap[(int)MappedName.NameIndex].Value.Length - newAsset.nameMapIndexList[(int)newAsset.MappedName.NameIndex].Value.Length;
-            sizeToAdd += nameMap[(int)MappedName.ExtraIndex].Value.Length - newAsset.nameMapIndexList[(int)newAsset.MappedName.ExtraIndex].Value.Length;
+            sizeToAdd += nameMap[(int)MappedName.NameIndex - 1].Value.Length - newAsset.nameMapIndexList[(int)newAsset.MappedName.NameIndex - 1].Value.Length;
             
             newAsset.nameMapIndexList[(int)newAsset.MappedName.NameIndex] = nameMap[(int)MappedName.NameIndex];
-            newAsset.nameMapIndexList[(int)newAsset.MappedName.ExtraIndex] = nameMap[(int)MappedName.ExtraIndex];
+            newAsset.nameMapIndexList[(int)newAsset.MappedName.NameIndex - 1] = nameMap[(int)MappedName.NameIndex - 1];
             FixNameMapLookupIfNeeded();
 
             for (int i = 0; i < newAsset.Exports.Count; i++)
