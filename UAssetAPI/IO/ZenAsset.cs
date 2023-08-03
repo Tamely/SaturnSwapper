@@ -672,6 +672,47 @@ namespace UAssetAPI.IO
 
             return false;
         }
+        
+        public bool Swap(string search, string replace)
+        {
+            if (search.Contains('.'))
+            {
+                if (!replace.Contains('.'))
+                {
+                    throw new Exception("Replace needs to contain a '.' if search contains one!");
+                }
+                
+                var searchOne = search.Split('.')[0];
+                var searchTwo = search.Split('.')[1];
+                
+                var idx = nameMapIndexList.FindIndex(x => string.Equals(x.Value, searchOne, StringComparison.CurrentCultureIgnoreCase));
+                if (idx == -1)
+                {
+                    return false;
+                }
+                nameMapIndexList[idx] = new FString(replace.Split('.')[0]);
+                
+                idx = nameMapIndexList.FindIndex(x => string.Equals(x.Value, searchTwo, StringComparison.CurrentCultureIgnoreCase));
+                if (idx == -1)
+                {
+                    return false;
+                }
+                nameMapIndexList[idx] = new FString(replace.Split('.')[1]);
+            }
+            else
+            {
+                var idx = nameMapIndexList.FindIndex(x => string.Equals(x.Value, search, StringComparison.CurrentCultureIgnoreCase));
+                if (idx == -1)
+                {
+                    return false;
+                }
+                nameMapIndexList[idx] = new FString(replace);
+            }
+            
+            FixNameMapLookupIfNeeded();
+
+            return true;
+        }
 
         public ZenAsset Swap(ZenAsset newAsset)
         {

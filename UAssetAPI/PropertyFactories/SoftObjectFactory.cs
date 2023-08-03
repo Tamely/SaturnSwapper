@@ -14,12 +14,6 @@ public class SoftObjectFactory
         SoftObjectPropertyData data = new();
 
         FactoryUtils.ASSET.AddNameReference(new FString(value));
-        
-        string error = "";
-        foreach (var name in FactoryUtils.ASSET.GetNameMapIndexList())
-        {
-            error += name.Value + "\n";
-        }
 
         int PackageIndex = FactoryUtils.ASSET.SearchNameReference(new FString(value.Split('.')[0]));
         int AssetIndex = -1;
