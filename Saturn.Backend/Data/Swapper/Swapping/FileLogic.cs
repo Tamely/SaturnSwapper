@@ -140,6 +140,7 @@ public class FileLogic
             File.Delete(Constants.DataPath + id + ".json");
         
         new DirectoryInfo(Constants.DataPath).EnumerateFiles($"Lobby - * to {id}.json").ToList().ForEach(f => f.Delete());
+        Constants.CurrentLobbySwaps.RemoveAll(x => x.Name.Contains("Lobby - ") && x.Name.Contains($" to {id}"));
     }
     
     public static async Task Convert(List<SwapData> swapData)
