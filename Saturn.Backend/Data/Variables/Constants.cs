@@ -175,6 +175,7 @@ namespace Saturn.Backend.Data.Variables
         };
         
         public const string MANIFEST_URL = "launcher/api/public/assets/v2/platform/Windows/namespace/fn/catalogItem/4fe75bbc5a674f4f9b356b5c90567da5/app/Fortnite/label/Live";
+        public const string DEFAULTGAMEDATACOSMETICS_PATH = "FortniteGame/Content/Balance/DefaultGameDataCosmetics.uasset";
 
         // These aren't really constants but :shrug:
         public static string DiscordAvatar = "img/Saturn.png";

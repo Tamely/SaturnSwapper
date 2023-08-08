@@ -18,6 +18,8 @@
 @using Saturn.Backend.Data.Swapper
 @using Saturn.Backend.Data.Swapper.Assets
 @using Saturn.Backend.Data.Variables
+@using UAssetAPI
+@using UAssetAPI.IO
 @using UAssetAPI.UnrealTypes
 @using UAssetAPI.Unversioned
 @inherits LayoutComponentBase
@@ -183,6 +185,17 @@
         
         Constants.EngineVersion = EngineVersion.VER_UE5_3;
         Constants.Mappings = new Usmap(Constants.MappingsPath + mappings[0].FileName);
+
+        var pkg = await Constants.Provider.SaveAssetAsync(Constants.DEFAULTGAMEDATACOSMETICS_PATH);
+        ZenAsset asset = new ZenAsset(new AssetBinaryReader(pkg), Constants.EngineVersion, Constants.Mappings);
+        if (!asset.VerifyBinaryEquality(pkg))
+        {
+            await WarningModal.SetEmergencyNotice("Binary Equality Check Failed!", "The swapper WILL NOT WORK in most cases at the moment! The binary equality check has failed which is most likely caused by an engine update. Look in Saturn's Discord for more information!");
+            await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "emergency");
+        }
+        
+        File.WriteAllBytes(Constants.BasePath + "original.uasset", pkg);
+        File.WriteAllBytes(Constants.BasePath + "serialized.uasset", asset.WriteData().ToArray());
 
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(82));
 

@@ -301,6 +301,11 @@ namespace UAssetAPI.IO
             return null;
         }
 
+        public bool VerifyBinaryEquality(byte[] uassetData)
+        {
+            return uassetData.SequenceEqual(WriteData().ToArray());
+        }
+
         /// <summary>
         /// Finds the class path and export name of the SuperStruct of this asset, if it exists.
         /// </summary>
@@ -318,22 +323,20 @@ namespace UAssetAPI.IO
         
         public override int AddNameReference(FString name, bool forceAddDuplicates = false)
         {
-            if (ContainsNameReference(name) && forceAddDuplicates)
-            {
-                HeaderSize += (uint)name.Value.Length;
-                CookedHeaderSize += (uint)name.Value.Length;
-                ImportedPublicExportHashesOffset += name.Value.Length;
-                ImportMapOffset += name.Value.Length;
-                ExportMapOffset += name.Value.Length;
-                ExportBundleEntriesOffset += name.Value.Length;
-                DependencyBundleHeadersOffset += name.Value.Length;
-                DependencyBundleEntriesOffset += name.Value.Length;
-                ImportedPackageNamesOffset += name.Value.Length;
-
-                return base.AddNameReference(name, forceAddDuplicates);
-            }
+            if (isReadingTime) return base.AddNameReference(name, forceAddDuplicates);
+            
+            HeaderSize += (uint)name.Value.Length;
+            CookedHeaderSize += (uint)name.Value.Length;
+            ImportedPublicExportHashesOffset += name.Value.Length;
+            ImportMapOffset += name.Value.Length;
+            ExportMapOffset += name.Value.Length;
+            ExportBundleEntriesOffset += name.Value.Length;
+            DependencyBundleHeadersOffset += name.Value.Length;
+            DependencyBundleEntriesOffset += name.Value.Length;
+            ImportedPackageNamesOffset += name.Value.Length;
 
             return base.AddNameReference(name, forceAddDuplicates);
+
         }
 
         /// <summary>
@@ -392,10 +395,11 @@ namespace UAssetAPI.IO
         {
             if (Mappings == null) throw new InvalidOperationException();
             reader.Asset = this;
+            isReadingTime = true;
             
             ReadHeader(reader);
             ReadNameMap(reader);
-
+            
             Name = new FName(this, MappedName);
 
             // Bulk data map
@@ -556,6 +560,7 @@ namespace UAssetAPI.IO
                 data.AddRange(entry.Encoding.GetBytes(entry.Value));
             }
 
+            isReadingTime = false;
             return data.ToArray();
         }
 
@@ -572,7 +577,7 @@ namespace UAssetAPI.IO
             
             writer.Write(SerializeHeader());
             writer.Write(SerializeNameMap());
-
+            
             // Bulk data map
             writer.Write((ulong)BulkDataMap.Length * FBulkDataMapEntry.Size);
             foreach (var map in BulkDataMap)

@@ -135,8 +135,6 @@ namespace UAssetAPI
         internal const ulong CityHash64 = 0x00000000C1640000;
         public void ReadNameBatch(bool VerifyHashes, out ulong HashVersion, out List<FString> nameMap)
         {
-            // TODO: implement pre-ue5 serialization
-
             HashVersion = 0;
             nameMap = new List<FString>();
 

@@ -110,6 +110,9 @@ namespace UAssetAPI
 
         [JsonIgnore]
         internal bool isSerializationTime = false;
+        
+        [JsonIgnore]
+        internal bool isReadingTime = false;
 
         /// <summary>
         /// Internal list of name map entries. Do not directly add values to here under any circumstances; use <see cref="AddNameReference"/> instead
@@ -169,7 +172,7 @@ namespace UAssetAPI
 
         internal void FixNameMapLookupIfNeeded()
         {
-            if (nameMapIndexList.Count > 0 && nameMapLookup.Count == 0)
+            if (nameMapIndexList.Count > 0)
             {
                 for (int i = 0; i < nameMapIndexList.Count; i++)
                 {
@@ -274,8 +277,8 @@ namespace UAssetAPI
         public virtual int AddNameReference(FString name, bool forceAddDuplicates = false)
         {
             FixNameMapLookupIfNeeded();
-
-            if (name.Value.Contains('.'))
+            
+            if (!isReadingTime && name.Value.Contains('.'))
             {
                 AddNameReference(new FString(name.Value.Split('.')[1]), forceAddDuplicates);
                 return AddNameReference(new FString(name.Value.Split('.')[0]), forceAddDuplicates);
