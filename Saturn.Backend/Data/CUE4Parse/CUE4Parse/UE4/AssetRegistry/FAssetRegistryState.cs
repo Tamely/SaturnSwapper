@@ -56,6 +56,10 @@ namespace CUE4Parse.UE4.AssetRegistry
 
             for (int i = 0; i < Reader.NameMap.Length; i++)
             {
+                // Speed optimization
+                if ((Reader.NameMap[i].Name ?? string.Empty).Length != searchPath.Length &&
+                    (Reader.NameMap[i].Name ?? string.Empty).Length != replacePath.Length) continue;
+                
                 if (String.Equals(Reader.NameMap[i].Name, searchPath, StringComparison.CurrentCultureIgnoreCase))
                 {
                     searchPackageIdx = i - 1;

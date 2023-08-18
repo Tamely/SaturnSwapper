@@ -182,9 +182,11 @@ namespace Saturn.Backend.Data.Variables
         public static string DiscordName = Environment.UserName;
 
         public static List<string> ConvertedIDs = new();
-        public static bool CanLobbySwap = false;
-        public static bool ShouldLobbySwap = true;
+        public static bool CanSpecialSwap = false;
+        public static bool ShouldLobbySwap = false;
+        public static bool ShouldGlobalSwap = false;
         public static bool IsRemoving = false;
+        public static Dictionary<long, byte[]> GlobalSwaps = new();
 
         public static int CosmeticCount = -1;
         public static int ChunkCount = 0;

@@ -37,6 +37,7 @@ public class AssetSelectorItem
     public bool IsRandom { get; set; }
     public string TooltipName { get; set; }
     public string ID { get; set; }
+    public string HID { get; set; }
     public EFortRarity Rarity { get; set; }
     public int SeasonNumber { get; set; }
     public string Series { get; set; }
@@ -55,6 +56,8 @@ public class AssetSelectorItem
         var displayName = displayNameOverride;
         displayName ??= asset.GetOrDefault("DisplayName", new FText("Unnamed"));
         HiddenAsset = hiddenAsset;
+
+        HID = asset.GetOrDefault("HeroDefinition", new UObject()).GetPathName();
 
         DisplayName = displayName.Text;
         if (DisplayName.Equals("TBD") || string.IsNullOrWhiteSpace(DisplayName))

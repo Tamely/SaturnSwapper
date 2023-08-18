@@ -58,10 +58,6 @@
         <button onclick="saturn.modalManager.showModal('presetmanager')">
             @_localizationResourceService.GetString(103)
         </button>
-        
-        <button @onclick="@(async() => await ToggleLobbySwaps())">
-            @(_localizationResourceService.GetString(101) + (Constants.ShouldLobbySwap ? "On" : "Off"))
-        </button>
     </div>
     
     <div class="section vertical" id="game-settings">
@@ -134,11 +130,6 @@
         });
     }
 
-    private async Task ToggleLobbySwaps()
-    {
-        Constants.ShouldLobbySwap = !Constants.ShouldLobbySwap;
-    }
-    
     private async Task NavToSelect()
     {
         string stateFrom = Constants.State switch

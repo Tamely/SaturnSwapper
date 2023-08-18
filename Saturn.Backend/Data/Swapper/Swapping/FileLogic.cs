@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CUE4Parse;
 using CUE4Parse.UE4.AssetRegistry;
 using Newtonsoft.Json;
 using Saturn.Backend.Data.Compression;
@@ -14,6 +15,8 @@ using Saturn.Backend.Data.Swapper.Assets;
 using Saturn.Backend.Data.Swapper.Core.Models;
 using Saturn.Backend.Data.Swapper.Swapping.Models;
 using Saturn.Backend.Data.Variables;
+using UAssetAPI;
+using UAssetAPI.IO;
 using SaturnData = CUE4Parse.SaturnData;
 
 namespace Saturn.Backend.Data.Swapper.Swapping;
@@ -62,11 +65,14 @@ public class FileLogic
     }
 
     private static bool isLocked = false;
-    public static async Task ConvertLobby(string searchId, string replaceId)
+
+    public static async Task ConvertGlobal(string search, string replace)
     {
+        if (!Constants.CanSpecialSwap || !Constants.ShouldGlobalSwap || !Constants.isPlus) return;
+        
         if (isLocked) return;
         isLocked = true;
-        
+
         ItemModel item = new();
         
         byte[] searchArray = new byte[8];
@@ -78,7 +84,7 @@ public class FileLogic
             if (Constants.Provider.TryCreateReader("FortniteGame/AssetRegistry.bin", out var archive))
             {
                 var registry = new FAssetRegistryState(archive);
-                var (searchPathIdx, searchAssetIdx, replacePathIdx, replaceAssetIdx) = registry.Swap(searchId, replaceId);
+                var (searchPathIdx, searchAssetIdx, replacePathIdx, replaceAssetIdx) = registry.Swap(search, replace);
 
                 if (searchPathIdx is -1 || searchAssetIdx is -1 || replacePathIdx is -1 || replaceAssetIdx is -1)
                 {
@@ -106,20 +112,28 @@ public class FileLogic
         });
 
         if (returnFunc)
+        {
+            isLocked = false;
             return;
+        }
+        
+        byte[] decompressedChunk = Constants.GlobalSwaps.ContainsKey(SaturnData.AssetRegistrySwap!.Value.CompressionBlock.CompressedStart) 
+            ? Constants.GlobalSwaps[SaturnData.AssetRegistrySwap.Value.CompressionBlock.CompressedStart] 
+            : SaturnData.AssetRegistrySwap.Value.DecompressedData;
+        
+        int offset = Utilities.IndexOfSequence(decompressedChunk, searchArray);
 
-        int offset = Utilities.IndexOfSequence(SaturnData.AssetRegistrySwap!.Value.DecompressedData, searchArray);
-
-        Logger.Log($"Writing data with a length of {replaceArray.Length} to offset {offset} in decompressed data with a length of {SaturnData.AssetRegistrySwap.Value.DecompressedData.Length}");
-        var writtenData = Utilities.WriteBytes(replaceArray, SaturnData.AssetRegistrySwap.Value.DecompressedData, offset);
+        Logger.Log($"Writing data with a length of {replaceArray.Length} to offset {offset} in decompressed data with a length of {decompressedChunk.Length}");
+        var writtenData = Utilities.WriteBytes(replaceArray, decompressedChunk, offset);
 
         foreach (var lobbySwap in Constants.CurrentLobbySwaps.Where(lobbySwap => lobbySwap.Swaps[0].Offset == SaturnData.AssetRegistrySwap.Value.CompressionBlock.CompressedStart))
         {
             Utilities.WriteBytes(replaceArray, lobbySwap.Swaps[0].Data, offset);
+            isLocked = false;
             return;
         }
 
-        item.Name = "Lobby - " + Path.GetFileNameWithoutExtension(searchId) + " to " + Path.GetFileNameWithoutExtension(replaceId);
+        item.Name = "Lobby - " + Path.GetFileNameWithoutExtension(search) + " to " + Path.GetFileNameWithoutExtension(replace);
         item.Swaps = new[]
         {
             new Swap
@@ -129,9 +143,50 @@ public class FileLogic
                 Data = writtenData
             }
         };
+
+        Constants.GlobalSwaps[SaturnData.AssetRegistrySwap.Value.CompressionBlock.CompressedStart] = writtenData;
         
         Constants.CurrentLobbySwaps.Add(item);
         isLocked = false;
+    }
+    public static async Task ConvertLobby(AssetSelectorItem search, AssetSelectorItem replace)
+    {
+        if (!Constants.ShouldLobbySwap || !Constants.isPlus) return;
+        
+        if (isLocked) return;
+        isLocked = true;
+
+        if (string.IsNullOrWhiteSpace(search.HID) || string.IsNullOrWhiteSpace(replace.HID))
+        {
+            isLocked = false;
+            return;
+        }
+
+        SaturnData.Clear();
+
+        byte[] searchHID = await Constants.Provider.SaveAssetAsync(search.HID.Split('.')[0] + ".uasset");
+
+        var searchData = SaturnData.ToNonStatic();
+        
+        byte[] replaceHID = await Constants.Provider.SaveAssetAsync(replace.HID.Split('.')[0] + ".uasset");
+        
+        ZenAsset searchAsset = new ZenAsset(new AssetBinaryReader(searchHID), Constants.EngineVersion, Constants.Mappings);
+        ZenAsset replaceAsset = new ZenAsset(new AssetBinaryReader(replaceHID), Constants.EngineVersion, Constants.Mappings);
+
+        var swappedAsset = searchAsset.Swap(replaceAsset);
+
+        List<SwapData> swapData = new()
+        {
+            new SwapData()
+            {
+                SaturnData = searchData,
+                Data = swappedAsset.WriteData().ToArray()
+            }
+        };
+        
+        isLocked = false;
+
+        await Convert(swapData, true);
     }
 
     public static async Task Revert(string id)
@@ -142,8 +197,49 @@ public class FileLogic
         new DirectoryInfo(Constants.DataPath).EnumerateFiles($"Lobby - * to {id}.json").ToList().ForEach(f => f.Delete());
         Constants.CurrentLobbySwaps.RemoveAll(x => x.Name.Contains("Lobby - ") && x.Name.Contains($" to {id}"));
     }
+
+    public static async Task Convert(AssetSelectorItem search, AssetSelectorItem replace)
+    {
+        if (isLocked) return;
+        isLocked = true;
+        
+        List<SwapData> swapData = new();
+        AssetExportData selectedOption = await replace.OptionHandler.GenerateOptionDataWithFix(search);
+
+        foreach (var characterPart in selectedOption.ExportParts)
+        {
+            replace.Description = $"Swapping asset: {Path.GetFileNameWithoutExtension(characterPart.Path)}";
+
+            var pkg = await Constants.Provider.SavePackageAsync(characterPart.Path.Split('.')[0]);
+            AssetBinaryReader oldReader = new AssetBinaryReader(pkg.Values.First());
+            ZenAsset oldAsset = new ZenAsset(oldReader, Constants.EngineVersion, Constants.Mappings);
+
+            var data = SaturnData.ToNonStatic();
+            SaturnData.Clear();
+
+            var item = Constants.AssetCache[replace.ID];
+            var swapPart = item.ExportParts.FirstOrDefault(part => part.Part == characterPart.Part);
+
+            pkg = await Constants.Provider.SavePackageAsync(swapPart == null ? Constants.EmptyParts[characterPart.Part].Path : swapPart.Path.Split('.')[0]);
+            AssetBinaryReader newReader = new AssetBinaryReader(pkg.Values.First());
+            ZenAsset newAsset = new ZenAsset(newReader, Constants.EngineVersion, Constants.Mappings);
+
+            var asset = oldAsset.Swap(newAsset);
+
+            swapData.Add(new SwapData()
+            {
+                SaturnData = data,
+                Data = asset.WriteData().ToArray()
+            });
+            
+            SaturnData.Clear();
+        }
+
+        isLocked = false;
+        await Convert(swapData);
+    }
     
-    public static async Task Convert(List<SwapData> swapData)
+    public static async Task Convert(List<SwapData> swapData, bool isLobbySwap = false)
     {
         if (isLocked) return;
         isLocked = true;
@@ -172,7 +268,7 @@ public class FileLogic
         if (Constants.SelectedOption.DisplayName is "Plugin" or "AssetImporter")
             item.Name = Constants.SelectedItem.DisplayName;
         else
-            item.Name = Constants.SelectedOption.DisplayName + " to " + Constants.SelectedItem.DisplayName;
+            item.Name = Constants.SelectedOption.DisplayName + " to " + Constants.SelectedItem.DisplayName + (isLobbySwap ? " - HID" : string.Empty);
         
         item.Swaps = new Swap[swapData.Sum(x => ChunkData(x.Data).Count * 6 + 1)];
         int swapIndex = 0;
@@ -254,12 +350,12 @@ public class FileLogic
             };
         }
         
-        while (File.Exists(Constants.DataPath + Constants.SelectedItem.ID + ".json"))
+        while (File.Exists(Constants.DataPath + Constants.SelectedItem.ID + (isLobbySwap ? " - HID" : string.Empty) + ".json"))
         {
             Constants.SelectedItem.ID += "1";
         }
         
-        await File.WriteAllTextAsync(Constants.DataPath + Constants.SelectedItem.ID + ".json", JsonConvert.SerializeObject(item));
+        await File.WriteAllTextAsync(Constants.DataPath + Constants.SelectedItem.ID + (isLobbySwap ? " - HID" : string.Empty) + ".json", JsonConvert.SerializeObject(item));
         isLocked = false;
     }
 }

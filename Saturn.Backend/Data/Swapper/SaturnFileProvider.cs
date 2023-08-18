@@ -48,7 +48,7 @@ public class SaturnFileProvider : IDisposable
         var dynamicAesKeys = fetchedAes.DynamicKeys.Select(aes => new KeyValuePair<FGuid, FAesKey>(new FGuid(aes.Guid), new FAesKey(aes.Key))).ToList();
         _provider.SubmitKeys(dynamicAesKeys);
 
-        Constants.CanLobbySwap = _provider.MountedVfs.Any(x => x.Name == "pakchunk0-WindowsClient.pak");
+        Constants.CanSpecialSwap = _provider.MountedVfs.Any(x => x.Name == "pakchunk0-WindowsClient.pak");
     }
     
     public void Dispose()

@@ -271,58 +271,26 @@
             OptionModel = Constants.SelectedOption,
             ItemModel = Constants.SelectedItem
         });
-        
-        List<SwapData> swapData = new();
-        AssetExportData selectedOption = await Constants.SelectedItem.OptionHandler.GenerateOptionDataWithFix(Constants.SelectedOption);
 
-        foreach (var characterPart in selectedOption.ExportParts)
+        if (Constants.ShouldGlobalSwap)
         {
-            Constants.SelectedItem.Description = $"Swapping asset: {Path.GetFileNameWithoutExtension(characterPart.Path)}";
-            StateHasChanged();
-            
-            var pkg = await Constants.Provider.SavePackageAsync(characterPart.Path.Split('.')[0]);
-            AssetBinaryReader oldReader = new AssetBinaryReader(pkg.Values.First());
-            ZenAsset oldAsset = new ZenAsset(oldReader, Constants.EngineVersion, Constants.Mappings);
-
-            var data = SaturnData.ToNonStatic();
-            SaturnData.Clear();
-
-            var item = Constants.AssetCache[Constants.SelectedItem.ID];
-            var swapPart = item.ExportParts.FirstOrDefault(part => part.Part == characterPart.Part);
-
-            pkg = await Constants.Provider.SavePackageAsync(swapPart == null ? Constants.EmptyParts[characterPart.Part].Path : swapPart.Path.Split('.')[0]);
-            AssetBinaryReader newReader = new AssetBinaryReader(pkg.Values.First());
-            ZenAsset newAsset = new ZenAsset(newReader, Constants.EngineVersion, Constants.Mappings);
-
-            var asset = oldAsset.Swap(newAsset);
-
-            swapData.Add(new SwapData()
-            {
-                SaturnData = data,
-                Data = asset.WriteData().ToArray()
-            });
-            
-            SaturnData.Clear();
+            await FileLogic.ConvertGlobal(Constants.SelectedOption.ID, Constants.SelectedItem.ID);
         }
-
-        await FileLogic.Convert(swapData);
-        
-        if (Constants.CanLobbySwap && Constants.ShouldLobbySwap && Constants.isPlus)
+        else
         {
-            Constants.SelectedItem.Description = "Attempting to lobby swap";
-            StateHasChanged();
-            await FileLogic.ConvertLobby(Constants.SelectedOption.ID, Constants.SelectedItem.ID);
-            SaturnData.Clear();
+            await FileLogic.Convert(Constants.SelectedOption, Constants.SelectedItem);
+            await FileLogic.ConvertLobby(Constants.SelectedOption, Constants.SelectedItem);
         }
-        else if (Constants.isPlus && Constants.ShouldLobbySwap)
+        
+        Constants.SelectedItem.Description = "Swapped from " + Constants.SelectedOption.DisplayName + " to " + Constants.SelectedItem.DisplayName;
+        StateHasChanged();
+        
+        if (Constants.isPlus && Constants.ShouldGlobalSwap && !Constants.CanSpecialSwap)
         {
             Constants.SelectedItem.Description = "Unable to lobby swap at this time... pakchunk0 was unable to be mounted.";
             StateHasChanged();
             Logger.Log("Unable to lobby swap at this time... pakchunk0 was unable to be mounted.", LogLevel.Error);
         }
-
-        Constants.SelectedItem.Description = "Swapped from " + Constants.SelectedOption.DisplayName + " to " + Constants.SelectedItem.DisplayName;
-        StateHasChanged();
 
         if (string.IsNullOrWhiteSpace(Constants.SelectedOption.DisplayName) || string.IsNullOrWhiteSpace(Constants.SelectedItem.DisplayName))
         {

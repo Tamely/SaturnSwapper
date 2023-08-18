@@ -1,0 +1,57 @@
+﻿@using Saturn.Backend.Data.Variables
+
+<div class="tab-page" id="plus-page" style="display: none">
+    @if (Constants.isPlus)
+    {
+        <div class="section vertical" id="user-settings">
+            <h1>What is this?</h1>
+            <h2>Congrats! If you see this, you have access to Saturn+! You can configure your Saturn+ settings here.</h2>
+        </div>
+
+        <div class="section vertical" id="swapper-settings">
+            <button @onclick="@(async () => await ToggleGlobalSwaps())">
+                @("Toggle Global Swaps: " + (Constants.ShouldGlobalSwap ? "On" : "Off"))
+            </button>
+            
+            <button @onclick="@(async () => await ToggleLobbySwaps())">
+                @("Toggle Lobby Swaps: " + (Constants.ShouldLobbySwap ? "On" : "Off"))
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="section vertical">
+            <h1>Saturn+</h1>
+            <h2>This tab is only for Saturn+ members. Click the button below to join!</h2>
+            <button>Join Saturn+</button>
+        </div>
+    }
+</div>
+
+@code {
+    private async Task ChangeState()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(500);
+        }
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        ChangeState();
+    }
+
+    private async Task ToggleGlobalSwaps()
+    {
+        Constants.ShouldGlobalSwap = !Constants.ShouldGlobalSwap;
+        Constants.ShouldLobbySwap = false;
+    }
+
+    private async Task ToggleLobbySwaps()
+    {
+        Constants.ShouldLobbySwap = !Constants.ShouldLobbySwap;
+        Constants.ShouldGlobalSwap = false;
+    }
+}
