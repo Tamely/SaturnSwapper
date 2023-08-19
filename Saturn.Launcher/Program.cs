@@ -29,7 +29,7 @@ public class Program
     {
         foreach (var process in Process.GetProcesses())
         {
-            if (process.ProcessName.Contains("Saturn") && !process.ProcessName.Contains("Launcher"))
+            if ((process.ProcessName.ToLower().Contains("saturn") && !process.ProcessName.ToLower().Contains("launcher")) || process.ProcessName.ToLower().Contains("fortnite"))
                 process.Kill();
         }
 
