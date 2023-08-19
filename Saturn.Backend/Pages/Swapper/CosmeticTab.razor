@@ -254,12 +254,7 @@
             Constants.SelectedOption = new();
             return;
         }
-
-        await Swap(Constants.Provider);
-    }
-
-    private async Task Swap(DefaultFileProvider provider)
-    {
+        
         if (currentlySwapping) return;
         currentlySwapping = true;
 

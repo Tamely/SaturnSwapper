@@ -196,7 +196,7 @@ public class AssetHandlerData : ICloneable
         
         var items = Constants.AssetDataBuffers.Where(x => ClassNames.Any(y => x.AssetClass.Text.Equals(y, StringComparison.OrdinalIgnoreCase))).ToList();
 
-        items.RemoveAll(i => !AllowedFileNames.Any(x => i.ObjectPath.ToLower().Contains(x)));
+        items.RemoveAll(i => !AllowedFileNames.Any(x => i.ObjectPath.ToLower().Contains(x) || i.ObjectPath.ToLower().Contains("_random")));
 
         foreach (var item in items)
         {
@@ -233,7 +233,7 @@ public class AssetHandlerData : ICloneable
     private async Task LoadWithCustomReturn(List<AssetSelectorItem> collection, FAssetData data, EAssetType type, bool random = false, string? descriptionOverride = null)
     {
         var asset = await Constants.Provider.LoadObjectAsync(data.ObjectPath);
-        await LoadWithCustomReturn(collection, asset, type, random, descriptionOverride);
+        await LoadWithCustomReturn(collection, asset, type, descriptionOverride);
     }
 
     private async Task Load(string pattern, UObject asset, EAssetType type, bool random = false, string? descriptionOverride = null)
@@ -266,7 +266,7 @@ public class AssetHandlerData : ICloneable
         TargetCollection.Add(new AssetSelectorItem(asset, previewImage, type, random, DisplayNameGetter?.Invoke(asset), descriptionOverride, RemoveList.Any(x => asset.Name.Contains(x, StringComparison.OrdinalIgnoreCase))));
     }
     
-    private async Task LoadWithCustomReturn(List<AssetSelectorItem> collection, UObject asset, EAssetType type, bool random = false, string? descriptionOverride = null)
+    private async Task LoadWithCustomReturn(List<AssetSelectorItem> collection, UObject asset, EAssetType type, string? descriptionOverride = null)
     {
         await PauseState.WaitIfPaused();
         
@@ -274,7 +274,7 @@ public class AssetHandlerData : ICloneable
         previewImage ??= Constants.PlaceholderTexture;
         if (previewImage is null) return;
         
-        collection.Add(new AssetSelectorItem(asset, previewImage, type, random, DisplayNameGetter?.Invoke(asset), descriptionOverride, RemoveList.Any(x => asset.Name.Contains(x, StringComparison.OrdinalIgnoreCase))));
+        collection.Add(new AssetSelectorItem(asset, previewImage, type, asset.GetPathName().EndsWith("_Random"), DisplayNameGetter?.Invoke(asset), descriptionOverride, RemoveList.Any(x => asset.Name.Contains(x, StringComparison.OrdinalIgnoreCase))));
     }
 
     public object Clone()

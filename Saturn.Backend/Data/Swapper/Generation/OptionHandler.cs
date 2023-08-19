@@ -70,53 +70,73 @@ public class OptionHandler
             PerfectOptions = new List<AssetSelectorItem>(),
             Options = new List<AssetSelectorItem>()
         };
-        
-        AssetExportData exportData = await AssetExportData.Create(item.Asset, item.Type, styles.ToArray());
-        FixPartData(exportData);
 
-        Constants.AssetCache[item.ID] = exportData;
-
-        await Constants.Handler.Reset();
-        List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(Constants.PotentialOptions);
-
-        await Parallel.ForEachAsync(options, async (option, token) =>
+        if (Constants.ShouldGlobalSwap)
         {
-            bool isPerfect = true;
-            
-            AssetExportData optionExportData;
-            if (Constants.AssetCache.TryGetValue(option.ID, out var value))
-            {
-                optionExportData = value;
-            }
-            else
-            {
-                optionExportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>());
-                FixPartData(optionExportData);
-                Constants.AssetCache.Add(option.ID, optionExportData);
-            }
+            List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(Constants.PotentialOptions);
 
-            if (exportData.ExportParts.Any(part => optionExportData.ExportParts.All(optionPart => optionPart.Part != part.Part)))
-            {
-                return;
-            }
-
-            foreach (var _ in from part in exportData.ExportParts 
-                     let optionPart = optionExportData.ExportParts.First(optionPart => part.Part == optionPart.Part) 
-                     where part.MorphName != "None" 
-                     where part.MorphName != "None" && optionPart.MorphName == "None" 
-                     select optionPart)
-            {
-                isPerfect = false;
-            }
-
-            if (isPerfect)
+            await Parallel.ForEachAsync(options, async (option, token) =>
             {
                 data.PerfectOptions.Add(option);
-            }
+                data.Options.Add(option);
+            });
+            
+            var random = data.PerfectOptions.First(x => x.IsRandom);
+            data.PerfectOptions.RemoveAll(x => x.IsRandom);
+            data.Options.RemoveAll(x => x.IsRandom);
+            
+            data.PerfectOptions.Insert(0, random);
+            data.Options.Insert(0, random);
+        }
+        else
+        {
+            AssetExportData exportData = await AssetExportData.Create(item.Asset, item.Type, styles.ToArray());
+            FixPartData(exportData);
 
-            data.Options.Add(option);
-        });
+            Constants.AssetCache[item.ID] = exportData;
 
+            await Constants.Handler.Reset();
+            List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(Constants.PotentialOptions);
+
+            await Parallel.ForEachAsync(options, async (option, token) =>
+            {
+                bool isPerfect = true;
+            
+                AssetExportData optionExportData;
+                if (Constants.AssetCache.TryGetValue(option.ID, out var value))
+                {
+                    optionExportData = value;
+                }
+                else
+                {
+                    optionExportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>());
+                    FixPartData(optionExportData);
+                    Constants.AssetCache.Add(option.ID, optionExportData);
+                }
+
+                if (exportData.ExportParts.Any(part => optionExportData.ExportParts.All(optionPart => optionPart.Part != part.Part)))
+                {
+                    return;
+                }
+
+                foreach (var _ in from part in exportData.ExportParts 
+                         let optionPart = optionExportData.ExportParts.First(optionPart => part.Part == optionPart.Part) 
+                         where part.MorphName != "None" 
+                         where part.MorphName != "None" && optionPart.MorphName == "None" 
+                         select optionPart)
+                {
+                    isPerfect = false;
+                }
+
+                if (isPerfect)
+                {
+                    data.PerfectOptions.Add(option);
+                }
+
+                data.Options.Add(option);
+            });
+        }
+        
         return data;
     }
 }
