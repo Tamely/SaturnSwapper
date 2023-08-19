@@ -98,7 +98,7 @@
         DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", stateToGoTo.ToString().Split("S_")[1]);
         
         if (DiscordUtilities.Member != null && !File.Exists(Constants.ExternalPath + "user.json"))
-            File.WriteAllText(Constants.ExternalPath + "user.json", JsonConvert.SerializeObject(DiscordUtilities.Member, Formatting.None));
+            await File.WriteAllTextAsync(Constants.ExternalPath + "user.json", JsonConvert.SerializeObject(DiscordUtilities.Member, Formatting.None));
 
         if (stateToGoTo == SaturnState.S_Plugin)
         {

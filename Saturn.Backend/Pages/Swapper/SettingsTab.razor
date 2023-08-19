@@ -143,7 +143,8 @@
         };
         
         Logger.Log("Generating cosmetics!");
-        await Constants.Handler.SwitchHandler(Constants.Handler.SkinHandler);
+        await Constants.Handler.Reset();
+        Constants.Cosmetics.Clear();
         await Constants.Handler.Handler.Execute();
         Logger.Log("Done!");
 

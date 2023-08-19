@@ -181,6 +181,9 @@
     private async Task AddCosmetics()
     {
         Logger.Log("Generating cosmetics!");
+        await Constants.Handler.Reset();
+        Constants.Cosmetics.Clear();
+        await Constants.Handler.Handler.Execute();
         Logger.Log("Done!");
 
         DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", "Selecting Cosmetics");
