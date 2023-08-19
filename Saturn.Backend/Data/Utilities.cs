@@ -24,11 +24,14 @@ using Saturn.Backend.Data.Fortnite;
 using Saturn.Backend.Data.SaturnAPI;
 using Saturn.Backend.Data.SaturnAPI.Models;
 using Saturn.Backend.Data.SaturnConfig;
+using Saturn.Backend.Data.Swapper.Assets;
 using Saturn.Backend.Data.Swapper.Core.Models;
 using Saturn.Backend.Data.Swapper.Swapping;
 using Saturn.Backend.Data.Swapper.Swapping.Models;
 using Saturn.Backend.Data.Variables;
 using SkiaSharp;
+using UAssetAPI;
+using UAssetAPI.IO;
 
 namespace Saturn.Backend.Data
 {
@@ -53,74 +56,42 @@ namespace Saturn.Backend.Data
                 await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "key");
                 return;
             }
-
-            /*
-            foreach (var item in preset.PresetSwaps)
+            
+            foreach (var swapItem in preset.PresetSwaps)
             {
                 List<SwapData> swapData = new();
-        
-                foreach (var characterPart in item.OptionModel.CharacterParts.Where(characterPart => item.ItemModel.CharacterParts.ContainsKey(characterPart.Key)))
+                AssetExportData selectedOption = await swapItem.ItemModel.OptionHandler.GenerateOptionDataWithFix(swapItem.OptionModel);
+
+                foreach (var characterPart in selectedOption.ExportParts)
                 {
-                    var oldPkg = await Constants.Provider.SavePackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
-                    Deserializer oldDeserializer = new Deserializer(oldPkg.Values.First());
-                    oldDeserializer.Deserialize();
-                    
+                    var pkg = await Constants.Provider.SavePackageAsync(characterPart.Path.Split('.')[0]);
+                    AssetBinaryReader oldReader = new AssetBinaryReader(pkg.Values.First());
+                    ZenAsset oldAsset = new ZenAsset(oldReader, Constants.EngineVersion, Constants.Mappings);
+
                     var data = SaturnData.ToNonStatic();
                     SaturnData.Clear();
                     
-                    var newPkg = await Constants.Provider.SavePackageAsync(item.ItemModel.CharacterParts[characterPart.Key].Path.Split('.')[0] + ".uasset");
-                    Deserializer newDeserializer = new Deserializer(newPkg.Values.First());
-                    newDeserializer.Deserialize();
+                    AssetExportData item = await swapItem.ItemModel.OptionHandler.GenerateOptionDataWithFix(swapItem.ItemModel);
+                    var swapPart = item.ExportParts.FirstOrDefault(part => part.Part == characterPart.Part);
 
-                    Serializer serializer = new Serializer(oldDeserializer.Swap(newDeserializer));
+                    pkg = await Constants.Provider.SavePackageAsync(swapPart == null ? Constants.EmptyParts[characterPart.Part].Path : swapPart.Path.Split('.')[0]);
+                    AssetBinaryReader newReader = new AssetBinaryReader(pkg.Values.First());
+                    ZenAsset newAsset = new ZenAsset(newReader, Constants.EngineVersion, Constants.Mappings);
 
-                    swapData.Add(new SwapData
+                    var asset = oldAsset.Swap(newAsset);
+
+                    swapData.Add(new SwapData()
                     {
                         SaturnData = data,
-                        Data = serializer.Serialize()
+                        Data = asset.WriteData().ToArray()
                     });
-
-                    SaturnData.Clear();
-                }
-
-                foreach (var characterPart in item.OptionModel.CharacterParts.Where(characterPart => !item.ItemModel.CharacterParts.ContainsKey(characterPart.Key)))
-                {
-                    var oldPkg = await Constants.Provider.SavePackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
-                    Deserializer oldDeserializer = new Deserializer(oldPkg.Values.First());
-                    oldDeserializer.Deserialize();
-                    
-                    var data = SaturnData.ToNonStatic();
-                    SaturnData.Clear();
-                    
-                    var realPartType = characterPart.Value.Enums["CharacterPartType"];
-                    
-                    var newPkg = await Constants.Provider.SavePackageAsync(Constants.EmptyParts[realPartType].Path.Split('.')[0] + ".uasset");
-                    Deserializer newDeserializer = new Deserializer(newPkg.Values.First());
-                    newDeserializer.Deserialize();
-
-                    Serializer serializer = new Serializer(oldDeserializer.Swap(newDeserializer));
-
-                    swapData.Add(new SwapData
-                    {
-                        SaturnData = data,
-                        Data = serializer.Serialize()
-                    });
-
-                    SaturnData.Clear();
-                }
-
-                await FileLogic.Convert(swapData);
             
-                if (Constants.CanLobbySwap && Constants.ShouldLobbySwap && Constants.isPlus)
-                {
-                    await FileLogic.ConvertLobby(item.OptionModel.ID, item.ItemModel.ID);
                     SaturnData.Clear();
                 }
-                else if (Constants.isPlus && Constants.ShouldLobbySwap)
-                {
-                    Logger.Log("Unable to lobby swap at this time... pakchunk0 was unable to be mounted.", LogLevel.Error);
-                }
-            }*/
+                
+                await FileLogic.Convert(swapData);
+                await FileLogic.ConvertLobby(swapItem.OptionModel, swapItem.ItemModel);
+            }
             
             await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "finished");
         }
