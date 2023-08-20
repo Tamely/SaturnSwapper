@@ -296,7 +296,7 @@ public static class ExportHelpers
         }
     }
     
-    public static void Weapon(UObject weaponDefinition, List<ExportMesh> exportParts)
+    public static string Weapon(UObject weaponDefinition, List<ExportMesh> exportParts)
     {
         var weapons = GetWeaponMeshes(weaponDefinition);
         foreach (var weapon in weapons)
@@ -310,6 +310,8 @@ public static class ExportHelpers
                 Mesh(skeletalMesh, exportParts);
             }
         }
+        
+        return weaponDefinition.GetOrDefault<FSoftObjectPath>("WeaponActorClass").AssetPathName.Text;
     }
     
     public static List<UObject?> GetWeaponMeshes(UObject weaponDefinition)

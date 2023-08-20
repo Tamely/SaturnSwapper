@@ -63,6 +63,69 @@ public class OptionHandler
         }
     }
 
+    public static async Task<OptionHandler> CreateAssetOptions(AssetSelectorItem item, List<FStructFallback> styles)
+    {
+        OptionHandler data = new()
+        {
+            PerfectOptions = new List<AssetSelectorItem>(),
+            Options = new List<AssetSelectorItem>()
+        };
+        
+        await Constants.Handler.Reset();
+
+        AssetExportData exportData = await AssetExportData.Create(item.Asset, item.Type, styles.ToArray());
+        
+        if (Constants.ShouldGlobalSwap)
+        {
+            List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(Constants.PotentialOptions);
+            await Parallel.ForEachAsync(options, async (option, token) =>
+            {
+                data.PerfectOptions.Add(option);
+                data.Options.Add(option);
+            });
+            
+            var random = data.PerfectOptions.First(x => x.IsRandom);
+            data.PerfectOptions.RemoveAll(x => x.IsRandom);
+            data.Options.RemoveAll(x => x.IsRandom);
+            
+            data.PerfectOptions.Insert(0, random);
+            data.Options.Insert(0, random);
+        }
+        else
+        {
+            await Constants.Handler.Reset();
+            List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(Constants.PotentialOptions);
+            await Parallel.ForEachAsync(options, async (option, token) =>
+            {
+                if (option.IsRandom) return;
+                if ((option.Series ?? "").Equals(item.Series ?? ""))
+                {
+                    if (!string.IsNullOrWhiteSpace(exportData.WeaponActorClass))
+                    {
+                        AssetExportData optionExportData;
+                        if (Constants.AssetCache.TryGetValue(option.ID, out var value))
+                        {
+                            optionExportData = value;
+                        }
+                        else
+                        {
+                            optionExportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>());
+                            Constants.AssetCache.Add(option.ID, optionExportData);
+                        }
+                        
+                        if (!(optionExportData.WeaponActorClass ?? "").Equals(exportData.WeaponActorClass ?? "", StringComparison.InvariantCultureIgnoreCase))
+                            return;
+                    }
+                    
+                    data.PerfectOptions.Add(option);
+                    data.Options.Add(option);
+                }
+            });
+        }
+
+        return data;
+    }
+    
     public static async Task<OptionHandler> CreateCharacterPartOptions(AssetSelectorItem item, List<FStructFallback> styles)
     {
         OptionHandler data = new()
@@ -70,6 +133,8 @@ public class OptionHandler
             PerfectOptions = new List<AssetSelectorItem>(),
             Options = new List<AssetSelectorItem>()
         };
+        
+        await Constants.Handler.Reset();
 
         if (Constants.ShouldGlobalSwap)
         {
@@ -97,9 +162,9 @@ public class OptionHandler
 
             await Constants.Handler.Reset();
             List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(Constants.PotentialOptions);
-
             await Parallel.ForEachAsync(options, async (option, token) =>
             {
+                if (option.IsRandom) return;
                 bool isPerfect = true;
             
                 AssetExportData optionExportData;

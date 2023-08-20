@@ -316,7 +316,9 @@
 
         await Task.Delay(50); // Need to display the text
         
-        item.OptionHandler = await OptionHandler.CreateCharacterPartOptions(item, new List<FStructFallback>());
+        item.OptionHandler = Constants.CosmeticState == SaturnState.S_Skin || Constants.CosmeticState == SaturnState.S_Backbling 
+            ? await OptionHandler.CreateCharacterPartOptions(item, new List<FStructFallback>()) 
+            : await OptionHandler.CreateAssetOptions(item, new List<FStructFallback>());
         
         Constants.SelectedItem = item;
 

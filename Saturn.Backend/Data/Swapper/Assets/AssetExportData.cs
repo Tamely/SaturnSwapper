@@ -21,6 +21,7 @@ public class AssetExportData : ExportDataBase
     public List<ExportMaterial> StyleMaterials = new();
     public List<ExportMeshOverride> StyleMeshes = new();
     public List<ExportMaterialParams> StyleMaterialParams = new();
+    public string? WeaponActorClass = null;
 
     public static async Task<AssetExportData?> Create(UObject asset, EAssetType assetType, FStructFallback[] styles)
     {
@@ -66,7 +67,7 @@ public class AssetExportData : ExportDataBase
                 case EAssetType.Pickaxe:
                 {
                     var weapon = asset.Get<UObject>("WeaponDefinition");
-                    ExportHelpers.Weapon(weapon, data.Parts);
+                    data.WeaponActorClass = ExportHelpers.Weapon(weapon, data.Parts);
                     break;
                 }
                 case EAssetType.Weapon:
@@ -92,8 +93,8 @@ public class AssetExportData : ExportDataBase
                     ExportHelpers.Mesh(asset as USkeletalMesh, data.Parts);
                     break;
                 }
-                    default:
-                        throw new ArgumentOutOfRangeException("Unsupported asset type!");
+                default:
+                    throw new ArgumentOutOfRangeException("Unsupported asset type!");
             }
             
             return true;

@@ -29,6 +29,17 @@
                 </div>
             </div>
         }
+        
+        @if (((BaseItem.OptionHandler ?? new OptionHandler()).PerfectOptions ?? new List<AssetSelectorItem>()).Count == 0)
+        {
+            <div id="none-section" class="section hoverable">
+                <img src="./img/Saturn.png" alt="Icon"/>
+                <div class="name">
+                    <h1>No options found!</h1>
+                    <h3>You don't own any cosmetics that can swap to this item!</h3>
+                </div>
+            </div>
+        }
     </div>
 </div>
 
