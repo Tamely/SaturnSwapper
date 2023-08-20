@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
-using Constants = Radon.Utilities.Constants;
+using Radon.Common;
 
 namespace Radon.CodeAnalysis.Emit.Binary;
 
@@ -22,7 +22,7 @@ internal readonly struct Assembly
         Guid = guid;
         Flags = flags;
         EncryptionKey = encryptionKey;
-        Version = Constants.RadonVersion;
+        Version = Constants.RadonVersionNumber;
         Instructions = instructions;
         Metadata = metadata;
     }

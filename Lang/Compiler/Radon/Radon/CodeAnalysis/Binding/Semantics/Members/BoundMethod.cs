@@ -18,4 +18,9 @@ internal sealed class BoundMethod : BoundMember
         Statements = statements;
         Locals = locals;
     }
+    
+    public override string ToString()
+    {
+        return Symbol.ToString();
+    }
 }

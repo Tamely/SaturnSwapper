@@ -1,14 +1,18 @@
-using System;
+﻿using System;
 
 namespace Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 [Flags]
-internal enum BindingFlags : byte
+internal enum BindingFlags
 {
-    None = 0, // No flags.
-    Static = 1, // Static member.
-    Instance = 2, // Instance member.
-    RuntimeInternal = 4, // Internal member.
-    Public = 8, // Public member.
-    Private = 16, // Private member.
+    None = 0x00,
+    
+    // Binding flags for all members
+    Instance = 0x01,
+    Static = 0x02,
+    Public = 0x04,
+    NonPublic = 0x08,
+    RuntimeInternal = 0x10,
+    Entry = 0x20,
+    Ref = 0x40,
 }

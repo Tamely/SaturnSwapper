@@ -28,11 +28,6 @@ public sealed class Scope
         _children = new List<Scope>();
     }
 
-    public Scope? GotoParent()
-    {
-        return Parent;
-    }
-    
     public Scope CreateChild()
     {
         var child = new Scope(this);
@@ -128,7 +123,42 @@ public sealed class Scope
         {
             symbols.AddRange(Parent.GetSymbols<TSymbol>());
         }
-        
+
         return symbols.ToImmutableArray();
+    }
+
+    public ImmutableArray<TSymbol> GetAllSymbols<TSymbol>()
+        where TSymbol : Symbol
+    {
+        // Start from the top
+        var topScope = this;
+        while (topScope.Parent is not null)
+        {
+            topScope = topScope.Parent;
+        }
+        
+        var symbols = new List<TSymbol>();
+        var childSymbols = GetAllChildSymbols<TSymbol>(topScope);
+        symbols.AddRange(childSymbols);
+        return symbols.ToImmutableArray();
+    }
+
+    private IEnumerable<TSymbol> GetAllChildSymbols<TSymbol>(Scope scope)
+    {
+        var symbols = new List<TSymbol>();
+        foreach (var sym in scope.Symbols)
+        {
+            if (sym is TSymbol symbol)
+            {
+                symbols.Add(symbol);
+            }
+        }
+        
+        foreach (var child in scope.Children)
+        {
+            symbols.AddRange(GetAllChildSymbols<TSymbol>(child));
+        }
+        
+        return symbols;
     }
 }

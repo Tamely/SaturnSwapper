@@ -11,6 +11,7 @@ public abstract class SyntaxNode
 {
     public static SyntaxNode Empty => new EmptySyntaxNode();
     public abstract SyntaxKind Kind { get; }
+    public abstract string SyntaxName { get; }
 
     public virtual TextSpan Span
     {
@@ -142,7 +143,7 @@ public abstract class SyntaxNode
                 }
 
                 writer.Write($"L: {trivia.Kind}");
-                if (trivia.Kind.TryGetAttribute(SKAttributes.Comment, out _))
+                if (trivia.Kind.HasAttribute(SKAttributes.Comment))
                 {
                     Console.Write(' ');
                     Console.WriteLine(trivia.Text);

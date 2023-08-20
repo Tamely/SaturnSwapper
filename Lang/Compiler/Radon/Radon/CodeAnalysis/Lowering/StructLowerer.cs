@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Radon.CodeAnalysis.Binding.Semantics.Expressions;
 using Radon.CodeAnalysis.Binding.Semantics.Members;
 using Radon.CodeAnalysis.Binding.Semantics.Statements;
@@ -16,14 +15,16 @@ namespace Radon.CodeAnalysis.Lowering;
 internal sealed class StructLowerer
 {
     private readonly BoundStruct _boundStruct;
-    private readonly Dictionary<BoundField, BoundExpression> _loweredInitializers;
-    private readonly StatementLowerer _statementsLowerer;
+    private readonly Dictionary<BoundField, BoundExpression> _initializers;
+    private readonly DiagnosticBag _diagnosticBag;
+
+    public ImmutableArray<Diagnostic> Diagnostics => _diagnosticBag.ToImmutableArray();
 
     public StructLowerer(BoundStruct boundStruct)
     {
         _boundStruct = boundStruct;
-        _loweredInitializers = new Dictionary<BoundField, BoundExpression>();
-        _statementsLowerer = new StatementLowerer();
+        _initializers = new Dictionary<BoundField, BoundExpression>();
+        _diagnosticBag = new DiagnosticBag();
     }
 
     public BoundStruct Lower()
@@ -41,13 +42,15 @@ internal sealed class StructLowerer
         foreach (var constructor in constructors)
         {
             var statements = constructor.Statements;
-            var statementsLowered = _statementsLowerer.LowerStatements(statements);
+            var lowerer = new CodeLowerer();
+            var loweredStatements = lowerer.LowerStatements(statements);
+            _diagnosticBag.AddRange(lowerer.Diagnostics);
             // Add the lowered instance initializers to the start of the constructor
             var boundStatements = new List<BoundStatement>();
-            foreach (var (field, initializer) in _loweredInitializers)
+            foreach (var (field, initializer) in _initializers)
             {
                 var isInitInConstructor = false;
-                foreach (var statement in statementsLowered)
+                foreach (var statement in loweredStatements)
                 {
                     if (statement is not BoundExpressionStatement
                         {
@@ -56,32 +59,36 @@ internal sealed class StructLowerer
                     {
                         continue;
                     }
-                    
-                    if (init.Left is BoundMemberAccessExpression { Member: FieldSymbol fieldSymbol } &&
-                        fieldSymbol == field.Symbol)
+
+                    if (init.Left is not BoundMemberAccessExpression { Member: FieldSymbol fieldSymbol } ||
+                        fieldSymbol != field.Symbol)
                     {
-                        isInitInConstructor = true;
-                        break;
+                        continue;
                     }
+                    
+                    isInitInConstructor = true;
+                    break;
                 }
                 
                 if (isInitInConstructor)
                 {
                     continue;
                 }
-                
+
+                var syntax = initializer.Syntax;
+                var loweredInitializer = lowerer.LowerExpression(initializer);
                 BoundExpression thisOrType;
                 if (constructor.Symbol.HasModifier(SyntaxKind.StaticKeyword))
                 {
                     thisOrType = new BoundNameExpression(
-                        SyntaxNode.Empty,
+                        syntax,
                         _boundStruct.TypeSymbol
                     );
                 }
                 else
                 {
                     thisOrType = new BoundThisExpression(
-                        SyntaxNode.Empty,
+                        syntax,
                         _boundStruct.TypeSymbol
                     );
                 }
@@ -89,22 +96,30 @@ internal sealed class StructLowerer
                 var assignment = new BoundAssignmentExpression(
                     SyntaxNode.Empty,
                     new BoundMemberAccessExpression(
-                        SyntaxNode.Empty,
+                        syntax,
                         thisOrType,
                         field.Symbol
                     ),
-                    initializer
+                    loweredInitializer,
+                    SyntaxKind.EqualsToken
                 );
                 
-                boundStatements.Add(new BoundExpressionStatement(SyntaxNode.Empty, assignment));
+                boundStatements.AddRange(lowerer.GeneratedStatements);
+                boundStatements.Add(new BoundExpressionStatement(syntax, assignment));
             }
 
-            boundStatements.AddRange(statementsLowered);
+            boundStatements.AddRange(loweredStatements);
+            var locals = constructor.Locals;
+            if (lowerer.GeneratedLocals.Length > 0)
+            {
+                locals = locals.AddRange(lowerer.GeneratedLocals);
+            }
+            
             var loweredConstructor = new BoundConstructor(
                 constructor.Syntax,
                 constructor.Symbol,
                 boundStatements.ToImmutableArray(),
-                constructor.Locals
+                locals
             );
             
             ctorsToAdd.Add(loweredConstructor);
@@ -138,17 +153,23 @@ internal sealed class StructLowerer
     
     private BoundMember LowerMethod(BoundMethod node)
     {
-        var loweredStatements = _statementsLowerer.LowerStatements(node.Statements);
-        return new BoundMethod(node.Syntax, node.Symbol, loweredStatements, node.Locals);
+        var lowerer = new CodeLowerer();
+        var loweredStatements = lowerer.LowerStatements(node.Statements);
+        _diagnosticBag.AddRange(lowerer.Diagnostics);
+        var locals = node.Locals;
+        if (lowerer.GeneratedLocals.Length > 0)
+        {
+            locals = locals.AddRange(lowerer.GeneratedLocals);
+        }
+        
+        return new BoundMethod(node.Syntax, node.Symbol, loweredStatements, locals);
     }
 
     private BoundMember LowerField(BoundField node)
     {
-        var expressionLowerer = new ExpressionLowerer();
-        var loweredInitializer = node.Initializer == null ? 
-            new BoundDefaultExpression(SyntaxNode.Empty, node.Symbol.Type) 
-            : expressionLowerer.Lower(node.Initializer);
-        _loweredInitializers.Add(node, loweredInitializer);
-        return new BoundField(node.Syntax, node.Symbol, loweredInitializer);
+        var loweredInitializer = node.Initializer ?? new BoundDefaultExpression(node.Syntax, node.Symbol.Type);
+        var field = new BoundField(node.Syntax, node.Symbol, loweredInitializer);
+        _initializers.Add(field, loweredInitializer);
+        return field;
     }
 }

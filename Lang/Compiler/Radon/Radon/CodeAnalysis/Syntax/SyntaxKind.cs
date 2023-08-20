@@ -2,8 +2,8 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
-using Microsoft.VisualBasic;
 using Radon.CodeAnalysis.Syntax.Nodes;
+using static Radon.CodeAnalysis.Syntax.SKAttributes;
 
 namespace Radon.CodeAnalysis.Syntax;
 
@@ -16,9 +16,9 @@ public sealed class SyntaxKind
 #region Special Kinds
     
     public static readonly SyntaxKind BadToken =
-        new(nameof(BadToken), SKAttributes.Invalid, SKAttributes.Token, SKAttributes.Trivia);
+        new(nameof(BadToken), Invalid, Token, Trivia);
     public static readonly SyntaxKind EndOfFileToken =
-        new(nameof(EndOfFileToken), "\0", SKAttributes.IsFixed, SKAttributes.Token);
+        new(nameof(EndOfFileToken), "\0", IsFixed, Token);
     
 #endregion
     
@@ -27,17 +27,17 @@ public sealed class SyntaxKind
 #region Trivia Kinds
     
     public static readonly SyntaxKind WhitespaceTrivia =
-        new(nameof(WhitespaceTrivia), SKAttributes.Trivia);
+        new(nameof(WhitespaceTrivia), Trivia);
     public static readonly SyntaxKind LineBreakTrivia =
-        new(nameof(LineBreakTrivia), SKAttributes.Trivia);
+        new(nameof(LineBreakTrivia), Trivia);
     public static readonly SyntaxKind SingleLineCommentTrivia =
-        new(nameof(SingleLineCommentTrivia), SKAttributes.Trivia);
+        new(nameof(SingleLineCommentTrivia), Trivia, Comment);
     public static readonly SyntaxKind MultiLineCommentTrivia =
-        new(nameof(MultiLineCommentTrivia), SKAttributes.Trivia);
+        new(nameof(MultiLineCommentTrivia), Trivia, Comment);
     public static readonly SyntaxKind SkippedTextTrivia =
-        new(nameof(SkippedTextTrivia), SKAttributes.Trivia);
+        new(nameof(SkippedTextTrivia), Trivia);
     public static readonly SyntaxKind DirectiveTrivia =
-        new(nameof(DirectiveTrivia), SKAttributes.Trivia);
+        new(nameof(DirectiveTrivia), Trivia);
     
 #endregion
     
@@ -48,119 +48,131 @@ public sealed class SyntaxKind
     // Assignment
     public static readonly SyntaxKind EqualsToken =
         new(nameof(EqualsToken), "=", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Assignment, false, false, true));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.None, OperatorKind.Assignment), Operator);
     public static readonly SyntaxKind PlusEqualsToken =
         new(nameof(PlusEqualsToken), "+=", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Assignment, false, false, true));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.None, OperatorKind.Assignment), CompoundAssignment, Operator);
     public static readonly SyntaxKind MinusEqualsToken =
         new(nameof(MinusEqualsToken), "-=", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Assignment, false, false, true));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.None, OperatorKind.Assignment), CompoundAssignment, Operator);
     public static readonly SyntaxKind StarEqualsToken =
         new(nameof(StarEqualsToken), "*=", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Assignment, false, false, true));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.None, OperatorKind.Assignment), CompoundAssignment, Operator);
     public static readonly SyntaxKind SlashEqualsToken =
         new(nameof(SlashEqualsToken), "/=", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Assignment, false, false, true));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.None, OperatorKind.Assignment), CompoundAssignment, Operator);
     public static readonly SyntaxKind PercentEqualsToken =
         new(nameof(PercentEqualsToken), "%=", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Assignment, false, false, true));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.None, OperatorKind.Assignment), CompoundAssignment, Operator);
+    public static readonly SyntaxKind PipeEqualsToken =
+        new(nameof(PipeEqualsToken), "|=", 
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.None, OperatorKind.Assignment), CompoundAssignment, Operator);
+    public static readonly SyntaxKind AmpersandEqualsToken =
+        new(nameof(AmpersandEqualsToken), "&=", 
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.None, OperatorKind.Assignment), CompoundAssignment, Operator);
     
     // Logical OR
     public static readonly SyntaxKind PipePipeToken =
         new(nameof(PipePipeToken), "||", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.LogicalOr, true, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.LogicalOr, OperatorKind.Binary), Operator);
     
     // Logical AND
     public static readonly SyntaxKind AmpersandAmpersandToken =
         new(nameof(AmpersandAmpersandToken), "&&", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.LogicalAnd, true, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.LogicalAnd, OperatorKind.Binary), Operator);
     
     // Logical NOT
     public static readonly SyntaxKind BangToken =
         new(nameof(BangToken), "!", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.LogicalNot, false, true, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.LogicalNot, OperatorKind.Unary), Operator);
     
     // Bitwise OR
     public static readonly SyntaxKind PipeToken =
         new(nameof(PipeToken), "|", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.BitwiseOr, true, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.BitwiseOr, OperatorKind.Binary), Operator);
     
     // Bitwise AND
     public static readonly SyntaxKind AmpersandToken =
         new(nameof(AmpersandToken), "&", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.BitwiseAnd, true, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.BitwiseAnd, OperatorKind.Binary), Operator);
+    
+    // Bitwise XOR
+    public static readonly SyntaxKind HatToken =
+        new(nameof(HatToken), "^", 
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.BitwiseXor, OperatorKind.Binary), Operator);
 
     // Equality
     public static readonly SyntaxKind EqualsEqualsToken =
         new(nameof(EqualsEqualsToken), "==", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Equality, true, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Equality, OperatorKind.Binary), Operator);
     public static readonly SyntaxKind BangEqualsToken =
         new(nameof(BangEqualsToken), "!=", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Equality, true, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Equality, OperatorKind.Binary), Operator);
     
     // Relational
-    public static readonly SyntaxKind LessToken =
-        new(nameof(LessToken), "<", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Relational, true, false, false));
+    public static readonly SyntaxKind LessThanToken =
+        new(nameof(LessThanToken), "<", 
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Relational, OperatorKind.Binary), Operator);
     public static readonly SyntaxKind LessEqualsToken =
         new(nameof(LessEqualsToken), "<=", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Relational, true, false, false));
-    public static readonly SyntaxKind GreaterToken =
-        new(nameof(GreaterToken), ">", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Relational, true, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Relational, OperatorKind.Binary), Operator);
+    public static readonly SyntaxKind GreaterThanToken =
+        new(nameof(GreaterThanToken), ">", 
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Relational, OperatorKind.Binary), Operator);
     public static readonly SyntaxKind GreaterEqualsToken =
         new(nameof(GreaterEqualsToken), ">=", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Relational, true, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Relational, OperatorKind.Binary), Operator);
     
     // Shift
     public static readonly SyntaxKind LessLessToken =
         new(nameof(LessLessToken), "<<", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Shift, true, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Shift, OperatorKind.Binary), Operator);
     public static readonly SyntaxKind GreaterGreaterToken =
         new(nameof(GreaterGreaterToken), ">>", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Shift, true, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Shift, OperatorKind.Binary), Operator);
     
     // Additive
     public static readonly SyntaxKind PlusToken =
         new(nameof(PlusToken), "+", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Additive, true, true, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Additive, OperatorKind.Binary | OperatorKind.Unary), Operator);
     public static readonly SyntaxKind MinusToken =
         new(nameof(MinusToken), "-", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Additive, true, true, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Additive, OperatorKind.Binary | OperatorKind.Unary), Operator);
     public static readonly SyntaxKind PlusPlusToken =
         new(nameof(PlusPlusToken), "++", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Additive, false, true, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.None, OperatorKind.PostfixUnary), Operator);
     public static readonly SyntaxKind MinusMinusToken =
         new(nameof(MinusMinusToken), "--", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Additive, false, true, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.None, OperatorKind.PostfixUnary), Operator);
     
     // Multiplicative
     public static readonly SyntaxKind StarToken =
         new(nameof(StarToken), "*", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Multiplicative, true, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Multiplicative, OperatorKind.Binary), Operator);
     public static readonly SyntaxKind SlashToken =
         new(nameof(SlashToken), "/", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Multiplicative, true, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Multiplicative, OperatorKind.Binary), Operator);
     public static readonly SyntaxKind PercentToken =
         new(nameof(PercentToken), "%", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Multiplicative, true, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Multiplicative, OperatorKind.Binary), Operator);
     
     // Dot
     public static readonly SyntaxKind DotToken =
         new(nameof(DotToken), ".", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Dot, false, false, false));
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Dot, OperatorKind.None), Operator);
     
 #endregion
     
     // Dynamic
     
 #region Dynamic
+
     public static readonly SyntaxKind NumberToken =
-        new(nameof(NumberToken), null, SKAttributes.Literal);
+        new(nameof(NumberToken), null, Literal, Numeric);
     public static readonly SyntaxKind StringToken =
-        new(nameof(StringToken), null, SKAttributes.Literal);
+        new(nameof(StringToken), null, Literal);
     public static readonly SyntaxKind IdentifierToken =
-        new(nameof(IdentifierToken), null, SKAttributes.Identifier);
+        new(nameof(IdentifierToken), null, Identifier);
     
 #endregion
     
@@ -169,25 +181,25 @@ public sealed class SyntaxKind
 #region Punctuation
 
     public static readonly SyntaxKind OpenParenthesisToken =
-        new(nameof(OpenParenthesisToken), "(", SKAttributes.Punctuation);
+        new(nameof(OpenParenthesisToken), "(", Punctuation);
     public static readonly SyntaxKind CloseParenthesisToken =
-        new(nameof(CloseParenthesisToken), ")", SKAttributes.Punctuation);
+        new(nameof(CloseParenthesisToken), ")", Punctuation);
     public static readonly SyntaxKind OpenBraceToken =
-        new(nameof(OpenBraceToken), "{", SKAttributes.Punctuation);
+        new(nameof(OpenBraceToken), "{", Punctuation);
     public static readonly SyntaxKind CloseBraceToken =
-        new(nameof(CloseBraceToken), "}", SKAttributes.Punctuation);
+        new(nameof(CloseBraceToken), "}", Punctuation);
     public static readonly SyntaxKind OpenBracketToken =
-        new(nameof(OpenBracketToken), "[", SKAttributes.Punctuation);
+        new(nameof(OpenBracketToken), "[", Punctuation);
     public static readonly SyntaxKind CloseBracketToken =
-        new(nameof(CloseBracketToken), "]", SKAttributes.Punctuation);
+        new(nameof(CloseBracketToken), "]", Punctuation);
     public static readonly SyntaxKind CommaToken =
-        new(nameof(CommaToken), ",", SKAttributes.Punctuation);
+        new(nameof(CommaToken), ",", Punctuation);
     public static readonly SyntaxKind HashToken =
-        new(nameof(HashToken), "#", SKAttributes.Punctuation);
+        new(nameof(HashToken), "#", Punctuation);
     public static readonly SyntaxKind ColonToken =
-        new(nameof(ColonToken), ":", SKAttributes.Punctuation);
+        new(nameof(ColonToken), ":", Punctuation);
     public static readonly SyntaxKind SemicolonToken =
-        new(nameof(SemicolonToken), ";", SKAttributes.Punctuation);
+        new(nameof(SemicolonToken), ";", Punctuation);
     
 #endregion
     
@@ -196,45 +208,61 @@ public sealed class SyntaxKind
 #region Keywords
     
     public static readonly SyntaxKind ImportKeyword =
-        new(nameof(ImportKeyword), "import", SKAttributes.Keyword);
+        new(nameof(ImportKeyword), "import", Keyword);
     public static readonly SyntaxKind SignKeyword =
-        new(nameof(SignKeyword), "sign", SKAttributes.Keyword);
+        new(nameof(SignKeyword), "sign", Keyword);
     public static readonly SyntaxKind StructKeyword =
-        new(nameof(StructKeyword), "struct", SKAttributes.Keyword, SKAttributes.TypeKeyword);
+        new(nameof(StructKeyword), "struct", Keyword, TypeKeyword);
     public static readonly SyntaxKind EnumKeyword =
-        new(nameof(EnumKeyword), "enum", SKAttributes.Keyword, SKAttributes.TypeKeyword);
+        new(nameof(EnumKeyword), "enum", Keyword, TypeKeyword);
     public static readonly SyntaxKind TemplateKeyword =
-        new(nameof(TemplateKeyword), "template", SKAttributes.Keyword, SKAttributes.TypeKeyword);
+        new(nameof(TemplateKeyword), "template", Keyword, TypeKeyword);
     public static readonly SyntaxKind NewKeyword =
-        new(nameof(NewKeyword), "new", SKAttributes.Keyword);
+        new(nameof(NewKeyword), "new", Keyword);
     public static readonly SyntaxKind ThisKeyword =
-        new(nameof(ThisKeyword), "this", SKAttributes.Keyword);
+        new(nameof(ThisKeyword), "this", Keyword);
     public static readonly SyntaxKind TrueKeyword =
-        new(nameof(TrueKeyword), "true", SKAttributes.Keyword,SKAttributes.Literal);
+        new(nameof(TrueKeyword), "true", Keyword,Literal);
     public static readonly SyntaxKind FalseKeyword =
-        new(nameof(FalseKeyword), "false", SKAttributes.Keyword, SKAttributes.Literal);
+        new(nameof(FalseKeyword), "false", Keyword, Literal);
     public static readonly SyntaxKind DefaultKeyword =
-        new(nameof(DefaultKeyword), "default", SKAttributes.Keyword);
+        new(nameof(DefaultKeyword), "default", Keyword);
     public static readonly SyntaxKind EncryptedKeyword =
-        new(nameof(EncryptedKeyword), "encrypted", SKAttributes.Keyword, SKAttributes.Literal);
+        new(nameof(EncryptedKeyword), "encrypted", Keyword, Literal);
     
     // Modifiers
     public static readonly SyntaxKind StaticKeyword =
-        new(nameof(StaticKeyword), "static", SKAttributes.Modifier, SKAttributes.TypeModifier);
+        new(nameof(StaticKeyword), "static", TypeModifier, FieldModifier, MethodModifier, Modifier);
     public static readonly SyntaxKind RuntimeInternalKeyword =
-        new(nameof(RuntimeInternalKeyword), "__runtimeinternal", SKAttributes.Modifier, SKAttributes.TypeModifier); // Keywords for internal use will be prefixed with __
+        new(nameof(RuntimeInternalKeyword), "__runtimeinternal", TypeModifier, FieldModifier, MethodModifier, Modifier); // Keywords for internal use will be prefixed with __
     public static readonly SyntaxKind PublicKeyword =
-        new(nameof(PublicKeyword), "public", SKAttributes.Modifier, SKAttributes.TypeModifier);
+        new(nameof(PublicKeyword), "public", TypeModifier, FieldModifier, MethodModifier, Modifier);
     public static readonly SyntaxKind PrivateKeyword =
-        new(nameof(PrivateKeyword), "private", SKAttributes.Modifier, SKAttributes.TypeModifier);
+        new(nameof(PrivateKeyword), "private", TypeModifier, FieldModifier, MethodModifier, Modifier);
+    public static readonly SyntaxKind EntryKeyword =
+        new(nameof(EntryKeyword), "entry", TypeModifier, MethodModifier, Modifier);
+    public static readonly SyntaxKind RefKeyword =
+        new(nameof(RefKeyword), "ref", TypeModifier, Modifier); // Can only be used on types and fields
 
     // Directive Keywords
     public static readonly SyntaxKind IncludeKeyword =
-        new(nameof(IncludeKeyword), "include", SKAttributes.Keyword, SKAttributes.DirectiveOperator);
+        new(nameof(IncludeKeyword), "include", Keyword, DirectiveOperator);
     
     // Flow Control
     public static readonly SyntaxKind ReturnKeyword =
-        new(nameof(ReturnKeyword), "return", SKAttributes.Keyword, SKAttributes.FlowControl);
+        new(nameof(ReturnKeyword), "return", Keyword, FlowControl);
+    public static readonly SyntaxKind IfKeyword =
+        new(nameof(IfKeyword), "if", Keyword, FlowControl);
+    public static readonly SyntaxKind ElseKeyword =
+        new(nameof(ElseKeyword), "else", Keyword, FlowControl);
+    public static readonly SyntaxKind WhileKeyword =
+        new(nameof(WhileKeyword), "while", Keyword, FlowControl);
+    public static readonly SyntaxKind ForKeyword =
+        new(nameof(ForKeyword), "for", Keyword, FlowControl);
+    public static readonly SyntaxKind BreakKeyword =
+        new(nameof(BreakKeyword), "break", Keyword, FlowControl);
+    public static readonly SyntaxKind ContinueKeyword =
+        new(nameof(ContinueKeyword), "continue", Keyword, FlowControl);
 
 #endregion
     
@@ -243,33 +271,35 @@ public sealed class SyntaxKind
 #region Nodes
 
     public static readonly SyntaxKind Empty =
-        new(nameof(Empty), null, SKAttributes.Node);
+        new(nameof(Empty), null, Node);
     public static readonly SyntaxKind PluginCompilationUnit =
-        new(nameof(PluginCompilationUnit), null, SKAttributes.Node);
+        new(nameof(PluginCompilationUnit), null, Node);
     public static readonly SyntaxKind CodeCompilationUnit =
-        new(nameof(CodeCompilationUnit), null, SKAttributes.Node);
+        new(nameof(CodeCompilationUnit), null, Node);
     public static readonly SyntaxKind Type =
-        new(nameof(Type), null, SKAttributes.Node);
+        new(nameof(Type), null, Node);
     public static readonly SyntaxKind VariableDeclarator =
-        new(nameof(VariableDeclarator), null, SKAttributes.Node);
+        new(nameof(VariableDeclarator), null, Node);
     public static readonly SyntaxKind StructBody =
-        new(nameof(StructBody), null, SKAttributes.Node);
+        new(nameof(StructBody), null, Node);
     public static readonly SyntaxKind EnumBody =
-        new(nameof(EnumBody), null, SKAttributes.Node);
+        new(nameof(EnumBody), null, Node);
     public static readonly SyntaxKind ParameterList =
-        new(nameof(ParameterList), null, SKAttributes.Node);
+        new(nameof(ParameterList), null, Node);
     public static readonly SyntaxKind Parameter =
-        new(nameof(Parameter), null, SKAttributes.Node);
+        new(nameof(Parameter), null, Node);
     public static readonly SyntaxKind TypeArgumentList =
-        new(nameof(TypeArgumentList), null, SKAttributes.Node);
+        new(nameof(TypeArgumentList), null, Node);
     public static readonly SyntaxKind ArgumentList =
-        new(nameof(ArgumentList), null, SKAttributes.Node);
+        new(nameof(ArgumentList), null, Node);
     public static readonly SyntaxKind TypeParameterList =
-        new(nameof(TypeParameterList), null, SKAttributes.Node);
+        new(nameof(TypeParameterList), null, Node);
     public static readonly SyntaxKind TypeParameter =
-        new(nameof(TypeParameter), null, SKAttributes.Node);
+        new(nameof(TypeParameter), null, Node);
     public static readonly SyntaxKind ArrayType =
-        new(nameof(ArrayType), null, SKAttributes.Node);
+        new(nameof(ArrayType), null, Node);
+    public static readonly SyntaxKind ElseClause =
+        new(nameof(ElseClause), null, Node);
 
     #endregion
     
@@ -278,11 +308,11 @@ public sealed class SyntaxKind
 #region Directives
     
     public static readonly SyntaxKind FileDirective =
-        new(nameof(FileDirective), null, SKAttributes.Node, SKAttributes.Directive);
+        new(nameof(FileDirective), null, Node, Directive);
     public static readonly SyntaxKind IncludeDirective =
-        new(nameof(IncludeDirective), null, SKAttributes.Node, SKAttributes.Directive);
+        new(nameof(IncludeDirective), null, Node, Directive);
     public static readonly SyntaxKind InvalidDirective =
-        new(nameof(InvalidDirective), null, SKAttributes.Node, SKAttributes.Directive);
+        new(nameof(InvalidDirective), null, Node, Directive);
 
 #endregion
     
@@ -291,73 +321,85 @@ public sealed class SyntaxKind
 #region Expressions
     
     public static readonly SyntaxKind InvalidExpression =
-        new(nameof(InvalidExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(InvalidExpression), null, Node, Expression);
     public static readonly SyntaxKind LiteralExpression =
-        new(nameof(LiteralExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(LiteralExpression), null, Node, Expression);
     public static readonly SyntaxKind ImportExpression =
-        new(nameof(ImportExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(ImportExpression), null, Node, Expression);
     public static readonly SyntaxKind NameExpression =
-        new(nameof(NameExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(NameExpression), null, Node, Expression);
     public static readonly SyntaxKind BinaryExpression =
-        new(nameof(BinaryExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(BinaryExpression), null, Node, Expression);
     public static readonly SyntaxKind ParenthesizedExpression =
-        new(nameof(ParenthesizedExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(ParenthesizedExpression), null, Node, Expression);
     public static readonly SyntaxKind UnaryExpression =
-        new(nameof(UnaryExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(UnaryExpression), null, Node, Expression);
     public static readonly SyntaxKind MemberAccessExpression =
-        new(nameof(MemberAccessExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(MemberAccessExpression), null, Node, Expression);
     public static readonly SyntaxKind AssignmentExpression =
-        new(nameof(AssignmentExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(AssignmentExpression), null, Node, Expression);
     public static readonly SyntaxKind InvocationExpression =
-        new(nameof(InvocationExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(InvocationExpression), null, Node, Expression);
     public static readonly SyntaxKind NewExpression =
-        new(nameof(NewExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(NewExpression), null, Node, Expression);
     public static readonly SyntaxKind ThisExpression =
-        new(nameof(ThisExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(ThisExpression), null, Node, Expression);
     public static readonly SyntaxKind DefaultExpression =
-        new(nameof(DefaultExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(DefaultExpression), null, Node, Expression);
     public static readonly SyntaxKind NewArrayExpression =
-        new(nameof(NewArrayExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(NewArrayExpression), null, Node, Expression);
     public static readonly SyntaxKind ElementAccessExpression =
-        new(nameof(ElementAccessExpression), null, SKAttributes.Node, SKAttributes.Expression);
+        new(nameof(ElementAccessExpression), null, Node, Expression);
+    public static readonly SyntaxKind CastExpression =
+        new(nameof(CastExpression), null, Node, Expression);
 
-#endregion
+    #endregion
     
     // Statements
     
 #region Statements
     
     public static readonly SyntaxKind VariableDeclaration =
-        new(nameof(VariableDeclaration), null, SKAttributes.Node, SKAttributes.Statement);
+        new(nameof(VariableDeclaration), null, Node, Statement);
     public static readonly SyntaxKind ExpressionStatement =
-        new(nameof(ExpressionStatement), null, SKAttributes.Node, SKAttributes.Statement);
+        new(nameof(ExpressionStatement), null, Node, Statement);
     public static readonly SyntaxKind BlockStatement =
-        new(nameof(BlockStatement), null, SKAttributes.Node, SKAttributes.Statement);
+        new(nameof(BlockStatement), null, Node, Statement);
     public static readonly SyntaxKind SignStatement =
-        new(nameof(SignStatement), null, SKAttributes.Node, SKAttributes.Statement);
+        new(nameof(SignStatement), null, Node, Statement);
     public static readonly SyntaxKind ReturnStatement =
-        new(nameof(ReturnStatement), null, SKAttributes.Node, SKAttributes.Statement);
+        new(nameof(ReturnStatement), null, Node, Statement);
+    public static readonly SyntaxKind IfStatement =
+        new(nameof(IfStatement), null, Node, Statement);
+    public static readonly SyntaxKind WhileStatement =
+        new(nameof(WhileStatement), null, Node, Statement);
+    public static readonly SyntaxKind ForStatement =
+        new(nameof(ForStatement), null, Node, Statement);
+    public static readonly SyntaxKind BreakStatement =
+        new(nameof(BreakStatement), null, Node, Statement);
+    public static readonly SyntaxKind ContinueStatement =
+        new(nameof(ContinueStatement), null, Node, Statement);
     public static readonly SyntaxKind InvalidStatement =
-        new(nameof(InvalidStatement), null, SKAttributes.Node, SKAttributes.Statement);
-    
-#endregion
+        new(nameof(InvalidStatement), null, Node, Statement);
+
+    #endregion
 
     // Member Declarations
     
 #region Member Declarations
 
     public static readonly SyntaxKind EnumMemberDeclaration =
-        new(nameof(EnumMemberDeclaration), null, SKAttributes.Node, SKAttributes.MemberDeclaration);
+        new(nameof(EnumMemberDeclaration), null, Node, MemberDeclaration);
     public static readonly SyntaxKind InvalidMemberDeclaration =
-        new(nameof(InvalidMemberDeclaration), null, SKAttributes.Node, SKAttributes.MemberDeclaration);
+        new(nameof(InvalidMemberDeclaration), null, Node, MemberDeclaration);
     public static readonly SyntaxKind MethodDeclaration =
-        new(nameof(MethodDeclaration), null, SKAttributes.Node, SKAttributes.MemberDeclaration);
+        new(nameof(MethodDeclaration), null, Node, MemberDeclaration);
     public static readonly SyntaxKind TemplateMethodDeclaration =
-        new(nameof(TemplateMethodDeclaration), null, SKAttributes.Node, SKAttributes.MemberDeclaration);
+        new(nameof(TemplateMethodDeclaration), null, Node, MemberDeclaration);
     public static readonly SyntaxKind FieldDeclaration =
-        new(nameof(FieldDeclaration), null, SKAttributes.Node, SKAttributes.MemberDeclaration);
+        new(nameof(FieldDeclaration), null, Node, MemberDeclaration);
     public static readonly SyntaxKind ConstructorDeclaration =
-        new(nameof(ConstructorDeclaration), null, SKAttributes.Node, SKAttributes.MemberDeclaration);
+        new(nameof(ConstructorDeclaration), null, Node, MemberDeclaration);
 
 #endregion
     
@@ -366,13 +408,13 @@ public sealed class SyntaxKind
 #region Type Declarations
     
     public static readonly SyntaxKind StructDeclaration =
-        new(nameof(StructDeclaration), null, SKAttributes.Node, SKAttributes.TypeDeclaration);
+        new(nameof(StructDeclaration), null, Node, TypeDeclaration);
     public static readonly SyntaxKind EnumDeclaration =
-        new(nameof(EnumDeclaration), null, SKAttributes.Node, SKAttributes.TypeDeclaration);
+        new(nameof(EnumDeclaration), null, Node, TypeDeclaration);
     public static readonly SyntaxKind TemplateDeclaration =
-        new(nameof(TemplateDeclaration), null, SKAttributes.Node, SKAttributes.TypeDeclaration);
+        new(nameof(TemplateDeclaration), null, Node, TypeDeclaration);
     public static readonly SyntaxKind InvalidTypeDeclaration =
-        new(nameof(InvalidTypeDeclaration), null, SKAttributes.Node, SKAttributes.TypeDeclaration);
+        new(nameof(InvalidTypeDeclaration), null, Node, TypeDeclaration);
     
 #endregion
 
@@ -397,16 +439,17 @@ public sealed class SyntaxKind
         Name = name;
         Text = text;
         if (Text != null && 
-            !attributes.Contains(SKAttributes.IsFixed))
+            !attributes.Contains(IsFixed))
         {
-            attributes = attributes.Append(SKAttributes.IsFixed).ToArray();
+            attributes = attributes.Append(IsFixed).ToArray();
         }
 
         // Only doing this for tokens, because I'm too lazy to add the 'Token' attribute to all tokens
-        if (Name.Contains("Token") &&
-            !attributes.Contains(SKAttributes.Token))
+        if ((Name.Contains("Token") ||
+             Name.Contains("Keyword")) &&
+            !attributes.Contains(Token))
         {
-            attributes = attributes.Append(SKAttributes.Token).ToArray();
+            attributes = attributes.Append(Token).ToArray();
         }
 
         Attributes = attributes;
@@ -426,6 +469,19 @@ public sealed class SyntaxKind
         result = default!;
         return false;
     }
+    
+    public bool HasAttribute(in SyntaxKindAttribute attribute)
+    {
+        foreach (var attr in Attributes)
+        {
+            if (attr.Name == attribute.Name)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     public static ImmutableArray<SyntaxKind> GetKinds(SyntaxKindAttribute attribute)
     {
@@ -435,7 +491,7 @@ public sealed class SyntaxKind
             if (field.FieldType == typeof(SyntaxKind))
             {
                 var kind = (SyntaxKind)field.GetValue(null)!;
-                if (kind.TryGetAttribute(attribute, out _))
+                if (kind.HasAttribute(attribute))
                 {
                     kinds.Add(kind);
                 }
@@ -445,21 +501,21 @@ public sealed class SyntaxKind
         return kinds.ToImmutable();
     }
 
-    public static SyntaxKind GetKind(string name)
+    public static SyntaxKind GetKind(string text)
     {
         foreach (var field in typeof(SyntaxKind).GetFields(BindingFlags.Public | BindingFlags.Static))
         {
             if (field.FieldType == typeof(SyntaxKind))
             {
                 var kind = (SyntaxKind)field.GetValue(null)!;
-                if (kind.Name == name)
+                if (kind.Text == text)
                 {
                     return kind;
                 }
             }
         }
 
-        throw new ArgumentException($"SyntaxKind '{name}' does not exist.", nameof(name));
+        throw new ArgumentException($"SyntaxKind '{text}' does not exist.", nameof(text));
     }
     
     public static ImmutableArray<SyntaxKind> GetKinds()
@@ -478,7 +534,7 @@ public sealed class SyntaxKind
 
     public SyntaxToken ManifestToken(SyntaxTree syntaxTree, int position = 0, string text = "", object? value = null)
     {
-        if (!TryGetAttribute(SKAttributes.Token, out _))
+        if (!HasAttribute(Token))
         {
             throw new NotATokenException(this);
         }
@@ -490,4 +546,3 @@ public sealed class SyntaxKind
 
     public override string ToString() => Name;
 }
-

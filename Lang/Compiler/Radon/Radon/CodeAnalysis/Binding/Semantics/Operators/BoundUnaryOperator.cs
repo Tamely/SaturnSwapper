@@ -12,7 +12,7 @@ internal sealed class BoundUnaryOperator
     {
         Operators = new List<BoundUnaryOperator>
         {
-            new(SyntaxKind.BangToken, BoundUnaryOperatorKind.LogicalNot, TypeSymbol.Bool),
+            new(SyntaxKind.BangToken, BoundUnaryOperatorKind.LogicalNot, TypeSymbol.Bool)
         };
         
         var numericTypes = TypeSymbol.GetNumericTypes();

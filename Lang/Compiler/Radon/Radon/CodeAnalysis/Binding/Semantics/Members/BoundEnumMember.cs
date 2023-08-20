@@ -12,4 +12,9 @@ internal sealed class BoundEnumMember : BoundMember
     {
         Symbol = symbol;
     }
+    
+    public override string ToString()
+    {
+        return Symbol.ToString();
+    }
 }

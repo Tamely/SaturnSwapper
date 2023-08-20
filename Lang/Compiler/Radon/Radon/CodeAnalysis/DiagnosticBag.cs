@@ -3,11 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using Radon.CodeAnalysis.Binding.Semantics;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
 using Radon.CodeAnalysis.Syntax.Nodes;
+using Radon.CodeAnalysis.Syntax.Nodes.Expressions;
+using Radon.CodeAnalysis.Syntax.Nodes.Statements;
 using Radon.CodeAnalysis.Text;
 
 namespace Radon.CodeAnalysis;
@@ -15,14 +18,18 @@ namespace Radon.CodeAnalysis;
 internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
 {
     private readonly List<Diagnostic> _diagnostics;
+    private readonly List<Diagnostic> _collection;
     private readonly bool _disabled;
     private bool _block;
+    private bool _isCollecting;
 
     public int Count => _diagnostics.Count;
+    public int CollectionCount => _collection.Count;
     
     public DiagnosticBag(bool disabled = false)
     {
         _diagnostics = new List<Diagnostic>();
+        _collection = new List<Diagnostic>();
         _disabled = disabled;
     }
 
@@ -55,6 +62,19 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
     public void Unblock()
     {
         _block = false;
+    }
+
+    public void StartCollection()
+    {
+        _isCollecting = true;
+    }
+    
+    public ImmutableArray<Diagnostic> EndCollection()
+    {
+        _isCollecting = false;
+        var collection = _collection.ToImmutableArray();
+        _collection.Clear();
+        return collection;
     }
 
     private static string GetText(SyntaxKind kind)
@@ -131,6 +151,12 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
 
         var methodString = GetMethod();
         var diagnostic = Diagnostic.Error(location, message, code, methodString);
+        if (_isCollecting)
+        {
+            _collection.Add(diagnostic);
+            return;
+        }
+        
         _diagnostics.Add(diagnostic);
     }
     
@@ -257,8 +283,9 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
             expectedKindText = $"{indefiniteArticle} {name}";
         }
 
-        var message = isDynamic ? $"Unexpected token '{text}', expected {expectedKindText}." 
-                                     : $"Unexpected token '{text}', expected '{expectedKindText}'.";
+        var unexpectedKindText = GetText(expectedKind);
+        var message = isDynamic ? $"Unexpected token '{unexpectedKindText}', expected {expectedKindText}." 
+                                     : $"Unexpected token '{unexpectedKindText}', expected '{expectedKindText}'.";
         
         ReportError(location, message, ErrorCode.UnexpectedToken);
     }
@@ -283,6 +310,61 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
         sb.Append('.');
         var message = sb.ToString();
         ReportError(location, message, ErrorCode.UnexpectedToken);
+    }
+    
+    public void ReportExpressionCannotBeStatement(TextLocation location, ExpressionSyntax expression)
+    {
+        var expressionTypes = typeof(ExpressionSyntax).Assembly.GetTypes()
+            .Where(type => type.IsSubclassOf(typeof(ExpressionSyntax)));
+        var validTypes = new List<ExpressionSyntax>();
+        foreach (var expressionType in expressionTypes)
+        {
+            var instance = Activator.CreateInstance(expressionType, expression.SyntaxTree);
+            if (instance is ExpressionSyntax { CanBeStatement: true } expr)
+            {
+                validTypes.Add(expr);
+            }
+        }
+        
+        var sb = new StringBuilder();
+        for (var i = 0; i < validTypes.Count; i++)
+        {
+            var validType = validTypes[i];
+            sb.Append('\'');
+            sb.Append(validType.SyntaxName);
+            sb.Append('s');
+            sb.Append('\'');
+
+            if (i == validTypes.Count - 2)
+            {
+                sb.Append(", or ");
+            }
+            else if (i != validTypes.Count - 1)
+            {
+                sb.Append(", ");
+            }
+        }
+        
+        var message = $"{expression.SyntaxName} cannot be a statement. Only {sb} can be statements.";
+        ReportError(location, message, ErrorCode.ExpressionCannotBeStatement);
+    }
+    
+    public void ReportInvalidTypeModifier(TextLocation location, string text)
+    {
+        var message = $"The modifier '{text}' cannot be applied to a type.";
+        ReportError(location, message, ErrorCode.InvalidTypeModifier);
+    }
+
+    public void ReportInvalidMethodModifier(TextLocation location, string text)
+    {
+        var message = $"The modifier '{text}' cannot be applied to a method.";
+        ReportError(location, message, ErrorCode.InvalidMethodModifier);
+    }
+
+    public void ReportInvalidFieldModifier(TextLocation location, string text)
+    {
+        var message = $"The modifier '{text}' cannot be applied to a field.";
+        ReportError(location, message, ErrorCode.InvalidFieldModifier);
     }
 
     public void ReportInternalCompilerError(Exception e)
@@ -608,5 +690,35 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
     {
         var message = $"Cannot access non-public member '{name}'.";
         ReportError(location, message, ErrorCode.CannotAccessNonPublicMember);
+    }
+
+    public void ReportInvalidBreakOrContinue(TextLocation location, string text)
+    {
+        var message = $"The keyword '{text}' can only be used inside a loop.";
+        ReportError(location, message, ErrorCode.InvalidBreakOrContinue);
+    }
+
+    public void ReportEntryModifierOnlyAllowedOnMethodsAndStructs(TextLocation location)
+    {
+        var message = $"The '{SyntaxKind.EntryKeyword.Text}' modifier can only be used on methods and types.";
+        ReportError(location, message, ErrorCode.EntryModifierOnlyAllowedOnMethodsAndTypes);
+    }
+
+    public void ReportEntryModifierMustBeAppliedToParentStruct(TextLocation location)
+    {
+        var message = $"The '{SyntaxKind.EntryKeyword.Text}' modifier must be applied to a parent struct.";
+        ReportError(location, message, ErrorCode.EntryModifierMustBeAppliedToParentStruct);
+    }
+
+    public void ReportMultipleEntryTypes(TextLocation location)
+    {
+        const string message = "Multiple entry types are not allowed.";
+        ReportError(location, message, ErrorCode.MultipleEntryTypes);
+    }
+
+    public void ReportMultipleEntryMethods(TextLocation location)
+    {
+        const string message = "Multiple entry methods are not allowed.";
+        ReportError(location, message, ErrorCode.MultipleEntryMethods);
     }
 }

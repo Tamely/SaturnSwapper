@@ -9,31 +9,28 @@ namespace Radon.CodeAnalysis.Lowering;
 internal sealed class Lowerer
 {
     private readonly BoundAssembly _assembly;
+
+    private readonly DiagnosticBag _diagnostics;
+
     public Lowerer(BoundAssembly assembly)
     {
         _assembly = assembly;
+        _diagnostics = new DiagnosticBag();
+        _diagnostics.AddRange(assembly.Diagnostics);
     }
     
     public BoundAssembly Lower()
     {
         var loweredTypes = LowerTypes();
-        return new BoundAssembly(_assembly.Syntax, _assembly.Assembly, loweredTypes, _assembly.Diagnostics, _assembly.Scope);
+        return new BoundAssembly(_assembly.Syntax, _assembly.Assembly, loweredTypes, _diagnostics.ToImmutableArray(), _assembly.Scope);
     }
     
     private ImmutableArray<BoundType> LowerTypes()
     {
         var builder = ImmutableArray.CreateBuilder<BoundType>();
-#if DEBUG
-        // ReSharper disable once NotAccessedVariable
-        var counter = 0;
-#endif
         foreach (var type in _assembly.Types)
         {
             builder.Add(LowerType(type));
-            
-#if DEBUG
-            counter++;
-#endif
         }
         
         return builder.ToImmutable();
@@ -44,8 +41,9 @@ internal sealed class Lowerer
         return node switch
         {
             BoundStruct boundStruct => LowerStruct(boundStruct),
-            BoundEnum boundEnum => LowerEnum(boundEnum),
+            BoundEnum boundEnum => boundEnum,
             BoundErrorType boundType => boundType,
+            BoundArray boundArray => boundArray,
             _ => throw new Exception($"Unexpected type {node.Kind}")
         };
     }
@@ -53,11 +51,8 @@ internal sealed class Lowerer
     private BoundStruct LowerStruct(BoundStruct node)
     {
         var structLowerer = new StructLowerer(node);
-        return structLowerer.Lower();
-    }
-    
-    private BoundEnum LowerEnum(BoundEnum node)
-    {
-        return node;
+        var loweredStruct = structLowerer.Lower();
+        _diagnostics.AddRange(structLowerer.Diagnostics);
+        return loweredStruct;
     }
 }

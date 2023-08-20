@@ -2,12 +2,12 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Radon.CodeAnalysis.Text;
-using Radon.Utilities;
 
 namespace Radon.CodeAnalysis.Syntax.Nodes;
 
 public sealed class SyntaxToken : SyntaxNode
 {
+    public override string SyntaxName => Kind.Name;
     public override SyntaxKind Kind { get; }
     public override int Position { get; }
     public override string Text { get; }

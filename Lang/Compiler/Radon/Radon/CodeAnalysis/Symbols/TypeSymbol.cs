@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using Radon.CodeAnalysis.Binding;
-using Radon.CodeAnalysis.Binding.Analyzers;
+using Radon.CodeAnalysis.Binding.Binders;
 using Radon.CodeAnalysis.Binding.Semantics.Conversions;
 using Radon.CodeAnalysis.Binding.Semantics.Expressions;
 using Radon.CodeAnalysis.Syntax;
@@ -16,7 +15,7 @@ public abstract class TypeSymbol : Symbol
     private static readonly ImmutableArray<MemberSymbol> EmptyMembers = ImmutableArray<MemberSymbol>.Empty;
     private static readonly ImmutableArray<SyntaxKind> Mods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword);
 
-    public static readonly StructSymbol Error = new("?", -1, EmptyMembers, null, Mods);
+    public static readonly StructSymbol Error = new("?", 0, EmptyMembers, null, Mods);
     public static readonly StructSymbol Void = new("void", 0, EmptyMembers, null, Mods);
     public static readonly StructSymbol Bool = new("bool", 1, EmptyMembers, null, Mods);
     public static readonly StructSymbol SByte = new("sbyte", 1, EmptyMembers, null, Mods);
@@ -30,9 +29,9 @@ public abstract class TypeSymbol : Symbol
     public static readonly StructSymbol Float = new("float", 4, EmptyMembers, null, Mods);
     public static readonly StructSymbol Double = new("double", 8, EmptyMembers, null, Mods);
     public static readonly StructSymbol Char = new("char", 1, EmptyMembers, null, Mods);
-    public static readonly StructSymbol String = new("string", -1, EmptyMembers, null, Mods);
-    public static readonly StructSymbol Archive = new("archive", -1, EmptyMembers, null, Mods);
-    public static readonly EnumSymbol SeekOrigin = new("seekorigin", EmptyMembers, null, Mods);
+    public static readonly StructSymbol String = new("string", 8, EmptyMembers, null, Mods);
+    public static readonly StructSymbol Archive = new("archive", 0, EmptyMembers, null, Mods);
+    public static readonly EnumSymbol SeekOrigin = new("seek_origin", EmptyMembers, null, Mods);
     public static readonly TemplateSymbol List;
     public static readonly StructSymbol System = new("system", 0, EmptyMembers, null, Mods);
 
@@ -41,7 +40,6 @@ public abstract class TypeSymbol : Symbol
         SeekOrigin.AddEnumMember("Begin", 0);
         SeekOrigin.AddEnumMember("Current", 1);
         SeekOrigin.AddEnumMember("End", 2);
-        
         var typeParameterBuilder = new TypeParameterBuilder();
         {
             TemplateMethodSymbol writeMethod;
@@ -92,7 +90,7 @@ public abstract class TypeSymbol : Symbol
         }
         {
             var t = typeParameterBuilder.AddTypeParameter("T");
-            List = new TemplateSymbol("list", EmptyMembers, null, Mods, typeParameterBuilder.Build());
+            List = new TemplateSymbol("list", EmptyMembers, null, Mods.Add(SyntaxKind.RefKeyword), typeParameterBuilder.Build());
 
             MethodSymbol addMethod;
             {
@@ -200,6 +198,17 @@ public abstract class TypeSymbol : Symbol
         }
 
         Members = Members.Add(member);
+        if (member is FieldSymbol field)
+        {
+            try
+            {
+                var size = field.Type.Size;
+                Size += size;
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
     }
 
     public MemberSymbol? GetMember(string name)
@@ -223,12 +232,12 @@ public abstract class TypeSymbol : Symbol
     
     internal bool TryLookupMethod<TMethodSymbol>(Binder binder, string name, ImmutableArray<TypeSymbol> typeArguments,
         ImmutableArray<BoundExpression> arguments, SyntaxNode callSite, out bool methodNotFound, 
-        out ImmutableArray<TMethodSymbol> ambiguousCalls, out TMethodSymbol methodSymbol) 
+        out ImmutableArray<TMethodSymbol> ambiguousCalls, out TMethodSymbol? methodSymbol) 
         where TMethodSymbol : AbstractMethodSymbol
     {
         methodNotFound = false;
         ambiguousCalls = ImmutableArray<TMethodSymbol>.Empty;
-        methodSymbol = null!;
+        methodSymbol = null;
         var possibleCandidates = new List<(TMethodSymbol Method, TypeSymbol From, TypeSymbol To)>();
         var ambiguousCandidates = new List<TMethodSymbol>();
         foreach (var member in Members)
@@ -283,7 +292,12 @@ public abstract class TypeSymbol : Symbol
                         (conversion.IsIdentity ||
                          conversion.IsImplicit)))
                     {
-                        binder.Diagnostics.ReportCannotConvert(argument.Syntax.Location, argument.Type, parameterType);
+                        if (argument.Type != Error &&
+                            parameterType != Error)
+                        {
+                            binder.Diagnostics.ReportCannotConvert(argument.Syntax.Location, argument.Type, parameterType);
+                        }
+                        
                         possibleCandidates.Add((method, argument.Type, parameterType));
                         ambiguousCandidates.Add(method);
                         goto failed;
@@ -322,7 +336,7 @@ public abstract class TypeSymbol : Symbol
             }
         }
         
-        return !methodNotFound && !ambiguousCall;
+        return !methodNotFound && !ambiguousCall && methodSymbol is not null;
     }
     
     public TypeSymbol WithMembers(ImmutableArray<MemberSymbol> members)
@@ -335,8 +349,8 @@ public abstract class TypeSymbol : Symbol
             _ => throw new InvalidOperationException("Cannot add members to this type.")
         };
     }
-    
-    public TypeSymbol WithModifer(SyntaxKind modifier)
+
+    private TypeSymbol WithModifer(SyntaxKind modifier)
     {
         return this switch
         {
@@ -346,7 +360,7 @@ public abstract class TypeSymbol : Symbol
             _ => throw new InvalidOperationException("Cannot add modifiers to this type.")
         };
     }
-    
+
     public override bool Equals(object? obj)
     {
         if (ReferenceEquals(obj, this))
@@ -385,7 +399,9 @@ public abstract class TypeSymbol : Symbol
     public static ImmutableArray<TypeSymbol> GetPrimitiveTypes()
     {
         return ImmutableArray.Create<TypeSymbol>(
-            Void, Bool, SByte, Byte, Short, UShort, Int, UInt, Long, ULong, Float, Double, Char, String, Archive, SeekOrigin, List, System);
+            Void, Bool, SByte, Byte, Short, UShort, Int, UInt, Long, ULong, 
+            Float, Double, Char, String, Archive, SeekOrigin, List, System
+        );
     }
     
     public static ImmutableArray<TypeSymbol> GetNumericTypes()

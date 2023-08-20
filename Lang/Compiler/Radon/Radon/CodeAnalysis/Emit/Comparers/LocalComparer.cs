@@ -8,11 +8,11 @@ internal sealed class LocalComparer : IEqualityComparer<Local>
 {
     public bool Equals(Local x, Local y)
     {
-        return x.Flags == y.Flags && x.Name == y.Name && x.Type == y.Type;
+        return x.Name == y.Name && x.Type == y.Type;
     }
 
     public int GetHashCode(Local obj)
     {
-        return HashCode.Combine((int)obj.Flags, obj.Name, obj.Type);
+        return HashCode.Combine(obj.Name, obj.Type);
     }
 }

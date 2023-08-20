@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Immutable;
-using Radon.CodeAnalysis.Binding.Analyzers;
+using Radon.CodeAnalysis.Binding.Binders;
 using Radon.CodeAnalysis.Binding.Semantics.Expressions;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
@@ -57,7 +57,7 @@ internal sealed class Conversion
         return None;
     }
 
-    public static Conversion Classify(Binder binder, BoundExpression from, TypeSymbol to)
+    public static Conversion Classify(Binder binder, BoundExpression from,TypeSymbol to)
     {
         if (IsNumericType(from.Type) && IsNumericType(to) &&
             from is BoundLiteralExpression literal)
@@ -78,6 +78,7 @@ internal sealed class Conversion
         return Classify(fromType, to);
     }
 
+    
     private static ImmutableArray<TypeSymbol> GetTypeRange(double value)
     {
         var validTypes = ImmutableArray.CreateBuilder<TypeSymbol>();
@@ -177,6 +178,81 @@ internal sealed class Conversion
         return None;
     }
 
+    public static Type GetSystemType(TypeSymbol type)
+    {
+        if (type == TypeSymbol.Void)
+        {
+            return typeof(void);
+        }
+        
+        if (type == TypeSymbol.Bool)
+        {
+            return typeof(bool);
+        }
+
+        if (type == TypeSymbol.SByte)
+        {
+            return typeof(sbyte);
+        }
+        
+        if (type == TypeSymbol.Byte)
+        {
+            return typeof(byte);
+        }
+        
+        if (type == TypeSymbol.Short)
+        {
+            return typeof(short);
+        }
+        
+        if (type == TypeSymbol.UShort)
+        {
+            return typeof(ushort);
+        }
+        
+        if (type == TypeSymbol.Int)
+        {
+            return typeof(int);
+        }
+        
+        if (type == TypeSymbol.UInt)
+        {
+            return typeof(uint);
+        }
+        
+        if (type == TypeSymbol.Long)
+        {
+            return typeof(long);
+        }
+        
+        if (type == TypeSymbol.ULong)
+        {
+            return typeof(ulong);
+        }
+        
+        if (type == TypeSymbol.Float)
+        {
+            return typeof(float);
+        }
+        
+        if (type == TypeSymbol.Double)
+        {
+            return typeof(double);
+        }
+        
+        if (type == TypeSymbol.Char)
+        {
+            return typeof(char);
+        }
+        
+        if (type == TypeSymbol.String)
+        {
+            return typeof(string);
+        }
+
+        return typeof(object);
+    }
+    
     public static bool IsFloatingPointType(TypeSymbol type)
     {
         return type == TypeSymbol.Float || type == TypeSymbol.Double;
