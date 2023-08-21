@@ -8,12 +8,11 @@ internal sealed class ParameterComparer : IEqualityComparer<Parameter>
 {
     public bool Equals(Parameter x, Parameter y)
     {
-        return x.Flags == y.Flags && x.Name == y.Name && x.Type == y.Type &&
-               x.Parent == y.Parent && x.Ordinal == y.Ordinal;
+        return x.Name == y.Name && x.Type == y.Type && x.Ordinal == y.Ordinal;
     }
 
     public int GetHashCode(Parameter obj)
     {
-        return HashCode.Combine((int)obj.Flags, obj.Name, obj.Type, obj.Parent, obj.Ordinal);
+        return HashCode.Combine(obj.Name, obj.Type, obj.Ordinal);
     }
 }

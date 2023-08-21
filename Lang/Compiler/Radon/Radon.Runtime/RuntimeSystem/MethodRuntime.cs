@@ -1,90 +1,373 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
+using System.Linq;
+using Radon.CodeAnalysis.Disassembly;
 using Radon.CodeAnalysis.Emit;
 using Radon.CodeAnalysis.Emit.Binary;
 using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
-using Radon.Runtime.RuntimeInfo;
+using Radon.Common;
+using Radon.Runtime.Memory;
 using Radon.Runtime.RuntimeSystem.RuntimeObjects;
-using Radon.Runtime.Utilities;
 
 namespace Radon.Runtime.RuntimeSystem;
 
-internal readonly struct MethodRuntime
+internal sealed class MethodRuntime
 {
     private readonly AssemblyInfo _assembly;
     private readonly Metadata _metadata;
-    private readonly IRuntimeObject _instance;
+    private readonly RuntimeObject? _instance;
     private readonly MethodInfo _method;
-    private readonly Stack<MethodInfo> _callStack;
     private readonly ImmutableArray<Instruction> _instructions;
     private readonly StackFrame _stackFrame;
-    
-    public MethodRuntime(AssemblyInfo assembly, IRuntimeObject instance, MethodInfo method, ImmutableArray<IRuntimeObject> arguments)
+
+    public MethodRuntime(AssemblyInfo assembly, RuntimeObject? instance, MethodInfo method,
+        ReadOnlyDictionary<ParameterInfo, RuntimeObject> arguments)
     {
         _assembly = assembly;
         _metadata = assembly.Metadata;
         _instance = instance;
         _method = method;
-        _callStack = new Stack<MethodInfo>();
         var instructionCount = _method.InstructionCount;
         var instructionStart = _method.FirstInstruction;
         var instructions = new Instruction[instructionCount];
         for (var i = 0; i < instructionCount; i++)
         {
-            instructions[i] = assembly.Instructions[instructionStart + i];
+            var instruction = assembly.Instructions[instructionStart + i];
+            instructions[i] = instruction;
         }
-        
-        _instructions = instructions.ToImmutableArray();
+
+        // Sort the instructions from lowest to highest label.
+        _instructions = instructions.OrderBy(i => i.Label).ToImmutableArray();
         var locals = _method.Locals;
-        _stackFrame = new StackFrame(locals, arguments);
+        var size = 0;
+        foreach (var (_, local) in locals)
+        {
+            size += local.Type.Size;
+        }
+
+        var stackSize = ResolveStackSize();
+        size += stackSize.MaxStackSize;
+        _stackFrame = ManagedRuntime.StackManager.AllocateStackFrame(size, stackSize.MaxStack, instance,
+            locals.Values.ToImmutableArray(), arguments);
     }
 
-    public IRuntimeObject Invoke()
+    private (int MaxStackSize, int MaxStack) ResolveStackSize()
+    {
+        var maxStack = 0;
+        var stack = new Stack<TypeInfo>(); // The type of the item on the stack.
+        var totalStack = new Stack<TypeInfo>();
+        foreach (var instruction in _instructions)
+        {
+            // We need to get the max amount of items that will be on the stack at any given time.
+            // This is used to determine the size of the stack frame.
+            var opCode = instruction.OpCode;
+            var operand = instruction.Operand;
+            switch (opCode)
+            {
+                case OpCode.Add:
+                case OpCode.Sub:
+                case OpCode.Mul:
+                case OpCode.Div:
+                case OpCode.Cnct:
+                case OpCode.Mod:
+                case OpCode.Or:
+                case OpCode.And:
+                case OpCode.Xor:
+                case OpCode.Shl:
+                case OpCode.Shr:
+                {
+                    stack.Pop(); // Type of left
+                    var left = stack.Pop(); // Pop right
+                    stack.Push(left); // Push the result
+                    totalStack.Push(left);
+                    break;
+                }
+                case OpCode.Neg:
+                {
+                    var type = stack.Pop();
+                    stack.Push(type);
+                    totalStack.Push(type);
+                    break;
+                }
+                case OpCode.Ldc:
+                {
+                    var constant = _metadata.Constants.Constants[operand];
+                    var type = GetRuntimeType(constant.Type);
+                    stack.Push(type.TypeInfo);
+                    totalStack.Push(type.TypeInfo);
+                    break;
+                }
+                case OpCode.Ldlen:
+                {
+                    stack.Push(ManagedRuntime.Int32.TypeInfo);
+                    totalStack.Push(ManagedRuntime.Int32.TypeInfo);
+                    break;
+                }
+                case OpCode.Ldstr:
+                {
+                    stack.Push(ManagedRuntime.String.TypeInfo);
+                    totalStack.Push(ManagedRuntime.String.TypeInfo);
+                    break;
+                }
+                case OpCode.Lddft:
+                {
+                    var typeDef = _metadata.Types.Types[instruction.Operand];
+                    var type = ManagedRuntime.System.GetType(typeDef);
+                    stack.Push(type.TypeInfo);
+                    totalStack.Push(type.TypeInfo);
+                    break;
+                }
+                case OpCode.Ldloc:
+                {
+                    var local = _metadata.Locals.Locals[operand];
+                    var localInfo = _method.Locals[local];
+                    stack.Push(localInfo.Type);
+                    totalStack.Push(localInfo.Type);
+                    break;
+                }
+                case OpCode.Stloc:
+                {
+                    stack.Pop();
+                    break;
+                }
+                case OpCode.Ldarg:
+                {
+                    var parameter = _metadata.Parameters.Parameters[operand];
+                    var param = _method.Parameters[parameter];
+                    stack.Push(param.Type);
+                    totalStack.Push(param.Type);
+                    break;
+                }
+                case OpCode.Starg:
+                {
+                    stack.Pop();
+                    break;
+                }
+                case OpCode.Ldfld:
+                {
+                    var memberReference = _metadata.MemberReferences.MemberReferences[operand];
+                    var memberRef = _assembly.MemberReferences[memberReference];
+                    stack.Push(memberRef.Type);
+                    totalStack.Push(memberRef.Type);
+                    break;
+                }
+                case OpCode.Stfld:
+                {
+                    stack.Pop();
+                    break;
+                }
+                case OpCode.Ldsfld:
+                {
+                    var memberReference = _metadata.MemberReferences.MemberReferences[operand];
+                    var memberRef = _assembly.MemberReferences[memberReference];
+                    stack.Push(memberRef.Type);
+                    totalStack.Push(memberRef.Type);
+                    break;
+                }
+                case OpCode.Stsfld:
+                {
+                    stack.Pop();
+                    break;
+                }
+                case OpCode.Ldthis:
+                {
+                    if (_method.IsStatic)
+                    {
+                        throw new InvalidOperationException("Cannot load 'this' in a static method.");
+                    }
+
+                    if (_instance is null)
+                    {
+                        throw new InvalidOperationException("Instance is null in a non-static method.");
+                    }
+
+                    stack.Push(_instance.Type.TypeInfo);
+                    totalStack.Push(_instance.Type.TypeInfo);
+                    break;
+                }
+                case OpCode.Ldelem:
+                {
+                    var array = stack.Pop();
+                    stack.Pop();
+                    if (array.UnderlyingType is null)
+                    {
+                        throw new InvalidOperationException("Cannot load element from non-array type.");
+                    }
+
+                    stack.Push(array.UnderlyingType);
+                    totalStack.Push(array.UnderlyingType);
+                    break;
+                }
+                case OpCode.Stelem:
+                {
+                    stack.Pop();
+                    stack.Pop();
+                    stack.Pop();
+                    break;
+                }
+                case OpCode.Conv:
+                {
+                    stack.Pop();
+                    var typeDef = _metadata.Types.Types[operand];
+                    var type = ManagedRuntime.System.GetType(typeDef);
+                    stack.Push(type.TypeInfo);
+                    totalStack.Push(type.TypeInfo);
+                    break;
+                }
+                case OpCode.Import:
+                {
+                    var type = ManagedRuntime.System.GetType("archive");
+                    stack.Push(type.TypeInfo);
+                    totalStack.Push(type.TypeInfo);
+                    break;
+                }
+                case OpCode.Newarr:
+                {
+                    stack.Pop();
+                    var typeDef = _metadata.Types.Types[operand];
+                    var type = ManagedRuntime.System.GetType(typeDef);
+                    stack.Push(type.TypeInfo);
+                    totalStack.Push(type.TypeInfo);
+                    break;
+                }
+                case OpCode.Newobj:
+                {
+                    var typeReference = _metadata.TypeReferences.TypeReferences[operand];
+                    var typeRef = _assembly.TypeReferences[typeReference];
+                    var type = ManagedRuntime.System.GetType(typeRef.TypeDefinition);
+                    if (typeRef.ConstructorReference.MemberInfo is not MethodInfo constructor)
+                    {
+                        throw new InvalidOperationException("Cannot find constructor.");
+                    }
+                    
+                    for (var i = 0; i < constructor.Parameters.Count; i++)
+                    {
+                        stack.Pop();
+                    }
+                    
+                    stack.Push(type.TypeInfo);
+                    totalStack.Push(type.TypeInfo);
+                    break;
+                }
+                case OpCode.Call:
+                {
+                    var memberReference = _metadata.MemberReferences.MemberReferences[operand];
+                    var memberRef = _assembly.MemberReferences[memberReference];
+                    var type = ManagedRuntime.System.GetType(memberRef.ParentType);
+                    if (memberRef.MemberInfo is not MethodInfo method)
+                    {
+                        throw new InvalidOperationException("Cannot find method.");
+                    }
+                    
+                    for (var i = 0; i < method.Parameters.Count; i++)
+                    {
+                        stack.Pop();
+                    }
+                    
+                    stack.Push(type.TypeInfo);
+                    totalStack.Push(type.TypeInfo);
+                    break;
+                }
+                case OpCode.Brtrue:
+                {
+                    stack.Pop();
+                    break;
+                }
+                case OpCode.Brfalse:
+                {
+                    stack.Pop();
+                    break;
+                }
+                case OpCode.Br:
+                {
+                    break;
+                }
+                case OpCode.Ceq:
+                case OpCode.Cne:
+                case OpCode.Cgt:
+                case OpCode.Cge:
+                case OpCode.Clt:
+                case OpCode.Cle:
+                {
+                    stack.Pop();
+                    stack.Pop();
+                    stack.Push(ManagedRuntime.Boolean.TypeInfo);
+                    totalStack.Push(ManagedRuntime.Boolean.TypeInfo);
+                    break;
+                }
+            }
+            
+            if (stack.Count > maxStack)
+            {
+                maxStack = stack.Count;
+            }
+        }
+
+        var maxStackSize = totalStack.Sum(type => type.Size);
+        return (maxStackSize, maxStack);
+    }
+
+    public StackFrame Invoke()
     {
         switch (_method.IsStatic)
         {
-            case true when _instance is not NullObject:
-                throw new InvalidOperationException("Cannot invoke a static method on an instance.");
-            case false when _instance is NullObject:
-                throw new InvalidOperationException("Cannot invoke an instance method on a null instance.");
+            case true when _instance is not null:
+                throw new InvalidOperationException("Cannot execute a static method on an instance.");
+            case false when _instance is null:
+                throw new InvalidOperationException("Cannot execute an instance method without an instance.");
         }
-        
-        _callStack.Push(_method);
+
         if (_method.IsRuntimeMethod)
         {
-            
+            // Determine the runtime method to execute.
+            return _stackFrame;
         }
 
         RunInstructions();
-        if (_stackFrame.StackCount != 1)
+        if (_method.Type == ManagedRuntime.Void.TypeInfo)
         {
-            if (_stackFrame.StackCount == 0)
+            if (_stackFrame.EvaluationStackSize == 0)
             {
-                Logger.Log("Stack frame is empty. This could be an issue if the method is not void.", LogLevel.Warning);
+                return _stackFrame;
             }
-            else
-            {
-                Logger.Log("Stack frame is not empty.", LogLevel.Warning);
-                // clear the stack frame
-                _stackFrame.Clear();
-            }
-            
-            return IRuntimeObject.Null(ManagedRuntime.System.GetType(_method.ReturnType));
+
+            const string message = "Evaluation stack is not empty on a void method.";
+            Logger.Log(message, LogLevel.Error);
+            throw new InvalidOperationException(message);
         }
-        
-        var result = _stackFrame.Pop();
-        _stackFrame.Clear();
-        return result;
+
+        switch (_stackFrame.EvaluationStackSize)
+        {
+            case 0:
+            {
+                const string message = "Evaluation stack is empty on a non-void method.";
+                Logger.Log(message, LogLevel.Error);
+                throw new InvalidOperationException(message);
+            }
+            case > 1:
+            {
+                const string message = "Evaluation stack has more than one item on a non-void method.";
+                Logger.Log(message, LogLevel.Error);
+                throw new InvalidOperationException(message);
+            }
+        }
+
+        _stackFrame.ReturnObject = _stackFrame.Pop();
+        return _stackFrame;
     }
 
-    private void RunInstructions()
+    private unsafe void RunInstructions()
     {
-        foreach (var instruction in _instructions)
+        for (var label = 0; label < _instructions.Length; label++)
         {
+            var instruction = _instructions[label];
+            var opCode = instruction.OpCode;
+            var operand = instruction.Operand;
             try
             {
-                switch (instruction.OpCode)
+                switch (opCode)
                 {
                     case OpCode.Nop:
                     {
@@ -94,258 +377,387 @@ internal readonly struct MethodRuntime
                     case OpCode.Sub:
                     case OpCode.Mul:
                     case OpCode.Div:
-                    case OpCode.Concat:
+                    case OpCode.Cnct:
+                    case OpCode.Mod:
+                    case OpCode.Or:
+                    case OpCode.And:
+                    case OpCode.Xor:
+                    case OpCode.Shl:
+                    case OpCode.Shr:
                     {
                         var right = _stackFrame.Pop();
                         var left = _stackFrame.Pop();
-                        var result = right.ComputeOperation(instruction.OpCode, left);
-                        if (result is null)
-                        {
-                            throw new InvalidOperationException($"Operation {instruction.OpCode} returned null.");
-                        }
-                        
+                        var result = left.ComputeOperation(opCode, right, _stackFrame);
+                        _stackFrame.Push(result);
+                        break;
+                    }
+                    case OpCode.Neg:
+                    {
+                        var value = _stackFrame.Pop();
+                        var result = value.ComputeOperation(opCode, null, _stackFrame);
                         _stackFrame.Push(result);
                         break;
                     }
                     case OpCode.Ldc:
                     {
-                        var constant = _metadata.Constants.Constants[instruction.Operand];
-                        var convertedObject = ConvertConstant(constant);
-                        _stackFrame.Push(convertedObject);
+                        var constant = _metadata.Constants.Constants[operand];
+                        var value = ConvertConstant(constant);
+                        _stackFrame.Push(value);
+                        break;
+                    }
+                    case OpCode.Ldlen:
+                    {
+                        var array = _stackFrame.Pop();
+                        if (array is not ManagedReference reference)
+                        {
+                            throw new InvalidOperationException("Cannot get the length of a non-array object.");
+                        }
+
+                        var managedArray = (ManagedArray)ManagedRuntime.HeapManager.GetObject(reference.Target);
+                        var length = managedArray.Length;
+                        var value = _stackFrame.AllocatePrimitive(ManagedRuntime.Int32, length);
+                        _stackFrame.Push(value);
                         break;
                     }
                     case OpCode.Ldstr:
                     {
-                        var constant = _metadata.Constants.Constants[instruction.Operand];
+                        var constant = _metadata.Constants.Constants[operand];
                         var str = _metadata.Strings.Strings[constant.ValueOffset];
-                        var strObject = new ManagedString(str);
-                        _stackFrame.Push(strObject);
+                        var value = _stackFrame.AllocateString(str);
+                        _stackFrame.Push(value);
                         break;
                     }
-                    case OpCode.Lddft: // Load default value
+                    case OpCode.Lddft:
                     {
                         var typeDef = _metadata.Types.Types[instruction.Operand];
                         var type = ManagedRuntime.System.GetType(typeDef);
-                        var defaultValue = IRuntimeObject.CreateDefault(type);
-                        _stackFrame.Push(defaultValue);
+                        var value = type.TypeInfo.IsArray 
+                            ? _stackFrame.AllocateArray(type, 0) 
+                            : _stackFrame.AllocateObject(type);
+                        _stackFrame.Push(value);
                         break;
                     }
                     case OpCode.Ldloc:
-                    {
-                        var local = _stackFrame.GetLocal(instruction.Operand);
-                        _stackFrame.Push(local);
-                        break;
-                    }
                     case OpCode.Stloc:
                     {
-                        var value = _stackFrame.Pop();
-                        _stackFrame.SetLocal(instruction.Operand, value);
+                        var local = _metadata.Locals.Locals[operand];
+                        var localInfo = _method.Locals[local];
+                        if (instruction.OpCode == OpCode.Ldloc)
+                        {
+                            var value = _stackFrame.GetLocal(localInfo);
+                            _stackFrame.Push(value);
+                        }
+                        else
+                        {
+                            var value = _stackFrame.Pop();
+                            _stackFrame.SetLocal(localInfo, value);
+                        }
+                        
                         break;
                     }
                     case OpCode.Ldarg:
+                    case OpCode.Starg:
                     {
-                        var argument = _stackFrame.GetArgument(instruction.Operand);
-                        _stackFrame.Push(argument);
+                        var argument = _metadata.Parameters.Parameters[operand];
+                        var parameter = _method.Parameters[argument];
+                        if (instruction.OpCode == OpCode.Ldarg)
+                        {
+                            var value = _stackFrame.GetArgument(parameter);
+                            _stackFrame.Push(value);
+                        }
+                        else
+                        {
+                            var value = _stackFrame.Pop();
+                            _stackFrame.SetArgument(parameter, value);
+                        }
+                        
                         break;
                     }
                     case OpCode.Ldfld:
-                    {
-                        var memberReference = _metadata.MemberReferences.MemberReferences[instruction.Operand];
-                        var memberRef = _assembly.MemberReferences[memberReference];
-                        var instance = _stackFrame.Pop();
-                        if (instance is not ManagedObject managedObject)
-                        {
-                            throw new InvalidOperationException("Cannot load a field from a non-managed object.");
-                        }
-                        
-                        var value = managedObject.GetField(memberRef);
-                        _stackFrame.Push(value);
-                        break;
-                    }
                     case OpCode.Stfld:
                     {
-                        var memberReference = _metadata.MemberReferences.MemberReferences[instruction.Operand];
+                        var memberReference = _metadata.MemberReferences.MemberReferences[operand];
                         var memberRef = _assembly.MemberReferences[memberReference];
-                        var value = _stackFrame.Pop();
                         var instance = _stackFrame.Pop();
-                        if (instance is not ManagedObject managedObject)
+                        if (memberRef.MemberInfo is not FieldInfo field)
                         {
-                            throw new InvalidOperationException("Cannot store a field on a non-managed object.");
+                            throw new InvalidOperationException("Cannot load a non-field member with this instruction.");
+                        }
+
+                        if (instance is not ManagedObject obj)
+                        {
+                            throw new InvalidOperationException("Cannot load a field from a non-object instance.");
                         }
                         
-                        managedObject.SetField(memberRef, value);
+                        if (instruction.OpCode == OpCode.Ldfld)
+                        {
+                            var value = obj.GetField(field);
+                            _stackFrame.Push(value);
+                        }
+                        else
+                        {
+                            var value = _stackFrame.Pop();
+                            obj.SetField(field, value);
+                        }
+                        
                         break;
                     }
                     case OpCode.Ldsfld:
-                    {
-                        var memberReference = _metadata.MemberReferences.MemberReferences[instruction.Operand];
-                        var memberRef = _assembly.MemberReferences[memberReference];
-                        var type = memberRef.ParentType;
-                        var runtimeType = ManagedRuntime.System.GetType(type);
-                        var value = runtimeType.GetStaticField(memberRef);
-                        _stackFrame.Push(value);
-                        break;
-                    }
                     case OpCode.Stsfld:
                     {
-                        var memberReference = _metadata.MemberReferences.MemberReferences[instruction.Operand];
-                        var value = _stackFrame.Pop();
+                        var memberReference = _metadata.MemberReferences.MemberReferences[operand];
                         var memberRef = _assembly.MemberReferences[memberReference];
-                        var type = memberRef.ParentType;
-                        var runtimeType = ManagedRuntime.System.GetType(type);
-                        runtimeType.SetStaticField(memberRef, value);
-                        break;
-                    }
-                    case OpCode.Ldenum:
-                    {
-                        var memberReference = _metadata.MemberReferences.MemberReferences[instruction.Operand];
-                        var memberRef = _assembly.MemberReferences[memberReference];
-                        var type = memberRef.ParentType;
-                        var runtimeType = ManagedRuntime.System.GetType(type);
-                        var value = runtimeType.GetEnumValue(memberRef);
-                        _stackFrame.Push(value);
+                        if (memberRef.MemberInfo is not FieldInfo field)
+                        {
+                            throw new InvalidOperationException("Cannot load a non-field member with this instruction.");
+                        }
+                        
+                        var parent = ManagedRuntime.System.GetType(field.Parent);
+                        if (instruction.OpCode == OpCode.Ldsfld)
+                        {
+                            var value = parent.GetStaticField(field);
+                            _stackFrame.Push(value);
+                        }
+                        else
+                        {
+                            var value = _stackFrame.Pop();
+                            parent.SetStaticField(field, value);
+                        }
+                        
                         break;
                     }
                     case OpCode.Ldthis:
                     {
+                        if (_method.IsStatic)
+                        {
+                            throw new InvalidOperationException("Cannot load 'this' in a static method.");
+                        }
+                        
+                        if (_instance == null)
+                        {
+                            throw new InvalidOperationException("Instance is null in a non-static method.");
+                        }
+                        
                         _stackFrame.Push(_instance);
                         break;
                     }
                     case OpCode.Ldelem:
-                    {
-                        var index = _stackFrame.Pop();
-                        var array = _stackFrame.Pop();
-                        if (index is not ManagedObject managedIndex)
-                        {
-                            throw new InvalidOperationException("The index must be a managed object.");
-                        }
-                        
-                        if (array is not ManagedArray managedArray)
-                        {
-                            throw new InvalidOperationException("Cannot load an element from a non-array object.");
-                        }
-                        
-                        var value = managedArray.GetElement(managedIndex.GetValue<int>());
-                        _stackFrame.Push(value);
-                        break;
-                    }
                     case OpCode.Stelem:
                     {
-                        var value = _stackFrame.Pop();
-                        var index = _stackFrame.Pop();
                         var array = _stackFrame.Pop();
-                        if (index is not ManagedObject managedIndex)
+                        var index = _stackFrame.Pop();
+                        if (index is not ManagedObject)
                         {
-                            throw new InvalidOperationException("The index must be a managed object.");
+                            throw new InvalidOperationException("Cannot index an array with a non-value type.");
                         }
                         
-                        if (array is not ManagedArray managedArray)
+                        if (array is not ManagedReference reference)
                         {
-                            throw new InvalidOperationException("Cannot load an element from a non-array object.");
+                            throw new InvalidOperationException("Cannot get the length of a non-array object.");
                         }
                         
-                        managedArray.SetElement(managedIndex.GetValue<int>(), value);
-                        break;
-                    }
-                    case OpCode.Call:
-                    {
-                        var memberReference = _metadata.MemberReferences.MemberReferences[instruction.Operand];
-                        var memberRef = _assembly.MemberReferences[memberReference];
-                        var type = memberRef.ParentType;
-                        var runtimeType = ManagedRuntime.System.GetType(type);
-                        var instance = _method.IsStatic ? IRuntimeObject.Null(runtimeType) : _stackFrame.Pop();
-                        if (memberRef.MemberInfo is not MethodInfo methodInfo)
+                        var managedArray = (ManagedArray)ManagedRuntime.HeapManager.GetObject(reference.Target);
+                        var indexValue = *(int*)index.Pointer;
+                        if (instruction.OpCode == OpCode.Ldelem)
                         {
-                            throw new InvalidOperationException("Cannot call a non-method member.");
+                            var value = managedArray.GetElement(indexValue);
+                            _stackFrame.Push(value);
+                        }
+                        else
+                        {
+                            var value = _stackFrame.Pop();
+                            managedArray.SetElement(indexValue, value);
                         }
                         
-                        var arguments = new IRuntimeObject[methodInfo.Parameters.Length];
-                        var method = runtimeType.TypeInfo.GetByRef<MethodInfo>(MemberType.Method, memberReference);
-                        for (var i = 0; i < arguments.Length; i++)
-                        {
-                            arguments[i] = _stackFrame.Pop();
-                        }
-
-                        var result = instance switch
-                        {
-                            NullObject => runtimeType.InvokeStaticMethod(_assembly, method, arguments.ToImmutableArray()),
-                            ManagedObject managedObject => managedObject.InvokeMethod(_assembly, method, arguments.ToImmutableArray()),
-                            _ => throw new InvalidOperationException("Unknown instance type. Cannot invoke method.")
-                        };
-
-                        if (ManagedRuntime.System.GetType(method.ReturnType) != ManagedRuntime.System.GetType("void"))
-                        {
-                            _stackFrame.Push(result);
-                        }
-
-                        break;
-                    }
-                    case OpCode.Import:
-                    {
-                        //var path = _metadata.Strings.Strings[instruction.Operand];
-                        // TODO: Tamely implements the import instruction.
                         break;
                     }
                     case OpCode.Conv:
                     {
-                        var expression = _stackFrame.Pop();
-                        var typeDef = _metadata.Types.Types[instruction.Operand];
+                        var value = _stackFrame.Pop();
+                        var typeDef = _metadata.Types.Types[operand];
                         var type = ManagedRuntime.System.GetType(typeDef);
-                        var convertedObject = expression.ConvertTo(type);
-                        if (convertedObject is null)
-                        {
-                            throw new InvalidOperationException($"Cannot convert {expression} to {type}.");
-                        }
-                        
-                        _stackFrame.Push(convertedObject);
+                        var converted = _stackFrame.AllocateObject(type);
+                        MemoryUtils.Copy(value.Pointer, converted.Pointer, type.Size);
+                        _stackFrame.Push(converted);
+                        break;
+                    }
+                    case OpCode.Import:
+                    {
+                        // TODO: Tamely needs to implement the swapping logic
                         break;
                     }
                     case OpCode.Newarr:
                     {
                         var size = _stackFrame.Pop();
-                        if (size is not ManagedObject managedSize)
+                        if (size is not ManagedObject)
                         {
-                            throw new InvalidOperationException("Cannot create an array with a non-managed object.");
+                            throw new InvalidOperationException("Cannot create an array with a non-value type.");
                         }
-
-                        var type = _assembly.Types[instruction.Operand];
-                        var runtimeType = ManagedRuntime.System.GetType(type);
-                        var array = runtimeType.CreateArray(managedSize.GetValue<int>());
+                        
+                        var intSize = *(int*)size.Pointer;
+                        var typeDef = _metadata.Types.Types[operand];
+                        var type = ManagedRuntime.System.GetType(typeDef);
+                        var array = _stackFrame.AllocateArray(type, intSize);
                         _stackFrame.Push(array);
                         break;
                     }
                     case OpCode.Newobj:
                     {
-                        var typeReference = _metadata.TypeReferences.TypeReferences[instruction.Operand];
+                        var typeReference = _metadata.TypeReferences.TypeReferences[operand];
                         var typeRef = _assembly.TypeReferences[typeReference];
-                        var type = typeRef.TypeDefinition;
-                        var runtimeType = ManagedRuntime.System.GetType(type);
-                        var constructorReference = typeRef.ConstructorReference;
-                        if (constructorReference.MemberInfo is not MethodInfo constructor)
+                        var type = ManagedRuntime.System.GetType(typeRef.TypeDefinition);
+                        var constructorRef = typeRef.ConstructorReference;
+                        if (constructorRef.MemberInfo is not MethodInfo constructor)
                         {
-                            throw new InvalidOperationException("Cannot create an object with a non-constructor.");
-                        }
-                        
-                        var arguments = new IRuntimeObject[constructor.Parameters.Length];
-                        for (var i = 0; i < arguments.Length; i++)
-                        {
-                            arguments[i] = _stackFrame.Pop();
+                            throw new InvalidOperationException($"Cannot construct an object from member of type '{constructorRef.MemberType}'.");
                         }
 
-                        var instance = runtimeType.CreateInstance(_assembly, constructorReference, arguments.ToImmutableArray());
-                        _stackFrame.Push(instance);
+                        var arguments = new Dictionary<ParameterInfo, RuntimeObject>();
+                        for (var i = constructor.Parameters.Count - 1; i >= 0; i--)
+                        {
+                            var parameter = constructor.Parameters.ValueAt(i);
+                            var value = _stackFrame.Pop();
+                            arguments.Add(parameter, value);
+                        }
+                        
+                        var readonlyArguments = new ReadOnlyDictionary<ParameterInfo, RuntimeObject>(arguments);
+                        var stackFrame = type.Construct(_assembly, _stackFrame, readonlyArguments, constructor);
+                        if (stackFrame.ReturnObject == null)
+                        {
+                            throw new InvalidOperationException("Constructor did not return an object.");
+                        }
+                        
+                        _stackFrame.Push(stackFrame.ReturnObject);
+                        ManagedRuntime.StackManager.DeallocateStackFrame();
                         break;
+                    }
+                    case OpCode.Call:
+                    {
+                        var memberReference = _metadata.MemberReferences.MemberReferences[operand];
+                        var memberRef = _assembly.MemberReferences[memberReference];
+                        var type = ManagedRuntime.System.GetType(memberRef.ParentType);
+                        if (memberRef.MemberInfo is not MethodInfo method)
+                        {
+                            throw new InvalidOperationException($"Cannot call member of type '{memberRef.MemberType}'.");
+                        }
+                        
+                        var instance = method.IsStatic ? null : _stackFrame.Pop();
+                        var arguments = new Dictionary<ParameterInfo, RuntimeObject>();
+                        for (var i = method.Parameters.Count - 1; i >= 0; i--)
+                        {
+                            var parameter = method.Parameters.ValueAt(i);
+                            var value = _stackFrame.Pop();
+                            arguments.Add(parameter, value);
+                        }
+
+                        var readonlyArguments = new ReadOnlyDictionary<ParameterInfo, RuntimeObject>(arguments);
+                        if (method.IsStatic)
+                        {
+                            var stackFrame = type.InvokeStatic(_assembly, method, readonlyArguments);
+                            var result = stackFrame.ReturnObject;
+                            if (result != null)
+                            {
+                                _stackFrame.Push(result);
+                            }
+                        }
+                        else
+                        {
+                            var methodRuntime = new MethodRuntime(_assembly, instance, method, readonlyArguments);
+                            var stackFrame = methodRuntime.Invoke();
+                            var result = stackFrame.ReturnObject;
+                            if (result != null)
+                            {
+                                _stackFrame.Push(result);
+                            }
+                        }
+                        
+                        ManagedRuntime.StackManager.DeallocateStackFrame();
+                        break;
+                    }
+                    case OpCode.Ret:
+                    {
+                        return;
+                    }
+                    case OpCode.Brtrue:
+                    {
+                        var value = _stackFrame.Pop();
+                        if (value is not ManagedObject)
+                        {
+                            throw new InvalidOperationException("Cannot branch on a non-value type.");
+                        }
+                        
+                        var branch = *(bool*)value.Pointer;
+                        if (branch)
+                        {
+                            label = operand - 1;
+                        }
+
+                        break;
+                    }
+                    case OpCode.Brfalse:
+                    {
+                        var value = _stackFrame.Pop();
+                        if (value is not ManagedObject)
+                        {
+                            throw new InvalidOperationException("Cannot branch on a non-value type.");
+                        }
+                        
+                        var branch = *(bool*)value.Pointer;
+                        if (!branch)
+                        {
+                            label = operand - 1;
+                        }
+
+                        break;
+                    }
+                    case OpCode.Br:
+                    {
+                        label = operand - 1;
+                        break;
+                    }
+                    case OpCode.Ceq:
+                    case OpCode.Cne:
+                    case OpCode.Cgt:
+                    case OpCode.Cge:
+                    case OpCode.Clt:
+                    case OpCode.Cle:
+                    {
+                        goto case OpCode.Add;
                     }
                 }
             }
             catch (Exception e)
             {
-                Logger.Log(e.Message, LogLevel.Error);
+                Logger.Log(e.ToString(), LogLevel.Error);
+                Logger.Log($"Exception occurred while executing instruction {label} ({opCode} {operand}).", LogLevel.Error);
+                Logger.Log("Exiting...", LogLevel.Error);
+                return;
             }
         }
     }
 
-    private unsafe IRuntimeObject ConvertConstant(Constant constant)
+    private static RuntimeType GetRuntimeType(ConstantType constantType)
+    {
+        return constantType switch
+        {
+            ConstantType.Int8 => ManagedRuntime.Int8,
+            ConstantType.UInt8 => ManagedRuntime.UInt8,
+            ConstantType.Int16 => ManagedRuntime.Int16,
+            ConstantType.UInt16 => ManagedRuntime.UInt16,
+            ConstantType.Int32 => ManagedRuntime.Int32,
+            ConstantType.UInt32 => ManagedRuntime.UInt32,
+            ConstantType.Int64 => ManagedRuntime.Int64,
+            ConstantType.UInt64 => ManagedRuntime.UInt64,
+            ConstantType.Float32 => ManagedRuntime.Float32,
+            ConstantType.Float64 => ManagedRuntime.Float64,
+            ConstantType.String => ManagedRuntime.String,
+            ConstantType.Char => ManagedRuntime.Char,
+            ConstantType.Boolean => ManagedRuntime.Boolean,
+            _ => throw new ArgumentOutOfRangeException()
+        };
+    }
+    
+    private unsafe RuntimeObject ConvertConstant(Constant constant)
     {
         var pool = _metadata.ConstantsPool.Values;
         byte* ptr;
@@ -353,80 +765,23 @@ internal readonly struct MethodRuntime
         {
             ptr = p + constant.ValueOffset;
         }
-
-        switch (constant.Type)
+        
+        var type = GetRuntimeType(constant.Type);
+        if (type == ManagedRuntime.String)
         {
-            case ConstantType.Int8:
+            throw new InvalidOperationException("String constants should be handled in an 'ldstr' instruction.");
+        }
+        
+        var bytes = new byte[type.Size];
+        fixed (byte* p = bytes)
+        {
+            for (var i = 0; i < type.Size; i++)
             {
-                var value = *(sbyte*)ptr;
-                return new ManagedSByte(value);
-            }
-            case ConstantType.UInt8:
-            {
-                var value = *ptr;
-                return new ManagedByte(value);
-            }
-            case ConstantType.Int16:
-            {
-                var value = *(short*)ptr;
-                return new ManagedShort(value);
-            }
-            case ConstantType.UInt16:
-            {
-                var value = *(ushort*)ptr;
-                return new ManagedUShort(value);
-            }
-            case ConstantType.Int32:
-            {
-                var value = *(int*)ptr;
-                return new ManagedInt(value);
-            }
-            case ConstantType.UInt32:
-            {
-                var value = *(uint*)ptr;
-                return new ManagedUInt(value);
-            }
-            case ConstantType.Int64:
-            {
-                var value = *(long*)ptr;
-                return new ManagedLong(value);
-            }
-            case ConstantType.UInt64:
-            {
-                var value = *(ulong*)ptr;
-                return new ManagedULong(value);
-            }
-            case ConstantType.Float32:
-            {
-                var value = *(float*)ptr;
-                return new ManagedFloat(value);
-            }
-            case ConstantType.Float64:
-            {
-                var value = *(double*)ptr;
-                return new ManagedDouble(value);
-            }
-            case ConstantType.String:
-            {
-                var stringIndex = *(int*)ptr;
-                var stringConstant = _metadata.Strings.Strings[stringIndex];
-                var stringObject = new ManagedString(stringConstant);
-                return stringObject;
-            }
-            case ConstantType.Char:
-            {
-                var value = *(char*)ptr;
-                return new ManagedChar(value);
-            }
-            case ConstantType.Boolean:
-            {
-                var value = *(bool*)ptr;
-                return new ManagedBoolean(value);
-            }
-            default:
-            {
-                throw new ArgumentOutOfRangeException();
+                *(p + i) = *(ptr + i);
             }
         }
+        
+        var obj = _stackFrame.AllocateConstant(type, bytes);
+        return obj;
     }
 }

@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using Radon.CodeAnalysis.Binding.Semantics.Conversions;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
 
@@ -20,46 +22,46 @@ internal sealed class BoundBinaryOperator
             // Logical
             new(SyntaxKind.AmpersandAmpersandToken, BoundBinaryOperatorKind.LogicalAnd, TypeSymbol.Bool),
             new(SyntaxKind.PipePipeToken, BoundBinaryOperatorKind.LogicalOr, TypeSymbol.Bool),
-            new(SyntaxKind.BangToken, BoundBinaryOperatorKind.LogicalNot, TypeSymbol.Bool),
-            
+
             // Bitwise
             new(SyntaxKind.PipeToken, BoundBinaryOperatorKind.BitwiseOr, TypeSymbol.Bool),
             new(SyntaxKind.AmpersandToken, BoundBinaryOperatorKind.BitwiseAnd, TypeSymbol.Bool),
-            
-            // Equality
-            new(SyntaxKind.EqualsEqualsToken, BoundBinaryOperatorKind.Equality, TypeSymbol.Bool, TypeSymbol.String),
-            new(SyntaxKind.BangEqualsToken, BoundBinaryOperatorKind.Inequality, TypeSymbol.Bool, TypeSymbol.String),
-            
-            
-            
+            new(SyntaxKind.HatToken, BoundBinaryOperatorKind.BitwiseXor, TypeSymbol.Bool),
+
             // Char
             // Bitwise
             new(SyntaxKind.PipeToken, BoundBinaryOperatorKind.BitwiseOr, TypeSymbol.Char),
             new(SyntaxKind.AmpersandToken, BoundBinaryOperatorKind.BitwiseAnd, TypeSymbol.Char),
-            
-            // Equality
-            new(SyntaxKind.EqualsEqualsToken, BoundBinaryOperatorKind.Equality, TypeSymbol.Bool, TypeSymbol.Char),
-            new(SyntaxKind.BangEqualsToken, BoundBinaryOperatorKind.Inequality, TypeSymbol.Bool, TypeSymbol.Char),
-            
+            new(SyntaxKind.HatToken, BoundBinaryOperatorKind.BitwiseXor, TypeSymbol.Char),
+
             // Comparison
-            new(SyntaxKind.LessToken, BoundBinaryOperatorKind.LessThan, TypeSymbol.Bool, TypeSymbol.Char),
-            new(SyntaxKind.LessEqualsToken, BoundBinaryOperatorKind.LessThanOrEqual, TypeSymbol.Bool, TypeSymbol.Char),
-            new(SyntaxKind.GreaterToken, BoundBinaryOperatorKind.GreaterThan, TypeSymbol.Bool, TypeSymbol.Char),
-            new(SyntaxKind.GreaterEqualsToken, BoundBinaryOperatorKind.GreaterThanOrEqual, TypeSymbol.Bool, TypeSymbol.Char)
+            new(SyntaxKind.LessThanToken, BoundBinaryOperatorKind.LessThan, TypeSymbol.Char, TypeSymbol.Bool),
+            new(SyntaxKind.LessEqualsToken, BoundBinaryOperatorKind.LessThanOrEqual, TypeSymbol.Char, TypeSymbol.Bool),
+            new(SyntaxKind.GreaterThanToken, BoundBinaryOperatorKind.GreaterThan, TypeSymbol.Char, TypeSymbol.Bool),
+            new(SyntaxKind.GreaterEqualsToken, BoundBinaryOperatorKind.GreaterThanOrEqual, TypeSymbol.Char, TypeSymbol.Bool)
         };
 
         var numericTypes = TypeSymbol.GetNumericTypes();
-        var ops = new Dictionary<SyntaxKind, BoundBinaryOperatorKind>
+        var numericOps = new Dictionary<SyntaxKind, BoundBinaryOperatorKind>
         {
+            {SyntaxKind.PlusEqualsToken, BoundBinaryOperatorKind.PlusEquals},
+            {SyntaxKind.MinusEqualsToken, BoundBinaryOperatorKind.MinusEquals},
+            {SyntaxKind.StarEqualsToken, BoundBinaryOperatorKind.StarEquals},
+            {SyntaxKind.SlashEqualsToken, BoundBinaryOperatorKind.SlashEquals},
+            {SyntaxKind.PercentEqualsToken, BoundBinaryOperatorKind.PercentEquals},
+            {SyntaxKind.PipeEqualsToken, BoundBinaryOperatorKind.PipeEquals},
+            {SyntaxKind.AmpersandEqualsToken, BoundBinaryOperatorKind.AmpersandEquals},
+            
             {SyntaxKind.PipeToken, BoundBinaryOperatorKind.BitwiseOr},
             {SyntaxKind.AmpersandToken, BoundBinaryOperatorKind.BitwiseAnd},
+            {SyntaxKind.HatToken, BoundBinaryOperatorKind.BitwiseXor},
             
             {SyntaxKind.EqualsEqualsToken, BoundBinaryOperatorKind.Equality},
             {SyntaxKind.BangEqualsToken, BoundBinaryOperatorKind.Inequality},
             
-            {SyntaxKind.LessToken, BoundBinaryOperatorKind.LessThan},
+            {SyntaxKind.LessThanToken, BoundBinaryOperatorKind.LessThan},
             {SyntaxKind.LessEqualsToken, BoundBinaryOperatorKind.LessThanOrEqual},
-            {SyntaxKind.GreaterToken, BoundBinaryOperatorKind.GreaterThan},
+            {SyntaxKind.GreaterThanToken, BoundBinaryOperatorKind.GreaterThan},
             {SyntaxKind.GreaterEqualsToken, BoundBinaryOperatorKind.GreaterThanOrEqual},
             
             {SyntaxKind.LessLessToken, BoundBinaryOperatorKind.LeftShift},
@@ -70,15 +72,42 @@ internal sealed class BoundBinaryOperator
             
             {SyntaxKind.StarToken, BoundBinaryOperatorKind.Multiplication},
             {SyntaxKind.SlashToken, BoundBinaryOperatorKind.Division},
-            {SyntaxKind.PercentToken, BoundBinaryOperatorKind.Modulo}
+            {SyntaxKind.PercentToken, BoundBinaryOperatorKind.Modulus}
         };
 
-        foreach (var numericType in numericTypes)
+        var primitiveTypes = TypeSymbol.GetPrimitiveTypes();
+        foreach (var primitiveType in primitiveTypes)
         {
-            foreach (var (syntaxKind, kind) in ops)
+            if (numericTypes.Contains(primitiveType))
             {
-                Operators.Add(new BoundBinaryOperator(syntaxKind, kind, numericType));
+                for (var i = 0; i < numericOps.Count; i++)
+                {
+                    var (syntaxKind, kind) = numericOps.ElementAt(i);
+                    // if i is between 8 and 15, then the type is bool
+                    if (kind is BoundBinaryOperatorKind.LeftShift or BoundBinaryOperatorKind.RightShift)
+                    {
+                        var shiftOp = new BoundBinaryOperator(syntaxKind, kind, primitiveType, TypeSymbol.Int, primitiveType);
+                        AddOperator(shiftOp);
+                        continue;
+                    }
+                    
+                    var type = primitiveType;
+                    if (i is >= 10 and <= 15)
+                    {
+                        type = TypeSymbol.Bool;
+                    }
+                    
+                    var op = new BoundBinaryOperator(syntaxKind, kind, primitiveType, primitiveType, type);
+                    AddOperator(op);
+                }
             }
+            
+            var equalsOp = new BoundBinaryOperator(SyntaxKind.EqualsEqualsToken, BoundBinaryOperatorKind.Equality,
+                primitiveType, TypeSymbol.Bool);
+            var notEqualsOp = new BoundBinaryOperator(SyntaxKind.BangEqualsToken, BoundBinaryOperatorKind.Inequality,
+                primitiveType, TypeSymbol.Bool);
+            AddOperator(equalsOp);
+            AddOperator(notEqualsOp);
         }
     }
     
@@ -93,7 +122,7 @@ internal sealed class BoundBinaryOperator
     {
     }
 
-    private BoundBinaryOperator(SyntaxKind syntaxKind, BoundBinaryOperatorKind kind, TypeSymbol result, TypeSymbol type)
+    private BoundBinaryOperator(SyntaxKind syntaxKind, BoundBinaryOperatorKind kind, TypeSymbol type, TypeSymbol result)
         : this(syntaxKind, kind, type, type, result)
     {
     }
@@ -108,6 +137,16 @@ internal sealed class BoundBinaryOperator
         Type = result;
     }
 
+    private static void AddOperator(BoundBinaryOperator op)
+    {
+        if (Operators.Any(o => o.SyntaxKind == op.SyntaxKind && o.Left == op.Left && o.Right == op.Right))
+        {
+            return;
+        }
+        
+        Operators.Add(op);
+    }
+    
     public static BoundBinaryOperator? Bind(SyntaxKind syntaxKind, TypeSymbol left, TypeSymbol right)
     {
         foreach (var op in Operators)
@@ -121,5 +160,20 @@ internal sealed class BoundBinaryOperator
         }
         
         return null;
+    }
+
+    public static void CreateTypeOperators(TypeSymbol type)
+    {
+        var equalsOp = new BoundBinaryOperator(SyntaxKind.EqualsEqualsToken, BoundBinaryOperatorKind.Equality,
+            type, TypeSymbol.Bool);
+        var notEqualsOp = new BoundBinaryOperator(SyntaxKind.BangEqualsToken, BoundBinaryOperatorKind.Inequality,
+            type, TypeSymbol.Bool);
+        AddOperator(equalsOp);
+        AddOperator(notEqualsOp);
+    }
+
+    public override string ToString()
+    {
+        return $"{Kind}: {Left} {SyntaxKind.Text} {Right} => {Type}";
     }
 }

@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radon.Runtime", "Radon.Runt
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radon.Repl", "Radon.Repl\Radon.Repl.csproj", "{583BA67B-858D-4B39-B50F-332EC3EB2AB3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILViewer", "ILViewer\ILViewer.csproj", "{72970DF3-0C6E-4086-ABCC-8315DC11DE20}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{583BA67B-858D-4B39-B50F-332EC3EB2AB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{583BA67B-858D-4B39-B50F-332EC3EB2AB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{583BA67B-858D-4B39-B50F-332EC3EB2AB3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72970DF3-0C6E-4086-ABCC-8315DC11DE20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72970DF3-0C6E-4086-ABCC-8315DC11DE20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72970DF3-0C6E-4086-ABCC-8315DC11DE20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72970DF3-0C6E-4086-ABCC-8315DC11DE20}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

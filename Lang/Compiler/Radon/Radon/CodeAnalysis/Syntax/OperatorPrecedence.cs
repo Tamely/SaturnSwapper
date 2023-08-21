@@ -3,13 +3,12 @@ namespace Radon.CodeAnalysis.Syntax;
 internal enum OperatorPrecedence
 {
     None = 0,
-    Assignment,
     LogicalOr,
     LogicalAnd,
     LogicalNot,
     BitwiseOr,
-    BitwiseXor,
     BitwiseAnd,
+    BitwiseXor,
     Equality,
     Relational,
     Shift,

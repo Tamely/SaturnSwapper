@@ -6,6 +6,7 @@ namespace Radon.CodeAnalysis.Syntax.Nodes;
 
 public sealed class EmptySyntaxNode : SyntaxNode
 {
+    public override string SyntaxName => "Empty Syntax Node";
     public override SyntaxKind Kind => SyntaxKind.Empty;
     public EmptySyntaxNode() 
         : base(Syntax.SyntaxTree.Parse(SourceText.Empty))

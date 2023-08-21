@@ -1,22 +1,66 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Linq;
+using Radon.CodeAnalysis.Disassembly;
 using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
-using Radon.Runtime.RuntimeInfo;
+using Radon.Common;
+using Radon.Runtime.Memory;
 using Radon.Runtime.RuntimeSystem.RuntimeObjects;
-using Radon.Utilities;
 
 namespace Radon.Runtime.RuntimeSystem;
 
 internal sealed class ManagedRuntime
 {
-    public static ManagedRuntime System { get; private set; } = null!;
+    private static ManagedRuntime? _system;
+    
+    public static StackManager StackManager { get; }
+    public static HeapManager HeapManager { get;}
+    public static HeapManager StaticHeapManager { get; }
+    public static ManagedRuntime System
+    {
+        get
+        {
+            if (_system is null)
+            {
+                throw new InvalidOperationException("System is not initialized.");
+            }
+
+            return _system;
+        }
+    }
+    
+    public static RuntimeType Void => System.GetType("void");
+    public static RuntimeType Boolean => System.GetType("bool");
+    public static RuntimeType Int8 => System.GetType("sbyte");
+    public static RuntimeType UInt8 => System.GetType("byte");
+    public static RuntimeType Int16 => System.GetType("short");
+    public static RuntimeType UInt16 => System.GetType("ushort");
+    public static RuntimeType Int32 => System.GetType("int");
+    public static RuntimeType UInt32 => System.GetType("uint");
+    public static RuntimeType Int64 => System.GetType("long");
+    public static RuntimeType UInt64 => System.GetType("ulong");
+    public static RuntimeType Float32 => System.GetType("float");
+    public static RuntimeType Float64 => System.GetType("double");
+    public static RuntimeType Char => System.GetType("char");
+    public static RuntimeType String => System.GetType("string");
+    public static RuntimeType CharArray => System.GetType("char[]");
+
+    static ManagedRuntime()
+    {
+        _system = null;
+        StackManager = new StackManager();
+        HeapManager = new HeapManager();
+        StaticHeapManager = new HeapManager();
+    }
+    
     public AssemblyInfo AssemblyInfo { get; }
     public Dictionary<TypeInfo, RuntimeType> Types { get; }
+    
     public ManagedRuntime(AssemblyInfo assemblyInfo)
     {
-        System = this;
+        _system = this;
         AssemblyInfo = assemblyInfo;
         Types = new Dictionary<TypeInfo, RuntimeType>();
         foreach (var type in assemblyInfo.Types)
@@ -29,13 +73,35 @@ internal sealed class ManagedRuntime
             var runtimeType = new RuntimeType(type);
             Types.Add(type, runtimeType);
         }
-
-        foreach (var type in Types.Values)
-        {
-            type.Initialize();
-        }
     }
 
+    public static ReadOnlyDictionary<TKey, TValue> EmptyDictionary<TKey, TValue>() 
+        where TKey : notnull
+    {
+        return new(new Dictionary<TKey, TValue>());
+    }
+
+    public static ImmutableArray<RuntimeObject> GetRoots()
+    {
+        var builder = ImmutableArray.CreateBuilder<RuntimeObject>();
+        foreach (var obj in StaticHeapManager.Objects)
+        {
+            builder.Add(obj);
+        }
+
+        var stacks = StackManager.StackFrames;
+        foreach (var stackFrame in stacks)
+        {
+            builder.AddRange(stackFrame.Variables);
+            if (stackFrame.ReturnObject is not null)
+            {
+                builder.Add(stackFrame.ReturnObject);
+            }
+        }
+        
+        return builder.ToImmutable();
+    }
+    
     public RuntimeType GetType(TypeInfo typeInfo)
     {
         if (Types.TryGetValue(typeInfo, out var type))

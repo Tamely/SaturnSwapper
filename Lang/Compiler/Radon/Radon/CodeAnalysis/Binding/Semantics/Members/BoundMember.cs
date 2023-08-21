@@ -8,4 +8,6 @@ internal abstract class BoundMember : BoundNode
         : base(syntax)
     {
     }
+
+    public abstract override string ToString();
 }

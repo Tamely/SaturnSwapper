@@ -8,6 +8,7 @@ public sealed partial class NewExpressionSyntax : ExpressionSyntax
     public TypeSyntax Type { get; }
     public TypeArgumentListSyntax? TypeArgumentList { get; }
     public ArgumentListSyntax ArgumentList { get; }
+    public override bool CanBeStatement => true;
     
     public NewExpressionSyntax(SyntaxTree syntaxTree, SyntaxToken newKeyword, TypeSyntax type, TypeArgumentListSyntax? typeArgumentList, ArgumentListSyntax argumentList) 
         : base(syntaxTree)

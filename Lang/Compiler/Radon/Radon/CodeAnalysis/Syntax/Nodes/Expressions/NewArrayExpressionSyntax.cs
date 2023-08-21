@@ -6,6 +6,7 @@ public sealed partial class NewArrayExpressionSyntax : ExpressionSyntax
 {
     public SyntaxToken NewKeyword { get; }
     public ArrayTypeSyntax Type { get; }
+    public override bool CanBeStatement => false;
 
     public NewArrayExpressionSyntax(SyntaxTree syntaxTree, SyntaxToken newKeyword, ArrayTypeSyntax type) 
         : base(syntaxTree)

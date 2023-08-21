@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Immutable;
-using Radon.CodeAnalysis.Binding;
-using Radon.CodeAnalysis.Binding.Analyzers;
+using Radon.CodeAnalysis.Binding.Binders;
 using Radon.CodeAnalysis.Syntax;
 
 namespace Radon.CodeAnalysis.Symbols;
@@ -9,7 +8,12 @@ namespace Radon.CodeAnalysis.Symbols;
 public sealed class TypeParameterSymbol : TypeSymbol
 {
     public override string Name { get; }
-    public override int Size { get; internal set; } = 0;
+
+    public override int Size
+    {
+        get => throw new InvalidOperationException("Type parameters have no size.");
+        internal set => throw new InvalidOperationException("Type parameters have no size.");
+    }
     internal override TypeBinder? TypeBinder { get; set; } = null;
     public override SymbolKind Kind => SymbolKind.TypeParameter;
     public override ImmutableArray<MemberSymbol> Members { get; private protected set; }

@@ -8,12 +8,11 @@ internal sealed class FieldComparer : IEqualityComparer<Field>
 {
     public bool Equals(Field x, Field y)
     {
-        return x.Flags == y.Flags && x.Name == y.Name && x.Type == y.Type &&
-               x.Parent == y.Parent;
+        return x.BindingFlags == y.BindingFlags && x.Name == y.Name && x.Type == y.Type && x.Parent == y.Parent;
     }
 
     public int GetHashCode(Field obj)
     {
-        return HashCode.Combine((int)obj.Flags, obj.Name, obj.Type, obj.Parent, obj.Offset);
+        return HashCode.Combine((int)obj.BindingFlags, obj.Name, obj.Type, obj.Parent);
     }
 }

@@ -136,12 +136,36 @@ public sealed class SyntaxNodeGetChildrenGenerator : RadonGenerator
                     {
                         using (var classCurly = new CurlyIndenter(indentedTextWriter, $"public partial class {type.Name}"))
                         {
-                            var name = type.Name.Replace("Syntax", string.Empty);
-                            indentedTextWriter.WriteLine($"public override SyntaxKind Kind => SyntaxKind.{name};");
+                            var typeName = type.Name.Replace("Syntax", string.Empty);
+                            var sb = new StringBuilder();
+                            // What we want: IfStatement -> If Statement
+                            for (var i = 0; i < typeName.Length; i++)
+                            {
+                                var c = typeName[i];
+                                if (char.IsUpper(c) && i > 0)
+                                {
+                                    sb.Append(' ');
+                                }
+
+                                sb.Append(c);
+                            }
                             
+                            var name = sb.ToString();
+                            indentedTextWriter.WriteLine($"public override string SyntaxName => \"{name}\";");
+                            indentedTextWriter.WriteLine($"public override SyntaxKind Kind => SyntaxKind.{typeName};");
+                            
+                            if (type.BaseType != null && type.BaseType.Name == "ExpressionSyntax")
+                            {
+                                indentedTextWriter.WriteLine($"public {type.Name}(SyntaxTree syntaxTree)");
+                                indentedTextWriter.WriteLine($"\t: base(syntaxTree)");
+                                indentedTextWriter.WriteLine("{");
+                                indentedTextWriter.WriteLine("}");
+                                indentedTextWriter.WriteLine();
+                            }
+
                             using (var getChildCurly =
                                    new CurlyIndenter(indentedTextWriter,
-                                                     "public override IEnumerable<SyntaxNode> GetChildren()"))
+                                       "public override IEnumerable<SyntaxNode> GetChildren()"))
                             {
                                 var properties = type.GetMembers().OfType<IPropertySymbol>();
                                 var propertySymbols = properties as IPropertySymbol[] ?? properties.ToArray();

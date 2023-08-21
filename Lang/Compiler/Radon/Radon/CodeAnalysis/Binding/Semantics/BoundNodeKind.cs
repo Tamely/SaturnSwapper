@@ -15,7 +15,6 @@ internal enum BoundNodeKind
     ErrorExpression,
     BlockStatement,
     ExpressionStatement,
-    InvalidStatement,
     SignStatement,
     VariableDeclarationStatement,
     Struct,
@@ -36,5 +35,13 @@ internal enum BoundNodeKind
     TemplateMethod,
     NewArrayExpression,
     ElementAccessExpression,
-    ReturnStatement
+    ReturnStatement,
+    IfStatement,
+    WhileStatement,
+    ForStatement,
+    Label,
+    LabelStatement,
+    ConditionalGotoStatement,
+    GotoStatement,
+    Array
 }

@@ -4,7 +4,7 @@
 using Radon.CodeAnalysis;
 using Radon.CodeAnalysis.Syntax;
 using Radon.CodeAnalysis.Text;
-using Radon.Utilities;
+using Radon.Common;
 
 namespace Radon.Repl;
 
@@ -31,6 +31,23 @@ public static class Program
             Log("Parsing source file...", ConsoleColor.Cyan);
             var syntaxTree = SyntaxTree.Parse(sourceText);
             Log("Generating compilation...", ConsoleColor.Cyan);
+
+#if PARSE_ONLY
+            var parseOnlyRoot = syntaxTree.Root;
+            parseOnlyRoot.WriteTo(Console.Out);
+                
+            var parseOnlyIncluded = syntaxTree.Included;
+            foreach (var include in parseOnlyIncluded)
+            {
+                Console.WriteLine();
+                Console.WriteLine();
+                Console.WriteLine();
+                include.Root.WriteTo(Console.Out);
+            }
+            
+            continue;
+#endif
+            
             var compilation = new Compilation(syntaxTree);
             var diagnostics = compilation.Diagnostics;
             if (diagnostics.Any())
@@ -42,9 +59,8 @@ public static class Program
             else
             {
                 Log("No diagnostics were found!", ConsoleColor.Green);
-                var root = syntaxTree.Root;
-                
 #if DEBUG
+                var root = syntaxTree.Root;
                 root.WriteTo(Console.Out);
                 
                 var included = syntaxTree.Included;
@@ -55,9 +71,6 @@ public static class Program
                     Console.WriteLine();
                     include.Root.WriteTo(Console.Out);
                 }
-#endif
-#if PARSE_ONLY
-                continue;
 #endif
 
                 Log("Compiling...", ConsoleColor.Cyan);
@@ -73,7 +86,6 @@ public static class Program
                 Log($"Writing to {sourceText.FileName}.csp...", ConsoleColor.Cyan);
                 File.WriteAllBytes(sourceText.FileName + ".csp", bytes);
                 Log("Done!", ConsoleColor.Green);
-                
             }
         }
     }

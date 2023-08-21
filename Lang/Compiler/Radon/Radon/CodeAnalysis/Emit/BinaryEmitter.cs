@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Immutable;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using Radon.Utilities;
+using Radon.CodeAnalysis.Emit.Binary;
+using Radon.Common;
 
 namespace Radon.CodeAnalysis.Emit;
 
@@ -21,6 +23,12 @@ internal sealed class BinaryEmitter
         _key = key;
     }
 
+    public static byte[] Emit(object obj)
+    {
+        var emitter = new BinaryEmitter(obj);
+        return emitter.Emit();
+    }
+
     public byte[] Emit()
     {
         WriteObject(_obj);
@@ -30,6 +38,21 @@ internal sealed class BinaryEmitter
     private unsafe void WriteObject(object value)
     {
         var type = value.GetType();
+        if (value is Instruction instruction)
+        {
+            var label = instruction.Label;
+            var opCode = instruction.OpCode;
+            WriteObject(label);
+            WriteObject(opCode);
+            if (!opCode.NoOperandRequired())
+            {
+                var operand = instruction.Operand;
+                WriteObject(operand);
+            }
+            
+            return;
+        }
+        
         if (value.IsUnmanaged())
         {
             if (type.IsEnum)

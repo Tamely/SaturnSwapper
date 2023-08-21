@@ -2,7 +2,7 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 using Radon.CodeAnalysis.Binding;
-using Radon.CodeAnalysis.Binding.Analyzers;
+using Radon.CodeAnalysis.Binding.Binders;
 using Radon.CodeAnalysis.Binding.Semantics;
 using Radon.CodeAnalysis.Binding.Semantics.Types;
 using Radon.CodeAnalysis.Emit;
@@ -25,15 +25,14 @@ public sealed class Compilation
         syntaxTrees.Add(syntaxTree);
         syntaxTrees.AddRange(syntaxTree.Included);
         SyntaxTrees = syntaxTrees.ToImmutable();
-        var syntaxDiagnostics = SyntaxTrees.SelectMany(s => s.Diagnostics);
-        var diagnostics = syntaxDiagnostics as Diagnostic[] ?? syntaxDiagnostics.ToArray();
+        var diagnostics = syntaxTree.Diagnostics; // Because this is the main syntax tree, all diagnostics from all included trees will be included.
         if (diagnostics.Any())
         {
             _proceedWithCompilation = false;
         }
         
         _boundTree = GetTree();
-        Diagnostics = _proceedWithCompilation ? _boundTree.Diagnostics.AddRange(diagnostics) : diagnostics.ToImmutableArray();
+        Diagnostics = _proceedWithCompilation ? _boundTree.Diagnostics.AddRange(diagnostics) : diagnostics;
     }
 
     private BoundAssembly GetTree()
