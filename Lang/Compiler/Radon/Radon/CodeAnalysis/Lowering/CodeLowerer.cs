@@ -511,8 +511,32 @@ internal sealed class CodeLowerer
     
     private BoundExpression LowerImportExpression(BoundImportExpression node)
     {
+        // from_ar = import "ar"
+        // Becomes:
+        // from_ar = archive.Import("ar")
         var loweredPath = LowerExpression(node.Path);
-        return new BoundImportExpression(node.Syntax, loweredPath);
+        var importMethod = TypeSymbol.Archive.GetMember("Import");
+        if (importMethod is not MethodSymbol symbol)
+        {
+            throw new Exception("archive.Import method not found");
+        }
+        
+        var result = new BoundInvocationExpression(
+            node.Syntax,
+            symbol,
+            new BoundMemberAccessExpression(
+                node.Syntax,
+                new BoundNameExpression(
+                    node.Syntax,
+                    TypeSymbol.Archive
+                ),
+                importMethod
+            ),
+            ImmutableArray.Create(loweredPath),
+            TypeSymbol.Archive
+        );
+        
+        return LowerExpression(result);
     }
     
     private BoundExpression LowerInvocationExpression(BoundInvocationExpression node)

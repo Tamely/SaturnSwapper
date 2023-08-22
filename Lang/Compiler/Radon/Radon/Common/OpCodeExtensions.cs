@@ -17,7 +17,7 @@ public static class OpCodeExtensions
             return true;
         }
         
-        if (opCode is OpCode.Import or OpCode.Ret)
+        if (opCode is OpCode.Ret)
         {
             return true;
         }
