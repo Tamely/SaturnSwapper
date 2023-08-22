@@ -20,6 +20,13 @@ public static class Program
                 break;
             }
             
+            // If the text has quotes, then we need to remove them.
+            if (text.StartsWith('"') && text.EndsWith('"'))
+            {
+                text = text[1..^1];
+            }
+            
+            text = text.Trim();
             if (!File.Exists(text))
             {
                 Console.WriteLine($"File '{text}' does not exist.");
