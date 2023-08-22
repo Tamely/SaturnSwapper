@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text;
 using Radon.CodeAnalysis.Disassembly;
 using Radon.CodeAnalysis.Emit;
 using Radon.CodeAnalysis.Emit.Binary;
@@ -216,13 +217,6 @@ internal sealed class MethodRuntime
                     totalStack.Push(type.TypeInfo);
                     break;
                 }
-                case OpCode.Import:
-                {
-                    var type = ManagedRuntime.System.GetType("archive");
-                    stack.Push(type.TypeInfo);
-                    totalStack.Push(type.TypeInfo);
-                    break;
-                }
                 case OpCode.Newarr:
                 {
                     stack.Pop();
@@ -309,7 +303,7 @@ internal sealed class MethodRuntime
         return (maxStackSize, maxStack);
     }
 
-    public StackFrame Invoke()
+    public unsafe StackFrame Invoke()
     {
         switch (_method.IsStatic)
         {
@@ -322,6 +316,114 @@ internal sealed class MethodRuntime
         if (_method.IsRuntimeMethod)
         {
             // Determine the runtime method to execute.
+            if (_method.Parent.Name == "archive")
+            {
+                // Some methods are templates
+                // Example: archive::Read`int
+                // We need to get the name of the method, and it's template arguments.
+                var methodName = _method.Name;
+                var nameBuilder = new StringBuilder();
+                var templateArguments = new List<RuntimeType>();
+                var templateStart = 0;
+                for (var i = 0; i < methodName.Length; i++)
+                {
+                    var character = methodName[i];
+                    if (character == '`')
+                    {
+                        templateStart = i + 1; // Skip the `
+                        break;
+                    }
+
+                    nameBuilder.Append(character);
+                }
+                
+                var typeArgBuilder = new StringBuilder();
+                for (var i = templateStart; i < methodName.Length; i++)
+                {
+                    var character = methodName[i];
+                    if (character == '`')
+                    {
+                        var typeArg = ManagedRuntime.System.GetType(typeArgBuilder.ToString());
+                        templateArguments.Add(typeArg);
+                        typeArgBuilder.Clear();
+                        continue;
+                    }
+
+                    typeArgBuilder.Append(character);
+                }
+
+                var name = nameBuilder.ToString();
+                switch (name)
+                {
+                    case "Write":
+                    {
+                        var value = _stackFrame.Pop();
+                        // TODO: Write the value to the archive.
+                        break;
+                    }
+                    case "Read":
+                    {
+                        var typeArg = templateArguments[0];
+                        // TODO: Get the position of the archive and read the value.
+                        break;
+                    }
+                    case "Seek":
+                    {
+                        var value = _stackFrame.Pop();
+                        if (value is ManagedObject managedObject)
+                        {
+                            var origin = _stackFrame.Pop();
+                            if (origin is not ManagedObject originObject)
+                            {
+                                ThrowUnexpectedValue();
+                                return _stackFrame;
+                            }
+
+                            var offset = *(int*)managedObject.Pointer;
+                            var originValue = *(int*)originObject.Pointer;
+                            // TODO: Seek the archive.
+                        }
+                        else if (value is ManagedString managedString)
+                        {
+                            var str = managedString.ToString();
+                            // TODO: Seek the archive.
+                        }
+                        else
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        break;
+                    }
+                    case "Swap":
+                    {
+                        var other = _stackFrame.Pop();
+                        if (other is not ManagedObject otherObject)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        // TODO: Swap the archive with the other archive.
+                        break;
+                    }
+                    case "Import":
+                    {
+                        var value = _stackFrame.Pop();
+                        if (value is not ManagedString managedString)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        var str = managedString.ToString();
+                        // TODO: Import the archive.
+                        break;
+                    }
+                }
+            }
+            
             return _stackFrame;
         }
 
@@ -410,7 +512,8 @@ internal sealed class MethodRuntime
                         var array = _stackFrame.Pop();
                         if (array is not ManagedReference reference)
                         {
-                            throw new InvalidOperationException("Cannot get the length of a non-array object.");
+                            ThrowUnexpectedValue();
+                            return;
                         }
 
                         var managedArray = (ManagedArray)ManagedRuntime.HeapManager.GetObject(reference.Target);
@@ -481,12 +584,28 @@ internal sealed class MethodRuntime
                         var instance = _stackFrame.Pop();
                         if (memberRef.MemberInfo is not FieldInfo field)
                         {
-                            throw new InvalidOperationException("Cannot load a non-field member with this instruction.");
+                            throw new InvalidOperationException($"Cannot load member of type '{memberRef.MemberType}' with this instruction.");
                         }
 
-                        if (instance is not ManagedObject obj)
+                        ManagedObject obj;
+                        switch (instance)
                         {
-                            throw new InvalidOperationException("Cannot load a field from a non-object instance.");
+                            case ManagedReference managedReference:
+                            {
+                                var reference = ManagedRuntime.HeapManager.GetObject(managedReference.Target);
+                                if (reference is not ManagedObject managedObject)
+                                {
+                                    throw new InvalidOperationException("Cannot load a field from an instance that is not an object.");
+                                }
+                            
+                                obj = managedObject;
+                                break;
+                            }
+                            case ManagedObject managedObject:
+                                obj = managedObject;
+                                break;
+                            default:
+                                throw new InvalidOperationException("Cannot load a field from an instance that is not an object.");
                         }
                         
                         if (instruction.OpCode == OpCode.Ldfld)
@@ -509,7 +628,7 @@ internal sealed class MethodRuntime
                         var memberRef = _assembly.MemberReferences[memberReference];
                         if (memberRef.MemberInfo is not FieldInfo field)
                         {
-                            throw new InvalidOperationException("Cannot load a non-field member with this instruction.");
+                            throw new InvalidOperationException($"Cannot load member of type '{memberRef.MemberType}' with this instruction.");
                         }
                         
                         var parent = ManagedRuntime.System.GetType(field.Parent);
@@ -548,12 +667,14 @@ internal sealed class MethodRuntime
                         var index = _stackFrame.Pop();
                         if (index is not ManagedObject)
                         {
-                            throw new InvalidOperationException("Cannot index an array with a non-value type.");
+                            ThrowUnexpectedValue();
+                            return;
                         }
                         
                         if (array is not ManagedReference reference)
                         {
-                            throw new InvalidOperationException("Cannot get the length of a non-array object.");
+                            ThrowUnexpectedValue();
+                            return;
                         }
                         
                         var managedArray = (ManagedArray)ManagedRuntime.HeapManager.GetObject(reference.Target);
@@ -581,17 +702,13 @@ internal sealed class MethodRuntime
                         _stackFrame.Push(converted);
                         break;
                     }
-                    case OpCode.Import:
-                    {
-                        // TODO: Tamely needs to implement the swapping logic
-                        break;
-                    }
                     case OpCode.Newarr:
                     {
                         var size = _stackFrame.Pop();
                         if (size is not ManagedObject)
                         {
-                            throw new InvalidOperationException("Cannot create an array with a non-value type.");
+                            ThrowUnexpectedValue();
+                            return;
                         }
                         
                         var intSize = *(int*)size.Pointer;
@@ -683,7 +800,8 @@ internal sealed class MethodRuntime
                         var value = _stackFrame.Pop();
                         if (value is not ManagedObject)
                         {
-                            throw new InvalidOperationException("Cannot branch on a non-value type.");
+                            ThrowUnexpectedValue();
+                            return;
                         }
                         
                         var branch = *(bool*)value.Pointer;
@@ -699,7 +817,8 @@ internal sealed class MethodRuntime
                         var value = _stackFrame.Pop();
                         if (value is not ManagedObject)
                         {
-                            throw new InvalidOperationException("Cannot branch on a non-value type.");
+                            ThrowUnexpectedValue();
+                            return;
                         }
                         
                         var branch = *(bool*)value.Pointer;
@@ -783,5 +902,10 @@ internal sealed class MethodRuntime
         
         var obj = _stackFrame.AllocateConstant(type, bytes);
         return obj;
+    }
+
+    private static void ThrowUnexpectedValue()
+    {
+        throw new InvalidOperationException("Unexpected value on the stack.");
     }
 }
