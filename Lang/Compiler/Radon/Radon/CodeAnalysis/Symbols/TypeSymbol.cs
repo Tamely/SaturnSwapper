@@ -30,7 +30,7 @@ public abstract class TypeSymbol : Symbol
     public static readonly StructSymbol Double = new("double", 8, EmptyMembers, null, Mods);
     public static readonly StructSymbol Char = new("char", 1, EmptyMembers, null, Mods);
     public static readonly StructSymbol String = new("string", 8, EmptyMembers, null, Mods);
-    public static readonly StructSymbol Archive = new("archive", 0, EmptyMembers, null, Mods);
+    public static readonly StructSymbol Archive;
     public static readonly EnumSymbol SeekOrigin = new("seek_origin", EmptyMembers, null, Mods);
     public static readonly TemplateSymbol List;
     public static readonly StructSymbol System = new("system", 0, EmptyMembers, null, Mods);
@@ -40,6 +40,8 @@ public abstract class TypeSymbol : Symbol
         SeekOrigin.AddEnumMember("Begin", 0);
         SeekOrigin.AddEnumMember("Current", 1);
         SeekOrigin.AddEnumMember("End", 2);
+        var mods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword, SyntaxKind.RefKeyword);
+        Archive = new StructSymbol("archive", 0, EmptyMembers, null, mods);
         var typeParameterBuilder = new TypeParameterBuilder();
         {
             TemplateMethodSymbol writeMethod;
@@ -77,8 +79,9 @@ public abstract class TypeSymbol : Symbol
 
             MethodSymbol importMethod;
             {
+                var importMods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword, SyntaxKind.StaticKeyword);
                 var parameters = ImmutableArray.Create(new ParameterSymbol("path", String, 0));
-                importMethod = new MethodSymbol(Archive, "Import", Void, parameters, Mods);
+                importMethod = new MethodSymbol(Archive, "Import", Void, parameters, importMods);
             }
 
             Archive.AddMember(writeMethod);

@@ -12,6 +12,17 @@ public static class Program
         {
             WriteLine("Enter the path to the compiled Radon file: ", WriteLevel.Info);
             var path = Console.ReadLine();
+            if (path == null)
+            {
+                break;
+            }
+            
+            if (path.StartsWith('"') && path.EndsWith('"'))
+            {
+                path = path[1..^1];
+            }
+            
+            path = path.Trim();
             if (!File.Exists(path))
             {
                 WriteLine($"Invalid path. Received {path}, expected a valid path to a Radon executable", WriteLevel.Error);

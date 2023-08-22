@@ -129,9 +129,6 @@ public enum OpCode : byte
     // Converts the value on the top of the stack to the specified type.
     Conv = 75,
     
-    // Imports an archive using the specified path.
-    Import,
-    
     
     
     // - - - - - - - - - -

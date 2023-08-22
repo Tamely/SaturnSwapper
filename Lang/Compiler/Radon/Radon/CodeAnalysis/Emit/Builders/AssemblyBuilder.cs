@@ -889,9 +889,6 @@ internal sealed class AssemblyBuilder
                 case BoundDefaultExpression defaultExpression:
                     EmitDefaultExpression(defaultExpression);
                     break;
-                case BoundImportExpression importExpression:
-                    EmitImportExpression(importExpression);
-                    break;
                 case BoundInvocationExpression invocationExpression:
                     EmitInvocationExpression(invocationExpression);
                     break;
@@ -1003,12 +1000,6 @@ internal sealed class AssemblyBuilder
         {
             var type = _builder.BuildType(expression.Type);
             EmitInstruction(OpCode.Lddft, type);
-        }
-        
-        private void EmitImportExpression(BoundImportExpression expression)
-        {
-            EmitExpression(expression.Path);
-            EmitInstruction(OpCode.Import);
         }
 
         private void EmitInvocationExpression(BoundInvocationExpression expression)
