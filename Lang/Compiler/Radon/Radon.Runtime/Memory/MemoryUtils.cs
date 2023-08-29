@@ -13,5 +13,11 @@ internal static class MemoryUtils
         {
             *dest++ = *src++;
         }
+    } 
+    
+    public static unsafe T GetValue<T>(nuint pointer)
+        where T : unmanaged
+    {
+        return *(T*)pointer;
     }
 }

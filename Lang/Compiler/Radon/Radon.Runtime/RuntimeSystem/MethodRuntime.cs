@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.Drawing;
 using System.Linq;
 using System.Text;
+using CUE4Parse;
 using Radon.CodeAnalysis.Disassembly;
 using Radon.CodeAnalysis.Emit;
 using Radon.CodeAnalysis.Emit.Binary;
@@ -11,7 +13,13 @@ using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 using Radon.Common;
 using Radon.Runtime.Memory;
 using Radon.Runtime.RuntimeSystem.RuntimeObjects;
+using Radon.Runtime.RuntimeSystem.RuntimeObjects.Properties;
+using UAssetAPI;
 using UAssetAPI.IO;
+using UAssetAPI.PropertyFactories;
+using UAssetAPI.PropertyTypes.Objects;
+using UAssetAPI.UnrealTypes;
+using UAssetAPI.Unversioned;
 
 namespace Radon.Runtime.RuntimeSystem;
 
@@ -23,6 +31,7 @@ internal sealed class MethodRuntime
     private readonly MethodInfo _method;
     private readonly ImmutableArray<Instruction> _instructions;
     private readonly StackFrame _stackFrame;
+    private readonly ReadOnlyDictionary<ParameterInfo, RuntimeObject> _arguments;
 
     public MethodRuntime(AssemblyInfo assembly, RuntimeObject? instance, MethodInfo method,
         ReadOnlyDictionary<ParameterInfo, RuntimeObject> arguments)
@@ -31,6 +40,7 @@ internal sealed class MethodRuntime
         _metadata = assembly.Metadata;
         _instance = instance;
         _method = method;
+        _arguments = arguments;
         var instructionCount = _method.InstructionCount;
         var instructionStart = _method.FirstInstruction;
         var instructions = new Instruction[instructionCount];
@@ -356,62 +366,202 @@ internal sealed class MethodRuntime
                 var name = nameBuilder.ToString();
                 switch (name)
                 {
-                    case "Write":
+                    case "SwapArrayProperty":
                     {
-                        var value = _stackFrame.Pop();
-                        // TODO: Write the value to the archive.
-                        break;
-                    }
-                    case "Read":
-                    {
-                        var typeArg = templateArguments[0];
-                        // TODO: Get the position of the archive and read the value.
-                        break;
-                    }
-                    case "Seek":
-                    {
-                        var value = _stackFrame.Pop();
-                        if (value is ManagedObject managedObject)
-                        {
-                            var origin = _stackFrame.Pop();
-                            if (origin is not ManagedObject originObject)
-                            {
-                                ThrowUnexpectedValue();
-                                return _stackFrame;
-                            }
+                        var searchObject = _arguments.ValueAt(0);
+                        var replaceObject = _arguments.ValueAt(1);
 
-                            var offset = *(int*)managedObject.Pointer;
-                            var originValue = *(int*)originObject.Pointer;
-                            // TODO: Seek the archive.
-                        }
-                        else if (value is ManagedString managedString)
+                        if (_instance is not ManagedArchive archive)
                         {
-                            var str = managedString.ToString();
-                            // TODO: Seek the archive.
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        FactoryUtils.ASSET = archive.Archive;
+                        
+                        if (searchObject is ManagedArrayObject searchArray && replaceObject is ManagedArrayObject replaceArray)
+                        {
+                            archive.Archive.Swap(searchArray.ArrayPropertyData, replaceArray.ArrayPropertyData);
                         }
                         else
                         {
                             ThrowUnexpectedValue();
                             return _stackFrame;
                         }
-                        
+
                         break;
                     }
-                    case "Swap":
+                    case "SwapSoftObjectProperty":
                     {
-                        var other = _stackFrame.Pop();
-                        if (other is not ManagedObject otherObject)
+                        var searchObject = _arguments.ValueAt(0);
+                        var replaceObject = _arguments.ValueAt(1);
+
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        FactoryUtils.ASSET = archive.Archive;
+                        
+                        if (searchObject is ManagedSoftObject searchSoftObject && replaceObject is ManagedSoftObject replaceSoftObject)
+                        {
+                            archive.Archive.Swap(searchSoftObject.SoftObjectPropertyData, replaceSoftObject.SoftObjectPropertyData);
+                        }
+                        else
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        break;
+                    }
+                    case "SwapLinearColorProperty":
+                    {
+                        var searchObject = _arguments.ValueAt(0);
+                        var replaceObject = _arguments.ValueAt(1);
+
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        FactoryUtils.ASSET = archive.Archive;
+                        
+                        if (searchObject is ManagedLinearColorObject searchColor && replaceObject is ManagedLinearColorObject replaceColor)
+                        {
+                            archive.Archive.Swap(searchColor.LinearColorPropertyData, replaceColor.LinearColorPropertyData);
+                        }
+                        else
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        break;
+                    }
+                    case "CreateArrayProperty":
+                    {
+                        var arrayObject = _arguments.ValueAt(0);
+
+                        if (arrayObject is not ManagedArray managedArray)
                         {
                             ThrowUnexpectedValue();
                             return _stackFrame;
                         }
                         
-                        // TODO: Swap the archive with the other archive.
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        var managedSoftObjectList = managedArray.Elements.Cast<ManagedSoftObject>();
+                        var softObjectList = managedSoftObjectList.Select(obj => obj.SoftObjectPropertyData).ToList();
+
+                        FactoryUtils.ASSET = archive.Archive;
+
+                        var stackPtr = _stackFrame.Allocate(8);
+                        var data = ArrayFactory.Create(softObjectList);
+                        var managedArrayObject = new ManagedArrayObject(data, stackPtr);
+                        _stackFrame.Push(managedArrayObject);
+
+                        break;
+                    }
+                    case "CreateLinearColorProperty":
+                    {
+                        var redObject = _arguments.ValueAt(0);
+                        var greenObject = _arguments.ValueAt(1);
+                        var blueObject = _arguments.ValueAt(2);
+                        var alphaObject = _arguments.ValueAt(3);
+
+                        if (redObject is not ManagedObject redManagedObject 
+                            || greenObject is not ManagedObject greenManagedObject 
+                            || blueObject is not ManagedObject blueManagedObject 
+                            || alphaObject is not ManagedObject alphaManagedObject)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        float red = MemoryUtils.GetValue<float>(redManagedObject.Pointer);
+                        float green = MemoryUtils.GetValue<float>(greenManagedObject.Pointer);
+                        float blue = MemoryUtils.GetValue<float>(blueManagedObject.Pointer);
+                        float alpha = MemoryUtils.GetValue<float>(alphaManagedObject.Pointer);
+
+                        FactoryUtils.ASSET = archive.Archive;
+
+                        var stackPtr = _stackFrame.Allocate(8);
+                        var data = ColorFactory.Create(red, green, blue, alpha);
+                        var managedLinearColorObject = new ManagedLinearColorObject(data, stackPtr);
+                        _stackFrame.Push(managedLinearColorObject);
+
+                        break;
+                    }
+                    case "CreateSoftObjectProperty":
+                    {
+                        var other = _arguments.First().Value;
+                        if (other is not ManagedString softObjectStr)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        string substring = "";
+                        if (_arguments.Count > 1)
+                        {
+                            if (_arguments.ValueAt(1) is not ManagedString subString)
+                            {
+                                ThrowUnexpectedValue();
+                                return _stackFrame;
+                            }
+
+                            substring = subString.ToString();
+                        }
+
+                        FactoryUtils.ASSET = archive.Archive;
+
+                        var stackPtr = _stackFrame.Allocate(8);
+                        var data = SoftObjectFactory.Create(softObjectStr.ToString(), substring);
+                        var managedSoftObject = new ManagedSoftObject(data, stackPtr);
+                        _stackFrame.Push(managedSoftObject);
+
+                        break;
+                    }
+                    case "Swap":
+                    {
+                        var other = _arguments.First().Value;
+                        if (other is not ManagedArchive newArchive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        archive.SetArchive(archive.Archive.Swap(newArchive.Archive));
                         break;
                     }
                     case "Import":
                     {
-                        var value = _stackFrame.Pop();
+                        var value = _arguments.First().Value;
                         if (value is not ManagedString managedString)
                         {
                             ThrowUnexpectedValue();
@@ -421,9 +571,12 @@ internal sealed class MethodRuntime
                         var str = managedString.ToString();
 
                         var stackPtr = _stackFrame.Allocate(8);
-
-                        ZenAsset archive = new ZenAsset();
                         
+                        byte[] byteData = GlobalFileProvider.Provider.SaveAsset(str);
+                        var archive = new ZenAsset(new AssetBinaryReader(byteData), EngineVersion.VER_LATEST, Usmap.CachedMappings);
+                        var managedArchive = new ManagedArchive(archive, stackPtr);
+                        _stackFrame.Push(managedArchive);
+
                         break;
                     }
                 }

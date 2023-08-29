@@ -76,6 +76,6 @@
 
         VER_UE4_AUTOMATIC_VERSION_PLUS_ONE,
         /// <summary>The newest specified version of the Unreal Engine.</summary>
-        VER_UE4_AUTOMATIC_VERSION = VER_UE4_AUTOMATIC_VERSION_PLUS_ONE - 1,
+        VER_LATEST = VER_UE4_AUTOMATIC_VERSION_PLUS_ONE - 1,
     };
 }

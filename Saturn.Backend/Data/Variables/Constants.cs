@@ -208,9 +208,6 @@ namespace Saturn.Backend.Data.Variables
         public static AssetSelectorItem SelectedItem = new();
         public static AssetSelectorItem SelectedOption = new();
 
-        public static Usmap Mappings;
-        public static EngineVersion EngineVersion;
-
         public static List<string> PotentialOptions = new();
 
         public static List<Swaps> CurrentSwaps = new();

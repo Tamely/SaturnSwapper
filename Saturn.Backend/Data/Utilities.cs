@@ -14,7 +14,6 @@ using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Material.Parameters;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.GameplayTags;
-using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.Utils;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
@@ -31,6 +30,9 @@ using Saturn.Backend.Data.Variables;
 using SkiaSharp;
 using UAssetAPI;
 using UAssetAPI.IO;
+using UAssetAPI.UnrealTypes;
+using UAssetAPI.Unversioned;
+using FName = CUE4Parse.UE4.Objects.UObject.FName;
 
 namespace Saturn.Backend.Data
 {
@@ -65,7 +67,7 @@ namespace Saturn.Backend.Data
                 {
                     var pkg = await Constants.Provider.SavePackageAsync(characterPart.Path.Split('.')[0]);
                     AssetBinaryReader oldReader = new AssetBinaryReader(pkg.Values.First());
-                    ZenAsset oldAsset = new ZenAsset(oldReader, Constants.EngineVersion, Constants.Mappings);
+                    ZenAsset oldAsset = new ZenAsset(oldReader, EngineVersion.VER_LATEST, Usmap.CachedMappings);
 
                     var data = SaturnData.ToNonStatic();
                     SaturnData.Clear();
@@ -75,7 +77,7 @@ namespace Saturn.Backend.Data
 
                     pkg = await Constants.Provider.SavePackageAsync(swapPart == null ? Constants.EmptyParts[characterPart.Part].Path : swapPart.Path.Split('.')[0]);
                     AssetBinaryReader newReader = new AssetBinaryReader(pkg.Values.First());
-                    ZenAsset newAsset = new ZenAsset(newReader, Constants.EngineVersion, Constants.Mappings);
+                    ZenAsset newAsset = new ZenAsset(newReader, EngineVersion.VER_LATEST, Usmap.CachedMappings);
 
                     var asset = oldAsset.Swap(newAsset);
 

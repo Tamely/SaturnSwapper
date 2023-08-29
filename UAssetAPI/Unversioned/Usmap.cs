@@ -271,6 +271,7 @@ namespace UAssetAPI.Unversioned
 
     public class Usmap
     {
+        public static Usmap CachedMappings;
         /// <summary>
         /// The path of the file on disk. This does not need to be specified for regular parsing.
         /// </summary>
@@ -866,6 +867,7 @@ namespace UAssetAPI.Unversioned
         {
             this.FilePath = path;
             Read(PathToReader(path));
+            CachedMappings = this;
         }
 
         /// <summary>

@@ -115,8 +115,8 @@ internal sealed class AssemblyBuilder
                     }
                 }
                 
-                _methodMap.Add(type.TypeSymbol, methodMap);
-                _constructorMap.Add(type.TypeSymbol, constructorMap);
+                if (!_methodMap.ContainsKey(type.TypeSymbol)) _methodMap.Add(type.TypeSymbol, methodMap);
+                if (!_constructorMap.ContainsKey(type.TypeSymbol)) _constructorMap.Add(type.TypeSymbol, constructorMap);
             }
         }
     }

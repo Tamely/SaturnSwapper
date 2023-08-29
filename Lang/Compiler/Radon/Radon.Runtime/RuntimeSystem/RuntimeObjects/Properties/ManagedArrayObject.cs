@@ -1,30 +1,30 @@
-﻿using System;
-using Radon.CodeAnalysis.Emit;
+﻿using Radon.CodeAnalysis.Emit;
 using Radon.Runtime.Memory;
-using UAssetAPI.IO;
+using UAssetAPI.PropertyTypes.Objects;
+using System;
 
-namespace Radon.Runtime.RuntimeSystem.RuntimeObjects;
+namespace Radon.Runtime.RuntimeSystem.RuntimeObjects.Properties;
 
-internal sealed class ManagedArchive : RuntimeObject
+internal sealed class ManagedArrayObject : RuntimeObject
 {
     public override RuntimeType Type { get; }
     public override int Size { get; } // The size in bytes of the array on the heap. This includes the 4 bytes for the length.
     public override UIntPtr Pointer { get; } // The address of the array on the heap.
-    public ZenAsset Archive { get; private set; } // The archive
+    public ArrayPropertyData ArrayPropertyData { get; }
 
-    public ManagedArchive(ZenAsset archive, UIntPtr pointer)
+    public ManagedArrayObject(ArrayPropertyData array, UIntPtr pointer)
     {
-        Archive = archive;
+        ArrayPropertyData = array;
         Pointer = pointer;
-        Type = ManagedRuntime.System.GetType("archive");
+        Type = ManagedRuntime.System.GetType("ArrayProperty");
         Size = Type.Size;
     }
 
     public override RuntimeObject ComputeOperation(OpCode operation, RuntimeObject? other, StackFrame stackFrame)
     {
-        if (other is not ManagedArchive otherArchive)
+        if (other is not ManagedSoftObject otherArchive)
         {
-            throw new InvalidOperationException("Cannot perform an operation on a archive and a non-archive.");
+            throw new InvalidOperationException("Cannot perform an operation on a array object and a non-array object.");
         }
 
         switch (operation)
@@ -39,16 +39,12 @@ internal sealed class ManagedArchive : RuntimeObject
             }
         }
 
-        throw new InvalidOperationException($"Cannot perform operation {operation} on a archive.");
+        throw new InvalidOperationException($"Cannot perform operation {operation} on a array object.");
     }
-
-    public void SetArchive(ZenAsset archive)
-    {
-        Archive = archive;
-    }
+    
 
     public override string ToString()
     {
-        return Archive.Name.Value.Value;
+        return ArrayPropertyData.ArrayType.Value.Value;
     }
 }

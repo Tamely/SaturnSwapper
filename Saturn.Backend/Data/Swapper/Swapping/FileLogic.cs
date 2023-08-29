@@ -17,6 +17,9 @@ using Saturn.Backend.Data.Swapper.Swapping.Models;
 using Saturn.Backend.Data.Variables;
 using UAssetAPI;
 using UAssetAPI.IO;
+using UAssetAPI.UnrealTypes;
+using UAssetAPI.Unversioned;
+using Oodle = Saturn.Backend.Data.Compression.Oodle;
 using SaturnData = CUE4Parse.SaturnData;
 
 namespace Saturn.Backend.Data.Swapper.Swapping;
@@ -170,8 +173,8 @@ public class FileLogic
         
         byte[] replaceHID = await Constants.Provider.SaveAssetAsync(replace.HID.Split('.')[0] + ".uasset");
         
-        ZenAsset searchAsset = new ZenAsset(new AssetBinaryReader(searchHID), Constants.EngineVersion, Constants.Mappings);
-        ZenAsset replaceAsset = new ZenAsset(new AssetBinaryReader(replaceHID), Constants.EngineVersion, Constants.Mappings);
+        ZenAsset searchAsset = new ZenAsset(new AssetBinaryReader(searchHID), EngineVersion.VER_LATEST, Usmap.CachedMappings);
+        ZenAsset replaceAsset = new ZenAsset(new AssetBinaryReader(replaceHID), EngineVersion.VER_LATEST, Usmap.CachedMappings);
 
         var swappedAsset = searchAsset.Swap(replaceAsset);
 
@@ -212,7 +215,7 @@ public class FileLogic
 
             var pkg = await Constants.Provider.SavePackageAsync(characterPart.Path.Split('.')[0]);
             AssetBinaryReader oldReader = new AssetBinaryReader(pkg.Values.First());
-            ZenAsset oldAsset = new ZenAsset(oldReader, Constants.EngineVersion, Constants.Mappings);
+            ZenAsset oldAsset = new ZenAsset(oldReader, EngineVersion.VER_LATEST, Usmap.CachedMappings);
 
             var data = SaturnData.ToNonStatic();
             SaturnData.Clear();
@@ -222,7 +225,7 @@ public class FileLogic
 
             pkg = await Constants.Provider.SavePackageAsync(swapPart == null ? Constants.EmptyParts[characterPart.Part].Path : swapPart.Path.Split('.')[0]);
             AssetBinaryReader newReader = new AssetBinaryReader(pkg.Values.First());
-            ZenAsset newAsset = new ZenAsset(newReader, Constants.EngineVersion, Constants.Mappings);
+            ZenAsset newAsset = new ZenAsset(newReader, EngineVersion.VER_LATEST, Usmap.CachedMappings);
 
             var asset = oldAsset.Swap(newAsset);
 

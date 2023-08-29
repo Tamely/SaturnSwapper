@@ -71,13 +71,7 @@
     protected override async Task OnInitializedAsync()
     {
         ChangeState();
-
-        if (File.Exists(Constants.BasePath + "Plugin.json"))
-        {
-            Plugin plugin = JsonConvert.DeserializeObject<Plugin>(File.ReadAllText(Constants.BasePath + "Plugin.json"));
-            File.WriteAllBytes(Constants.PluginPath + "Plugin.saturn", new PluginSerializer(plugin).Data());
-        }
-
+        
         await RefreshPlugins();
         Marketplace = await _saturnAPIService.ReturnEndpointAsync<List<MarketplaceModel>>("/api/v1/Saturn/PluginMarketplace");
     }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using CUE4Parse;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
@@ -49,6 +50,8 @@ public class SaturnFileProvider : IDisposable
         _provider.SubmitKeys(dynamicAesKeys);
 
         Constants.CanSpecialSwap = _provider.MountedVfs.Any(x => x.Name == "pakchunk0-WindowsClient.pak");
+
+        GlobalFileProvider.Provider = Provider;
     }
     
     public void Dispose()
