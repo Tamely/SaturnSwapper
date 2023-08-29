@@ -27,7 +27,7 @@ public static class OpCodeExtensions
             return true;
         }
 
-        if (opCode is OpCode.Ldlen)
+        if (opCode is OpCode.Ldlen or OpCode.Ldelema)
         {
             return true;
         }

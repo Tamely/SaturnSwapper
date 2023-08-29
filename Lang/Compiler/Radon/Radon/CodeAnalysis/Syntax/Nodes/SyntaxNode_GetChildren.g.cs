@@ -573,7 +573,7 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Expressions
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             yield return Expression;
-            yield return DotToken;
+            yield return AccessToken;
             yield return Name;
         }
     }
@@ -733,6 +733,20 @@ namespace Radon.CodeAnalysis.Syntax.Nodes
                 yield return child;
             }
             
+        }
+    }
+}
+
+namespace Radon.CodeAnalysis.Syntax.Nodes.Clauses
+{
+    public partial class PointerTypeSyntax
+    {
+        public override string SyntaxName => "Pointer Type";
+        public override SyntaxKind Kind => SyntaxKind.PointerType;
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            yield return Type;
+            yield return StarToken;
         }
     }
 }
@@ -961,8 +975,17 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Expressions
         
         public override IEnumerable<SyntaxNode> GetChildren()
         {
-            yield return OperatorToken;
+            if (PrefixOperator != null)
+            {
+                yield return PrefixOperator;
+            }
+            
             yield return Operand;
+            if (PostfixOperator != null)
+            {
+                yield return PostfixOperator;
+            }
+            
         }
     }
 }

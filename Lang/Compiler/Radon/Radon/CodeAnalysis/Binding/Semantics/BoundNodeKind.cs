@@ -43,5 +43,8 @@ internal enum BoundNodeKind
     LabelStatement,
     ConditionalGotoStatement,
     GotoStatement,
-    Array
+    Array,
+    AddressOfExpression,
+    DereferenceExpression,
+    Pointer
 }

@@ -78,7 +78,7 @@ internal sealed class StructLowerer
                 var syntax = initializer.Syntax;
                 var loweredInitializer = lowerer.LowerExpression(initializer);
                 BoundExpression thisOrType;
-                if (constructor.Symbol.HasModifier(SyntaxKind.StaticKeyword))
+                if (constructor.Symbol.IsStatic)
                 {
                     thisOrType = new BoundNameExpression(
                         syntax,

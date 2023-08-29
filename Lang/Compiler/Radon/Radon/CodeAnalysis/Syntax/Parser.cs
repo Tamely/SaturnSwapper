@@ -583,11 +583,27 @@ Skip:
                 
             _position = position;
         }
-            
-        if (Current.Kind == SyntaxKind.OpenBracketToken) // Array type
+
+        while (true)
         {
-            NextToken(); // Skip the open bracket
-            NextToken(); // Skip the close bracket
+            if (Current.Kind == SyntaxKind.OpenBracketToken)
+            {
+                NextToken(); // Skip the open bracket
+                if (Current.Kind != SyntaxKind.CloseBracketToken)
+                {
+                    return false;
+                }
+                
+                NextToken(); // Skip the close bracket
+            }
+            else if (Current.Kind == SyntaxKind.StarToken)
+            {
+                NextToken(); // Skip the star
+            }
+            else
+            {
+                break;
+            }
         }
         
         return true;
@@ -748,19 +764,19 @@ Skip:
         {
             var operatorToken = NextToken();
             var operand = ParseBinaryExpression(prefix.Precedence);
-            left = new UnaryExpressionSyntax(_syntaxTree, operatorToken, operand);
+            left = new UnaryExpressionSyntax(_syntaxTree, operatorToken, operand, null);
         }
         else
         {
             left = ParseCastExpression();
         }
-
+        
         if (Current.Kind.TryGetAttribute(SKAttributes.Operator, out var attribute1) &&
             attribute1.Value is OperatorData { IsPostfixUnaryOperator: true } postfix &&
             postfix.Precedence >= parentPrecedence)
         {
             var operatorToken = NextToken();
-            left = new UnaryExpressionSyntax(_syntaxTree, operatorToken, left);
+            left = new UnaryExpressionSyntax(_syntaxTree, null, left, operatorToken);
         }
         
         while (true)
@@ -802,10 +818,10 @@ Skip:
         }
         
         ResetPos(pos);
-        return ParseMemberAccessOrInvocation();
+        return ParseMemberAccessInvocationOrElementAccess();
     }
     
-    private ExpressionSyntax ParseMemberAccessOrInvocation()
+    private ExpressionSyntax ParseMemberAccessInvocationOrElementAccess()
     {
         // We do this because MemberAccess and Invocation are left-associative and have the same precedence
         // left-associative means that we parse the left side first, then the right side
@@ -813,11 +829,12 @@ Skip:
         var left = ParsePrimaryExpression();
         while (true)
         {
-            if (Current.Kind == SyntaxKind.DotToken)
+            if (Current.Kind == SyntaxKind.DotToken ||
+                Current.Kind == SyntaxKind.ArrowToken)
             {
-                var dot = NextToken();
+                var accessToken = NextToken();
                 var name = ExpectToken(SyntaxKind.IdentifierToken);
-                left = new MemberAccessExpressionSyntax(_syntaxTree, left, dot, name);
+                left = new MemberAccessExpressionSyntax(_syntaxTree, left, accessToken, name);
             }
             else if (Current.Kind == SyntaxKind.OpenParenthesisToken ||
                      IsValidTypeArgumentList(out _))
@@ -935,6 +952,41 @@ Skip:
         var identifier = MatchToken(SyntaxKind.IdentifierToken);
         var typeArguments = ParseTypeArguments();
         var type = new TypeSyntax(_syntaxTree, identifier, typeArguments);
+        while (true)
+        {
+            if (Current.Kind == SyntaxKind.OpenBracketToken)
+            {
+                var openBracket = NextToken();
+                ExpressionSyntax? size = null;
+                if (Current.Kind != SyntaxKind.CloseBracketToken)
+                {
+                    size = ParseExpression();
+                }
+                
+                var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
+                type = new ArrayTypeSyntax(_syntaxTree, type, openBracket, size, closeBracket);
+            }
+            else if (Current.Kind == SyntaxKind.StarToken)
+            {
+                var star = NextToken();
+                type = new PointerTypeSyntax(_syntaxTree, type, star);
+            }
+            else
+            {
+                break;
+            }
+        }
+        
+        _shouldBreakRightShift = false;
+        return type;
+    }
+    
+    /*private TypeSyntax ParseTypeClause()
+    {
+        _shouldBreakRightShift = true;
+        var identifier = MatchToken(SyntaxKind.IdentifierToken);
+        var typeArguments = ParseTypeArguments();
+        var type = new TypeSyntax(_syntaxTree, identifier, typeArguments);
         _shouldBreakRightShift = false;
         return Current.Kind == SyntaxKind.OpenBracketToken ? ParseArrayType(type) : type;
     }
@@ -953,7 +1005,7 @@ Skip:
         var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
         _shouldBreakRightShift = false;
         return new ArrayTypeSyntax(_syntaxTree, type, openBracket, size, closeBracket);
-    }
+    }*/
 
     private TypeParameterListSyntax ParseTypeParameters()
     {

@@ -34,11 +34,6 @@ public abstract class TypeSymbol : Symbol
     public static readonly EnumSymbol SeekOrigin = new("seek_origin", EmptyMembers, null, Mods);
     public static readonly TemplateSymbol List;
     public static readonly StructSymbol System = new("system", 0, EmptyMembers, null, Mods);
-    
-    public static readonly StructSymbol SoftObjectProperty = new("SoftObjectProperty", 8, EmptyMembers, null, Mods);
-    public static readonly StructSymbol ArrayProperty = new("ArrayProperty", 8, EmptyMembers, null, Mods);
-    public static readonly ArrayTypeSymbol SoftObjectArray = new ArrayTypeSymbol(SoftObjectProperty);
-    public static readonly StructSymbol LinearColorProperty = new("LinearColorProperty", 8, EmptyMembers, null, Mods);
 
     static TypeSymbol()
     {
@@ -49,46 +44,31 @@ public abstract class TypeSymbol : Symbol
         Archive = new StructSymbol("archive", 0, EmptyMembers, null, mods);
         var typeParameterBuilder = new TypeParameterBuilder();
         {
-            MethodSymbol createArrayPropertyMethod;
+            TemplateMethodSymbol writeMethod;
             {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("array", SoftObjectArray, 0));
-                createArrayPropertyMethod = new MethodSymbol(Archive, "CreateArrayProperty", ArrayProperty, parameters, Mods);
+                var t = typeParameterBuilder.AddTypeParameter("T");
+                var parameters = ImmutableArray.Create(new ParameterSymbol("value", t, 0));
+                writeMethod = new(Archive, "Write", Void, parameters, Mods, typeParameterBuilder.Build());
             }
-            
-            MethodSymbol createLinearColorPropertyMethod;
+
+            TemplateMethodSymbol readMethod;
             {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("red", Float, 0), new ParameterSymbol("green", Float, 1), new ParameterSymbol("blue", Float, 2), new ParameterSymbol("alpha", Float, 3));
-                createLinearColorPropertyMethod = new MethodSymbol(Archive, "CreateLinearColorProperty", LinearColorProperty, parameters, Mods);
+                var t = typeParameterBuilder.AddTypeParameter("T");
+                var parameters = ImmutableArray<ParameterSymbol>.Empty;
+                readMethod = new(Archive, "Read", t, parameters, Mods, typeParameterBuilder.Build());
             }
-            
-            MethodSymbol createSoftObjectPropertyMethod;
+
+            MethodSymbol seekMethod;
             {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("assetPath", String, 0));
-                createSoftObjectPropertyMethod = new MethodSymbol(Archive, "CreateSoftObjectProperty", SoftObjectProperty, parameters, Mods);
+                var parameters = ImmutableArray.Create(new ParameterSymbol("offset", Int, 0),
+                    new ParameterSymbol("origin", SeekOrigin, 1));
+                seekMethod = new MethodSymbol(Archive, "Seek", Void, parameters, Mods);
             }
-            
-            MethodSymbol createSoftObjectPropertyWithSubstringMethod;
+
+            MethodSymbol seekStrMethod;
             {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("assetPath", String, 0), new ParameterSymbol("subString", String, 1));
-                createSoftObjectPropertyWithSubstringMethod = new MethodSymbol(Archive, "CreateSoftObjectProperty", SoftObjectProperty, parameters, Mods);
-            }
-            
-            MethodSymbol swapArrayMethod;
-            {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("search", ArrayProperty, 0), new ParameterSymbol("replace", ArrayProperty, 1));
-                swapArrayMethod = new MethodSymbol(Archive, "SwapArrayProperty", Void, parameters, Mods);
-            }
-            
-            MethodSymbol swapSoftObjectMethod;
-            {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("search", SoftObjectProperty, 0), new ParameterSymbol("replace", SoftObjectProperty, 1));
-                swapSoftObjectMethod = new MethodSymbol(Archive, "SwapSoftObjectProperty", Void, parameters, Mods);
-            }
-            
-            MethodSymbol swapLinearColorMethod;
-            {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("search", LinearColorProperty, 0), new ParameterSymbol("replace", LinearColorProperty, 1));
-                swapLinearColorMethod = new MethodSymbol(Archive, "SwapLinearColorProperty", Void, parameters, Mods);
+                var parameters = ImmutableArray.Create(new ParameterSymbol("str", String, 0));
+                seekStrMethod = new MethodSymbol(Archive, "Seek", Void, parameters, Mods);
             }
 
             MethodSymbol swapMethod;
@@ -101,16 +81,13 @@ public abstract class TypeSymbol : Symbol
             {
                 var importMods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword, SyntaxKind.StaticKeyword);
                 var parameters = ImmutableArray.Create(new ParameterSymbol("path", String, 0));
-                importMethod = new MethodSymbol(Archive, "Import", Archive, parameters, importMods);
+                importMethod = new MethodSymbol(Archive, "Import", Void, parameters, importMods);
             }
-            
-            Archive.AddMember(swapArrayMethod);
-            Archive.AddMember(swapSoftObjectMethod);
-            Archive.AddMember(swapLinearColorMethod);
-            Archive.AddMember(createArrayPropertyMethod);
-            Archive.AddMember(createLinearColorPropertyMethod);
-            Archive.AddMember(createSoftObjectPropertyWithSubstringMethod);
-            Archive.AddMember(createSoftObjectPropertyMethod);
+
+            Archive.AddMember(writeMethod);
+            Archive.AddMember(readMethod);
+            Archive.AddMember(seekMethod);
+            Archive.AddMember(seekStrMethod);
             Archive.AddMember(swapMethod);
             Archive.AddMember(importMethod);
         }
@@ -195,6 +172,15 @@ public abstract class TypeSymbol : Symbol
             System = (StructSymbol)System.WithModifer(SyntaxKind.StaticKeyword);
         }
     }
+    
+    public abstract ImmutableArray<MemberSymbol> Members { get; private protected set; }
+    public abstract AssemblySymbol? ParentAssembly { get; }
+    public abstract int Size { get; internal set; }
+    internal abstract TypeBinder? TypeBinder { get; set; }
+    internal TemplateBinder? TemplateBinder { get; set; } // This is only used for templates.
+    public sealed override bool HasType => true;
+    public sealed override TypeSymbol Type => this;
+    public bool IsStatic => HasModifier(SyntaxKind.StaticKeyword);
     
     public static bool operator ==(TypeSymbol? left, TypeSymbol? right)
     {
@@ -426,8 +412,7 @@ public abstract class TypeSymbol : Symbol
     {
         return ImmutableArray.Create<TypeSymbol>(
             Void, Bool, SByte, Byte, Short, UShort, Int, UInt, Long, ULong, 
-            Float, Double, Char, String, Archive, SeekOrigin, List, System,
-            SoftObjectProperty, LinearColorProperty, ArrayProperty, SoftObjectArray
+            Float, Double, Char, String, Archive, SeekOrigin, List, System
         );
     }
     
@@ -446,12 +431,4 @@ public abstract class TypeSymbol : Symbol
     {
         return ImmutableArray.Create<TypeSymbol>(Float, Double);
     }
-
-    public abstract ImmutableArray<MemberSymbol> Members { get; private protected set; }
-    public abstract AssemblySymbol? ParentAssembly { get; }
-    public abstract int Size { get; internal set; }
-    internal abstract TypeBinder? TypeBinder { get; set; }
-    internal TemplateBinder? TemplateBinder { get; set; } // This is only used for templates.
-    public sealed override bool HasType => true;
-    public sealed override TypeSymbol Type => this;
 }

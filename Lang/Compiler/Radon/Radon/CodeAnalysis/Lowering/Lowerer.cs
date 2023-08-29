@@ -44,6 +44,7 @@ internal sealed class Lowerer
             BoundEnum boundEnum => boundEnum,
             BoundErrorType boundType => boundType,
             BoundArray boundArray => boundArray,
+            BoundPointer boundPointer => boundPointer,
             _ => throw new Exception($"Unexpected type {node.Kind}")
         };
     }

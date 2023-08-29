@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using Radon.Common;
 using Radon.Runtime.Memory.Exceptions;
 using Radon.Runtime.Memory.Native;
 using Radon.Runtime.RuntimeSystem;
@@ -21,10 +22,12 @@ internal sealed class HeapManager
     {
         _freeBlocks = new LinkedList<FreeBlock>();
         _allocatedObjects = new Dictionary<nuint, RuntimeObject>();
+        Logger.Log("Allocating heap...", LogLevel.Info);
         var heap = (nuint)PInvoke.VirtualAlloc(nint.Zero, MemoryUtils.HeapSize,
             AllocationType.COMMIT | AllocationType.RESERVE, MemoryProtection.READWRITE);
         _end = heap + MemoryUtils.HeapSize;
         _current = heap;
+        Logger.Log($"Allocated {MemoryUtils.HeapSize} bytes for the heap", LogLevel.Info);
     }
     
     public void FreeHeap()
@@ -37,6 +40,7 @@ internal sealed class HeapManager
 
     public RuntimeObject GetObject(nuint pointer)
     {
+        Logger.Log($"Getting object at {pointer}", LogLevel.Info);
         if (!_allocatedObjects.TryGetValue(pointer, out var obj))
         {
             throw new InvalidOperationException("Object does not exist.");
@@ -47,6 +51,7 @@ internal sealed class HeapManager
     
     public void SetObject(nuint pointer, RuntimeObject obj)
     {
+        Logger.Log($"Setting object at {pointer}", LogLevel.Info);
         if (!_allocatedObjects.ContainsKey(pointer))
         {
             throw new InvalidOperationException("Object does not exist.");
@@ -90,6 +95,7 @@ internal sealed class HeapManager
     
     public nuint Allocate(int size)
     {
+        Logger.Log($"Allocating {size} bytes on the heap...", LogLevel.Info);
         var current = _freeBlocks.First;
         while (current is not null)
         {
@@ -127,7 +133,33 @@ internal sealed class HeapManager
 
     public void Deallocate(RuntimeObject obj)
     {
-        Free(obj.Pointer, obj.Size);
+        Logger.Log($"Deallocating object at {obj.Pointer}", LogLevel.Info);
+        var address = obj.Pointer;
+        var size = obj.Size;
+        var block = new FreeBlock(address, size);
+        var current = _freeBlocks.First;
+        var merged = false;
+        while (current is not null)
+        {
+            var next = current.Next;
+            if (current.Value.Pointer + (nuint)current.Value.Size == block.Pointer && next is not null)
+            {
+                // We can merge the blocks
+                var newBlock = new FreeBlock(current.Value.Pointer, current.Value.Size + block.Size);
+                _freeBlocks.AddBefore(next, newBlock);
+                _freeBlocks.Remove(current);
+                _freeBlocks.Remove(next);
+                merged = true;
+            }
+            
+            current = next;
+        }
+        
+        if (!merged)
+        {
+            _freeBlocks.AddLast(block);
+        }
+        
         switch (obj)
         {
             case ManagedObject managedObject:
@@ -159,32 +191,5 @@ internal sealed class HeapManager
         }
 
         _allocatedObjects.Remove(obj.Pointer);
-    }
-    
-    private void Free(nuint address, int size)
-    {
-        var block = new FreeBlock(address, size);
-        var current = _freeBlocks.First;
-        var merged = false;
-        while (current is not null)
-        {
-            var next = current.Next;
-            if (current.Value.Pointer + (nuint)current.Value.Size == block.Pointer && next is not null)
-            {
-                // We can merge the blocks
-                var newBlock = new FreeBlock(current.Value.Pointer, current.Value.Size + block.Size);
-                _freeBlocks.AddBefore(next, newBlock);
-                _freeBlocks.Remove(current);
-                _freeBlocks.Remove(next);
-                merged = true;
-            }
-            
-            current = next;
-        }
-        
-        if (!merged)
-        {
-            _freeBlocks.AddLast(block);
-        }
     }
 }

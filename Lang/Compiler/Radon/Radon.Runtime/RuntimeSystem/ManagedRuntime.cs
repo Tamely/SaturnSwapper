@@ -45,7 +45,7 @@ internal sealed class ManagedRuntime
     public static RuntimeType Float64 => System.GetType("double");
     public static RuntimeType Char => System.GetType("char");
     public static RuntimeType String => System.GetType("string");
-    public static RuntimeType SoftObject => System.GetType("SoftObjectProperty");
+    public static RuntimeType CharArray => System.GetType("char[]");
 
     static ManagedRuntime()
     {
@@ -84,17 +84,27 @@ internal sealed class ManagedRuntime
     public static ImmutableArray<RuntimeObject> GetRoots()
     {
         var builder = ImmutableArray.CreateBuilder<RuntimeObject>();
+        Logger.Log("Retrieving static objects...", LogLevel.Info);
         foreach (var obj in StaticHeapManager.Objects)
         {
+            Logger.Log($"Adding static object at {obj.Pointer} to roots", LogLevel.Info);
             builder.Add(obj);
         }
 
+        Logger.Log("Retrieving stack frames...", LogLevel.Info);
         var stacks = StackManager.StackFrames;
         foreach (var stackFrame in stacks)
         {
-            builder.AddRange(stackFrame.Variables);
+            Logger.Log("Retrieving objects from stack frame...", LogLevel.Info);
+            foreach (var variable in stackFrame.Variables)
+            {
+                Logger.Log($"Adding object at {variable.Pointer} to roots", LogLevel.Info);
+                builder.Add(variable);
+            }
+            
             if (stackFrame.ReturnObject is not null)
             {
+                Logger.Log($"Adding return object at {stackFrame.ReturnObject.Pointer} to roots", LogLevel.Info);
                 builder.Add(stackFrame.ReturnObject);
             }
         }

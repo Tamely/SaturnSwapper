@@ -3,16 +3,16 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Expressions;
 public sealed partial class MemberAccessExpressionSyntax : ExpressionSyntax
 {
     public ExpressionSyntax Expression { get; }
-    public SyntaxToken DotToken { get; }
+    public SyntaxToken AccessToken { get; }
     public SyntaxToken Name { get; }
     public override bool CanBeStatement => false;
     
-    public MemberAccessExpressionSyntax(SyntaxTree syntaxTree, ExpressionSyntax expression, SyntaxToken dotToken, 
+    public MemberAccessExpressionSyntax(SyntaxTree syntaxTree, ExpressionSyntax expression, SyntaxToken accessToken, 
                                         SyntaxToken name) 
         : base(syntaxTree)
     {
         Expression = expression;
-        DotToken = dotToken;
+        AccessToken = accessToken;
         Name = name;
     }
 }

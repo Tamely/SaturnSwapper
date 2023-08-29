@@ -53,6 +53,7 @@ internal sealed class TypeSymbolBinder : TypeBinder
             TemplateSymbol templateSymbol => BindTemplate(templateSymbol, node),
             PrimitiveTemplateSymbol primitiveTemplateSymbol => BindTemplate(primitiveTemplateSymbol.Template, node),
             ArrayTypeSymbol arrayTypeSymbol => BindArray(arrayTypeSymbol, node),
+            PointerTypeSymbol pointerTypeSymbol => BindPointer(pointerTypeSymbol, node),
             _ => throw new Exception($"Unexpected type: {_type.GetType()}")
         };
     }
@@ -75,7 +76,7 @@ internal sealed class TypeSymbolBinder : TypeBinder
             return (MethodSymbol)member!;
         }
         
-        var templateMethodBinder = new TemplateMethodBinder(this);
+        var templateMethodBinder = new TemplateMethodCallBinder(this);
         var boundTemplateMethod = (BoundMethod)templateMethodBinder.Bind(SyntaxNode.Empty, templateMethod, typeArguments, callSite, name);
         _boundMembers.Add(boundTemplateMethod);
         _type.AddMember(boundTemplateMethod.Symbol);
@@ -173,6 +174,11 @@ internal sealed class TypeSymbolBinder : TypeBinder
     private BoundNode BindArray(ArrayTypeSymbol arrayTypeSymbol, SyntaxNode node)
     {
         return new BoundArray(node, arrayTypeSymbol, _boundMembers.ToImmutableArray());
+    }
+    
+    private BoundNode BindPointer(PointerTypeSymbol pointerTypeSymbol, SyntaxNode node)
+    {
+        return new BoundPointer(node, pointerTypeSymbol);
     }
 
     public void BindMembers()

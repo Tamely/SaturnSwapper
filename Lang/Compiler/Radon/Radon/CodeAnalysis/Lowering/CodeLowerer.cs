@@ -355,9 +355,11 @@ internal sealed class CodeLowerer
         return node switch
         {
             BoundAssignmentExpression boundAssignmentExpression => LowerAssignmentExpression(boundAssignmentExpression),
+            BoundAddressOfExpression boundAddressOfExpression => LowerAddressOfExpression(boundAddressOfExpression),
             BoundBinaryExpression boundBinaryExpression => LowerBinaryExpression(boundBinaryExpression),
             BoundConversionExpression boundConversionExpression => LowerConversionExpression(boundConversionExpression),
             BoundDefaultExpression boundDefaultExpression => boundDefaultExpression,
+            BoundDereferenceExpression boundDereferenceExpression => LowerDereferenceExpression(boundDereferenceExpression),
             BoundElementAccessExpression boundElementAccessExpression => LowerElementAccessExpression(boundElementAccessExpression),
             BoundErrorExpression boundErrorExpression => boundErrorExpression,
             BoundImportExpression boundImportExpression => LowerImportExpression(boundImportExpression),
@@ -410,6 +412,12 @@ internal sealed class CodeLowerer
         }
         
         return new BoundAssignmentExpression(node.Syntax, loweredLeft, loweredRight, node.AssignmentOperatorKind);
+    }
+    
+    private BoundExpression LowerAddressOfExpression(BoundAddressOfExpression node)
+    {
+        var loweredOperand = LowerExpression(node.Operand);
+        return new BoundAddressOfExpression(node.Syntax, node.Pointer, loweredOperand);
     }
     
     private BoundStatement GenerateShortCircuiting(BoundNode node, BoundExpression loweredLeft, 
@@ -502,6 +510,12 @@ internal sealed class CodeLowerer
         return new BoundConversionExpression(node.Syntax, node.Type, loweredExpression);
     }
     
+    private BoundExpression LowerDereferenceExpression(BoundDereferenceExpression node)
+    {
+        var loweredOperand = LowerExpression(node.Operand);
+        return new BoundDereferenceExpression(node.Syntax, node.Type, loweredOperand);
+    }
+    
     private BoundExpression LowerElementAccessExpression(BoundElementAccessExpression node)
     {
         var loweredExpression = LowerExpression(node.Expression);
@@ -547,7 +561,7 @@ internal sealed class CodeLowerer
         {
             // We know it's calling a method in the same type
             var symbol = node.Method;
-            if (symbol.HasModifier(SyntaxKind.StaticKeyword))
+            if (symbol.IsStatic)
             {
                 result = new BoundMemberAccessExpression(
                     node.Expression.Syntax, 
@@ -597,7 +611,7 @@ internal sealed class CodeLowerer
         }
 
         BoundExpression result;
-        if (member.HasModifier(SyntaxKind.StaticKeyword))
+        if (member.IsStatic)
         {
             result = new BoundMemberAccessExpression(
                 node.Syntax, 
@@ -647,7 +661,7 @@ internal sealed class CodeLowerer
             if (op == null)
             {
                 var syntax = node.Syntax as UnaryExpressionSyntax;
-                var location = syntax!.OperatorToken.Location;
+                var location = syntax!.PrefixOperator.Location;
                 _diagnostics.ReportUndefinedUnaryOperator(location, opToken.Text!, loweredOperand.Type);
                 return node;
             }

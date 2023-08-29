@@ -115,8 +115,8 @@ internal sealed class AssemblyBuilder
                     }
                 }
                 
-                if (!_methodMap.ContainsKey(type.TypeSymbol)) _methodMap.Add(type.TypeSymbol, methodMap);
-                if (!_constructorMap.ContainsKey(type.TypeSymbol)) _constructorMap.Add(type.TypeSymbol, constructorMap);
+                _methodMap.Add(type.TypeSymbol, methodMap);
+                _constructorMap.Add(type.TypeSymbol, constructorMap);
             }
         }
     }
@@ -299,6 +299,10 @@ internal sealed class AssemblyBuilder
                 underlyingType = BuildType(a.ElementType);
                 isArray = true;
                 break;
+            case PointerTypeSymbol p:
+                kind = TypeKind.Pointer;
+                underlyingType = BuildType(p.PointedType);
+                break;
             case BoundTypeParameterSymbol b:
                 return BuildType(b.BoundType);
             default:
@@ -384,7 +388,7 @@ internal sealed class AssemblyBuilder
         ConstructorSymbol? staticConstructor = null;
         foreach (var constructor in constructors)
         {
-            if (constructor.Modifiers.Contains(SyntaxKind.StaticKeyword))
+            if (constructor.IsStatic)
             {
                 staticConstructor = constructor;
                 continue;
@@ -680,12 +684,9 @@ internal sealed class AssemblyBuilder
         
         private void EmitInstructions()
         {
-            var index = 0;
-            while (index < _statements.Length)
+            foreach (var statement in _statements)
             {
-                var statement = _statements[index];
                 EmitStatement(statement);
-                index++;
             }
         }
         
@@ -880,6 +881,9 @@ internal sealed class AssemblyBuilder
                 case BoundAssignmentExpression assignmentExpression:
                     EmitAssignmentExpression(assignmentExpression);
                     break;
+                case BoundAddressOfExpression addressOfExpression:
+                    EmitAddressOfExpression(addressOfExpression);
+                    break;
                 case BoundBinaryExpression binaryExpression:
                     EmitBinaryExpression(binaryExpression);
                     break;
@@ -888,6 +892,9 @@ internal sealed class AssemblyBuilder
                     break;
                 case BoundDefaultExpression defaultExpression:
                     EmitDefaultExpression(defaultExpression);
+                    break;
+                case BoundDereferenceExpression dereferenceExpression:
+                    EmitDereferenceExpression(dereferenceExpression);
                     break;
                 case BoundInvocationExpression invocationExpression:
                     EmitInvocationExpression(invocationExpression);
@@ -925,6 +932,66 @@ internal sealed class AssemblyBuilder
             _isAssigning = true;
             EmitExpression(expression.Left);
             _isAssigning = false;
+        }
+        
+        private void EmitAddressOfExpression(BoundAddressOfExpression expression)
+        {
+            var type = _builder.BuildType(expression.Type);
+            EmitInstruction(OpCode.Ldtype, type);
+            if (expression.Operand is BoundMemberAccessExpression memberAccess)
+            {
+                if (memberAccess.Member is FieldSymbol field)
+                {
+                    var emittedField = _builder._fieldSymbolMap[field];
+                    var fieldIndex = _builder._fieldTable.IndexOf(emittedField, _builder._fieldComparer);
+                    var fieldType = _builder.BuildType(field.Type);
+                    var parentType = _builder.BuildType(field.ParentType);
+                    var memberReference = new MemberReference(MemberType.Field, parentType, fieldType, 
+                        fieldIndex);
+                    var memberReferenceIndex = AddToList(_builder._memberReferenceTable, memberReference);
+                    if (emittedField.BindingFlags.HasFlag(BindingFlags.Static))
+                    {
+                        EmitInstruction(OpCode.Ldsflda, memberReferenceIndex);
+                        return;
+                    }
+                    
+                    EmitInstruction(OpCode.Ldflda, memberReferenceIndex);
+                    return;
+                }
+                
+                throw new NotImplementedException($"Address of expression of member kind {memberAccess.Member.Kind} is not implemented.");
+            }
+
+            if (expression.Operand is BoundNameExpression nameExpression)
+            {
+                if (nameExpression.Symbol is ParameterSymbol parameter)
+                {
+                    var emittedParameter = _builder._parameterSymbolMap[parameter];
+                    var parameterIndex = _builder._parameterTable.IndexOf(emittedParameter, _builder._parameterComparer);
+                    EmitInstruction(OpCode.Ldarga, parameterIndex);
+                    return;
+                }
+                
+                if (nameExpression.Symbol is LocalVariableSymbol local)
+                {
+                    var emittedLocal = _builder._localSymbolMap[local];
+                    var localIndex = _builder._localTable.IndexOf(emittedLocal, _builder._localComparer);
+                    EmitInstruction(OpCode.Ldloca, localIndex);
+                    return;
+                }
+                
+                throw new NotImplementedException($"Address of expression of name kind {nameExpression.Symbol.Kind} is not implemented.");
+            }
+
+            if (expression.Operand is BoundElementAccessExpression elementAccessExpression)
+            {
+                EmitExpression(elementAccessExpression.IndexExpression);
+                EmitExpression(elementAccessExpression.Expression); // Array instance
+                EmitInstruction(OpCode.Ldelema);
+                return;
+            }
+            
+            throw new NotImplementedException($"Address of expression of kind {expression.Operand.Kind} is not implemented.");
         }
 
         private void EmitBinaryExpression(BoundBinaryExpression expression)
@@ -1000,6 +1067,16 @@ internal sealed class AssemblyBuilder
         {
             var type = _builder.BuildType(expression.Type);
             EmitInstruction(OpCode.Lddft, type);
+        }
+        
+        private void EmitDereferenceExpression(BoundDereferenceExpression expression)
+        {
+            var isAssigning = _isAssigning;
+            _isAssigning = false;
+            EmitExpression(expression.Operand);
+            _isAssigning = isAssigning;
+            var type = _builder.BuildType(expression.Type);
+            EmitInstruction(_isAssigning ? OpCode.Stind : OpCode.Ldind, type);
         }
 
         private void EmitInvocationExpression(BoundInvocationExpression expression)
@@ -1132,10 +1209,12 @@ internal sealed class AssemblyBuilder
         private void EmitElementAccessExpression(BoundElementAccessExpression expression)
         {
             var instruction = _isAssigning ? OpCode.Stelem : OpCode.Ldelem;
+            var isAssigning = _isAssigning;
             _isAssigning = false;
             EmitExpression(expression.IndexExpression);
             EmitExpression(expression.Expression); // Array instance
             EmitInstruction(instruction);
+            _isAssigning = isAssigning;
         }
         
         private void EmitLocalExpression(BoundNameExpression expression)

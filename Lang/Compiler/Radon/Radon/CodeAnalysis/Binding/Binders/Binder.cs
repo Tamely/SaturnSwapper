@@ -244,6 +244,11 @@ internal abstract class Binder
         if (syntax is ArrayTypeSyntax arraySyntax)
         {
             var type = BindTypeSyntax(arraySyntax.TypeSyntax);
+            if (type.IsStatic)
+            {
+                Diagnostics.ReportElementTypeCannotBeStatic(arraySyntax.Location);
+            }
+            
             var name = $"{type.Name}[]";
             var context = new SemanticContext(syntax.Location, this, syntax, Diagnostics);
             if (TryResolve<ArrayTypeSymbol>(context, name, out var array, false))
@@ -254,6 +259,17 @@ internal abstract class Binder
             array = new ArrayTypeSymbol(type);
             AssemblyBinder.Current.Register(context, array);
             return array;
+        }
+
+        if (syntax is PointerTypeSyntax pointerType)
+        {
+            var type = BindTypeSyntax(pointerType.Type);
+            if (type.IsStatic)
+            {
+                Diagnostics.ReportPointerTypeCannotBeStatic(pointerType.Location);
+            }
+            
+            return BindPointerType(pointerType, type);
         }
         
         var typeArguments = ImmutableArray.CreateBuilder<TypeSymbol>();
@@ -277,5 +293,19 @@ internal abstract class Binder
         }
         
         return typeSymbol!;
+    }
+
+    protected PointerTypeSymbol BindPointerType(SyntaxNode syntax, TypeSymbol type)
+    {
+        var name = $"{type.Name}*";
+        var context = new SemanticContext(syntax.Location, this, syntax, Diagnostics);
+        if (TryResolve<PointerTypeSymbol>(context, name, out var pointer, false))
+        {
+            return pointer!;
+        }
+            
+        pointer = new PointerTypeSymbol(type);
+        AssemblyBinder.Current.Register(context, pointer);
+        return pointer;
     }
 }

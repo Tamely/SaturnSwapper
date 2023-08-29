@@ -47,7 +47,7 @@ internal sealed class RuntimeType
             new ReadOnlyDictionary<ParameterInfo, RuntimeObject>(new Dictionary<ParameterInfo, RuntimeObject>()));
         runtime.Invoke();
     }
-
+    
     public RuntimeObject GetStaticField(FieldInfo field)
     {
         var objPtr = _staticFields[field];
@@ -64,6 +64,11 @@ internal sealed class RuntimeType
         }
         
         ManagedRuntime.StaticHeapManager.SetObject(objPtr, value);
+    }
+
+    public nuint GetStaticFieldAddress(FieldInfo field)
+    {
+        return _staticFields[field];
     }
 
     public StackFrame Construct(AssemblyInfo assembly, StackFrame stackFrame, 

@@ -94,7 +94,7 @@ public sealed class SyntaxKind
     // Bitwise AND
     public static readonly SyntaxKind AmpersandToken =
         new(nameof(AmpersandToken), "&", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.BitwiseAnd, OperatorKind.Binary), Operator);
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.BitwiseAnd, OperatorKind.Binary | OperatorKind.Unary), Operator);
     
     // Bitwise XOR
     public static readonly SyntaxKind HatToken =
@@ -148,7 +148,7 @@ public sealed class SyntaxKind
     // Multiplicative
     public static readonly SyntaxKind StarToken =
         new(nameof(StarToken), "*", 
-            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Multiplicative, OperatorKind.Binary), Operator);
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Multiplicative, OperatorKind.Binary | OperatorKind.Unary), Operator);
     public static readonly SyntaxKind SlashToken =
         new(nameof(SlashToken), "/", 
             SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Multiplicative, OperatorKind.Binary), Operator);
@@ -159,6 +159,10 @@ public sealed class SyntaxKind
     // Dot
     public static readonly SyntaxKind DotToken =
         new(nameof(DotToken), ".", 
+            SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Dot, OperatorKind.None), Operator);
+    // Arrow
+    public static readonly SyntaxKind ArrowToken =
+        new(nameof(ArrowToken), "->", 
             SyntaxKindAttribute.CreateOperator(OperatorPrecedence.Dot, OperatorKind.None), Operator);
     
 #endregion
@@ -298,6 +302,8 @@ public sealed class SyntaxKind
         new(nameof(TypeParameter), null, Node);
     public static readonly SyntaxKind ArrayType =
         new(nameof(ArrayType), null, Node);
+    public static readonly SyntaxKind PointerType =
+        new(nameof(PointerType), null, Node);
     public static readonly SyntaxKind ElseClause =
         new(nameof(ElseClause), null, Node);
 

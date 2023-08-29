@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using Radon.CodeAnalysis.Disassembly;
+using Radon.Common;
 using Radon.Runtime.RuntimeSystem;
 using Radon.Runtime.RuntimeSystem.RuntimeObjects;
 
@@ -10,7 +11,6 @@ namespace Radon.Runtime.Memory;
 
 internal sealed class StackFrame
 {
-    private readonly LinkedList<FreeBlock> _freeBlocks;
     private readonly Dictionary<ParameterInfo, nuint> _arguments;
     private readonly Dictionary<LocalInfo, nuint> _locals;
     private readonly Dictionary<nuint, RuntimeObject> _variables;
@@ -24,10 +24,9 @@ internal sealed class StackFrame
 
     public ImmutableArray<RuntimeObject> Variables => _variables.Values.ToImmutableArray();
 
-    public StackFrame(int stackSize, int maxStack, nuint pointer, RuntimeObject? instance,
-        ImmutableArray<LocalInfo> locals, ReadOnlyDictionary<ParameterInfo, RuntimeObject> arguments)
+    public StackFrame(int stackSize, int maxStack, nuint pointer, ImmutableArray<LocalInfo> locals, 
+        ReadOnlyDictionary<ParameterInfo, RuntimeObject> arguments)
     {
-        _freeBlocks = new LinkedList<FreeBlock>();
         _arguments = new Dictionary<ParameterInfo, nuint>(arguments.Count);
         _locals = new Dictionary<LocalInfo, nuint>(locals.Length);
         _variables = new Dictionary<nuint, RuntimeObject>(_arguments.Count + _locals.Count);
@@ -37,32 +36,38 @@ internal sealed class StackFrame
         MaxStack = maxStack;
         foreach (var (parameter, value) in arguments)
         {
+            Logger.Log($"Allocating argument '{parameter.Name}' of type {parameter.Type}", LogLevel.Info);
             var type = ManagedRuntime.System.GetType(parameter.Type);
             var address = Allocate(type.Size);
             var copy = value.Type.CreateDefault(address);
             MemoryUtils.Copy(value.Pointer, address, value.Size);
             _arguments.Add(parameter, address);
             _variables.Add(address, copy);
+            Logger.Log($"Allocated argument '{parameter.Name}' of type {parameter.Type} at address {address}", LogLevel.Info);
         }
 
         foreach (var local in locals)
         {
+            Logger.Log($"Allocating local '{local.Name}' of type {local.Type}", LogLevel.Info);
             var type = ManagedRuntime.System.GetType(local.Type);
             var address = Allocate(type.Size);
             _locals.Add(local, address);
             var value = type.CreateDefault(address);
             _variables.Add(address, value);
+            Logger.Log($"Allocated local '{local.Name}' of type {local.Type} at address {address}", LogLevel.Info);
         }
     }
 
     public void Push(RuntimeObject value)
     {
+        Logger.Log($"Pushing value at {value.Pointer} onto the stack.", LogLevel.Info);
         _evaluationStack.Push(value);
     }
 
     public RuntimeObject Pop()
     {
         var value = _evaluationStack.Pop();
+        Logger.Log($"Popping value at {value.Pointer} from the stack.", LogLevel.Info);
         return value;
     }
 
@@ -75,6 +80,7 @@ internal sealed class StackFrame
 
         var address = _arguments[parameter];
         _variables[address] = value;
+        Logger.Log($"Setting argument '{parameter.Name}'", LogLevel.Info);
         MemoryUtils.Copy(value.Pointer, address, value.Size);
     }
 
@@ -86,7 +92,20 @@ internal sealed class StackFrame
         }
 
         var address = _arguments[parameter];
+        Logger.Log($"Getting argument '{parameter.Name}'", LogLevel.Info);
         return _variables[address];
+    }
+    
+    public RuntimeObject GetArgumentAddress(ParameterInfo parameter, RuntimeType ptrType)
+    {
+        if (!_arguments.ContainsKey(parameter))
+        {
+            throw new InvalidOperationException("Argument does not exist.");
+        }
+        
+        var address = _arguments[parameter];
+        Logger.Log($"Getting address of argument '{parameter.Name}'", LogLevel.Info);
+        return AllocatePointer(ptrType, address);
     }
 
     public void SetLocal(LocalInfo local, RuntimeObject value)
@@ -98,6 +117,7 @@ internal sealed class StackFrame
 
         var address = _locals[local];
         _variables[address] = value;
+        Logger.Log($"Setting local '{local.Name}'", LogLevel.Info);
         MemoryUtils.Copy(value.Pointer, address, value.Size);
     }
 
@@ -109,7 +129,20 @@ internal sealed class StackFrame
         }
 
         var address = _locals[local];
+        Logger.Log($"Getting local '{local.Name}'", LogLevel.Info);
         return _variables[address];
+    }
+    
+    public RuntimeObject GetLocalAddress(LocalInfo local, RuntimeType ptrType)
+    {
+        if (!_locals.ContainsKey(local))
+        {
+            throw new InvalidOperationException("Local does not exist.");
+        }
+        
+        var address = _locals[local];
+        Logger.Log($"Getting address of local '{local.Name}'", LogLevel.Info);
+        return AllocatePointer(ptrType, address);
     }
 
     public unsafe RuntimeObject AllocateConstant(RuntimeType type, byte[] value)
@@ -129,7 +162,7 @@ internal sealed class StackFrame
         {
             MemoryUtils.Copy((nuint)ptr, address, value.Length);
         }
-
+        
         return new ManagedObject(type, type.Size, address);
     }
 
@@ -149,7 +182,6 @@ internal sealed class StackFrame
 
         *(T*)address = value;
         return new ManagedObject(type, type.Size, address);
-        ;
     }
 
     public unsafe RuntimeObject AllocateString(string str)
@@ -168,6 +200,18 @@ internal sealed class StackFrame
 
         *(ulong*)address = array.Pointer;
         return new ManagedString(type, address);
+    }
+    
+    public unsafe RuntimeObject AllocatePointer(RuntimeType type, nuint target)
+    {
+        var address = Allocate(type.Size);
+        if (!type.TypeInfo.IsPointer)
+        {
+            throw new InvalidOperationException("The type of a pointer must be a pointer type.");
+        }
+        
+        *(ulong*)address = target;
+        return new ManagedPointer(type, address, target);
     }
 
     public unsafe RuntimeObject AllocateObject(RuntimeType type)
@@ -197,33 +241,9 @@ internal sealed class StackFrame
         return new ManagedReference(type, address, array.Pointer);
     }
 
-    public nuint Allocate(int size)
+    private nuint Allocate(int size)
     {
-        var current = _freeBlocks.First;
-        while (current is not null)
-        {
-            var block = current.Value;
-            if (block.Size >= size)
-            {
-                var pointer = block.Pointer;
-                if (block.Size == size)
-                {
-                    _freeBlocks.Remove(current);
-                }
-                else
-                {
-                    // we didn't consume the entire block, so we need to split it
-                    var newPointer = pointer + (nuint)size;
-                    var newSize = block.Size - size;
-                    _freeBlocks.AddAfter(current, new FreeBlock(newPointer, newSize));
-                    // we need to remove the old block
-                    _freeBlocks.Remove(current);
-                }
-            }
-
-            current = current.Next;
-        }
-
+        Logger.Log($"Allocating {size} bytes on the stack.", LogLevel.Info);
         if (_current + (nuint)size > _end)
         {
             throw new StackOverflowException();
@@ -236,7 +256,7 @@ internal sealed class StackFrame
 
     public void Deallocate(RuntimeObject obj)
     {
-        Free(obj.Pointer, obj.Size);
+        Logger.Log($"Deallocating object at {obj.Pointer}", LogLevel.Info);
         switch (obj)
         {
             case ManagedObject managedObject:
@@ -255,33 +275,6 @@ internal sealed class StackFrame
                 ManagedRuntime.HeapManager.Deallocate(heapObject);
                 break;
             }
-        }
-    }
-
-    private void Free(nuint address, int size)
-    {
-        var block = new FreeBlock(address, size);
-        var current = _freeBlocks.First;
-        var merged = false;
-        while (current is not null)
-        {
-            var next = current.Next;
-            if (current.Value.Pointer + (nuint)current.Value.Size == block.Pointer && next is not null)
-            {
-                // We can merge the blocks
-                var newBlock = new FreeBlock(current.Value.Pointer, current.Value.Size + block.Size);
-                _freeBlocks.AddBefore(next, newBlock);
-                _freeBlocks.Remove(current);
-                _freeBlocks.Remove(next);
-                merged = true;
-            }
-
-            current = next;
-        }
-
-        if (!merged)
-        {
-            _freeBlocks.AddLast(block);
         }
     }
 }
