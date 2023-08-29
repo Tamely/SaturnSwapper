@@ -18,7 +18,6 @@ using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.Utils;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
-using Saturn.Backend.Data.Asset;
 using Saturn.Backend.Data.Discord;
 using Saturn.Backend.Data.Fortnite;
 using Saturn.Backend.Data.SaturnAPI;
@@ -202,7 +201,7 @@ namespace Saturn.Backend.Data
 
         public static FName? GetValueOrDefault(this FGameplayTagContainer tags, string category, FName def = default)
         {
-            return tags.GameplayTags is not { Length: > 0 } ? def : tags.GameplayTags.FirstOrDefault(it => it.Text.StartsWith(category), def);
+            return tags.GameplayTags is not { Length: > 0 } ? def : tags.GameplayTags.FirstOrDefault(it => it.TagName.Text.StartsWith(category), new FGameplayTag(def)).TagName;
         }
 
         public static bool ContainsAny(this FGameplayTagContainer tags, params string[] check)
@@ -213,7 +212,7 @@ namespace Saturn.Backend.Data
         public static bool ContainsAny(this FGameplayTagContainer tags, string check)
         {
             if (tags.GameplayTags is null) return false;
-            return tags.GameplayTags.Any(x => x.Text.Contains(check));
+            return tags.GameplayTags.Any(x => x.TagName.Text.Contains(check));
         }
 
         public static string GetKeyFromValue(this Dictionary<string, string> dict, string value)

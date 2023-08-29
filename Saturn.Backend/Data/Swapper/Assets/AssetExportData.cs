@@ -120,10 +120,10 @@ public static class AssetExportExtensions
             var tags = style.Get<FStructFallback>("MetaTags");
 
             var tagsToApply = tags.Get<FGameplayTagContainer>("MetaTagsToApply");
-            metaTagsToApply.AddRange(tagsToApply.GameplayTags.Select(x => x.Text));
+            metaTagsToApply.AddRange(tagsToApply.GameplayTags.Select(x => x.TagName.Text));
 
             var tagsToRemove = tags.Get<FGameplayTagContainer>("MetaTagsToRemove");
-            metaTagsToRemove.AddRange(tagsToRemove.GameplayTags.Select(x => x.Text));
+            metaTagsToRemove.AddRange(tagsToRemove.GameplayTags.Select(x => x.TagName.Text));
         }
 
         totalMetaTags.AddRange(metaTagsToApply);

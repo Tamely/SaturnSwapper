@@ -115,6 +115,7 @@ namespace CUE4Parse.UE4.IO
         public override byte[] Extract(VfsEntry entry)
         {
             if (!(entry is FIoStoreEntry ioEntry) || entry.Vfs != this) throw new ArgumentException($"Wrong io store reader, required {entry.Vfs.Path}, this is {Path}");
+            SaturnData.TocIndex = ioEntry.TocEntryIndex;
             return Read(ioEntry.Offset, ioEntry.Size);
         }
 
@@ -238,6 +239,13 @@ namespace CUE4Parse.UE4.IO
 
                 var partitionIndex = (int) ((ulong) compressionBlock.Offset / TocResource.Header.PartitionSize);
                 var partitionOffset = (long) ((ulong) compressionBlock.Offset % TocResource.Header.PartitionSize);
+                
+                SaturnData.PartitionOffset = (ulong)partitionOffset;
+                SaturnData.PartitionIndex = (uint)partitionIndex;
+                SaturnData.Reader = this;
+                SaturnData.FirstBlockIndex = firstBlockIndex;
+                SaturnData.Path = Path;
+                
                 FArchive reader;
                 if (IsConcurrent)
                 {

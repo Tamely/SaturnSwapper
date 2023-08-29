@@ -75,6 +75,25 @@ namespace CUE4Parse.UE4.Pak
                     // or if its the last block its the remaining data size
                     var uncompressedSize = (int) Math.Min(pakEntry.CompressionBlockSize, pakEntry.UncompressedSize - uncompressedOff);
                     Decompress(compressed, 0, blockSize, uncompressed, uncompressedOff, uncompressedSize, pakEntry.CompressionMethod);
+                    
+                    if (SaturnData.AssetRegistrySearch != null && SaturnData.AssetRegistrySwap == null)
+                    {
+                        byte[] DecompressedBlock = new byte[uncompressedSize];
+                        using MemoryStream ms = new MemoryStream(uncompressed);
+                        ms.Position = uncompressedOff;
+                        ms.Read(DecompressedBlock, 0, DecompressedBlock.Length);
+
+                        if (ArrayUtils.IndexOfSequence(DecompressedBlock, SaturnData.AssetRegistrySearch) > 0)
+                        {
+                            SaturnData.AssetRegistrySwap = new AssetRegistrySwap
+                            {
+                                DecompressedData = DecompressedBlock,
+                                CompressedData = compressed,
+                                CompressionBlock = block
+                            };
+                        }
+                    }
+                    
                     uncompressedOff += (int) pakEntry.CompressionBlockSize;
                 }
 

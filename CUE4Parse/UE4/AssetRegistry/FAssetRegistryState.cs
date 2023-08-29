@@ -14,6 +14,8 @@ namespace CUE4Parse.UE4.AssetRegistry
         public FDependsNode[] PreallocatedDependsNodeDataBuffers;
         public FAssetPackageData[] PreallocatedPackageDataBuffers;
 
+        public FAssetRegistryReader Reader;
+
         public FAssetRegistryState()
         {
             PreallocatedAssetDataBuffers = Array.Empty<FAssetData>();
@@ -38,12 +40,44 @@ namespace CUE4Parse.UE4.AssetRegistry
                 }
                 default:
                 {
-                    var reader = new FAssetRegistryReader(Ar, header);
-                    Load(reader);
+                    Reader = new FAssetRegistryReader(Ar, header);
+                    Load(Reader);
                     break;
                 }
             }
         }
+        
+        public (int packageSearch, int assetSearch, int packageReplace, int assetReplace) Swap(string searchPath, string replacePath)
+        {
+            int searchPackageIdx = -1;
+            int searchAssetIdx = -1;        
+            int replacePackageIdx = -1;
+            int replaceAssetIdx = -1;
+
+            for (int i = 0; i < Reader.NameMap.Length; i++)
+            {
+                // Speed optimization
+                if ((Reader.NameMap[i].Name ?? string.Empty).Length != searchPath.Length &&
+                    (Reader.NameMap[i].Name ?? string.Empty).Length != replacePath.Length) continue;
+                
+                if (String.Equals(Reader.NameMap[i].Name, searchPath, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    searchPackageIdx = i - 1;
+                    searchAssetIdx = i;
+                }
+
+                if (String.Equals(Reader.NameMap[i].Name, replacePath, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    replacePackageIdx = i - 1;
+                    replaceAssetIdx = i;
+                }
+                
+                if (searchPackageIdx is not -1 && searchAssetIdx is not -1 && replacePackageIdx is not -1 && replaceAssetIdx is not -1) break;
+            }
+
+            return (searchPackageIdx, searchAssetIdx, replacePackageIdx, replaceAssetIdx);
+        }
+
 
         private void Load(FAssetRegistryArchive Ar)
         {

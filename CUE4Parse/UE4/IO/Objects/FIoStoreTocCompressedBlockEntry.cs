@@ -10,6 +10,7 @@ namespace CUE4Parse.UE4.IO.Objects
         private const uint SizeMask = (1 << SizeBits) - 1;
         private const int SizeShift = 8;
 
+        public readonly long Position;
         public readonly long Offset;
         public readonly uint CompressedSize;
         public readonly uint UncompressedSize;
@@ -17,6 +18,7 @@ namespace CUE4Parse.UE4.IO.Objects
 
         public FIoStoreTocCompressedBlockEntry(FArchive Ar)
         {
+            Position = Ar.Position;
             unsafe
             {
                 var data = stackalloc byte[5 + 3 + 3 + 1];

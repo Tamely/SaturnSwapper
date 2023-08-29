@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace CUE4Parse.Utils
@@ -13,6 +14,21 @@ namespace CUE4Parse.Utils
             Array.Copy(byteArray, tmp, len);
 
             return tmp;
+        }
+        
+        public static int IndexOfSequence(byte[] buffer, byte[] pattern)
+        {
+            int i = Array.IndexOf(buffer, pattern[0], 0);
+            while (i >= 0 && i <= buffer.Length - pattern.Length)
+            {
+                byte[] segment = new byte[pattern.Length];
+                Buffer.BlockCopy(buffer, i, segment, 0, pattern.Length);
+                if (segment.SequenceEqual(pattern))
+                    return i;
+                i = Array.IndexOf(buffer, pattern[0], i + 1);
+            }
+
+            return -1;
         }
 
         public static bool Contains(this BitArray array, bool search)
