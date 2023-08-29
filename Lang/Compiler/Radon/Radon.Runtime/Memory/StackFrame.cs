@@ -197,7 +197,7 @@ internal sealed class StackFrame
         return new ManagedReference(type, address, array.Pointer);
     }
 
-    private nuint Allocate(int size)
+    public nuint Allocate(int size)
     {
         var current = _freeBlocks.First;
         while (current is not null)

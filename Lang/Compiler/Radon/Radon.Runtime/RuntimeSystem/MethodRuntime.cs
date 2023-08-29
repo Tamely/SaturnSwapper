@@ -11,6 +11,7 @@ using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 using Radon.Common;
 using Radon.Runtime.Memory;
 using Radon.Runtime.RuntimeSystem.RuntimeObjects;
+using UAssetAPI.IO;
 
 namespace Radon.Runtime.RuntimeSystem;
 
@@ -418,7 +419,11 @@ internal sealed class MethodRuntime
                         }
                         
                         var str = managedString.ToString();
-                        // TODO: Import the archive.
+
+                        var stackPtr = _stackFrame.Allocate(8);
+
+                        ZenAsset archive = new ZenAsset();
+                        
                         break;
                     }
                 }
