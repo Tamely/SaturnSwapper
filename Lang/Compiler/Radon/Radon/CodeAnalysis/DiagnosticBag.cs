@@ -781,4 +781,28 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
         var message = $"Accessing of member '{name}' is not valid at this point";
         ReportError(location, message, ErrorCode.InvalidMemberAccess);
     }
+
+    public void ReportCannotInvokeStaticMethodOnInstance(TextLocation location, string name)
+    {
+        var message = $"Cannot invoke static method '{name}' on an instance.";
+        ReportError(location, message, ErrorCode.CannotInvokeStaticMethodOnInstance);
+    }
+
+    public void ReportCannotInvokeInstanceMethodOnType(TextLocation location, string nane)
+    {
+        var message = $"Cannot invoke instance method '{nane}' on a type.";
+        ReportError(location, message, ErrorCode.CannotInvokeInstanceMethodOnType);
+    }
+
+    public void ReportCannotAccessStaticMemberOnInstance(TextLocation location, string name)
+    {
+        var message = $"Cannot access static member '{name}' on an instance.";
+        ReportError(location, message, ErrorCode.CannotAccessStaticMemberOnInstance);
+    }
+
+    public void ReportCannotAccessInstanceMemberOnType(TextLocation location, string name)
+    {
+        var message = $"Cannot access instance member '{name}' on a type.";
+        ReportError(location, message, ErrorCode.CannotAccessInstanceMemberOnType);
+    }
 }

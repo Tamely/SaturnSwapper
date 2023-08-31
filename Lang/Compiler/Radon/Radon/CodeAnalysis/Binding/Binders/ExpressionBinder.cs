@@ -376,14 +376,13 @@ internal sealed class ExpressionBinder : Binder
         {
             return new BoundErrorExpression(syntax, context);
         }
-
+        
         var memberName = syntax.Name.Text;
         if (_isBindingInvocation)
         {
             var methodContext = new SemanticContext(syntax.Name.Location, this, syntax.Name, Diagnostics);
             if (!TryResolveMethod<AbstractMethodSymbol>(methodContext, expressionType, memberName, _typeArguments, 
-                    _arguments, syntax.Expression, out var methodSymbol) ||
-                methodSymbol is null)
+                    _arguments, syntax.Expression, out var methodSymbol) || methodSymbol is null)
             {
                 return new BoundErrorExpression(syntax, context);
             }
@@ -392,6 +391,15 @@ internal sealed class ExpressionBinder : Binder
                 _currentType != methodSymbol.ParentType)
             {
                 Diagnostics.ReportCannotAccessNonPublicMember(syntax.Name.Location, memberName);
+            }
+
+            if (methodSymbol.IsStatic && GetSymbol(boundExpression) is not TypeSymbol)
+            {
+                Diagnostics.ReportCannotInvokeStaticMethodOnInstance(syntax.Name.Location, memberName);
+            }
+            else if (!methodSymbol.IsStatic && GetSymbol(boundExpression) is TypeSymbol)
+            {
+                Diagnostics.ReportCannotInvokeInstanceMethodOnType(syntax.Name.Location, memberName);
             }
             
             return new BoundMemberAccessExpression(syntax, boundExpression, methodSymbol);
@@ -415,7 +423,26 @@ internal sealed class ExpressionBinder : Binder
             Diagnostics.ReportCannotAccessNonPublicMember(syntax.Name.Location, memberName);
         }
         
+        if (memberSymbol.IsStatic && GetSymbol(boundExpression) is not TypeSymbol)
+        {
+            Diagnostics.ReportCannotAccessStaticMemberOnInstance(syntax.Name.Location, memberName);
+        }
+        else if (!memberSymbol.IsStatic && GetSymbol(boundExpression) is TypeSymbol)
+        {
+            Diagnostics.ReportCannotAccessInstanceMemberOnType(syntax.Name.Location, memberName);
+        }
+        
         return new BoundMemberAccessExpression(syntax, boundExpression, memberSymbol);
+
+        static Symbol GetSymbol(BoundExpression expression)
+        {
+            return expression switch
+            {
+                BoundNameExpression nameExpression => nameExpression.Symbol,
+                BoundMemberAccessExpression memberAccessExpression => memberAccessExpression.Member,
+                _ => throw new InvalidOperationException("Invalid member access expression")
+            };
+        }
     }
     
     private BoundExpression BindNameExpression(NameExpressionSyntax syntax, SemanticContext context)
