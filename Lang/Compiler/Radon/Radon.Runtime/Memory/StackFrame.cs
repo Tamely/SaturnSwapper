@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Radon.CodeAnalysis.Disassembly;
 using Radon.Common;
 using Radon.Runtime.RuntimeSystem;
@@ -11,6 +12,7 @@ namespace Radon.Runtime.Memory;
 
 internal sealed class StackFrame
 {
+    private readonly LinkedList<FreeBlock> _freeBlocks;
     private readonly Dictionary<ParameterInfo, nuint> _arguments;
     private readonly Dictionary<LocalInfo, nuint> _locals;
     private readonly Dictionary<nuint, RuntimeObject> _variables;
@@ -20,13 +22,15 @@ internal sealed class StackFrame
 
     public int EvaluationStackSize => _evaluationStack.Count;
     public int MaxStack { get; }
+    public int ArgumentCount => _arguments.Count;
+    public RuntimeObject? This { get; }
     public RuntimeObject? ReturnObject { get; set; }
-
     public ImmutableArray<RuntimeObject> Variables => _variables.Values.ToImmutableArray();
 
-    public StackFrame(int stackSize, int maxStack, nuint pointer, ImmutableArray<LocalInfo> locals, 
+    public StackFrame(int stackSize, int maxStack, nuint pointer, RuntimeObject? instance, ImmutableArray<LocalInfo> locals, 
         ReadOnlyDictionary<ParameterInfo, RuntimeObject> arguments)
     {
+        _freeBlocks = new LinkedList<FreeBlock>();
         _arguments = new Dictionary<ParameterInfo, nuint>(arguments.Count);
         _locals = new Dictionary<LocalInfo, nuint>(locals.Length);
         _variables = new Dictionary<nuint, RuntimeObject>(_arguments.Count + _locals.Count);
@@ -34,6 +38,7 @@ internal sealed class StackFrame
         _end = pointer + (nuint)stackSize;
         _current = pointer;
         MaxStack = maxStack;
+        This = instance;
         foreach (var (parameter, value) in arguments)
         {
             Logger.Log($"Allocating argument '{parameter.Name}' of type {parameter.Type}", LogLevel.Info);
@@ -91,6 +96,19 @@ internal sealed class StackFrame
             throw new InvalidOperationException("Argument does not exist.");
         }
 
+        var address = _arguments[parameter];
+        Logger.Log($"Getting argument '{parameter.Name}'", LogLevel.Info);
+        return _variables[address];
+    }
+    
+    public RuntimeObject GetArgument(int index)
+    {
+        var parameter = _arguments.Keys.FirstOrDefault(param => param.Ordinal == index);
+        if (parameter is null)
+        {
+            throw new InvalidOperationException("Argument does not exist.");
+        }
+        
         var address = _arguments[parameter];
         Logger.Log($"Getting argument '{parameter.Name}'", LogLevel.Info);
         return _variables[address];
@@ -241,9 +259,34 @@ internal sealed class StackFrame
         return new ManagedReference(type, address, array.Pointer);
     }
 
-    private nuint Allocate(int size)
+    public nuint Allocate(int size)
     {
         Logger.Log($"Allocating {size} bytes on the stack.", LogLevel.Info);
+        var current = _freeBlocks.First;
+        while (current is not null)
+        {
+            var block = current.Value;
+            if (block.Size >= size)
+            {
+                var pointer = block.Pointer;
+                if (block.Size == size)
+                {
+                    _freeBlocks.Remove(current);
+                }
+                else
+                {
+                    // we didn't consume the entire block, so we need to split it
+                    var newPointer = pointer + (nuint)size;
+                    var newSize = block.Size - size;
+                    _freeBlocks.AddAfter(current, new FreeBlock(newPointer, newSize));
+                    // we need to remove the old block
+                    _freeBlocks.Remove(current);
+                }
+            }
+            
+            current = current.Next;
+        }
+        
         if (_current + (nuint)size > _end)
         {
             throw new StackOverflowException();
@@ -257,6 +300,7 @@ internal sealed class StackFrame
     public void Deallocate(RuntimeObject obj)
     {
         Logger.Log($"Deallocating object at {obj.Pointer}", LogLevel.Info);
+        Free(obj);
         switch (obj)
         {
             case ManagedObject managedObject:
@@ -275,6 +319,74 @@ internal sealed class StackFrame
                 ManagedRuntime.HeapManager.Deallocate(heapObject);
                 break;
             }
+        }
+    }
+
+    public void DeallocateIfDead(RuntimeObject obj)
+    {
+        if (!obj.IsDeadObject())
+        {
+            return;
+        }
+        
+        Free(obj);
+        switch (obj)
+        {
+            case ManagedObject managedObject:
+            {
+                var fields = managedObject.Fields;
+                foreach (var field in fields)
+                {
+                    DeallocateIfDead(field);
+                }
+
+                break;
+            }
+            case ManagedReference managedReference:
+            {
+                try
+                {
+                    var heapObject = ManagedRuntime.HeapManager.GetObject(managedReference.Target);
+                    ManagedRuntime.HeapManager.DeallocateIfDead(heapObject);
+                }
+                catch (InvalidOperationException)
+                {
+                    // If the object doesn't exist, an exception will be thrown
+                    ManagedRuntime.StaticHeapManager.GetObject(managedReference.Target);
+                    // We won't deallocate, because it's a static object
+                }
+                
+                break;
+            }
+        }
+    }
+
+    private void Free(RuntimeObject obj)
+    {
+        var address = obj.Pointer;
+        var size = obj.Size;
+        var block = new FreeBlock(address, size);
+        var current = _freeBlocks.First;
+        var merged = false;
+        while (current is not null)
+        {
+            var next = current.Next;
+            if (current.Value.Pointer + (nuint)current.Value.Size == block.Pointer && next is not null)
+            {
+                // We can merge the blocks
+                var newBlock = new FreeBlock(current.Value.Pointer, current.Value.Size + block.Size);
+                _freeBlocks.AddBefore(next, newBlock);
+                _freeBlocks.Remove(current);
+                _freeBlocks.Remove(next);
+                merged = true;
+            }
+            
+            current = next;
+        }
+        
+        if (!merged)
+        {
+            _freeBlocks.AddLast(block);
         }
     }
 }

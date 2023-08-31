@@ -60,13 +60,22 @@ internal sealed class AssemblyBinder : Binder
             }
         }
 
-        var primitiveBinders = new List<TypeSymbolBinder>();
-        foreach (var type in TypeSymbol.GetPrimitiveTypes())
+        var primitiveTypes = TypeSymbol.GetPrimitiveTypes();
+        foreach (var type in primitiveTypes)
         {
-            var typeBinder = new TypeSymbolBinder(this, type);
-            typeBinder.BindMembers();
-            primitiveBinders.Add(typeBinder);
             Register(context, type);
+        }
+        
+        var primitiveBinders = new List<TypeSymbolBinder>();
+        foreach (var type in primitiveTypes)
+        {
+            var primitiveBinder = new TypeSymbolBinder(this, type);
+            primitiveBinders.Add(primitiveBinder);
+        }
+        
+        foreach (var primitiveBinder in primitiveBinders)
+        {
+            primitiveBinder.BindMembers();
         }
 
         var typeBinders = new List<NamedTypeBinder>();

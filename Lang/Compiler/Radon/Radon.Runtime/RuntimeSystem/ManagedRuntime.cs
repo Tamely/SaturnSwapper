@@ -46,6 +46,7 @@ internal sealed class ManagedRuntime
     public static RuntimeType Char => System.GetType("char");
     public static RuntimeType String => System.GetType("string");
     public static RuntimeType CharArray => System.GetType("char[]");
+    public static RuntimeType SoftObject => System.GetType("SoftObjectProperty");
 
     static ManagedRuntime()
     {
@@ -106,6 +107,12 @@ internal sealed class ManagedRuntime
             {
                 Logger.Log($"Adding return object at {stackFrame.ReturnObject.Pointer} to roots", LogLevel.Info);
                 builder.Add(stackFrame.ReturnObject);
+            }
+
+            if (stackFrame.This is not null)
+            {
+                Logger.Log($"Adding this reference object at {stackFrame.This.Pointer} to roots", LogLevel.Info);
+                builder.Add(stackFrame.This);
             }
         }
         

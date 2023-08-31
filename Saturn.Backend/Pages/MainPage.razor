@@ -182,12 +182,10 @@
         }
 
         Constants.PlaceholderTexture = await Constants.Provider.TryLoadObjectAsync<UTexture2D>("FortniteGame/Content/Athena/Prototype/Textures/T_Placeholder_Generic");
-        
-        Constants.EngineVersion = EngineVersion.VER_UE5_3;
-        Constants.Mappings = new Usmap(Constants.MappingsPath + mappings[0].FileName);
+        Usmap.CachedMappings = new Usmap(Constants.MappingsPath + mappings[0].FileName);
 
         var pkg = await Constants.Provider.SaveAssetAsync(Constants.DEFAULTGAMEDATACOSMETICS_PATH);
-        ZenAsset asset = new ZenAsset(new AssetBinaryReader(pkg), Constants.EngineVersion, Constants.Mappings);
+        ZenAsset asset = new ZenAsset(new AssetBinaryReader(pkg), EngineVersion.VER_LATEST, Usmap.CachedMappings);
         if (!asset.VerifyBinaryEquality(pkg))
         {
             await WarningModal.SetEmergencyNotice("Binary Equality Check Failed!", "The swapper WILL NOT WORK in most cases at the moment! The binary equality check has failed which is most likely caused by an engine update. Look in Saturn's Discord for more information!");

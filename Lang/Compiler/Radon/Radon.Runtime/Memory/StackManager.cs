@@ -36,7 +36,7 @@ internal sealed class StackManager
         }
     }
 
-    public StackFrame AllocateStackFrame(int stackSize, int maxStack,ImmutableArray<LocalInfo> locals, 
+    public StackFrame AllocateStackFrame(int stackSize, int maxStack, RuntimeObject? instance, ImmutableArray<LocalInfo> locals, 
         ReadOnlyDictionary<ParameterInfo, RuntimeObject> arguments)
     {
         Logger.Log($"Allocating stack frame of size {stackSize} with {locals.Length} locals and {arguments.Count} arguments", LogLevel.Info);
@@ -45,7 +45,7 @@ internal sealed class StackManager
             throw new StackOverflowException();
         }
         
-        var stackFrame = new StackFrame(stackSize, maxStack, _stackPointer, locals, arguments);
+        var stackFrame = new StackFrame(stackSize, maxStack, _stackPointer, instance, locals, arguments);
         _stackFrames.Push(stackFrame);
         _stackPointer += (nuint)stackSize;
         return stackFrame;

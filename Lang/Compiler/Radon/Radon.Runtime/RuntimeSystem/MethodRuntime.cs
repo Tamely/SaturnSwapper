@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using CUE4Parse;
 using Radon.CodeAnalysis.Disassembly;
 using Radon.CodeAnalysis.Emit;
 using Radon.CodeAnalysis.Emit.Binary;
@@ -11,6 +12,12 @@ using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 using Radon.Common;
 using Radon.Runtime.Memory;
 using Radon.Runtime.RuntimeSystem.RuntimeObjects;
+using Radon.Runtime.RuntimeSystem.RuntimeObjects.Properties;
+using UAssetAPI;
+using UAssetAPI.IO;
+using UAssetAPI.PropertyFactories;
+using UAssetAPI.UnrealTypes;
+using UAssetAPI.Unversioned;
 
 namespace Radon.Runtime.RuntimeSystem;
 
@@ -51,7 +58,8 @@ internal sealed class MethodRuntime
         Logger.Log("Resolving stack size...",  LogLevel.Info);
         var stackSize = ResolveStackSize();
         size += stackSize.MaxStackSize;
-        _stackFrame = ManagedRuntime.StackManager.AllocateStackFrame(size, stackSize.MaxStack, locals.Values.ToImmutableArray(), arguments);
+        _stackFrame = ManagedRuntime.StackManager.AllocateStackFrame(size, stackSize.MaxStack, instance, 
+            locals.Values.ToImmutableArray(), arguments);
     }
 
     private (int MaxStackSize, int MaxStack) ResolveStackSize()
@@ -361,7 +369,7 @@ internal sealed class MethodRuntime
         return (maxStackSize, maxStack);
     }
 
-    public unsafe StackFrame Invoke()
+    public StackFrame Invoke()
     {
         Logger.Log($"Invoking method '{_method.Name}'", LogLevel.Info);
         switch (_method.IsStatic)
@@ -382,94 +390,212 @@ internal sealed class MethodRuntime
                 // We need to get the name of the method, and it's template arguments.
                 var methodName = _method.Name;
                 var nameBuilder = new StringBuilder();
-                var templateArguments = new List<RuntimeType>();
-                var templateStart = 0;
-                for (var i = 0; i < methodName.Length; i++)
+                foreach (var character in methodName)
                 {
-                    var character = methodName[i];
                     if (character == '`')
                     {
-                        templateStart = i + 1; // Skip the `
                         break;
                     }
 
                     nameBuilder.Append(character);
                 }
                 
-                var typeArgBuilder = new StringBuilder();
-                for (var i = templateStart; i < methodName.Length; i++)
-                {
-                    var character = methodName[i];
-                    if (character == '`')
-                    {
-                        var typeArg = ManagedRuntime.System.GetType(typeArgBuilder.ToString());
-                        templateArguments.Add(typeArg);
-                        typeArgBuilder.Clear();
-                        continue;
-                    }
-
-                    typeArgBuilder.Append(character);
-                }
-
                 var name = nameBuilder.ToString();
+                const int archiveSize = 8;
                 switch (name)
                 {
-                    case "Write":
+                    case "SwapArrayProperty":
                     {
-                        var value = _stackFrame.Pop();
-                        // TODO: Write the value to the archive.
-                        break;
-                    }
-                    case "Read":
-                    {
-                        var typeArg = templateArguments[0];
-                        // TODO: Get the position of the archive and read the value.
-                        break;
-                    }
-                    case "Seek":
-                    {
-                        var value = _stackFrame.Pop();
-                        if (value is ManagedObject managedObject)
-                        {
-                            var origin = _stackFrame.Pop();
-                            if (origin is not ManagedObject originObject)
-                            {
-                                ThrowUnexpectedValue();
-                                return _stackFrame;
-                            }
+                        var searchObject = _stackFrame.GetArgument(0);
+                        var replaceObject = _stackFrame.GetArgument(1);
 
-                            var offset = *(int*)managedObject.Pointer;
-                            var originValue = *(int*)originObject.Pointer;
-                            // TODO: Seek the archive.
-                        }
-                        else if (value is ManagedString managedString)
+                        if (_instance is not ManagedArchive archive)
                         {
-                            var str = managedString.ToString();
-                            // TODO: Seek the archive.
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        FactoryUtils.ASSET = archive.Archive;
+                        
+                        if (searchObject is ManagedArrayObject searchArray && replaceObject is ManagedArrayObject replaceArray)
+                        {
+                            archive.Archive.Swap(searchArray.ArrayPropertyData, replaceArray.ArrayPropertyData);
                         }
                         else
                         {
                             ThrowUnexpectedValue();
                             return _stackFrame;
                         }
-                        
+
                         break;
                     }
-                    case "Swap":
+                    case "SwapSoftObjectProperty":
                     {
-                        var other = _stackFrame.Pop();
-                        if (other is not ManagedObject otherObject)
+                        var searchObject = _stackFrame.GetArgument(0);
+                        var replaceObject = _stackFrame.GetArgument(1);
+
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        FactoryUtils.ASSET = archive.Archive;
+                        
+                        if (searchObject is ManagedSoftObject searchSoftObject && replaceObject is ManagedSoftObject replaceSoftObject)
+                        {
+                            archive.Archive.Swap(searchSoftObject.SoftObjectPropertyData, replaceSoftObject.SoftObjectPropertyData);
+                        }
+                        else
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        break;
+                    }
+                    case "SwapLinearColorProperty":
+                    {
+                        var searchObject = _stackFrame.GetArgument(0);
+                        var replaceObject = _stackFrame.GetArgument(1);
+
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        FactoryUtils.ASSET = archive.Archive;
+                        
+                        if (searchObject is ManagedLinearColorObject searchColor && replaceObject is ManagedLinearColorObject replaceColor)
+                        {
+                            archive.Archive.Swap(searchColor.LinearColorPropertyData, replaceColor.LinearColorPropertyData);
+                        }
+                        else
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        break;
+                    }
+                    case "CreateArrayProperty":
+                    {
+                        var arrayObject = _stackFrame.GetArgument(0);
+                        if (arrayObject is not ManagedArray managedArray)
                         {
                             ThrowUnexpectedValue();
                             return _stackFrame;
                         }
                         
-                        // TODO: Swap the archive with the other archive.
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        var managedSoftObjectList = managedArray.Elements.Cast<ManagedSoftObject>();
+                        var softObjectList = managedSoftObjectList.Select(obj => obj.SoftObjectPropertyData).ToList();
+
+                        FactoryUtils.ASSET = archive.Archive;
+                        var stackPtr = _stackFrame.Allocate(archiveSize);
+                        var data = ArrayFactory.Create(softObjectList);
+                        var managedArrayObject = new ManagedArrayObject(data, stackPtr);
+                        _stackFrame.Push(managedArrayObject);
+
+                        break;
+                    }
+                    case "CreateLinearColorProperty":
+                    {
+                        var redObject = _stackFrame.GetArgument(0);
+                        var greenObject = _stackFrame.GetArgument(1);
+                        var blueObject = _stackFrame.GetArgument(2);
+                        var alphaObject = _stackFrame.GetArgument(3);
+
+                        if (redObject is not ManagedObject redManagedObject ||
+                            greenObject is not ManagedObject greenManagedObject ||
+                            blueObject is not ManagedObject blueManagedObject ||
+                            alphaObject is not ManagedObject alphaManagedObject)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        var red = MemoryUtils.GetValue<float>(redManagedObject.Pointer);
+                        var green = MemoryUtils.GetValue<float>(greenManagedObject.Pointer);
+                        var blue = MemoryUtils.GetValue<float>(blueManagedObject.Pointer);
+                        var alpha = MemoryUtils.GetValue<float>(alphaManagedObject.Pointer);
+                        FactoryUtils.ASSET = archive.Archive;
+
+                        var stackPtr = _stackFrame.Allocate(archiveSize);
+                        var data = ColorFactory.Create(red, green, blue, alpha);
+                        var managedLinearColorObject = new ManagedLinearColorObject(data, stackPtr);
+                        _stackFrame.Push(managedLinearColorObject);
+
+                        break;
+                    }
+                    case "CreateSoftObjectProperty":
+                    {
+                        var other = _stackFrame.GetArgument(0);
+                        if (other is not ManagedString softObjectStr)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        var substring = "";
+                        if (_stackFrame.ArgumentCount > 1)
+                        {
+                            if (_stackFrame.GetArgument(1) is not ManagedString subString)
+                            {
+                                ThrowUnexpectedValue();
+                                return _stackFrame;
+                            }
+
+                            substring = subString.ToString();
+                        }
+
+                        FactoryUtils.ASSET = archive.Archive;
+                        var stackPtr = _stackFrame.Allocate(archiveSize);
+                        var data = SoftObjectFactory.Create(softObjectStr.ToString(), substring);
+                        var managedSoftObject = new ManagedSoftObject(data, stackPtr);
+                        _stackFrame.Push(managedSoftObject);
+
+                        break;
+                    }
+                    case "Swap":
+                    {
+                        var other = _stackFrame.GetArgument(0);
+                        if (other is not ManagedArchive newArchive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        archive.Archive = archive.Archive.Swap(newArchive.Archive);
                         break;
                     }
                     case "Import":
                     {
-                        var value = _stackFrame.Pop();
+                        var value = _stackFrame.GetArgument(0);
                         if (value is not ManagedString managedString)
                         {
                             ThrowUnexpectedValue();
@@ -477,7 +603,17 @@ internal sealed class MethodRuntime
                         }
                         
                         var str = managedString.ToString();
-                        // TODO: Import the archive.
+                        var stackPtr = _stackFrame.Allocate(archiveSize);
+                        var byteData = GlobalFileProvider.Provider?.SaveAsset(str);
+                        if (byteData is null)
+                        {
+                            throw new InvalidOperationException($"Cannot find asset '{str}'.");
+                        }
+                        
+                        var archive = new ZenAsset(new AssetBinaryReader(byteData), EngineVersion.VER_LATEST, Usmap.CachedMappings);
+                        var managedArchive = new ManagedArchive(archive, stackPtr);
+                        _stackFrame.Push(managedArchive);
+
                         break;
                     }
                 }
@@ -550,6 +686,8 @@ internal sealed class MethodRuntime
                         var left = _stackFrame.Pop();
                         var result = left.ComputeOperation(opCode, right, _stackFrame);
                         _stackFrame.Push(result);
+                        _stackFrame.DeallocateIfDead(left);
+                        _stackFrame.DeallocateIfDead(right);
                         break;
                     }
                     case OpCode.Neg:
@@ -557,6 +695,7 @@ internal sealed class MethodRuntime
                         var value = _stackFrame.Pop();
                         var result = value.ComputeOperation(opCode, null, _stackFrame);
                         _stackFrame.Push(result);
+                        _stackFrame.DeallocateIfDead(value);
                         break;
                     }
                     case OpCode.Ldc:
@@ -579,6 +718,7 @@ internal sealed class MethodRuntime
                         var length = managedArray.Length;
                         var value = _stackFrame.AllocatePrimitive(ManagedRuntime.Int32, length);
                         _stackFrame.Push(value);
+                        _stackFrame.DeallocateIfDead(array);
                         break;
                     }
                     case OpCode.Ldstr:
@@ -613,6 +753,7 @@ internal sealed class MethodRuntime
                         {
                             var value = _stackFrame.Pop();
                             _stackFrame.SetLocal(localInfo, value);
+                            _stackFrame.DeallocateIfDead(value);
                         }
                         
                         break;
@@ -631,6 +772,7 @@ internal sealed class MethodRuntime
                         {
                             var value = _stackFrame.Pop();
                             _stackFrame.SetArgument(parameter, value);
+                            _stackFrame.DeallocateIfDead(value);
                         }
                         
                         break;
@@ -662,6 +804,7 @@ internal sealed class MethodRuntime
                         {
                             var value = _stackFrame.Pop();
                             managedObject.SetField(field, value);
+                            _stackFrame.DeallocateIfDead(value);
                         }
                         
                         break;
@@ -686,6 +829,7 @@ internal sealed class MethodRuntime
                         {
                             var value = _stackFrame.Pop();
                             parent.SetStaticField(field, value);
+                            _stackFrame.DeallocateIfDead(value);
                         }
                         
                         break;
@@ -733,8 +877,11 @@ internal sealed class MethodRuntime
                         {
                             var value = _stackFrame.Pop();
                             managedArray.SetElement(indexValue, value);
+                            _stackFrame.DeallocateIfDead(value);
                         }
                         
+                        _stackFrame.DeallocateIfDead(array);
+                        _stackFrame.DeallocateIfDead(index);
                         break;
                     }
                     case OpCode.Ldflda:
@@ -762,6 +909,7 @@ internal sealed class MethodRuntime
                             var value = obj.Pointer + (nuint)field.Offset;
                             var ptr = _stackFrame.AllocatePointer(type, value);
                             _stackFrame.Push(ptr);
+                            _stackFrame.DeallocateIfDead(instance);
                         }
                         else
                         {
@@ -771,6 +919,7 @@ internal sealed class MethodRuntime
                             _stackFrame.Push(ptr);
                         }
                         
+                        _stackFrame.DeallocateIfDead(typeIndex);
                         break;
                     }
                     case OpCode.Ldloca:
@@ -781,6 +930,7 @@ internal sealed class MethodRuntime
                         var type = ResolveTypeFromIndex(typeIndex);
                         var value = _stackFrame.GetLocalAddress(localInfo, type);
                         _stackFrame.Push(value);
+                        _stackFrame.DeallocateIfDead(typeIndex);
                         break;
                     }
                     case OpCode.Ldarga:
@@ -791,6 +941,7 @@ internal sealed class MethodRuntime
                         var type = ResolveTypeFromIndex(typeIndex);
                         var value = _stackFrame.GetArgumentAddress(parameter, type);
                         _stackFrame.Push(value);
+                        _stackFrame.DeallocateIfDead(typeIndex);
                         break;
                     }
                     case OpCode.Ldelema:
@@ -816,6 +967,8 @@ internal sealed class MethodRuntime
                         var element = managedArray.GetElement(indexValue);
                         var ptr = _stackFrame.AllocatePointer(type, element.Pointer);
                         _stackFrame.Push(ptr);
+                        _stackFrame.DeallocateIfDead(array);
+                        _stackFrame.DeallocateIfDead(index);
                         break;
                     }
                     case OpCode.Ldind:
@@ -834,6 +987,7 @@ internal sealed class MethodRuntime
                         var obj = _stackFrame.AllocateObject(type);
                         MemoryUtils.Copy(managedPointer.Target, obj.Pointer, type.Size);
                         _stackFrame.Push(obj);
+                        _stackFrame.DeallocateIfDead(ptr);
                         break;
                     }
                     case OpCode.Stind:
@@ -849,6 +1003,8 @@ internal sealed class MethodRuntime
                         
                         var value = _stackFrame.Pop();
                         MemoryUtils.Copy(value.Pointer, managedPointer.Target, type.Size);
+                        _stackFrame.DeallocateIfDead(value);
+                        _stackFrame.DeallocateIfDead(ptr);
                         break;
                     }
                     case OpCode.Ldtype:
@@ -865,6 +1021,7 @@ internal sealed class MethodRuntime
                         var converted = _stackFrame.AllocateObject(type);
                         MemoryUtils.Copy(value.Pointer, converted.Pointer, type.Size);
                         _stackFrame.Push(converted);
+                        _stackFrame.DeallocateIfDead(value);
                         break;
                     }
                     case OpCode.Newarr:
@@ -881,6 +1038,7 @@ internal sealed class MethodRuntime
                         var type = ManagedRuntime.System.GetType(typeDef);
                         var array = _stackFrame.AllocateArray(type, intSize);
                         _stackFrame.Push(array);
+                        _stackFrame.DeallocateIfDead(size);
                         break;
                     }
                     case OpCode.Newobj:
@@ -910,6 +1068,11 @@ internal sealed class MethodRuntime
                         }
                         
                         _stackFrame.Push(stackFrame.ReturnObject);
+                        foreach (var argument in arguments.Values)
+                        {
+                            _stackFrame.DeallocateIfDead(argument);
+                        }
+                        
                         ManagedRuntime.StackManager.DeallocateStackFrame();
                         break;
                     }
@@ -933,7 +1096,7 @@ internal sealed class MethodRuntime
                         }
 
                         var readonlyArguments = new ReadOnlyDictionary<ParameterInfo, RuntimeObject>(arguments);
-                        if (method.IsStatic)
+                        if (instance is null)
                         {
                             var stackFrame = type.InvokeStatic(_assembly, method, readonlyArguments);
                             var result = stackFrame.ReturnObject;
@@ -951,9 +1114,16 @@ internal sealed class MethodRuntime
                             {
                                 _stackFrame.Push(result);
                             }
+                            
+                            _stackFrame.DeallocateIfDead(instance);
                         }
                         
                         ManagedRuntime.StackManager.DeallocateStackFrame();
+                        foreach (var argument in arguments.Values)
+                        {
+                            _stackFrame.DeallocateIfDead(argument);
+                        }
+                        
                         break;
                     }
                     case OpCode.Ret:
@@ -975,6 +1145,7 @@ internal sealed class MethodRuntime
                             label = operand - 1;
                         }
 
+                        _stackFrame.DeallocateIfDead(value);
                         break;
                     }
                     case OpCode.Brfalse:
@@ -992,6 +1163,7 @@ internal sealed class MethodRuntime
                             label = operand - 1;
                         }
 
+                        _stackFrame.DeallocateIfDead(value);
                         break;
                     }
                     case OpCode.Br:
@@ -1085,7 +1257,7 @@ internal sealed class MethodRuntime
 
     private static RuntimeObject ResolveObject(RuntimeObject instance)
     {
-        RuntimeObject obj;
+        var obj = instance;
         switch (instance)
         {
             case ManagedReference managedReference:
@@ -1097,11 +1269,6 @@ internal sealed class MethodRuntime
                 }
                             
                 obj = managedObject;
-                break;
-            }
-            case ManagedObject or ManagedArray:
-            {
-                obj = instance;
                 break;
             }
             case ManagedPointer managedPointer:
@@ -1121,8 +1288,6 @@ internal sealed class MethodRuntime
                 obj = new ManagedObject(type, type.Size, pointer);
                 break;
             }
-            default:
-                throw new InvalidOperationException("Cannot load a field from an instance that is not an object.");
         }
         
         return obj;

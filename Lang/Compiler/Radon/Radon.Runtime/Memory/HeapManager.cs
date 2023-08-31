@@ -17,7 +17,7 @@ internal sealed class HeapManager
     private nuint _current;
 
     public ImmutableArray<RuntimeObject> Objects => _allocatedObjects.Values.ToImmutableArray();
-    
+
     public HeapManager()
     {
         _freeBlocks = new LinkedList<FreeBlock>();
@@ -29,10 +29,10 @@ internal sealed class HeapManager
         _current = heap;
         Logger.Log($"Allocated {MemoryUtils.HeapSize} bytes for the heap", LogLevel.Info);
     }
-    
+
     public void FreeHeap()
     {
-        if (!PInvoke.VirtualFree((nint)_current,0, FreeType.MEM_RELEASE))
+        if (!PInvoke.VirtualFree((nint)_current, 0, FreeType.MEM_RELEASE))
         {
             throw new FailedToFreeMemoryException();
         }
@@ -48,7 +48,7 @@ internal sealed class HeapManager
 
         return obj;
     }
-    
+
     public void SetObject(nuint pointer, RuntimeObject obj)
     {
         Logger.Log($"Setting object at {pointer}", LogLevel.Info);
@@ -60,7 +60,7 @@ internal sealed class HeapManager
         _allocatedObjects[pointer] = obj;
         MemoryUtils.Copy(obj.Pointer, pointer, obj.Size);
     }
-    
+
     public RuntimeObject AllocateObject(RuntimeType type)
     {
         var size = type.Size;
@@ -83,16 +83,16 @@ internal sealed class HeapManager
         var elements = new List<RuntimeObject>(length);
         for (var i = 0; i < length; i++)
         {
-            var elementPointer = pointer + (nuint)(i * underlyingType.Size + sizeof(int));  
+            var elementPointer = pointer + (nuint)(i * underlyingType.Size + sizeof(int));
             var element = underlyingType.CreateDefault(elementPointer);
             elements.Add(element);
         }
-        
+
         var obj = new ManagedArray(type, pointer, elements);
         _allocatedObjects.Add(pointer, obj);
         return obj;
     }
-    
+
     public nuint Allocate(int size)
     {
         Logger.Log($"Allocating {size} bytes on the heap...", LogLevel.Info);
@@ -117,15 +117,15 @@ internal sealed class HeapManager
                     _freeBlocks.Remove(current);
                 }
             }
-            
+
             current = current.Next;
         }
-        
+
         if (_current + (nuint)size > _end)
         {
             throw new StackOverflowException();
         }
-        
+
         var address = _current;
         _current += (nuint)size;
         return address;
@@ -134,32 +134,7 @@ internal sealed class HeapManager
     public void Deallocate(RuntimeObject obj)
     {
         Logger.Log($"Deallocating object at {obj.Pointer}", LogLevel.Info);
-        var address = obj.Pointer;
-        var size = obj.Size;
-        var block = new FreeBlock(address, size);
-        var current = _freeBlocks.First;
-        var merged = false;
-        while (current is not null)
-        {
-            var next = current.Next;
-            if (current.Value.Pointer + (nuint)current.Value.Size == block.Pointer && next is not null)
-            {
-                // We can merge the blocks
-                var newBlock = new FreeBlock(current.Value.Pointer, current.Value.Size + block.Size);
-                _freeBlocks.AddBefore(next, newBlock);
-                _freeBlocks.Remove(current);
-                _freeBlocks.Remove(next);
-                merged = true;
-            }
-            
-            current = next;
-        }
-        
-        if (!merged)
-        {
-            _freeBlocks.AddLast(block);
-        }
-        
+        Free(obj);
         switch (obj)
         {
             case ManagedObject managedObject:
@@ -191,5 +166,83 @@ internal sealed class HeapManager
         }
 
         _allocatedObjects.Remove(obj.Pointer);
+    }
+
+    public void DeallocateIfDead(RuntimeObject obj)
+    {
+        if (!obj.IsDeadObject())
+        {
+            return;
+        }
+        
+        Free(obj);
+        switch (obj)
+        {
+            case ManagedObject managedObject:
+            {
+                var fields = managedObject.Fields;
+                foreach (var field in fields)
+                {
+                    DeallocateIfDead(field);
+                }
+
+                break;
+            }
+            case ManagedArray managedArray:
+            {
+                var elements = managedArray.Elements;
+                foreach (var element in elements)
+                {
+                    DeallocateIfDead(element);
+                }
+
+                break;
+            }
+            case ManagedReference managedReference:
+            {
+                try
+                {
+                    var heapObject = ManagedRuntime.HeapManager.GetObject(managedReference.Target);
+                    ManagedRuntime.HeapManager.DeallocateIfDead(heapObject);
+                }
+                catch (InvalidOperationException)
+                {
+                    // If the object doesn't exist, an exception will be thrown
+                    ManagedRuntime.StaticHeapManager.GetObject(managedReference.Target);
+                    // We won't deallocate, because it's a static object
+                }
+                
+                break;
+            }
+        }
+    }
+
+    private void Free(RuntimeObject obj)
+    {
+        var address = obj.Pointer;
+        var size = obj.Size;
+        var block = new FreeBlock(address, size);
+        var current = _freeBlocks.First;
+        var merged = false;
+        while (current is not null)
+        {
+            var next = current.Next;
+            if (current.Value.Pointer + (nuint)current.Value.Size == block.Pointer && next is not null)
+            {
+                // We can merge the blocks
+                var newBlock = new FreeBlock(current.Value.Pointer, current.Value.Size + block.Size);
+                _freeBlocks.AddBefore(next, newBlock);
+                _freeBlocks.Remove(current);
+                _freeBlocks.Remove(next);
+                merged = true;
+            }
+            
+            current = next;
+        }
+        
+        if (!merged)
+        {
+            _freeBlocks.AddLast(block);
+        }
     }
 }
