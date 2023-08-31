@@ -86,5 +86,9 @@ public enum ErrorCode
     CannotInstantiateStaticType,
     ElementTypeCannotBeStatic,
     PointerTypeCannotBeStatic,
-    InvalidMemberAccess
+    InvalidMemberAccess,
+    CannotInvokeStaticMethodOnInstance,
+    CannotInvokeInstanceMethodOnType,
+    CannotAccessStaticMemberOnInstance,
+    CannotAccessInstanceMemberOnType
 }
