@@ -10,7 +10,7 @@ using Radon.Runtime.RuntimeSystem.RuntimeObjects;
 
 namespace Radon.Runtime.Memory;
 
-internal sealed class StackManager
+public sealed class StackManager
 {
     private readonly Stack<StackFrame> _stackFrames;
     private readonly nuint _stack; // The pointer to the beginning of the stack.

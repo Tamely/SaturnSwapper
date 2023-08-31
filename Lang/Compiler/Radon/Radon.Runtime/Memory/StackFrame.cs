@@ -10,7 +10,7 @@ using Radon.Runtime.RuntimeSystem.RuntimeObjects;
 
 namespace Radon.Runtime.Memory;
 
-internal sealed class StackFrame
+public sealed class StackFrame
 {
     private readonly LinkedList<FreeBlock> _freeBlocks;
     private readonly Dictionary<ParameterInfo, nuint> _arguments;

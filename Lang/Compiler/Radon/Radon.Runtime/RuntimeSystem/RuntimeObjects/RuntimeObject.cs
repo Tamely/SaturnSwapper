@@ -4,7 +4,7 @@ using Radon.Runtime.Memory;
 
 namespace Radon.Runtime.RuntimeSystem.RuntimeObjects;
 
-internal abstract class RuntimeObject
+public abstract class RuntimeObject
 {
     public abstract RuntimeType Type { get; }
     public abstract int Size { get; }

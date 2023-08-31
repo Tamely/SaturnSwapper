@@ -11,7 +11,7 @@ using Radon.Runtime.RuntimeSystem.RuntimeObjects;
 
 namespace Radon.Runtime.RuntimeSystem;
 
-internal sealed class ManagedRuntime
+public sealed class ManagedRuntime
 {
     private static ManagedRuntime? _system;
     

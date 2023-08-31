@@ -10,7 +10,7 @@ using Radon.Runtime.RuntimeSystem.RuntimeObjects;
 
 namespace Radon.Runtime.RuntimeSystem;
 
-internal sealed class RuntimeType
+public sealed class RuntimeType
 {
     private readonly Dictionary<FieldInfo, nuint> _staticFields;
     private bool _initialized;

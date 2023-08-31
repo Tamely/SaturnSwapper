@@ -9,7 +9,7 @@ using Radon.Runtime.RuntimeSystem.RuntimeObjects;
 
 namespace Radon.Runtime.Memory;
 
-internal sealed class HeapManager
+public sealed class HeapManager
 {
     private readonly LinkedList<FreeBlock> _freeBlocks;
     private readonly Dictionary<nuint, RuntimeObject> _allocatedObjects;
