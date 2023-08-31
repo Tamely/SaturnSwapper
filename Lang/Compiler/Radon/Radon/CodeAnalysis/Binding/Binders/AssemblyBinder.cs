@@ -60,13 +60,22 @@ internal sealed class AssemblyBinder : Binder
             }
         }
 
-        var primitiveBinders = new List<TypeSymbolBinder>();
-        foreach (var type in TypeSymbol.GetPrimitiveTypes())
+        var primitiveTypes = TypeSymbol.GetPrimitiveTypes();
+        foreach (var type in primitiveTypes)
         {
-            var typeBinder = new TypeSymbolBinder(this, type);
-            typeBinder.BindMembers();
-            primitiveBinders.Add(typeBinder);
             Register(context, type);
+        }
+        
+        var primitiveBinders = new List<TypeSymbolBinder>();
+        foreach (var type in primitiveTypes)
+        {
+            var primitiveBinder = new TypeSymbolBinder(this, type);
+            primitiveBinders.Add(primitiveBinder);
+        }
+        
+        foreach (var primitiveBinder in primitiveBinders)
+        {
+            primitiveBinder.BindMembers();
         }
 
         var typeBinders = new List<NamedTypeBinder>();
@@ -213,7 +222,7 @@ internal sealed class AssemblyBinder : Binder
         foreach (var boundType in boundTypes)
         {
             if (boundType is not BoundStruct boundStruct || 
-                !boundType.TypeSymbol.Modifiers.Contains(SyntaxKind.EntryKeyword) ||
+                !boundType.TypeSymbol.HasModifier(SyntaxKind.EntryKeyword) ||
                 boundType.Syntax is not StructDeclarationSyntax syntax)
             {
                 continue;
@@ -229,7 +238,7 @@ internal sealed class AssemblyBinder : Binder
             foreach (var member in boundStruct.Members)
             {
                 if (member is not BoundMethod method ||
-                    !method.Symbol.Modifiers.Contains(SyntaxKind.EntryKeyword) ||
+                    !method.Symbol.HasModifier(SyntaxKind.EntryKeyword) ||
                     member.Syntax is not MethodDeclarationSyntax methodSyntax)
                 {
                     continue;

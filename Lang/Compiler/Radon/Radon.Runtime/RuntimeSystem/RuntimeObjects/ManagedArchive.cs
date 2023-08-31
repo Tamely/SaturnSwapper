@@ -9,10 +9,10 @@ internal sealed class ManagedArchive : RuntimeObject
 {
     public override RuntimeType Type { get; }
     public override int Size { get; } // The size in bytes of the array on the heap. This includes the 4 bytes for the length.
-    public override UIntPtr Pointer { get; } // The address of the array on the heap.
-    public ZenAsset Archive { get; private set; } // The archive
+    public override nuint Pointer { get; } // The address of the array on the heap.
+    public ZenAsset Archive { get; set; } // The archive
 
-    public ManagedArchive(ZenAsset archive, UIntPtr pointer)
+    public ManagedArchive(ZenAsset archive, nuint pointer)
     {
         Archive = archive;
         Pointer = pointer;
@@ -40,11 +40,6 @@ internal sealed class ManagedArchive : RuntimeObject
         }
 
         throw new InvalidOperationException($"Cannot perform operation {operation} on a archive.");
-    }
-
-    public void SetArchive(ZenAsset archive)
-    {
-        Archive = archive;
     }
 
     public override string ToString()

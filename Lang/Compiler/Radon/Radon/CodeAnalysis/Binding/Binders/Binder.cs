@@ -136,58 +136,57 @@ internal abstract class Binder
                 return true; // The ref symbol should be the parent type, which is the needed type, therefore, we do not need to do anything.
             }
             
-            if (symbol is TemplateSymbol or PrimitiveTemplateSymbol)
+            switch (symbol)
             {
-                ImmutableArray<TypeSymbol> typeArguments;
-                if (symbol is TemplateSymbol template && context.Tag is ImmutableArray<TypeSymbol> typeArgs)
+                case TemplateSymbol:
                 {
-                    typeArguments = typeArgs;
-                }
-                else if (symbol is PrimitiveTemplateSymbol primitiveTemplate)
-                {
-                    typeArguments = primitiveTemplate.TypeArguments;
-                    template = primitiveTemplate.Template;
-                }
-                else
-                {
-                    throw new InvalidOperationException("The symbol is not a template symbol.");
-                }
-
-                var resolvedTypeArgs = new TypeSymbol[typeArguments.Length];
-                for (var i = 0; i < typeArguments.Length; i++)
-                {
-                    var typeArg = typeArguments[i];
-                    if (typeArg is TypeParameterSymbol) // We can't build the template if we have unresolved type parameters.
+                    ImmutableArray<TypeSymbol> typeArguments;
+                    if (symbol is TemplateSymbol template && context.Tag is ImmutableArray<TypeSymbol> typeArgs)
                     {
-                        if (TryResolve<TypeSymbol>(context, typeArg.Name, out var resolvedArg,
-                                false)) // We check if the type parameter has been resolved.
+                        typeArguments = typeArgs;
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("The symbol is not a template symbol.");
+                    }
+
+                    var resolvedTypeArgs = new TypeSymbol[typeArguments.Length];
+                    for (var i = 0; i < typeArguments.Length; i++)
+                    {
+                        var typeArg = typeArguments[i];
+                        if (typeArg is TypeParameterSymbol) // We can't build the template if we have unresolved type parameters.
                         {
-                            resolvedTypeArgs[i] = resolvedArg!;
-                            continue;
+                            if (TryResolve<TypeSymbol>(context, typeArg.Name, out var resolvedArg,
+                                    false)) // We check if the type parameter has been resolved.
+                            {
+                                resolvedTypeArgs[i] = resolvedArg!;
+                                continue;
+                            }
+
+                            // If the type can't be built on the spot, it will likely be built when the template method/class is called/constructed.
+                            return true; // We return true because the type does exist, just we can't build it.
                         }
 
-                        // If the type can't be built on the spot, it will likely be built when the template method/class is called/constructed.
-                        return true; // We return true because the type does exist, just we can't build it.
+                        resolvedTypeArgs[i] = typeArg;
                     }
 
-                    resolvedTypeArgs[i] = typeArg;
+                    var templateSymbol = AssemblyBinder.Current.BuildTemplate(template, resolvedTypeArgs.ToImmutableArray());
+                    symbol = (TSymbol)(object)templateSymbol;
+                    return true;
                 }
-
-                var templateSymbol = AssemblyBinder.Current.BuildTemplate(template, resolvedTypeArgs.ToImmutableArray());
-                symbol = (TSymbol)(object)templateSymbol;
-                return true;
-            }
-
-            if (symbol is TypeParameterSymbol typeParameter)
-            {
-                var boundTypeParameters = Scope!.GetSymbols<BoundTypeParameterSymbol>();
-                foreach (var tp in boundTypeParameters)
+                case TypeParameterSymbol typeParameter:
                 {
-                    if (tp.TypeParameter == typeParameter)
+                    var boundTypeParameters = Scope!.GetSymbols<BoundTypeParameterSymbol>();
+                    foreach (var tp in boundTypeParameters)
                     {
-                        symbol = (TSymbol)(object)tp.BoundType;
-                        return true;
+                        if (tp.TypeParameter == typeParameter)
+                        {
+                            symbol = (TSymbol)(object)tp.BoundType;
+                            return true;
+                        }
                     }
+
+                    break;
                 }
             }
 
@@ -244,6 +243,11 @@ internal abstract class Binder
         if (syntax is ArrayTypeSyntax arraySyntax)
         {
             var type = BindTypeSyntax(arraySyntax.TypeSyntax);
+            if (type.IsStatic)
+            {
+                Diagnostics.ReportElementTypeCannotBeStatic(arraySyntax.Location);
+            }
+            
             var name = $"{type.Name}[]";
             var context = new SemanticContext(syntax.Location, this, syntax, Diagnostics);
             if (TryResolve<ArrayTypeSymbol>(context, name, out var array, false))
@@ -254,6 +258,17 @@ internal abstract class Binder
             array = new ArrayTypeSymbol(type);
             AssemblyBinder.Current.Register(context, array);
             return array;
+        }
+
+        if (syntax is PointerTypeSyntax pointerType)
+        {
+            var type = BindTypeSyntax(pointerType.Type);
+            if (type.IsStatic)
+            {
+                Diagnostics.ReportPointerTypeCannotBeStatic(pointerType.Location);
+            }
+            
+            return BindPointerType(pointerType, type);
         }
         
         var typeArguments = ImmutableArray.CreateBuilder<TypeSymbol>();
@@ -277,5 +292,19 @@ internal abstract class Binder
         }
         
         return typeSymbol!;
+    }
+
+    protected PointerTypeSymbol BindPointerType(SyntaxNode syntax, TypeSymbol type)
+    {
+        var name = $"{type.Name}*";
+        var context = new SemanticContext(syntax.Location, this, syntax, Diagnostics);
+        if (TryResolve<PointerTypeSymbol>(context, name, out var pointer, false))
+        {
+            return pointer!;
+        }
+            
+        pointer = new PointerTypeSymbol(type);
+        AssemblyBinder.Current.Register(context, pointer);
+        return pointer;
     }
 }

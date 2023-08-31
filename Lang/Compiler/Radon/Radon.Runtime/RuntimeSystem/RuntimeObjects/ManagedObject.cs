@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using Radon.CodeAnalysis.Disassembly;
 using Radon.CodeAnalysis.Emit;
+using Radon.Common;
 using Radon.Runtime.Memory;
 
 namespace Radon.Runtime.RuntimeSystem.RuntimeObjects;
@@ -32,6 +33,7 @@ internal class ManagedObject : RuntimeObject
     
     public void SetField(FieldInfo field, RuntimeObject value)
     {
+        Logger.Log($"Setting field {field.Name}.", LogLevel.Info);
         if (!_fields.ContainsKey(field))
         {
             throw new InvalidOperationException("Field does not exist.");
@@ -44,6 +46,7 @@ internal class ManagedObject : RuntimeObject
     
     public RuntimeObject GetField(FieldInfo field)
     {
+        Logger.Log($"Getting field {field.Name}.", LogLevel.Info);
         if (!_fields.ContainsKey(field))
         {
             throw new InvalidOperationException("Field does not exist.");
@@ -230,6 +233,132 @@ internal class ManagedObject : RuntimeObject
     }
 
     private unsafe RuntimeObject ComputeIntegerOperation(OpCode operation, RuntimeObject other, StackFrame stackFrame)
+    {
+        var leftBytes = new byte[16];
+        if (other.Size > Size)
+        {
+            throw new InvalidOperationException($"Size of {other.Type.TypeInfo.Fullname} is greater than {Type.TypeInfo.Fullname}");
+        }
+        
+        var rightBytes = new byte[16];
+        Int128 leftValue;
+        Int128 rightValue;
+        int shift;
+        fixed (byte* leftPtr = leftBytes)
+        {
+            MemoryUtils.Copy(Pointer, (nuint)leftPtr, Size);
+            leftValue = *(Int128*)leftPtr;
+        }
+        
+        fixed (byte* rightPtr = rightBytes)
+        {
+            MemoryUtils.Copy(other.Pointer, (nuint)rightPtr, other.Size);
+            rightValue = *(Int128*)rightPtr;
+            shift = *(int*)rightPtr;
+        }
+        
+        Int128 result;
+        switch (operation)
+        {
+            case OpCode.Add:
+            {
+                result = leftValue + rightValue;
+                break;
+            }
+            case OpCode.Sub:
+            {
+                result = leftValue - rightValue;
+                break;
+            }
+            case OpCode.Mul:
+            {
+                result = leftValue * rightValue;
+                break;
+            }
+            case OpCode.Div:
+            {
+                result = leftValue / rightValue;
+                break;
+            }
+            case OpCode.Mod:
+            {
+                result = leftValue % rightValue;
+                break;
+            }
+            case OpCode.Or:
+            {
+                result = leftValue | rightValue;
+                break;
+            }
+            case OpCode.And:
+            {
+                result = leftValue & rightValue;
+                break;
+            }
+            case OpCode.Xor:
+            {
+                result = leftValue ^ rightValue;
+                break;
+            }
+            case OpCode.Shl:
+            {
+                result = leftValue << shift;
+                break;
+            }
+            case OpCode.Shr:
+            {
+                result = leftValue >> shift;
+                break;
+            }
+            case OpCode.Ceq:
+            {
+                var compare = leftValue == rightValue;
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, compare);
+            }
+            case OpCode.Cne:
+            {
+                var compare = leftValue != rightValue;
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, compare);
+            }
+            case OpCode.Cgt:
+            {
+                var compare = leftValue > rightValue;
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, compare);
+            }
+            case OpCode.Cge:
+            {
+                var compare = leftValue >= rightValue;
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, compare);
+            }
+            case OpCode.Clt:
+            {
+                var compare = leftValue < rightValue;
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, compare);
+            }
+            case OpCode.Cle:
+            {
+                var compare = leftValue <= rightValue;
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, compare);
+            }
+            default:
+            {
+                throw new InvalidOperationException($"Operation {operation} is not supported for {Type.TypeInfo.Fullname}");
+            }
+        }
+        
+        var bytes = new byte[Size];
+        fixed (byte* ptr = bytes)
+        {
+            var resultPtr = &result;
+            MemoryUtils.Copy((nuint)resultPtr, (nuint)ptr, Size);
+        }
+        
+        var obj = stackFrame.AllocateConstant(Type, bytes);
+        return obj;
+    }
+
+    [Obsolete("This method doesn't work")]
+    private unsafe RuntimeObject ComputeIntegerOperationBitwise(OpCode operation, RuntimeObject other, StackFrame stackFrame)
     {
         var leftBytes = new byte[Size];
         if (other.Size > Size)

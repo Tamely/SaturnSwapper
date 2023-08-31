@@ -1,9 +1,11 @@
+using System.ComponentModel;
+
 namespace Radon.Common;
 
-public enum LogLevel : byte
+public enum LogLevel
 {
-    Trace,
-    Info,
-    Warning,
-    Error
+    [Description("TRC")] Trace,
+    [Description("INF")] Info,
+    [Description("WRN")] Warning,
+    [Description("ERR")] Error
 }

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
-using System.Drawing;
 using System.Linq;
 using System.Text;
 using CUE4Parse;
@@ -17,7 +16,6 @@ using Radon.Runtime.RuntimeSystem.RuntimeObjects.Properties;
 using UAssetAPI;
 using UAssetAPI.IO;
 using UAssetAPI.PropertyFactories;
-using UAssetAPI.PropertyTypes.Objects;
 using UAssetAPI.UnrealTypes;
 using UAssetAPI.Unversioned;
 
@@ -31,7 +29,6 @@ internal sealed class MethodRuntime
     private readonly MethodInfo _method;
     private readonly ImmutableArray<Instruction> _instructions;
     private readonly StackFrame _stackFrame;
-    private readonly ReadOnlyDictionary<ParameterInfo, RuntimeObject> _arguments;
 
     public MethodRuntime(AssemblyInfo assembly, RuntimeObject? instance, MethodInfo method,
         ReadOnlyDictionary<ParameterInfo, RuntimeObject> arguments)
@@ -40,7 +37,6 @@ internal sealed class MethodRuntime
         _metadata = assembly.Metadata;
         _instance = instance;
         _method = method;
-        _arguments = arguments;
         var instructionCount = _method.InstructionCount;
         var instructionStart = _method.FirstInstruction;
         var instructions = new Instruction[instructionCount];
@@ -59,17 +55,20 @@ internal sealed class MethodRuntime
             size += local.Type.Size;
         }
 
+        Logger.Log("Resolving stack size...",  LogLevel.Info);
         var stackSize = ResolveStackSize();
         size += stackSize.MaxStackSize;
-        _stackFrame = ManagedRuntime.StackManager.AllocateStackFrame(size, stackSize.MaxStack, instance,
+        _stackFrame = ManagedRuntime.StackManager.AllocateStackFrame(size, stackSize.MaxStack, instance, 
             locals.Values.ToImmutableArray(), arguments);
     }
 
     private (int MaxStackSize, int MaxStack) ResolveStackSize()
     {
+        // TODO: Loops have a memory leak. They need to be fixed
         var maxStack = 0;
         var stack = new Stack<TypeInfo>(); // The type of the item on the stack.
         var totalStack = new Stack<TypeInfo>();
+        TypeInfo? ldtypeType = null;
         foreach (var instruction in _instructions)
         {
             // We need to get the max amount of items that will be on the stack at any given time.
@@ -78,6 +77,10 @@ internal sealed class MethodRuntime
             var operand = instruction.Operand;
             switch (opCode)
             {
+                case OpCode.Nop:
+                {
+                    break;
+                }
                 case OpCode.Add:
                 case OpCode.Sub:
                 case OpCode.Mul:
@@ -219,6 +222,54 @@ internal sealed class MethodRuntime
                     stack.Pop();
                     break;
                 }
+                case OpCode.Ldflda:
+                {
+                    if (ldtypeType is null)
+                    {
+                        throw new InvalidOperationException("Cannot load address of argument without ldtype.");
+                    }
+                    
+                    stack.Pop();
+                    stack.Push(ldtypeType);
+                    totalStack.Push(ldtypeType);
+                    break;
+                }
+                case OpCode.Ldsflda:
+                case OpCode.Ldloca:
+                case OpCode.Ldarga:
+                {
+                    if (ldtypeType is null)
+                    {
+                        throw new InvalidOperationException("Cannot load address of argument without ldtype.");
+                    }
+                    
+                    stack.Push(ldtypeType);
+                    totalStack.Push(ldtypeType);
+                    break;
+                }
+                case OpCode.Ldind:
+                {
+                    var typeDef = _metadata.Types.Types[operand];
+                    var type = ManagedRuntime.System.GetType(typeDef);
+                    stack.Push(type.TypeInfo);
+                    totalStack.Push(type.TypeInfo);
+                    break;
+                }
+                case OpCode.Stind:
+                {
+                    stack.Pop();
+                    stack.Pop();
+                    break;
+                }
+                case OpCode.Ldtype:
+                {
+                    var typeDef = _metadata.Types.Types[operand];
+                    var type = ManagedRuntime.System.GetType(typeDef);
+                    ldtypeType = type.TypeInfo;
+                    stack.Push(ManagedRuntime.Int32.TypeInfo);
+                    totalStack.Push(ManagedRuntime.Int32.TypeInfo);
+                    break;
+                }
                 case OpCode.Conv:
                 {
                     stack.Pop();
@@ -302,6 +353,10 @@ internal sealed class MethodRuntime
                     totalStack.Push(ManagedRuntime.Boolean.TypeInfo);
                     break;
                 }
+                default:
+                {
+                    throw new InvalidOperationException($"Cannot resolve stack size for instruction '{opCode}'.");
+                }
             }
             
             if (stack.Count > maxStack)
@@ -314,8 +369,9 @@ internal sealed class MethodRuntime
         return (maxStackSize, maxStack);
     }
 
-    public unsafe StackFrame Invoke()
+    public StackFrame Invoke()
     {
+        Logger.Log($"Invoking method '{_method.Name}'", LogLevel.Info);
         switch (_method.IsStatic)
         {
             case true when _instance is not null:
@@ -334,42 +390,24 @@ internal sealed class MethodRuntime
                 // We need to get the name of the method, and it's template arguments.
                 var methodName = _method.Name;
                 var nameBuilder = new StringBuilder();
-                var templateArguments = new List<RuntimeType>();
-                var templateStart = 0;
-                for (var i = 0; i < methodName.Length; i++)
+                foreach (var character in methodName)
                 {
-                    var character = methodName[i];
                     if (character == '`')
                     {
-                        templateStart = i + 1; // Skip the `
                         break;
                     }
 
                     nameBuilder.Append(character);
                 }
                 
-                var typeArgBuilder = new StringBuilder();
-                for (var i = templateStart; i < methodName.Length; i++)
-                {
-                    var character = methodName[i];
-                    if (character == '`')
-                    {
-                        var typeArg = ManagedRuntime.System.GetType(typeArgBuilder.ToString());
-                        templateArguments.Add(typeArg);
-                        typeArgBuilder.Clear();
-                        continue;
-                    }
-
-                    typeArgBuilder.Append(character);
-                }
-
                 var name = nameBuilder.ToString();
+                const int archiveSize = 8;
                 switch (name)
                 {
                     case "SwapArrayProperty":
                     {
-                        var searchObject = _arguments.ValueAt(0);
-                        var replaceObject = _arguments.ValueAt(1);
+                        var searchObject = _stackFrame.GetArgument(0);
+                        var replaceObject = _stackFrame.GetArgument(1);
 
                         if (_instance is not ManagedArchive archive)
                         {
@@ -393,8 +431,8 @@ internal sealed class MethodRuntime
                     }
                     case "SwapSoftObjectProperty":
                     {
-                        var searchObject = _arguments.ValueAt(0);
-                        var replaceObject = _arguments.ValueAt(1);
+                        var searchObject = _stackFrame.GetArgument(0);
+                        var replaceObject = _stackFrame.GetArgument(1);
 
                         if (_instance is not ManagedArchive archive)
                         {
@@ -418,8 +456,8 @@ internal sealed class MethodRuntime
                     }
                     case "SwapLinearColorProperty":
                     {
-                        var searchObject = _arguments.ValueAt(0);
-                        var replaceObject = _arguments.ValueAt(1);
+                        var searchObject = _stackFrame.GetArgument(0);
+                        var replaceObject = _stackFrame.GetArgument(1);
 
                         if (_instance is not ManagedArchive archive)
                         {
@@ -443,8 +481,7 @@ internal sealed class MethodRuntime
                     }
                     case "CreateArrayProperty":
                     {
-                        var arrayObject = _arguments.ValueAt(0);
-
+                        var arrayObject = _stackFrame.GetArgument(0);
                         if (arrayObject is not ManagedArray managedArray)
                         {
                             ThrowUnexpectedValue();
@@ -461,8 +498,7 @@ internal sealed class MethodRuntime
                         var softObjectList = managedSoftObjectList.Select(obj => obj.SoftObjectPropertyData).ToList();
 
                         FactoryUtils.ASSET = archive.Archive;
-
-                        var stackPtr = _stackFrame.Allocate(8);
+                        var stackPtr = _stackFrame.Allocate(archiveSize);
                         var data = ArrayFactory.Create(softObjectList);
                         var managedArrayObject = new ManagedArrayObject(data, stackPtr);
                         _stackFrame.Push(managedArrayObject);
@@ -471,15 +507,15 @@ internal sealed class MethodRuntime
                     }
                     case "CreateLinearColorProperty":
                     {
-                        var redObject = _arguments.ValueAt(0);
-                        var greenObject = _arguments.ValueAt(1);
-                        var blueObject = _arguments.ValueAt(2);
-                        var alphaObject = _arguments.ValueAt(3);
+                        var redObject = _stackFrame.GetArgument(0);
+                        var greenObject = _stackFrame.GetArgument(1);
+                        var blueObject = _stackFrame.GetArgument(2);
+                        var alphaObject = _stackFrame.GetArgument(3);
 
-                        if (redObject is not ManagedObject redManagedObject 
-                            || greenObject is not ManagedObject greenManagedObject 
-                            || blueObject is not ManagedObject blueManagedObject 
-                            || alphaObject is not ManagedObject alphaManagedObject)
+                        if (redObject is not ManagedObject redManagedObject ||
+                            greenObject is not ManagedObject greenManagedObject ||
+                            blueObject is not ManagedObject blueManagedObject ||
+                            alphaObject is not ManagedObject alphaManagedObject)
                         {
                             ThrowUnexpectedValue();
                             return _stackFrame;
@@ -491,14 +527,13 @@ internal sealed class MethodRuntime
                             return _stackFrame;
                         }
 
-                        float red = MemoryUtils.GetValue<float>(redManagedObject.Pointer);
-                        float green = MemoryUtils.GetValue<float>(greenManagedObject.Pointer);
-                        float blue = MemoryUtils.GetValue<float>(blueManagedObject.Pointer);
-                        float alpha = MemoryUtils.GetValue<float>(alphaManagedObject.Pointer);
-
+                        var red = MemoryUtils.GetValue<float>(redManagedObject.Pointer);
+                        var green = MemoryUtils.GetValue<float>(greenManagedObject.Pointer);
+                        var blue = MemoryUtils.GetValue<float>(blueManagedObject.Pointer);
+                        var alpha = MemoryUtils.GetValue<float>(alphaManagedObject.Pointer);
                         FactoryUtils.ASSET = archive.Archive;
 
-                        var stackPtr = _stackFrame.Allocate(8);
+                        var stackPtr = _stackFrame.Allocate(archiveSize);
                         var data = ColorFactory.Create(red, green, blue, alpha);
                         var managedLinearColorObject = new ManagedLinearColorObject(data, stackPtr);
                         _stackFrame.Push(managedLinearColorObject);
@@ -507,7 +542,7 @@ internal sealed class MethodRuntime
                     }
                     case "CreateSoftObjectProperty":
                     {
-                        var other = _arguments.First().Value;
+                        var other = _stackFrame.GetArgument(0);
                         if (other is not ManagedString softObjectStr)
                         {
                             ThrowUnexpectedValue();
@@ -520,10 +555,10 @@ internal sealed class MethodRuntime
                             return _stackFrame;
                         }
                         
-                        string substring = "";
-                        if (_arguments.Count > 1)
+                        var substring = "";
+                        if (_stackFrame.ArgumentCount > 1)
                         {
-                            if (_arguments.ValueAt(1) is not ManagedString subString)
+                            if (_stackFrame.GetArgument(1) is not ManagedString subString)
                             {
                                 ThrowUnexpectedValue();
                                 return _stackFrame;
@@ -533,8 +568,7 @@ internal sealed class MethodRuntime
                         }
 
                         FactoryUtils.ASSET = archive.Archive;
-
-                        var stackPtr = _stackFrame.Allocate(8);
+                        var stackPtr = _stackFrame.Allocate(archiveSize);
                         var data = SoftObjectFactory.Create(softObjectStr.ToString(), substring);
                         var managedSoftObject = new ManagedSoftObject(data, stackPtr);
                         _stackFrame.Push(managedSoftObject);
@@ -543,7 +577,7 @@ internal sealed class MethodRuntime
                     }
                     case "Swap":
                     {
-                        var other = _arguments.First().Value;
+                        var other = _stackFrame.GetArgument(0);
                         if (other is not ManagedArchive newArchive)
                         {
                             ThrowUnexpectedValue();
@@ -556,12 +590,12 @@ internal sealed class MethodRuntime
                             return _stackFrame;
                         }
                         
-                        archive.SetArchive(archive.Archive.Swap(newArchive.Archive));
+                        archive.Archive = archive.Archive.Swap(newArchive.Archive);
                         break;
                     }
                     case "Import":
                     {
-                        var value = _arguments.First().Value;
+                        var value = _stackFrame.GetArgument(0);
                         if (value is not ManagedString managedString)
                         {
                             ThrowUnexpectedValue();
@@ -569,10 +603,13 @@ internal sealed class MethodRuntime
                         }
                         
                         var str = managedString.ToString();
-
-                        var stackPtr = _stackFrame.Allocate(8);
+                        var stackPtr = _stackFrame.Allocate(archiveSize);
+                        var byteData = GlobalFileProvider.Provider?.SaveAsset(str);
+                        if (byteData is null)
+                        {
+                            throw new InvalidOperationException($"Cannot find asset '{str}'.");
+                        }
                         
-                        byte[] byteData = GlobalFileProvider.Provider.SaveAsset(str);
                         var archive = new ZenAsset(new AssetBinaryReader(byteData), EngineVersion.VER_LATEST, Usmap.CachedMappings);
                         var managedArchive = new ManagedArchive(archive, stackPtr);
                         _stackFrame.Push(managedArchive);
@@ -649,6 +686,8 @@ internal sealed class MethodRuntime
                         var left = _stackFrame.Pop();
                         var result = left.ComputeOperation(opCode, right, _stackFrame);
                         _stackFrame.Push(result);
+                        _stackFrame.DeallocateIfDead(left);
+                        _stackFrame.DeallocateIfDead(right);
                         break;
                     }
                     case OpCode.Neg:
@@ -656,6 +695,7 @@ internal sealed class MethodRuntime
                         var value = _stackFrame.Pop();
                         var result = value.ComputeOperation(opCode, null, _stackFrame);
                         _stackFrame.Push(result);
+                        _stackFrame.DeallocateIfDead(value);
                         break;
                     }
                     case OpCode.Ldc:
@@ -678,6 +718,7 @@ internal sealed class MethodRuntime
                         var length = managedArray.Length;
                         var value = _stackFrame.AllocatePrimitive(ManagedRuntime.Int32, length);
                         _stackFrame.Push(value);
+                        _stackFrame.DeallocateIfDead(array);
                         break;
                     }
                     case OpCode.Ldstr:
@@ -712,6 +753,7 @@ internal sealed class MethodRuntime
                         {
                             var value = _stackFrame.Pop();
                             _stackFrame.SetLocal(localInfo, value);
+                            _stackFrame.DeallocateIfDead(value);
                         }
                         
                         break;
@@ -730,6 +772,7 @@ internal sealed class MethodRuntime
                         {
                             var value = _stackFrame.Pop();
                             _stackFrame.SetArgument(parameter, value);
+                            _stackFrame.DeallocateIfDead(value);
                         }
                         
                         break;
@@ -745,36 +788,23 @@ internal sealed class MethodRuntime
                             throw new InvalidOperationException($"Cannot load member of type '{memberRef.MemberType}' with this instruction.");
                         }
 
-                        ManagedObject obj;
-                        switch (instance)
+                        var obj = ResolveObject(instance);
+                        if (obj is not ManagedObject managedObject)
                         {
-                            case ManagedReference managedReference:
-                            {
-                                var reference = ManagedRuntime.HeapManager.GetObject(managedReference.Target);
-                                if (reference is not ManagedObject managedObject)
-                                {
-                                    throw new InvalidOperationException("Cannot load a field from an instance that is not an object.");
-                                }
-                            
-                                obj = managedObject;
-                                break;
-                            }
-                            case ManagedObject managedObject:
-                                obj = managedObject;
-                                break;
-                            default:
-                                throw new InvalidOperationException("Cannot load a field from an instance that is not an object.");
+                            ThrowUnexpectedValue();
+                            return;
                         }
                         
                         if (instruction.OpCode == OpCode.Ldfld)
                         {
-                            var value = obj.GetField(field);
+                            var value = managedObject.GetField(field);
                             _stackFrame.Push(value);
                         }
                         else
                         {
                             var value = _stackFrame.Pop();
-                            obj.SetField(field, value);
+                            managedObject.SetField(field, value);
+                            _stackFrame.DeallocateIfDead(value);
                         }
                         
                         break;
@@ -799,6 +829,7 @@ internal sealed class MethodRuntime
                         {
                             var value = _stackFrame.Pop();
                             parent.SetStaticField(field, value);
+                            _stackFrame.DeallocateIfDead(value);
                         }
                         
                         break;
@@ -846,8 +877,140 @@ internal sealed class MethodRuntime
                         {
                             var value = _stackFrame.Pop();
                             managedArray.SetElement(indexValue, value);
+                            _stackFrame.DeallocateIfDead(value);
                         }
                         
+                        _stackFrame.DeallocateIfDead(array);
+                        _stackFrame.DeallocateIfDead(index);
+                        break;
+                    }
+                    case OpCode.Ldflda:
+                    case OpCode.Ldsflda:
+                    {
+                        var memberReference = _metadata.MemberReferences.MemberReferences[operand];
+                        var memberRef = _assembly.MemberReferences[memberReference];
+                        if (memberRef.MemberInfo is not FieldInfo field)
+                        {
+                            throw new InvalidOperationException($"Cannot load member of type '{memberRef.MemberType}' with this instruction.");
+                        }
+
+                        var typeIndex = _stackFrame.Pop();
+                        var type = ResolveTypeFromIndex(typeIndex);
+                        if (opCode == OpCode.Ldflda)
+                        {
+                            var instance = _stackFrame.Pop();
+                            var obj = ResolveObject(instance);
+                            if (obj is not ManagedObject)
+                            {
+                                ThrowUnexpectedValue();
+                                return;
+                            }
+                            
+                            var value = obj.Pointer + (nuint)field.Offset;
+                            var ptr = _stackFrame.AllocatePointer(type, value);
+                            _stackFrame.Push(ptr);
+                            _stackFrame.DeallocateIfDead(instance);
+                        }
+                        else
+                        {
+                            var parent = ManagedRuntime.System.GetType(field.Parent);
+                            var value = parent.GetStaticFieldAddress(field);
+                            var ptr = _stackFrame.AllocatePointer(type, value);
+                            _stackFrame.Push(ptr);
+                        }
+                        
+                        _stackFrame.DeallocateIfDead(typeIndex);
+                        break;
+                    }
+                    case OpCode.Ldloca:
+                    {
+                        var local = _metadata.Locals.Locals[operand];
+                        var localInfo = _method.Locals[local];
+                        var typeIndex = _stackFrame.Pop();
+                        var type = ResolveTypeFromIndex(typeIndex);
+                        var value = _stackFrame.GetLocalAddress(localInfo, type);
+                        _stackFrame.Push(value);
+                        _stackFrame.DeallocateIfDead(typeIndex);
+                        break;
+                    }
+                    case OpCode.Ldarga:
+                    {
+                        var argument = _metadata.Parameters.Parameters[operand];
+                        var parameter = _method.Parameters[argument];
+                        var typeIndex = _stackFrame.Pop();
+                        var type = ResolveTypeFromIndex(typeIndex);
+                        var value = _stackFrame.GetArgumentAddress(parameter, type);
+                        _stackFrame.Push(value);
+                        _stackFrame.DeallocateIfDead(typeIndex);
+                        break;
+                    }
+                    case OpCode.Ldelema:
+                    {
+                        var array = _stackFrame.Pop();
+                        var index = _stackFrame.Pop();
+                        if (index is not ManagedObject)
+                        {
+                            ThrowUnexpectedValue();
+                            return;
+                        }
+                        
+                        if (array is not ManagedReference reference)
+                        {
+                            ThrowUnexpectedValue();
+                            return;
+                        }
+                        
+                        var typeIndex = _stackFrame.Pop();
+                        var type = ResolveTypeFromIndex(typeIndex);
+                        var managedArray = (ManagedArray)ManagedRuntime.HeapManager.GetObject(reference.Target);
+                        var indexValue = *(int*)index.Pointer;
+                        var element = managedArray.GetElement(indexValue);
+                        var ptr = _stackFrame.AllocatePointer(type, element.Pointer);
+                        _stackFrame.Push(ptr);
+                        _stackFrame.DeallocateIfDead(array);
+                        _stackFrame.DeallocateIfDead(index);
+                        break;
+                    }
+                    case OpCode.Ldind:
+                    {
+                        // This copies the value at the pointer to the stack.
+                        var typeDef = _metadata.Types.Types[operand];
+                        var type = ManagedRuntime.System.GetType(typeDef);
+                        var ptr = _stackFrame.Pop();
+                        if (ptr is not ManagedPointer managedPointer)
+                        {
+                            ThrowUnexpectedValue();
+                            return;
+                        }
+                        
+                        // Effectively copying the object.
+                        var obj = _stackFrame.AllocateObject(type);
+                        MemoryUtils.Copy(managedPointer.Target, obj.Pointer, type.Size);
+                        _stackFrame.Push(obj);
+                        _stackFrame.DeallocateIfDead(ptr);
+                        break;
+                    }
+                    case OpCode.Stind:
+                    {
+                        var typeDef = _metadata.Types.Types[operand];
+                        var type = ManagedRuntime.System.GetType(typeDef);
+                        var ptr = _stackFrame.Pop();
+                        if (ptr is not ManagedPointer managedPointer)
+                        {
+                            ThrowUnexpectedValue();
+                            return;
+                        }
+                        
+                        var value = _stackFrame.Pop();
+                        MemoryUtils.Copy(value.Pointer, managedPointer.Target, type.Size);
+                        _stackFrame.DeallocateIfDead(value);
+                        _stackFrame.DeallocateIfDead(ptr);
+                        break;
+                    }
+                    case OpCode.Ldtype:
+                    {
+                        var obj = _stackFrame.AllocatePrimitive(ManagedRuntime.Int32, operand);
+                        _stackFrame.Push(obj);
                         break;
                     }
                     case OpCode.Conv:
@@ -858,6 +1021,7 @@ internal sealed class MethodRuntime
                         var converted = _stackFrame.AllocateObject(type);
                         MemoryUtils.Copy(value.Pointer, converted.Pointer, type.Size);
                         _stackFrame.Push(converted);
+                        _stackFrame.DeallocateIfDead(value);
                         break;
                     }
                     case OpCode.Newarr:
@@ -874,6 +1038,7 @@ internal sealed class MethodRuntime
                         var type = ManagedRuntime.System.GetType(typeDef);
                         var array = _stackFrame.AllocateArray(type, intSize);
                         _stackFrame.Push(array);
+                        _stackFrame.DeallocateIfDead(size);
                         break;
                     }
                     case OpCode.Newobj:
@@ -903,6 +1068,11 @@ internal sealed class MethodRuntime
                         }
                         
                         _stackFrame.Push(stackFrame.ReturnObject);
+                        foreach (var argument in arguments.Values)
+                        {
+                            _stackFrame.DeallocateIfDead(argument);
+                        }
+                        
                         ManagedRuntime.StackManager.DeallocateStackFrame();
                         break;
                     }
@@ -916,7 +1086,7 @@ internal sealed class MethodRuntime
                             throw new InvalidOperationException($"Cannot call member of type '{memberRef.MemberType}'.");
                         }
                         
-                        var instance = method.IsStatic ? null : _stackFrame.Pop();
+                        var instance = method.IsStatic ? null : ResolveObject(_stackFrame.Pop());
                         var arguments = new Dictionary<ParameterInfo, RuntimeObject>();
                         for (var i = method.Parameters.Count - 1; i >= 0; i--)
                         {
@@ -926,7 +1096,7 @@ internal sealed class MethodRuntime
                         }
 
                         var readonlyArguments = new ReadOnlyDictionary<ParameterInfo, RuntimeObject>(arguments);
-                        if (method.IsStatic)
+                        if (instance is null)
                         {
                             var stackFrame = type.InvokeStatic(_assembly, method, readonlyArguments);
                             var result = stackFrame.ReturnObject;
@@ -944,9 +1114,16 @@ internal sealed class MethodRuntime
                             {
                                 _stackFrame.Push(result);
                             }
+                            
+                            _stackFrame.DeallocateIfDead(instance);
                         }
                         
                         ManagedRuntime.StackManager.DeallocateStackFrame();
+                        foreach (var argument in arguments.Values)
+                        {
+                            _stackFrame.DeallocateIfDead(argument);
+                        }
+                        
                         break;
                     }
                     case OpCode.Ret:
@@ -968,6 +1145,7 @@ internal sealed class MethodRuntime
                             label = operand - 1;
                         }
 
+                        _stackFrame.DeallocateIfDead(value);
                         break;
                     }
                     case OpCode.Brfalse:
@@ -985,6 +1163,7 @@ internal sealed class MethodRuntime
                             label = operand - 1;
                         }
 
+                        _stackFrame.DeallocateIfDead(value);
                         break;
                     }
                     case OpCode.Br:
@@ -1062,6 +1241,58 @@ internal sealed class MethodRuntime
         return obj;
     }
 
+    private unsafe RuntimeType ResolveTypeFromIndex(RuntimeObject index)
+    {
+        if (index is not ManagedObject managedObject)
+        {
+            ThrowUnexpectedValue();
+            return ManagedRuntime.Void;
+        }
+                        
+        var typeIndex = *(int*)managedObject.Pointer;
+        var typeDef = _metadata.Types.Types[typeIndex];
+        var type = ManagedRuntime.System.GetType(typeDef);
+        return type;
+    }
+
+    private static RuntimeObject ResolveObject(RuntimeObject instance)
+    {
+        var obj = instance;
+        switch (instance)
+        {
+            case ManagedReference managedReference:
+            {
+                var reference = ManagedRuntime.HeapManager.GetObject(managedReference.Target);
+                if (reference is not ManagedObject managedObject)
+                {
+                    throw new InvalidOperationException("Cannot load a field from an instance that is not an object.");
+                }
+                            
+                obj = managedObject;
+                break;
+            }
+            case ManagedPointer managedPointer:
+            {
+                var pointer = managedPointer.Target;
+                if (managedPointer.Type.TypeInfo.UnderlyingType is not { } underlyingType)
+                {
+                    throw new InvalidOperationException("Underlying type is null.");
+                }
+
+                if (underlyingType.IsPointer)
+                {
+                    throw new InvalidOperationException("Underlying type is a pointer.");
+                }
+                
+                var type = ManagedRuntime.System.GetType(underlyingType);
+                obj = new ManagedObject(type, type.Size, pointer);
+                break;
+            }
+        }
+        
+        return obj;
+    }
+    
     private static void ThrowUnexpectedValue()
     {
         throw new InvalidOperationException("Unexpected value on the stack.");

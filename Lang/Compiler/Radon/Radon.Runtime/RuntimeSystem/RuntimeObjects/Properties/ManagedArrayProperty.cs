@@ -1,7 +1,7 @@
-﻿using Radon.CodeAnalysis.Emit;
+﻿using System;
+using Radon.CodeAnalysis.Emit;
 using Radon.Runtime.Memory;
 using UAssetAPI.PropertyTypes.Objects;
-using System;
 
 namespace Radon.Runtime.RuntimeSystem.RuntimeObjects.Properties;
 
@@ -9,10 +9,10 @@ internal sealed class ManagedArrayObject : RuntimeObject
 {
     public override RuntimeType Type { get; }
     public override int Size { get; } // The size in bytes of the array on the heap. This includes the 4 bytes for the length.
-    public override UIntPtr Pointer { get; } // The address of the array on the heap.
+    public override nuint Pointer { get; } // The address of the array on the heap.
     public ArrayPropertyData ArrayPropertyData { get; }
 
-    public ManagedArrayObject(ArrayPropertyData array, UIntPtr pointer)
+    public ManagedArrayObject(ArrayPropertyData array, nuint pointer)
     {
         ArrayPropertyData = array;
         Pointer = pointer;
@@ -41,7 +41,7 @@ internal sealed class ManagedArrayObject : RuntimeObject
 
         throw new InvalidOperationException($"Cannot perform operation {operation} on a array object.");
     }
-    
+
 
     public override string ToString()
     {

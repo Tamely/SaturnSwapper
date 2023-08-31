@@ -43,7 +43,7 @@ internal sealed class ILWriter
 
     private void WriteType(TypeInfo type)
     {
-        if (type.IsArray)
+        if (type.IsArray || type.IsPointer)
         {
             return;
         }
@@ -423,6 +423,7 @@ internal sealed class ILWriter
             }
             case OpCode.Ldloc:
             case OpCode.Stloc:
+            case OpCode.Ldloca:
             {
                 var local = _metadata.Locals.Locals[operand];
                 var localInfo = _currentMethod.Locals[local];
@@ -431,6 +432,7 @@ internal sealed class ILWriter
             }
             case OpCode.Ldarg:
             case OpCode.Starg:
+            case OpCode.Ldarga:
             {
                 var parameter = _metadata.Parameters.Parameters[operand];
                 var parameterInfo = _currentMethod.Parameters[parameter];
@@ -441,16 +443,12 @@ internal sealed class ILWriter
             case OpCode.Stfld:
             case OpCode.Ldsfld:
             case OpCode.Stsfld:
+            case OpCode.Ldflda:
+            case OpCode.Ldsflda:
             {
-                var kind = opCode switch
-                {
-                    OpCode.Ldfld or OpCode.Stfld or OpCode.Ldsfld or OpCode.Stsfld => ILTokenKind.FieldIdentifier,
-                    _ => throw new ArgumentOutOfRangeException()
-                };
-                
                 var memberReference = _metadata.MemberReferences.MemberReferences[operand];
                 var memberRef = _assembly.MemberReferences[memberReference];
-                if (memberRef.MemberInfo is not FieldInfo field)
+                if (memberRef.MemberInfo is not FieldInfo)
                 {
                     throw new InvalidOperationException("Invalid member reference for instruction");
                 }
@@ -458,7 +456,22 @@ internal sealed class ILWriter
                 WriteToken(memberRef.MemberInfo.Type.Fullname, ILTokenKind.TypeIdentifier, true);
                 WriteToken(memberRef.ParentType.Fullname, ILTokenKind.TypeIdentifier, false);
                 WriteToken(".", ILTokenKind.Punctuation, false);
-                WriteToken(memberRef.MemberInfo.Name, kind, false);
+                WriteToken(memberRef.MemberInfo.Name, ILTokenKind.FieldIdentifier, false);
+                break;
+            }
+            case OpCode.Ldind:
+            case OpCode.Stind:
+            {
+                var typeDef = _metadata.Types.Types[operand];
+                var type = TypeTracker.GetTypeInfo(typeDef);
+                WriteToken(type.Fullname, ILTokenKind.TypeIdentifier, false);
+                break;
+            }
+            case OpCode.Ldtype:
+            {
+                var typeDef = _metadata.Types.Types[operand];
+                var type = TypeTracker.GetTypeInfo(typeDef);
+                WriteToken(type.Fullname, ILTokenKind.TypeIdentifier, false);
                 break;
             }
             case OpCode.Call:

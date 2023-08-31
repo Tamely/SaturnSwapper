@@ -569,7 +569,7 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
     public void ReportUnresolvedMethod(TextLocation location, string name, ImmutableArray<TypeSymbol> parameterTypes)
     {
         var parameterTypesString = $"parameter types '{string.Join(", ", parameterTypes)}'";
-        if (parameterTypesString.Length == 0)
+        if (parameterTypes.Length == 0)
         {
             parameterTypesString = "no parameters";
         }
@@ -720,5 +720,65 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
     {
         const string message = "Multiple entry methods are not allowed.";
         ReportError(location, message, ErrorCode.MultipleEntryMethods);
+    }
+
+    public void ReportCannotTakeAddress(TextLocation location)
+    {
+        const string message = "Cannot take the address of the given expression.";
+        ReportError(location, message, ErrorCode.CannotTakeAddress);
+    }
+
+    public void ReportOperatorMustBeAppliedToPointer(TextLocation location, string operatorText)
+    {
+        var message = $"The operator '{operatorText}' must be applied to a pointer.";
+        ReportError(location, message, ErrorCode.OperatorMustBeAppliedToPointer);
+    }
+
+    public void ReportCannotAssignToThis(TextLocation location)
+    {
+        const string message = "Cannot assign to 'this'.";
+        ReportError(location, message, ErrorCode.CannotAssignToThis);
+    }
+
+    public void ReportInvalidAssignmentTarget(TextLocation location)
+    {
+        const string message = "Invalid assignment target.";
+        ReportError(location, message, ErrorCode.InvalidAssignmentTarget);
+    }
+
+    public void ReportCannotHaveStaticModifierOnEnum(TextLocation location)
+    {
+        const string message = "Cannot have static modifier on an enum.";
+        ReportError(location, message, ErrorCode.CannotHaveStaticModifierOnEnum);
+    }
+
+    public void ReportCannotHaveNonStaticMemberInStaticType(TextLocation location)
+    {
+        const string message = "Cannot have non-static member in a static type.";
+        ReportError(location, message, ErrorCode.CannotHaveNonStaticMemberInStaticType);
+    }
+
+    public void ReportCannotInstantiateStaticType(TextLocation location, string name)
+    {
+        var message = $"Cannot instantiate static type '{name}'.";
+        ReportError(location, message, ErrorCode.CannotInstantiateStaticType);
+    }
+
+    public void ReportElementTypeCannotBeStatic(TextLocation location)
+    {
+        const string message = "Element type cannot be static.";
+        ReportError(location, message, ErrorCode.ElementTypeCannotBeStatic);
+    }
+
+    public void ReportPointerTypeCannotBeStatic(TextLocation location)
+    {
+        const string message = "Pointer type cannot be static.";
+        ReportError(location, message, ErrorCode.PointerTypeCannotBeStatic);
+    }
+
+    public void ReportInvalidMemberAccess(TextLocation location, string name)
+    {
+        var message = $"Accessing of member '{name}' is not valid at this point";
+        ReportError(location, message, ErrorCode.InvalidMemberAccess);
     }
 }

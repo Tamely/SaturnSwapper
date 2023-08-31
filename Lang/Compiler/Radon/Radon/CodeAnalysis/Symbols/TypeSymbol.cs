@@ -32,13 +32,12 @@ public abstract class TypeSymbol : Symbol
     public static readonly StructSymbol String = new("string", 8, EmptyMembers, null, Mods);
     public static readonly StructSymbol Archive;
     public static readonly EnumSymbol SeekOrigin = new("seek_origin", EmptyMembers, null, Mods);
-    public static readonly TemplateSymbol List;
     public static readonly StructSymbol System = new("system", 0, EmptyMembers, null, Mods);
     
     public static readonly StructSymbol SoftObjectProperty = new("SoftObjectProperty", 8, EmptyMembers, null, Mods);
     public static readonly StructSymbol ArrayProperty = new("ArrayProperty", 8, EmptyMembers, null, Mods);
-    public static readonly ArrayTypeSymbol SoftObjectArray = new ArrayTypeSymbol(SoftObjectProperty);
     public static readonly StructSymbol LinearColorProperty = new("LinearColorProperty", 8, EmptyMembers, null, Mods);
+
 
     static TypeSymbol()
     {
@@ -47,11 +46,10 @@ public abstract class TypeSymbol : Symbol
         SeekOrigin.AddEnumMember("End", 2);
         var mods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword, SyntaxKind.RefKeyword);
         Archive = new StructSymbol("archive", 0, EmptyMembers, null, mods);
-        var typeParameterBuilder = new TypeParameterBuilder();
         {
             MethodSymbol createArrayPropertyMethod;
             {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("array", SoftObjectArray, 0));
+                var parameters = ImmutableArray.Create(new ParameterSymbol("array", new ArrayTypeSymbol(SoftObjectProperty), 0));
                 createArrayPropertyMethod = new MethodSymbol(Archive, "CreateArrayProperty", ArrayProperty, parameters, Mods);
             }
             
@@ -115,68 +113,6 @@ public abstract class TypeSymbol : Symbol
             Archive.AddMember(importMethod);
         }
         {
-            var t = typeParameterBuilder.AddTypeParameter("T");
-            List = new TemplateSymbol("list", EmptyMembers, null, Mods.Add(SyntaxKind.RefKeyword), typeParameterBuilder.Build());
-
-            MethodSymbol addMethod;
-            {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("value", t, 0));
-                addMethod = new MethodSymbol(List, "Add", Void, parameters, Mods);
-            }
-
-            MethodSymbol addRangeMethod;
-            {
-                var listT = new PrimitiveTemplateSymbol(List, ImmutableArray.Create<TypeSymbol>(t));
-                var parameters = ImmutableArray.Create(new ParameterSymbol("items", listT, 0));
-                addRangeMethod = new MethodSymbol(List, "AddRange", Void, parameters, Mods);
-            }
-
-            MethodSymbol removeMethod;
-            {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("item", t, 0));
-                removeMethod = new MethodSymbol(List, "Remove", Void, parameters, Mods);
-            }
-
-            MethodSymbol removeAtMethod;
-            {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("index", Int, 0));
-                removeAtMethod = new MethodSymbol(List, "RemoveAt", Void, parameters, Mods);
-            }
-
-            MethodSymbol clearMethod;
-            {
-                var parameters = ImmutableArray<ParameterSymbol>.Empty;
-                clearMethod = new MethodSymbol(List, "Clear", Void, parameters, Mods);
-            }
-
-            MethodSymbol containsMethod;
-            {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("item", t, 0));
-                containsMethod = new MethodSymbol(List, "Contains", Bool, parameters, Mods);
-            }
-
-            MethodSymbol lengthMethod;
-            {
-                var parameters = ImmutableArray<ParameterSymbol>.Empty;
-                lengthMethod = new MethodSymbol(List, "Length", Int, parameters, Mods);
-            }
-
-            ConstructorSymbol constructor;
-            {
-                var parameters = ImmutableArray<ParameterSymbol>.Empty;
-                constructor = new ConstructorSymbol(List, parameters, Mods);
-            }
-
-            List.AddMember(addMethod);
-            List.AddMember(addRangeMethod);
-            List.AddMember(removeMethod);
-            List.AddMember(removeAtMethod);
-            List.AddMember(clearMethod);
-            List.AddMember(containsMethod);
-            List.AddMember(lengthMethod);
-            List.AddMember(constructor);
-        }
-        {
             MethodSymbol printMethod;
             {
                 var parameters = ImmutableArray.Create(new ParameterSymbol("value", String, 0));
@@ -195,6 +131,15 @@ public abstract class TypeSymbol : Symbol
             System = (StructSymbol)System.WithModifer(SyntaxKind.StaticKeyword);
         }
     }
+    
+    public abstract ImmutableArray<MemberSymbol> Members { get; private protected set; }
+    public abstract AssemblySymbol? ParentAssembly { get; }
+    public abstract int Size { get; internal set; }
+    internal abstract TypeBinder? TypeBinder { get; set; }
+    internal TemplateBinder? TemplateBinder { get; set; } // This is only used for templates.
+    public sealed override bool HasType => true;
+    public sealed override TypeSymbol Type => this;
+    public bool IsStatic => HasModifier(SyntaxKind.StaticKeyword);
     
     public static bool operator ==(TypeSymbol? left, TypeSymbol? right)
     {
@@ -426,8 +371,8 @@ public abstract class TypeSymbol : Symbol
     {
         return ImmutableArray.Create<TypeSymbol>(
             Void, Bool, SByte, Byte, Short, UShort, Int, UInt, Long, ULong, 
-            Float, Double, Char, String, Archive, SeekOrigin, List, System,
-            SoftObjectProperty, LinearColorProperty, ArrayProperty, SoftObjectArray
+            Float, Double, Char, String, Archive, SeekOrigin, System, SoftObjectProperty,
+            ArrayProperty, LinearColorProperty
         );
     }
     
@@ -446,12 +391,4 @@ public abstract class TypeSymbol : Symbol
     {
         return ImmutableArray.Create<TypeSymbol>(Float, Double);
     }
-
-    public abstract ImmutableArray<MemberSymbol> Members { get; private protected set; }
-    public abstract AssemblySymbol? ParentAssembly { get; }
-    public abstract int Size { get; internal set; }
-    internal abstract TypeBinder? TypeBinder { get; set; }
-    internal TemplateBinder? TemplateBinder { get; set; } // This is only used for templates.
-    public sealed override bool HasType => true;
-    public sealed override TypeSymbol Type => this;
 }

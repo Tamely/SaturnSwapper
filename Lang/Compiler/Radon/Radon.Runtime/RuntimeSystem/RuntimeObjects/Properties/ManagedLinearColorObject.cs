@@ -1,7 +1,6 @@
-﻿using Radon.CodeAnalysis.Emit;
-using Radon.Runtime.Memory;
-using UAssetAPI.PropertyTypes.Objects;
 using System;
+using Radon.CodeAnalysis.Emit;
+using Radon.Runtime.Memory;
 using UAssetAPI.PropertyTypes.Structs;
 
 namespace Radon.Runtime.RuntimeSystem.RuntimeObjects.Properties;
@@ -10,10 +9,10 @@ internal sealed class ManagedLinearColorObject : RuntimeObject
 {
     public override RuntimeType Type { get; }
     public override int Size { get; } // The size in bytes of the array on the heap. This includes the 4 bytes for the length.
-    public override UIntPtr Pointer { get; } // The address of the array on the heap.
+    public override nuint Pointer { get; } // The address of the array on the heap.
     public LinearColorPropertyData LinearColorPropertyData { get; }
 
-    public ManagedLinearColorObject(LinearColorPropertyData linearColorPropertyData, UIntPtr pointer)
+    public ManagedLinearColorObject(LinearColorPropertyData linearColorPropertyData, nuint pointer)
     {
         LinearColorPropertyData = linearColorPropertyData;
         Pointer = pointer;
@@ -42,10 +41,10 @@ internal sealed class ManagedLinearColorObject : RuntimeObject
 
         throw new InvalidOperationException($"Cannot perform operation {operation} on a color object.");
     }
-    
+
 
     public override string ToString()
     {
-        return LinearColorPropertyData.Value.ToString();
+        return LinearColorPropertyData.Value.ToString() ?? "null";
     }
 }

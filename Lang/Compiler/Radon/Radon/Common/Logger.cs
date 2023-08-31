@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -43,33 +44,18 @@ public static class Logger
     
     public static void Log(string message, LogLevel level)
     {
-        var stackFrame = new StackTrace().GetFrame(1);
-        if (stackFrame == null)
-        {
-            return;
-        }
-        
-        var method = stackFrame.GetMethod();
+        var method = new StackTrace().GetFrame(1)?.GetMethod();
         if (method == null)
         {
             return;
         }
         
-        var typeName = method.ReflectedType?.Name;
-        if (typeName == null)
-        {
-            return;
-        }
-        
+        var typeName = method.ReflectedType.Name;
         var methodName = method.Name;
+
         if (methodName == ".ctor")
         {
             methodName = "Constructor";
-        }
-        
-        if (methodName == ".cctor")
-        {
-            methodName = "Static Constructor";
         }
 
         if (typeName.Contains("Service"))
@@ -81,13 +67,13 @@ public static class Logger
         {
             typeName = typeName.Split('<')[1].Split('>')[0];
         }
-        
-        if (WrittenLines.Count > 1 && WrittenLines[^1].Contains($"[Log{typeName}::{methodName}] [{level}] {message}"))
+
+        if (WrittenLines.Count > 1 && WrittenLines[^1].Contains($"[Log{typeName}::{methodName}] [{level.GetDescription()}] {message}"))
         {
             Writer.Flush();
             return;
         }
-        
+
         switch (level)
         {
             case LogLevel.Trace:
@@ -104,13 +90,34 @@ public static class Logger
                 break;
         }
 
-        var levelString = $"[{level}]";
-        var formattedMessage = $"[{DateTime.Now:hh:mm:ss}] [Log{typeName}::{methodName}] {levelString} {message}";
-        Console.WriteLine(formattedMessage);
-        Console.ResetColor();
-        
-        WrittenLines.Add(formattedMessage);
-        Writer.WriteLine(formattedMessage);
+        Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] [Log{typeName}::{methodName}] [{level.GetDescription()}] {message}");
+        Console.ForegroundColor = ConsoleColor.White;
+
+        WrittenLines.Add($"[{DateTime.Now:HH:mm:ss}] [Log{typeName}::{methodName}] [{level.GetDescription()}] {message}");
+        Writer.WriteLine($"[{DateTime.Now:HH:mm:ss}] [Log{typeName}::{methodName}] [{level.GetDescription()}] {message}");
         Writer.Flush();
+    }
+    
+    private static string? GetDescription(this Enum value)
+    {
+        var type = value.GetType();
+        var name = Enum.GetName(type, value);
+        if (name == null)
+        {
+            return null;
+        }
+
+        var field = type.GetField(name);
+        if (field == null)
+        {
+            return null;
+        }
+
+        if (Attribute.GetCustomAttribute(field, typeof(DescriptionAttribute)) is DescriptionAttribute atr)
+        {
+            return atr.Description;
+        }
+
+        return null;
     }
 }

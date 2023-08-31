@@ -117,8 +117,30 @@ public enum OpCode : byte
     
     // Pops the current value from the top of the stack and stores it in an element at a specific index.
     Stelem,
-        
     
+    // Loads the address of the specified field onto the stack.
+    Ldflda,
+    
+    // Loads the address of the specified static field onto the stack.
+    Ldsflda,
+    
+    // Loads the address of the specified local variable onto the stack.
+    Ldloca,
+    
+    // Loads the address of the specified argument onto the stack.
+    Ldarga,
+    
+    // Loads the address of the specified element onto the stack.
+    Ldelema,
+    
+    // Loads the value at the address on the top of the stack onto the stack.
+    Ldind,
+    
+    // Pops the current value from the top of the stack and stores it at the address on the top of the stack.
+    Stind,
+    
+    // Loads the type token for the specified type onto the stack.
+    Ldtype,
     
     // - - - - - - - - - - - - - - -
     // Miscellaneous Instructions

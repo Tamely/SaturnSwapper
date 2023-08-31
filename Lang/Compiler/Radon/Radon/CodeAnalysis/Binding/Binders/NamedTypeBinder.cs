@@ -30,6 +30,7 @@ internal sealed class NamedTypeBinder : TypeBinder
     private BoundConstructor? _defaultConstructor;
     private int _previousValue;
     private int _fieldOffset;
+    private bool _isStatic;
     
     public SymbolKind CurrentMember { get; private set; }
 
@@ -71,25 +72,27 @@ internal sealed class NamedTypeBinder : TypeBinder
             {
                 CurrentMember = SymbolKind.Struct;
                 var name = structSyntax.Identifier.Text;
-                var modifiers = ResolveModifiers(structSyntax.Modifiers);
+                var modifiers = ResolveModifiers(structSyntax.Modifiers, structSyntax.Identifier);
                 var type = new StructSymbol(name, ImmutableArray<MemberSymbol>.Empty, _assembly, modifiers, this);
                 _type = type;
+                _isStatic = _type.IsStatic;
                 break;
             }
             case EnumDeclarationSyntax enumSyntax:
             {
                 CurrentMember = SymbolKind.Enum;
                 var name = enumSyntax.Identifier.Text;
-                var modifiers = ResolveModifiers(enumSyntax.Modifiers);
+                var modifiers = ResolveModifiers(enumSyntax.Modifiers, enumSyntax.Identifier);
                 var type = new EnumSymbol(name, ImmutableArray<MemberSymbol>.Empty, _assembly, modifiers, this);
                 _type = type;
+                _isStatic = _type.IsStatic;
                 break;
             }
             case TemplateDeclarationSyntax templateSyntax:
             {
                 CurrentMember = SymbolKind.Template;
                 var name = templateSyntax.Identifier.Text;
-                var modifiers = ResolveModifiers(templateSyntax.Modifiers);
+                var modifiers = ResolveModifiers(templateSyntax.Modifiers, templateSyntax.Identifier);
                 var typeParameters = ResolveTypeParameters(templateSyntax.TypeParameterList);
                 foreach (var (typeParameter, syntax) in typeParameters)
                 {
@@ -106,6 +109,7 @@ internal sealed class NamedTypeBinder : TypeBinder
                 var type = new TemplateSymbol(name, ImmutableArray<MemberSymbol>.Empty, _assembly,
                     modifiers, orderedTypeParameters.ToImmutableArray(), this);
                 _type = type;
+                _isStatic = _type.IsStatic;
                 break;
             }
             default:
@@ -222,8 +226,8 @@ internal sealed class NamedTypeBinder : TypeBinder
                     continue;
                 }
 
-                if (!memberSymbol.Modifiers.Contains(SyntaxKind.PublicKeyword) &&
-                    !memberSymbol.Modifiers.Contains(SyntaxKind.PrivateKeyword))
+                if (!memberSymbol.HasModifier(SyntaxKind.PublicKeyword) &&
+                    !memberSymbol.HasModifier(SyntaxKind.PrivateKeyword))
                 {
                 }
                 
@@ -350,7 +354,7 @@ internal sealed class NamedTypeBinder : TypeBinder
 
     private ConstructorSymbol ResolveConstructor(ConstructorDeclarationSyntax constructor, StructDeclarationSyntax structDeclaration)
     {
-        var modifiers = ResolveModifiers(constructor.Modifiers);
+        var modifiers = ResolveModifiers(constructor.Modifiers, constructor.Type);
         var type = BindTypeSyntax(constructor.Type);
         if (type != _type)
         {
@@ -364,7 +368,7 @@ internal sealed class NamedTypeBinder : TypeBinder
 
     private ConstructorSymbol ResolveConstructor(ConstructorDeclarationSyntax constructor, TemplateDeclarationSyntax templateDeclaration)
     {
-        var modifiers = ResolveModifiers(constructor.Modifiers);
+        var modifiers = ResolveModifiers(constructor.Modifiers, constructor.Type);
         var type = BindTypeSyntax(constructor.Type);
         if (_resolveTemplate)
         {
@@ -383,7 +387,7 @@ internal sealed class NamedTypeBinder : TypeBinder
     
     private FieldSymbol ResolveField(FieldDeclarationSyntax field)
     {
-        var modifiers = ResolveModifiers(field.Modifiers);
+        var modifiers = ResolveModifiers(field.Modifiers, field.VariableDeclarator.Identifier);
         var type = BindTypeSyntax(field.Type);
         CheckForCycle(type, field);
         var name = field.VariableDeclarator.Identifier.Text;
@@ -398,13 +402,14 @@ internal sealed class NamedTypeBinder : TypeBinder
         return new EnumMemberSymbol(_type, name, TypeSymbol.Int, 0); // 0 is a placeholder until the enum member is bound
     }
 
-    private ImmutableArray<SyntaxKind> ResolveModifiers(ImmutableSyntaxList<SyntaxToken> modifierTokens)
+    private ImmutableArray<SyntaxKind> ResolveModifiers(ImmutableSyntaxList<SyntaxToken> modifierTokens, SyntaxNode syntax)
     {
         var modifiers = ImmutableArray.CreateBuilder<SyntaxKind>();
         var duplicateModifiers = new List<SyntaxToken>();
         SyntaxToken? privateToken = null;
         SyntaxToken? publicToken = null;
         SyntaxToken? entryToken = null;
+        SyntaxToken? staticToken = null;
         foreach (var modifierToken in modifierTokens)
         {
             var modifier = modifierToken.Kind;
@@ -419,6 +424,10 @@ internal sealed class NamedTypeBinder : TypeBinder
             else if (modifier == SyntaxKind.EntryKeyword)
             {
                 entryToken = modifierToken;
+            }
+            else if (modifier == SyntaxKind.StaticKeyword)
+            {
+                staticToken = modifierToken;
             }
 
             if (modifiers.Contains(modifier))
@@ -441,14 +450,23 @@ internal sealed class NamedTypeBinder : TypeBinder
             Diagnostics.ReportCannotHaveBothPublicAndPrivateModifier(publicToken.Location);
             Diagnostics.ReportCannotHaveBothPublicAndPrivateModifier(privateToken.Location);
         }
+
+        if (staticToken is not null && _type.Kind is SymbolKind.Enum)
+        {
+            Diagnostics.ReportCannotHaveStaticModifierOnEnum(staticToken.Location);
+        }
+        else if (_isStatic && staticToken is null)
+        {
+            Diagnostics.ReportCannotHaveNonStaticMemberInStaticType(syntax.Location);
+        }
         
-        if (CurrentMember != SymbolKind.Method && CurrentMember != SymbolKind.Struct && entryToken is not null)
+        if (CurrentMember != SymbolKind.Method && _type.Kind != SymbolKind.Struct && entryToken is not null)
         {
             Diagnostics.ReportEntryModifierOnlyAllowedOnMethodsAndStructs(entryToken.Location);
         }
 
         if (entryToken is not null && CurrentMember == SymbolKind.Method &&
-            !_type.Modifiers.Contains(SyntaxKind.EntryKeyword))
+            !_type.HasModifier(SyntaxKind.EntryKeyword))
         {
             Diagnostics.ReportEntryModifierMustBeAppliedToParentStruct(entryToken.Location);
         }
@@ -483,7 +501,7 @@ internal sealed class NamedTypeBinder : TypeBinder
     
     private MethodSymbol ResolveMethod(MethodDeclarationSyntax method)
     {
-        var modifiers = ResolveModifiers(method.Modifiers);
+        var modifiers = ResolveModifiers(method.Modifiers, method.Identifier);
         var type = BindTypeSyntax(method.ReturnType);
         var name = method.Identifier.Text;
         var parameters = ResolveParameters(method.ParameterList.Parameters);
@@ -502,7 +520,7 @@ internal sealed class NamedTypeBinder : TypeBinder
             Register(context, typeParamSymbol);
         }
 
-        var modifiers = ResolveModifiers(method.Modifiers);
+        var modifiers = ResolveModifiers(method.Modifiers, method.Identifier);
         var type = BindTypeSyntax(method.ReturnType);
         var name = method.Identifier.Text;
         var typeParameters = ResolveTypeParameters(method.TypeParameterList);
@@ -643,7 +661,7 @@ internal sealed class NamedTypeBinder : TypeBinder
             return (MethodSymbol)member!;
         }
         
-        var templateMethodBinder = new TemplateMethodBinder(this);
+        var templateMethodBinder = new TemplateMethodCallBinder(this);
         var syntax = _templateMethods[templateMethod];
         var boundTemplateMethod = templateMethodBinder.Bind(syntax, templateMethod, typeArguments, 
             callSite, name);

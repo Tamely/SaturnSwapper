@@ -10,7 +10,7 @@ public sealed class ConstructorSymbol : AbstractMethodSymbol
     public new static readonly ConstructorSymbol Error = new(TypeSymbol.Error, ImmutableArray<ParameterSymbol>.Empty, ImmutableArray<SyntaxKind>.Empty);
     
     public override TypeSymbol ParentType { get; }
-    public override string Name => Modifiers.Contains(SyntaxKind.StaticKeyword) ? ".cctor" : ".ctor";
+    public override string Name => IsStatic ? ".cctor" : ".ctor";
     public override SymbolKind Kind => SymbolKind.Constructor;
     public override ImmutableArray<ParameterSymbol> Parameters { get; }
     public override TypeSymbol Type => TypeSymbol.Void;

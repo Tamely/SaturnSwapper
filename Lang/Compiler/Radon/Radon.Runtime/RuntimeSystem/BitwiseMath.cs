@@ -37,18 +37,41 @@ internal static class BitwiseMath
     public static byte[] BitwiseMultiply(byte[] left, byte[] right)
     {
         MakeEqual(ref left, ref right);
-        var result = new byte[left.Length];
+        var result = new byte[left.Length * 2];
+        var overflow = false;
         for (var i = 0; i < left.Length; i++)
         {
-            var carry = 0;
-            for (var j = 0; j < left.Length; j++)
+            for (var j = 0; j < right.Length; j++)
             {
-                var product = left[i] * right[j] + result[i + j] + carry;
-                result[i + j] = (byte)(product & 0xFF);
-                carry = product >> 8;
+                var k = i + j;
+                if (k >= left.Length)
+                {
+                    overflow = true;
+                    continue;
+                }
+                
+                var carry = result[k] + left[i] * right[j];
+                result[k] = (byte)carry;
+                k++;
+                carry >>= 8;
+                while (carry > 0)
+                {
+                    if (k >= left.Length)
+                    {
+                        overflow = true;
+                        break;
+                    }
+                    carry += result[k];
+                    result[k] = (byte)carry;
+                    carry >>= 8;
+                    k++;
+                }
             }
-            
-            result[i + left.Length] = (byte)carry;
+        }
+        
+        if (overflow)
+        {
+            throw new OverflowException("The result of the multiplication cannot be represented in an array of the same size as the input arrays.");
         }
         
         return result;

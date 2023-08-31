@@ -19,6 +19,7 @@ internal sealed record TypeInfo
     public bool IsEntry { get; }
     public bool IsReferenceType { get; }
     public bool IsValueType { get; }
+    public bool IsPointer { get; }
     public bool IsStruct { get; }
     public bool IsEnum { get; }
     public bool IsArray { get; }
@@ -66,6 +67,7 @@ internal sealed record TypeInfo
         IsEntry = type.Flags.HasFlag(BindingFlags.Entry);
         IsReferenceType = type.Flags.HasFlag(BindingFlags.Ref);
         IsValueType = type.Kind.HasFlag(TypeKind.ValueType);
+        IsPointer = type.Kind.HasFlag(TypeKind.Pointer);
         IsStruct = type.Kind.HasFlag(TypeKind.Struct);
         IsEnum = type.Kind.HasFlag(TypeKind.Enum);
         IsArray = type.Kind.HasFlag(TypeKind.Array);

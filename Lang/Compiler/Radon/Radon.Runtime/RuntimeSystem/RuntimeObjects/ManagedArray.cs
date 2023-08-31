@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
 using Radon.CodeAnalysis.Emit;
+using Radon.Common;
 using Radon.Runtime.Memory;
 
 namespace Radon.Runtime.RuntimeSystem.RuntimeObjects;
@@ -35,11 +36,13 @@ internal sealed class ManagedArray : RuntimeObject
     
     public RuntimeObject GetElement(int index)
     {
+        Logger.Log($"Getting element at index {index}.", LogLevel.Info);
         return _elements[index];
     }
     
     public void SetElement(int index, RuntimeObject element)
     {
+        Logger.Log($"Setting element at index {index}.", LogLevel.Info);
         _elements[index] = element;
         var pointer = ArrayStart + (nuint)index * (nuint)ElementType.Size;
         MemoryUtils.Copy(element.Pointer, pointer, ElementType.Size);

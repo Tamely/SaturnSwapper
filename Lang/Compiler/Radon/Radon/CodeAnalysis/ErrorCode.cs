@@ -77,4 +77,14 @@ public enum ErrorCode
     EntryModifierMustBeAppliedToParentStruct,
     MultipleEntryTypes,
     MultipleEntryMethods,
+    CannotTakeAddress,
+    OperatorMustBeAppliedToPointer,
+    CannotAssignToThis,
+    InvalidAssignmentTarget,
+    CannotHaveStaticModifierOnEnum,
+    CannotHaveNonStaticMemberInStaticType,
+    CannotInstantiateStaticType,
+    ElementTypeCannotBeStatic,
+    PointerTypeCannotBeStatic,
+    InvalidMemberAccess
 }

@@ -16,13 +16,14 @@ internal sealed class StatementBinder : Binder
     private readonly List<LocalVariableSymbol> _locals;
     private int _labelCounter;
     internal bool IsStaticMethod;
-    internal AbstractMethodSymbol? MethodSymbol;
+    internal AbstractMethodSymbol MethodSymbol;
     private bool _hasRun;
     internal StatementBinder(Binder binder) 
         : base(binder)
     {
         _loopStack = new Stack<LoopConditions>();
         _locals = new List<LocalVariableSymbol>();
+        MethodSymbol = null!;
     }
     
     public ImmutableArray<LocalVariableSymbol> Locals => _locals.ToImmutableArray();
@@ -38,7 +39,7 @@ internal sealed class StatementBinder : Binder
             }
             
             MethodSymbol = abstractMethodSymbol;
-            IsStaticMethod = MethodSymbol.HasModifier(SyntaxKind.StaticKeyword);
+            IsStaticMethod = MethodSymbol.IsStatic;
         }
 
         _hasRun = true;
@@ -152,14 +153,14 @@ internal sealed class StatementBinder : Binder
     private BoundStatement BindReturnStatement(ReturnStatementSyntax syntax)
     {
         var expression = syntax.Expression;
-        if (MethodSymbol?.Type == TypeSymbol.Void &&
+        if (MethodSymbol.Type == TypeSymbol.Void &&
             expression is not null)
         {
             Diagnostics.ReportCannotReturnExpressionFromVoidMethod(syntax.Expression!.Location);
             return new BoundErrorStatement(syntax, new SemanticContext(this, syntax, Diagnostics));
         }
         
-        if (MethodSymbol?.Type != TypeSymbol.Void &&
+        if (MethodSymbol.Type != TypeSymbol.Void &&
             expression is null)
         {
             Diagnostics.ReportMustReturnExpressionFromNonVoidMethod(syntax.ReturnKeyword.Location);
@@ -173,7 +174,14 @@ internal sealed class StatementBinder : Binder
         
         var expressionBinder = new ExpressionBinder(this);
         var boundExpression = (BoundExpression)expressionBinder.Bind(expression);
-        var boundConversion = expressionBinder.BindConversion(boundExpression, MethodSymbol!.Type, ImmutableArray<TypeSymbol>.Empty);
+        var context = new SemanticContext(this, syntax, Diagnostics);
+        var type = MethodSymbol.Type;
+        if (!TryResolveSymbol<TypeSymbol>(context, ref type))
+        {
+            type = TypeSymbol.Error;
+        }
+        
+        var boundConversion = expressionBinder.BindConversion(boundExpression, type, ImmutableArray<TypeSymbol>.Empty);
         Diagnostics.AddRange(expressionBinder.Diagnostics);
         return new BoundReturnStatement(syntax, boundConversion);
     }

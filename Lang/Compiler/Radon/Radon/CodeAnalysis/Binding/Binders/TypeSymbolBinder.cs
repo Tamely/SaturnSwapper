@@ -27,6 +27,7 @@ internal sealed class TypeSymbolBinder : TypeBinder
         _type.TypeBinder = this;
         _boundMembers = new List<BoundMember>();
         _resolveTemplate = false;
+        ResolveMembers(type.Members);
     }
 
     internal TypeSymbolBinder(Binder binder, TemplateSymbol template, TypeSymbol type)
@@ -51,8 +52,8 @@ internal sealed class TypeSymbolBinder : TypeBinder
             StructSymbol structSymbol => BindStruct(structSymbol, node),
             EnumSymbol enumSymbol => BindEnum(enumSymbol, node),
             TemplateSymbol templateSymbol => BindTemplate(templateSymbol, node),
-            PrimitiveTemplateSymbol primitiveTemplateSymbol => BindTemplate(primitiveTemplateSymbol.Template, node),
             ArrayTypeSymbol arrayTypeSymbol => BindArray(arrayTypeSymbol, node),
+            PointerTypeSymbol pointerTypeSymbol => BindPointer(pointerTypeSymbol, node),
             _ => throw new Exception($"Unexpected type: {_type.GetType()}")
         };
     }
@@ -75,7 +76,7 @@ internal sealed class TypeSymbolBinder : TypeBinder
             return (MethodSymbol)member!;
         }
         
-        var templateMethodBinder = new TemplateMethodBinder(this);
+        var templateMethodBinder = new TemplateMethodCallBinder(this);
         var boundTemplateMethod = (BoundMethod)templateMethodBinder.Bind(SyntaxNode.Empty, templateMethod, typeArguments, callSite, name);
         _boundMembers.Add(boundTemplateMethod);
         _type.AddMember(boundTemplateMethod.Symbol);
@@ -93,6 +94,7 @@ internal sealed class TypeSymbolBinder : TypeBinder
                 ConstructorSymbol constructorSymbol => ResolveConstructor(constructorSymbol),
                 FieldSymbol fieldSymbol => ResolveField(fieldSymbol),
                 TemplateMethodSymbol templateMethodSymbol => ResolveTemplateMethod(templateMethodSymbol),
+                EnumMemberSymbol enumMemberSymbol => enumMemberSymbol,
                 _ => throw new Exception($"Unexpected member: {memberSymbol.GetType()}")
             };
             
@@ -132,8 +134,13 @@ internal sealed class TypeSymbolBinder : TypeBinder
     
     private TypeSymbol ResolveType(TypeSymbol typeSymbol)
     {
-        var semanticContext = new SemanticContext(this, SyntaxNode.Empty, Diagnostics);
-        TryResolveSymbol(semanticContext, ref typeSymbol);
+        var context = new SemanticContext(this, SyntaxNode.Empty, Diagnostics);
+        if (typeSymbol is ArrayTypeSymbol)
+        {
+            Register(context, typeSymbol);
+        }
+            
+        TryResolveSymbol(context, ref typeSymbol);
         return typeSymbol;
     }
     
@@ -173,6 +180,11 @@ internal sealed class TypeSymbolBinder : TypeBinder
     private BoundNode BindArray(ArrayTypeSymbol arrayTypeSymbol, SyntaxNode node)
     {
         return new BoundArray(node, arrayTypeSymbol, _boundMembers.ToImmutableArray());
+    }
+    
+    private BoundNode BindPointer(PointerTypeSymbol pointerTypeSymbol, SyntaxNode node)
+    {
+        return new BoundPointer(node, pointerTypeSymbol);
     }
 
     public void BindMembers()

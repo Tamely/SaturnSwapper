@@ -54,7 +54,7 @@ internal sealed class ExpressionBinder : Binder
         var expressionContext = new SemanticContext(this, syntax, Diagnostics);
         return syntax switch
         {
-            AssignmentExpressionSyntax assignmentExpressionSyntax => BindAssignmentExpression(assignmentExpressionSyntax),
+            AssignmentExpressionSyntax assignmentExpressionSyntax => BindAssignmentExpression(assignmentExpressionSyntax, expressionContext),
             BinaryExpressionSyntax binaryExpressionSyntax => BindBinaryExpression(binaryExpressionSyntax, expressionContext),
             CastExpressionSyntax castExpressionSyntax => BindCastExpression(castExpressionSyntax),
             ImportExpressionSyntax importExpressionSyntax => BindImportExpression(importExpressionSyntax, expressionContext),
@@ -165,62 +165,29 @@ internal sealed class ExpressionBinder : Binder
         return new BoundConversionExpression(expression.Syntax, type, expression);
     }
 
-    private TypeSymbol GetLiteralType(double number)
-    {
-        var isFloatingPoint = false;
-        var text = number.ToString(CultureInfo.InvariantCulture);
-        if (text.Contains('.'))
-        {
-            isFloatingPoint = true;
-        }
-
-        if (isFloatingPoint)
-        {
-            if (IsInRange(float.MinValue, float.MaxValue, number))
-            {
-                return TypeSymbol.Float;
-            }
-            
-            return TypeSymbol.Double;
-        }
-    
-        if (IsInRange(int.MinValue, int.MaxValue, number))
-        {
-            return TypeSymbol.Int;
-        }
-    
-        if (IsInRange(uint.MinValue, uint.MaxValue, number))
-        {
-            return TypeSymbol.UInt;
-        }
-    
-        if (IsInRange(long.MinValue, long.MaxValue, number))
-        {
-            return TypeSymbol.Long;
-        }
-    
-        if (IsInRange(ulong.MinValue, ulong.MaxValue, number))
-        {
-            return TypeSymbol.ULong;
-        }
-    
-        return TypeSymbol.Error;
-    }
-
-    private bool IsInRange(double min, double max, double value)
-    {
-        if (value < min || value > max)
-        {
-            return false;
-        }
-    
-        return true;
-    }
-
-    private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax)
+    private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax, SemanticContext context)
     {
         // We don't have compound assignment yet
         var boundLeft = BindExpression(syntax.Left);
+        if (boundLeft is BoundErrorExpression)
+        {
+            return new BoundErrorExpression(syntax, context);
+        }
+
+        if (boundLeft is BoundInvocationExpression or BoundAddressOfExpression or BoundLiteralExpression or
+            BoundDefaultExpression or BoundImportExpression or BoundNewExpression or BoundNewArrayExpression or
+            BoundThisExpression)
+        {
+            if (boundLeft is BoundThisExpression)
+            {
+                Diagnostics.ReportCannotAssignToThis(syntax.Left.Location);
+                return new BoundErrorExpression(syntax, context);
+            }
+            
+            Diagnostics.ReportInvalidAssignmentTarget(syntax.Left.Location);
+            return new BoundErrorExpression(syntax, context);
+        }
+        
         var boundRight = BindExpression(syntax.Right);
         var convertedRight = BindConversion(boundRight, boundLeft.Type, ImmutableArray<TypeSymbol>.Empty);
         return new BoundAssignmentExpression(syntax, boundLeft, convertedRight, syntax.OperatorToken.Kind);
@@ -392,8 +359,20 @@ internal sealed class ExpressionBinder : Binder
         _isBindingInvocation = false; // We have to set this to false because we only want the immediate expression to
                                       // be bound with the invocation flag
         var boundExpression = BindExpression(syntax.Expression);
+        var expressionType = boundExpression.Type;
+        if (syntax.AccessToken.Kind == SyntaxKind.ArrowToken)
+        {
+            if (expressionType is not PointerTypeSymbol pointer)
+            {
+                Diagnostics.ReportOperatorMustBeAppliedToPointer(syntax.AccessToken.Location, syntax.AccessToken.Text);
+                return new BoundErrorExpression(syntax, context);
+            }
+            
+            expressionType = pointer.PointedType;
+        }
+        
         _isBindingInvocation = isBindingInvocation;
-        if (boundExpression.Type == TypeSymbol.Error)
+        if (expressionType == TypeSymbol.Error)
         {
             return new BoundErrorExpression(syntax, context);
         }
@@ -402,14 +381,14 @@ internal sealed class ExpressionBinder : Binder
         if (_isBindingInvocation)
         {
             var methodContext = new SemanticContext(syntax.Name.Location, this, syntax.Name, Diagnostics);
-            if (!TryResolveMethod<AbstractMethodSymbol>(methodContext, boundExpression.Type, memberName, _typeArguments, 
+            if (!TryResolveMethod<AbstractMethodSymbol>(methodContext, expressionType, memberName, _typeArguments, 
                     _arguments, syntax.Expression, out var methodSymbol) ||
                 methodSymbol is null)
             {
                 return new BoundErrorExpression(syntax, context);
             }
 
-            if (!methodSymbol.Modifiers.Contains(SyntaxKind.PublicKeyword) &&
+            if (!methodSymbol.HasModifier(SyntaxKind.PublicKeyword) &&
                 _currentType != methodSymbol.ParentType)
             {
                 Diagnostics.ReportCannotAccessNonPublicMember(syntax.Name.Location, memberName);
@@ -418,14 +397,19 @@ internal sealed class ExpressionBinder : Binder
             return new BoundMemberAccessExpression(syntax, boundExpression, methodSymbol);
         }
 
-        var memberSymbol = boundExpression.Type.GetMember(memberName);
+        var memberSymbol = expressionType.GetMember(memberName);
+        if (memberSymbol is AbstractMethodSymbol)
+        {
+            Diagnostics.ReportInvalidMemberAccess(syntax.Name.Location, memberName);
+        }
+        
         if (memberSymbol is null)
         {
-            Diagnostics.ReportUndefinedMember(syntax.Name.Location, memberName, boundExpression.Type);
+            Diagnostics.ReportUndefinedMember(syntax.Name.Location, memberName, expressionType);
             return new BoundErrorExpression(syntax, context);
         }
         
-        if (!memberSymbol.Modifiers.Contains(SyntaxKind.PublicKeyword) &&
+        if (!memberSymbol.HasModifier(SyntaxKind.PublicKeyword) &&
             _currentType != memberSymbol.ParentType)
         {
             Diagnostics.ReportCannotAccessNonPublicMember(syntax.Name.Location, memberName);
@@ -471,6 +455,11 @@ internal sealed class ExpressionBinder : Binder
     private BoundExpression BindNewExpression(NewExpressionSyntax syntax, SemanticContext context)
     {
         var type = BindTypeSyntax(syntax.Type);
+        if (type.IsStatic)
+        {
+            Diagnostics.ReportCannotInstantiateStaticType(syntax.Type.Location, type.Name);
+        }
+        
         var arguments = ImmutableArray.CreateBuilder<BoundExpression>();
         foreach (var argument in syntax.ArgumentList.Arguments)
         {
@@ -575,16 +564,48 @@ internal sealed class ExpressionBinder : Binder
     private BoundExpression BindDefaultExpression(DefaultExpressionSyntax syntax)
     {
         var type = BindTypeSyntax(syntax.Type);
+        if (type.Type.IsStatic)
+        {
+            Diagnostics.ReportCannotInstantiateStaticType(syntax.Type.Location, type.Name);
+            return new BoundErrorExpression(syntax, new SemanticContext(this, syntax, Diagnostics));
+        }
+        
         return new BoundDefaultExpression(syntax, type);
     }
     
     private BoundExpression BindUnaryExpression(UnaryExpressionSyntax syntax, SemanticContext context)
     {
         var boundOperand = BindExpression(syntax.Operand);
-        var boundOperator = BoundUnaryOperator.Bind(syntax.OperatorToken.Kind, boundOperand.Type);
+        var op = syntax.GetOperatorToken();
+        if (op.Kind == SyntaxKind.AmpersandToken)
+        {
+            // You can only get a pointer to fields and variables such as locals and parameters
+            if (boundOperand is BoundMemberAccessExpression and not { Member: FieldSymbol } or
+                BoundNameExpression and not { Symbol: VariableSymbol })
+            {
+                Diagnostics.ReportCannotTakeAddress(boundOperand.Syntax.Location);
+                return new BoundErrorExpression(syntax, context);
+            }
+            
+            var type = BindPointerType(syntax, boundOperand.Type);
+            return new BoundAddressOfExpression(syntax, type, boundOperand);
+        }
+
+        if (op.Kind == SyntaxKind.StarToken)
+        {
+            if (boundOperand.Type is not PointerTypeSymbol pointer)
+            {
+                Diagnostics.ReportOperatorMustBeAppliedToPointer(op.Location, op.Kind.Text!);
+                return new BoundErrorExpression(syntax, context);
+            } 
+            
+            return new BoundDereferenceExpression(syntax, pointer.PointedType, boundOperand);
+        }
+        
+        var boundOperator = BoundUnaryOperator.Bind(op.Kind, boundOperand.Type);
         if (boundOperator == null)
         {
-            Diagnostics.ReportUndefinedUnaryOperator(syntax.OperatorToken.Location, syntax.OperatorToken.Text, boundOperand.Type);
+            Diagnostics.ReportUndefinedUnaryOperator(op.Location, op.Text, boundOperand.Type);
             return new BoundErrorExpression(syntax, context);
         }
         

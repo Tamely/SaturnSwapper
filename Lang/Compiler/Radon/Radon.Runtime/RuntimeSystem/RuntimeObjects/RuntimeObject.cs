@@ -1,4 +1,5 @@
 ﻿using Radon.CodeAnalysis.Emit;
+using Radon.Common;
 using Radon.Runtime.Memory;
 
 namespace Radon.Runtime.RuntimeSystem.RuntimeObjects;
@@ -18,27 +19,29 @@ internal abstract class RuntimeObject
 
     public bool IsDeadObject()
     {
+        Logger.Log("Retrieving object roots...", LogLevel.Info);
         var roots = ManagedRuntime.GetRoots();
+        Logger.Log("Retrieved object roots.", LogLevel.Info);
+        Logger.Log("Searching for object...", LogLevel.Info);
         foreach (var root in roots)
         {
-            if (root == this)
-            {
-                return false;
-            }
-            
             if (root.Search(this))
             {
+                Logger.Log("Object is alive.", LogLevel.Info);
                 return false;
             }
         }
         
+        Logger.Log("Object is dead.", LogLevel.Info);
         return true;
     }
 
     private bool Search(RuntimeObject obj)
     {
+        Logger.Log("Searching object graph...", LogLevel.Info);
         if (this == obj)
         {
+            Logger.Log("Object found.", LogLevel.Info);
             return true;
         }
 
@@ -51,6 +54,7 @@ internal abstract class RuntimeObject
                 {
                     if (field.Search(obj))
                     {
+                        Logger.Log("Object found.", LogLevel.Info);
                         return true;
                     }
                 }
@@ -74,6 +78,7 @@ internal abstract class RuntimeObject
                 {
                     if (element.Search(obj))
                     {
+                        Logger.Log("Object found.", LogLevel.Info);
                         return true;
                     }
                 }

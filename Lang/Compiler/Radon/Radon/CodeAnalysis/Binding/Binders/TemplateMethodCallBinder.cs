@@ -10,9 +10,9 @@ using Radon.CodeAnalysis.Syntax.Nodes.Members;
 
 namespace Radon.CodeAnalysis.Binding.Binders;
 
-internal sealed class TemplateMethodBinder : Binder
+internal sealed class TemplateMethodCallBinder : Binder
 {
-    internal TemplateMethodBinder(Binder binder) 
+    internal TemplateMethodCallBinder(Binder binder) 
         : base(binder)
     {
     }
