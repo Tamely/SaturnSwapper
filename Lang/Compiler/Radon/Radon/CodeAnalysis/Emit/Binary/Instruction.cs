@@ -5,7 +5,7 @@ using System.Text;
 namespace Radon.CodeAnalysis.Emit.Binary;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly struct Instruction
+public readonly struct Instruction
 {
     public readonly int Label;
     public readonly OpCode OpCode;

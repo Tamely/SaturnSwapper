@@ -1,6 +1,6 @@
 namespace Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
-internal enum ConstantType
+public enum ConstantType
 {
     Int8,
     UInt8,

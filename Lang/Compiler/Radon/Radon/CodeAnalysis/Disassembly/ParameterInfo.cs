@@ -2,7 +2,7 @@ using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 namespace Radon.CodeAnalysis.Disassembly;
 
-internal sealed record ParameterInfo
+public sealed record ParameterInfo
 {
     public int Ordinal { get; }
     public string Name { get; }

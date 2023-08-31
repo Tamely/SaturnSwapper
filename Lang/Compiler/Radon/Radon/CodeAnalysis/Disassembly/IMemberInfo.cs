@@ -1,6 +1,6 @@
 namespace Radon.CodeAnalysis.Disassembly;
 
-internal interface IMemberInfo
+public interface IMemberInfo
 {
     public string Name { get; }
     public string Fullname { get; }

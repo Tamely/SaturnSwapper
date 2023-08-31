@@ -7,7 +7,7 @@ using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 namespace Radon.CodeAnalysis.Disassembly;
 
-internal sealed record MethodInfo : IMemberInfo
+public sealed record MethodInfo : IMemberInfo
 {
     public bool IsStatic { get; }
     public bool IsEntry { get; }

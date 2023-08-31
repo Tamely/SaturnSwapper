@@ -2,7 +2,7 @@ using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 namespace Radon.CodeAnalysis.Disassembly;
 
-internal sealed class MemberReferenceInfo
+public sealed class MemberReferenceInfo
 {
     public MemberType MemberType { get; }
     public TypeInfo ParentType { get; }

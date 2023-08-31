@@ -3,7 +3,7 @@
 namespace Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 [Flags]
-internal enum BindingFlags
+public enum BindingFlags
 {
     None = 0x00,
     

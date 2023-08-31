@@ -6,7 +6,7 @@ using Radon.Common;
 namespace Radon.CodeAnalysis.Emit.Binary;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly struct Assembly
+public readonly struct Assembly
 {
     public readonly ulong MagicNumber;
     public readonly Guid Guid;

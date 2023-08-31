@@ -3,10 +3,10 @@
 @using Saturn.Backend.Data.FortniteCentral
 @using Saturn.Backend.Data.SaturnAPI.Models
 @using Radon.Runtime
-@using Saturn.Backend.Data.Plugins.TEMPORARY
 @using System.IO
 @using System.Net
 @using Newtonsoft.Json
+@using Radon.CodeAnalysis.Disassembly
 @using Saturn.Backend.Data.Plugins.Marketplace
 @using Saturn.Backend.Data.SaturnAPI
 
@@ -90,10 +90,12 @@
         Constants.OwnedPlugins = new();
         foreach (var file in Directory.EnumerateFiles(Constants.PluginPath))
         {
-            if (!file.EndsWith(".saturn")) continue;
+            if (!file.EndsWith(".csp")) continue;
 
-            PluginDeserializer deserializer = new PluginDeserializer(await File.ReadAllBytesAsync(file));
-            Constants.OwnedPlugins.Add(deserializer.DeserializedPlugin());
+            var compiledPlugin = await File.ReadAllBytesAsync(file);
+            var assembly = Disassembler.Disassemble(compiledPlugin);
+            var assemblyInfo = new AssemblyInfo(assembly);
+            //assemblyInfo.Metadata.Signs.Signs[0].Key
         }
     }
 

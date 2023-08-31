@@ -3,7 +3,7 @@ using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 namespace Radon.CodeAnalysis.Disassembly;
 
-internal sealed record EnumMemberInfo : IMemberInfo
+public sealed record EnumMemberInfo : IMemberInfo
 {
     public string Name { get; }
     public string Fullname => $"{Parent}.{Name}";

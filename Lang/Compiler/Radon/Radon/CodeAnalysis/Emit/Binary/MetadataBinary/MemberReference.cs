@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly struct MemberReference
+public readonly struct MemberReference
 {
     public readonly MemberType MemberType;
     public readonly int ParentType;

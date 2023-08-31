@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly record struct TypeDefinition(BindingFlags Flags, TypeKind Kind, int Name, int Size,
+public readonly record struct TypeDefinition(BindingFlags Flags, TypeKind Kind, int Name, int Size,
     int UnderlyingType, int FieldCount, int FieldStartOffset, int EnumMemberCount, int EnumMemberStartOffset,
     int MethodCount, int MethodStartOffset, int ConstructorCount, int ConstructorStartOffset, int StaticConstructor)
 {

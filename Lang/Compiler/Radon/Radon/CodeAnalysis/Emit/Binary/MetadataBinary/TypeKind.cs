@@ -3,7 +3,7 @@ using System;
 namespace Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 [Flags]
-internal enum TypeKind
+public enum TypeKind
 {
     Struct = 0x01,
     Enum = 0x02,

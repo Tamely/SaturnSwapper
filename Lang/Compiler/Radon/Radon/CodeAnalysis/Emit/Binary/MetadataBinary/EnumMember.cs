@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly struct EnumMember
+public readonly struct EnumMember
 {
     public readonly BindingFlags MemberBindingFlags;
     public readonly int Name;

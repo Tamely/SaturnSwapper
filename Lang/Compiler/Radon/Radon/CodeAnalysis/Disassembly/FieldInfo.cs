@@ -3,7 +3,7 @@ using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 namespace Radon.CodeAnalysis.Disassembly;
 
-internal sealed record FieldInfo : IMemberInfo
+public sealed record FieldInfo : IMemberInfo
 {
     public bool IsStatic { get; }
     public string Name { get; }

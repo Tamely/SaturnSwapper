@@ -5,7 +5,7 @@ using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 namespace Radon.CodeAnalysis.Disassembly;
 
-internal sealed record AssemblyInfo
+public sealed record AssemblyInfo
 {
     public Guid Guid { get; }
     public long EncryptionKey { get; }

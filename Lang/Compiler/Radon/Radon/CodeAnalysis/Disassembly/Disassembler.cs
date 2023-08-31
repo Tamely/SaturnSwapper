@@ -5,7 +5,7 @@ using AssemblyFlags = Radon.CodeAnalysis.Emit.Binary.AssemblyFlags;
 
 namespace Radon.CodeAnalysis.Disassembly;
 
-internal static class Disassembler
+public static class Disassembler
 {
     public static unsafe Assembly Disassemble(byte[] bytes)
     {

@@ -6,7 +6,7 @@ using Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 namespace Radon.CodeAnalysis.Disassembly;
 
-internal sealed record TypeInfo
+public sealed record TypeInfo
 {
     private readonly Dictionary<EnumMember, EnumMemberInfo> _enumMembers;
     private readonly Dictionary<Field, FieldInfo> _fields;
