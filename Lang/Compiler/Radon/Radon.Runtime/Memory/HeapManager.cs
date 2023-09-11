@@ -40,6 +40,12 @@ public sealed class HeapManager
 
     public RuntimeObject GetObject(nuint pointer)
     {
+        if (pointer == nuint.Zero)
+        {
+            Logger.Log("Pointer is null.", LogLevel.Error);
+            throw new NullReferenceException();
+        }
+        
         Logger.Log($"Getting object at {pointer}", LogLevel.Info);
         if (!_allocatedObjects.TryGetValue(pointer, out var obj))
         {
@@ -159,6 +165,11 @@ public sealed class HeapManager
             }
             case ManagedReference managedReference:
             {
+                if (managedReference.Target == nuint.Zero)
+                {
+                    break;
+                }
+                
                 var heapObject = ManagedRuntime.HeapManager.GetObject(managedReference.Target);
                 ManagedRuntime.HeapManager.Deallocate(heapObject);
                 break;
@@ -202,6 +213,11 @@ public sealed class HeapManager
             {
                 try
                 {
+                    if (managedReference.Target == nuint.Zero)
+                    {
+                        break;
+                    }
+                    
                     var heapObject = ManagedRuntime.HeapManager.GetObject(managedReference.Target);
                     ManagedRuntime.HeapManager.DeallocateIfDead(heapObject);
                 }
