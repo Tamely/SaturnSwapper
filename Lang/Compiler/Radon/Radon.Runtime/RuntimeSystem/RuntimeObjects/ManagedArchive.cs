@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using Radon.CodeAnalysis.Emit;
 using Radon.Runtime.Memory;
 using UAssetAPI.IO;
@@ -49,7 +50,7 @@ internal sealed class ManagedArchive : RuntimeObject
 
     public void Save()
     {
-        
+        File.WriteAllBytes(Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Saturn", "SaturnPlugin.uasset"), Archive.WriteData().GetBuffer());
     }
 
     public override string ToString()
