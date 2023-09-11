@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.AssetRegistry.Objects;
 using CUE4Parse.UE4.Assets.Exports.Texture;
+using Saturn.Backend.Data.Plugins;
 using Saturn.Backend.Data.SaturnAPI.Models;
 using Saturn.Backend.Data.SaturnConfig.Models;
 using Saturn.Backend.Data.Swapper.Assets;
@@ -204,7 +205,7 @@ namespace Saturn.Backend.Data.Variables
         public const int CHUNK_SIZE = 250;
         public static int ChunkIndex = 0;
 
-        public static List<object> OwnedPlugins = new();
+        public static List<PluginModel> OwnedPlugins = new();
         public static AssetSelectorItem SelectedItem = new();
         public static AssetSelectorItem SelectedOption = new();
 
