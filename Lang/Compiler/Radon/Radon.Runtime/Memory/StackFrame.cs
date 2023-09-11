@@ -230,9 +230,14 @@ public sealed class StackFrame
         return new ManagedPointer(type, address, target);
     }
 
-    public unsafe RuntimeObject AllocateObject(RuntimeType type)
+    public unsafe RuntimeObject AllocateObject(RuntimeType type, bool isDefault = false)
     {
         var address = Allocate(type.Size);
+        if (isDefault)
+        {
+            return type.CreateDefault(address);
+        }
+        
         if (type.TypeInfo.IsValueType)
         {
             var runtimeObject = new ManagedObject(type, type.Size, address);
@@ -244,7 +249,7 @@ public sealed class StackFrame
         return new ManagedReference(type, address, obj.Pointer);
     }
 
-    public unsafe RuntimeObject AllocateArray(RuntimeType type, int length)
+    public unsafe RuntimeObject AllocateArray(RuntimeType type, int length, bool isDefault = false)
     {
         if (!type.TypeInfo.IsArray)
         {
@@ -252,6 +257,11 @@ public sealed class StackFrame
         }
 
         var address = Allocate(type.Size); // 8 bytes
+        if (isDefault)
+        {
+            return type.CreateDefault(address);
+        }
+        
         var array = ManagedRuntime.HeapManager.AllocateArray(type, length);
         *(ulong*)address = array.Pointer;
         return new ManagedReference(type, address, array.Pointer);

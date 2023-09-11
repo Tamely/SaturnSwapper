@@ -267,7 +267,7 @@ public sealed class SyntaxKind
         new(nameof(BreakKeyword), "break", Keyword, FlowControl);
     public static readonly SyntaxKind ContinueKeyword =
         new(nameof(ContinueKeyword), "continue", Keyword, FlowControl);
-
+    
 #endregion
     
     // Nodes
