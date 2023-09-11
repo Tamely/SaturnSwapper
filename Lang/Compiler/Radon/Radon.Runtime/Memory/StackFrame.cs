@@ -41,25 +41,21 @@ public sealed class StackFrame
         This = instance;
         foreach (var (parameter, value) in arguments)
         {
-            Logger.Log($"Allocating argument '{parameter.Name}' of type {parameter.Type}", LogLevel.Info);
             var type = ManagedRuntime.System.GetType(parameter.Type);
             var address = Allocate(type.Size);
             var copy = value.Type.CreateDefault(address);
             MemoryUtils.Copy(value.Pointer, address, value.Size);
             _arguments.Add(parameter, address);
             _variables.Add(address, copy);
-            Logger.Log($"Allocated argument '{parameter.Name}' of type {parameter.Type} at address {address}", LogLevel.Info);
         }
 
         foreach (var local in locals)
         {
-            Logger.Log($"Allocating local '{local.Name}' of type {local.Type}", LogLevel.Info);
             var type = ManagedRuntime.System.GetType(local.Type);
             var address = Allocate(type.Size);
             _locals.Add(local, address);
             var value = type.CreateDefault(address);
             _variables.Add(address, value);
-            Logger.Log($"Allocated local '{local.Name}' of type {local.Type} at address {address}", LogLevel.Info);
         }
     }
 
@@ -84,7 +80,8 @@ public sealed class StackFrame
         }
 
         var address = _arguments[parameter];
-        _variables[address] = value;
+        var variable = value.CopyTo(address);
+        _variables[address] = variable;
         Logger.Log($"Setting argument '{parameter.Name}'", LogLevel.Info);
         MemoryUtils.Copy(value.Pointer, address, value.Size);
     }
@@ -134,7 +131,8 @@ public sealed class StackFrame
         }
 
         var address = _locals[local];
-        _variables[address] = value;
+        var variable = value.CopyTo(address);
+        _variables[address] = variable;
         Logger.Log($"Setting local '{local.Name}'", LogLevel.Info);
         MemoryUtils.Copy(value.Pointer, address, value.Size);
     }
@@ -324,6 +322,7 @@ public sealed class StackFrame
 
     public void DeallocateIfDead(RuntimeObject obj)
     {
+        Logger.Log($"Attempting to clean up object", LogLevel.Info);
         if (!obj.IsDeadObject())
         {
             return;

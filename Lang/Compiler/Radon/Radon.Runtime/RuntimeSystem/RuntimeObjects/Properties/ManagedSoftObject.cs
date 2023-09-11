@@ -42,6 +42,11 @@ internal sealed class ManagedSoftObject : RuntimeObject
         throw new InvalidOperationException($"Cannot perform operation {operation} on a soft object.");
     }
 
+    public override RuntimeObject CopyTo(nuint address)
+    {
+        return new ManagedSoftObject(SoftObjectPropertyData, address);
+    }
+
 
     public override string ToString()
     {

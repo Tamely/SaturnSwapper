@@ -805,4 +805,28 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
         var message = $"Cannot access instance member '{name}' on a type.";
         ReportError(location, message, ErrorCode.CannotAccessInstanceMemberOnType);
     }
+
+    public void ReportVariableCannotBeVoid(TextLocation location)
+    {
+        const string message = "A variable cannot be of type 'void'.";
+        ReportError(location, message, ErrorCode.VariableCannotBeVoid);
+    }
+
+    public void ReportCannotConstructType(TextLocation location, string name)
+    {
+        var message = $"Cannot construct type '{name}'.";
+        ReportError(location, message, ErrorCode.CannotConstructType);
+    }
+
+    public void ReportCannotReturnVoid(TextLocation location)
+    {
+        const string message = "Cannot return 'void'.";
+        ReportError(location, message, ErrorCode.CannotReturnVoid);
+    }
+
+    public void ArrayElementTypeCannotBeType(TextLocation location, string name)
+    {
+        var message = $"Array element type cannot be '{name}'.";
+        ReportError(location, message, ErrorCode.ArrayElementTypeCannotBeType);
+    }
 }

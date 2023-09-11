@@ -9,7 +9,6 @@ internal static class MemoryUtils
     
     public static unsafe void Copy(nuint source, nuint destination, int size)
     {
-        Logger.Log($"Copying {size} bytes from {source} to {destination}", LogLevel.Info);
         var src = (byte*)source;
         var dest = (byte*)destination;
         for (var i = 0; i < size; i++)

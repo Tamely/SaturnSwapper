@@ -9,12 +9,15 @@ namespace Radon.CodeAnalysis.Symbols;
 
 public sealed class StructSymbol : TypeSymbol
 {
+    private int _size;
+    
     public override string Name { get; }
     internal override TypeBinder? TypeBinder { get; set; }
     public override SymbolKind Kind => SymbolKind.Struct;
     public override ImmutableArray<MemberSymbol> Members { get; private protected set; }
     public override AssemblySymbol? ParentAssembly { get; }
     public override ImmutableArray<SyntaxKind> Modifiers { get; }
+
     public override int Size { get; internal set; }
 
     internal StructSymbol(string name, ImmutableArray<MemberSymbol> members, AssemblySymbol? parentAssembly, 

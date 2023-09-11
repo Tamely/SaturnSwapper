@@ -482,6 +482,11 @@ internal sealed class ExpressionBinder : Binder
     private BoundExpression BindNewExpression(NewExpressionSyntax syntax, SemanticContext context)
     {
         var type = BindTypeSyntax(syntax.Type);
+        if (type == TypeSymbol.Void)
+        {
+            Diagnostics.ReportCannotConstructType(syntax.Type.Location, type.Name);
+        }
+        
         if (type.IsStatic)
         {
             Diagnostics.ReportCannotInstantiateStaticType(syntax.Type.Location, type.Name);
@@ -524,6 +529,13 @@ internal sealed class ExpressionBinder : Binder
     private BoundExpression BindNewArrayExpression(NewArrayExpressionSyntax syntax, SemanticContext context)
     {
         var type = BindTypeSyntax(syntax.Type);
+        if (type.IsStatic ||
+            type == TypeSymbol.Void)
+        {
+            Diagnostics.ArrayElementTypeCannotBeType(syntax.Type.Location, type.Name);
+            return new BoundErrorExpression(syntax, context);
+        }
+        
         if (type is not ArrayTypeSymbol array)
         {
             Diagnostics.ReportCannotInstantiateNonArray(syntax.Type.Location, type.Name);

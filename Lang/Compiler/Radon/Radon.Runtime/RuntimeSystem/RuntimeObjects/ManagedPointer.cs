@@ -45,7 +45,12 @@ internal sealed class ManagedPointer : RuntimeObject
         
         throw new InvalidOperationException($"Cannot perform operation {operation} on a pointer.");
     }
-    
+
+    public override RuntimeObject CopyTo(nuint address)
+    {
+        return new ManagedPointer(Type, address, Target);
+    }
+
     public override string ToString()
     {
         var sb = new StringBuilder();

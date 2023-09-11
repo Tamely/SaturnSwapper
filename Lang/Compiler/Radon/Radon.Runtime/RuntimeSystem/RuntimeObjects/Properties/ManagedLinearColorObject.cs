@@ -42,6 +42,11 @@ internal sealed class ManagedLinearColorObject : RuntimeObject
         throw new InvalidOperationException($"Cannot perform operation {operation} on a color object.");
     }
 
+    public override RuntimeObject CopyTo(nuint address)
+    {
+        return new ManagedLinearColorObject(LinearColorPropertyData, address);
+    }
+
 
     public override string ToString()
     {

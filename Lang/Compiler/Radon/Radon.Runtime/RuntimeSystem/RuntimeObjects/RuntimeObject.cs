@@ -15,13 +15,13 @@ public abstract class RuntimeObject
     public bool IsArray => Type.TypeInfo.IsArray;
     
     public abstract RuntimeObject ComputeOperation(OpCode operation, RuntimeObject? other, StackFrame stackFrame);
+    public abstract RuntimeObject CopyTo(nuint address);
     public abstract override string ToString();
 
     public bool IsDeadObject()
     {
         Logger.Log("Retrieving object roots...", LogLevel.Info);
         var roots = ManagedRuntime.GetRoots();
-        Logger.Log("Retrieved object roots.", LogLevel.Info);
         Logger.Log("Searching for object...", LogLevel.Info);
         foreach (var root in roots)
         {

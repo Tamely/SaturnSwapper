@@ -85,33 +85,26 @@ public sealed class ManagedRuntime
     public static ImmutableArray<RuntimeObject> GetRoots()
     {
         var builder = ImmutableArray.CreateBuilder<RuntimeObject>();
-        Logger.Log("Retrieving static objects...", LogLevel.Info);
         foreach (var obj in StaticHeapManager.Objects)
         {
-            Logger.Log($"Adding static object at {obj.Pointer} to roots", LogLevel.Info);
             builder.Add(obj);
         }
-
-        Logger.Log("Retrieving stack frames...", LogLevel.Info);
+        
         var stacks = StackManager.StackFrames;
         foreach (var stackFrame in stacks)
         {
-            Logger.Log("Retrieving objects from stack frame...", LogLevel.Info);
             foreach (var variable in stackFrame.Variables)
             {
-                Logger.Log($"Adding object at {variable.Pointer} to roots", LogLevel.Info);
                 builder.Add(variable);
             }
             
             if (stackFrame.ReturnObject is not null)
             {
-                Logger.Log($"Adding return object at {stackFrame.ReturnObject.Pointer} to roots", LogLevel.Info);
                 builder.Add(stackFrame.ReturnObject);
             }
 
             if (stackFrame.This is not null)
             {
-                Logger.Log($"Adding this reference object at {stackFrame.This.Pointer} to roots", LogLevel.Info);
                 builder.Add(stackFrame.This);
             }
         }

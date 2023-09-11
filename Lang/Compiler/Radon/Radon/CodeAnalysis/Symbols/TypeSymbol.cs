@@ -45,7 +45,7 @@ public abstract class TypeSymbol : Symbol
         SeekOrigin.AddEnumMember("Current", 1);
         SeekOrigin.AddEnumMember("End", 2);
         var mods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword, SyntaxKind.RefKeyword);
-        Archive = new StructSymbol("archive", 0, EmptyMembers, null, mods);
+        Archive = new StructSymbol("archive", 8, EmptyMembers, null, mods);
         {
             MethodSymbol createArrayPropertyMethod;
             {
@@ -209,8 +209,8 @@ public abstract class TypeSymbol : Symbol
         methodNotFound = false;
         ambiguousCalls = ImmutableArray<TMethodSymbol>.Empty;
         methodSymbol = null;
-        var possibleCandidates = new List<(TMethodSymbol Method, TypeSymbol From, TypeSymbol To)>();
-        var ambiguousCandidates = new List<TMethodSymbol>();
+        var possibleMethods = new List<(TMethodSymbol Method, TypeSymbol From, TypeSymbol To)>();
+        var ambiguousMethods = new List<TMethodSymbol>();
         foreach (var member in Members)
         {
             if (member is TMethodSymbol method &&
@@ -269,41 +269,41 @@ public abstract class TypeSymbol : Symbol
                             binder.Diagnostics.ReportCannotConvert(argument.Syntax.Location, argument.Type, parameterType);
                         }
                         
-                        possibleCandidates.Add((method, argument.Type, parameterType));
-                        ambiguousCandidates.Add(method);
+                        possibleMethods.Add((method, argument.Type, parameterType));
+                        ambiguousMethods.Add(method);
                         goto failed;
                     }
                 }
                 
-                ambiguousCandidates.Add(method); // If this is called twice, there are at least two methods that fit
+                ambiguousMethods.Add(method); // If this is called twice, there are at least two methods that fit
                                                  // the call, making it ambiguous.
                 failed:;
             }
         }
 
         var ambiguousCall = false;
-        if (possibleCandidates.Count == 0 &&
-            ambiguousCandidates.Count == 0)
+        if (possibleMethods.Count == 0 &&
+            ambiguousMethods.Count == 0)
         {
             methodNotFound = true;
         }
         else
         {
-            if (ambiguousCandidates.Count == 1 &&
-                possibleCandidates.Count == 0)
+            if (ambiguousMethods.Count == 1 &&
+                possibleMethods.Count == 0)
             {
-                methodSymbol = ambiguousCandidates[0];
+                methodSymbol = ambiguousMethods[0];
             }
-            else if (ambiguousCandidates.Count > 1 ||
-                     possibleCandidates.Count > 1)
+            else if (ambiguousMethods.Count > 1 ||
+                     possibleMethods.Count > 1)
             {
                 ambiguousCall = true;
-                foreach (var (method, _, _) in possibleCandidates)
+                foreach (var (method, _, _) in possibleMethods)
                 {
-                    ambiguousCandidates.Add(method);
+                    ambiguousMethods.Add(method);
                 }
                 
-                ambiguousCalls = ambiguousCandidates.ToImmutableArray();
+                ambiguousCalls = ambiguousMethods.ToImmutableArray();
             }
         }
         

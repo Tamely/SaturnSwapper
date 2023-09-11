@@ -41,7 +41,12 @@ internal sealed class ManagedReference : RuntimeObject
         
         throw new InvalidOperationException($"Cannot perform operation {operation} on a reference.");
     }
-    
+
+    public override RuntimeObject CopyTo(nuint address)
+    {
+        return new ManagedReference(Type, address, Target);
+    }
+
     public override string ToString()
     {
         var sb = new StringBuilder();
