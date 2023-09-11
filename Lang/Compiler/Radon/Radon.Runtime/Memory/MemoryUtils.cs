@@ -2,7 +2,7 @@
 
 namespace Radon.Runtime.Memory;
 
-internal static class MemoryUtils
+public static class MemoryUtils
 {
     public static nuint HeapSize { get; set; }
     public static nuint StackSize { get; set; }
