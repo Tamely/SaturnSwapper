@@ -67,9 +67,9 @@ public static class Program
             ManagedRuntime.HeapManager.FreeHeap();
             Logger.Log("Freed heap.", LogLevel.Info);
             
-            Logger.Log("Freeing loader heap...", LogLevel.Info);
+            Logger.Log("Freeing static heap...", LogLevel.Info);
             ManagedRuntime.StaticHeapManager.FreeHeap();
-            Logger.Log("Freed loader heap.", LogLevel.Info);
+            Logger.Log("Freed static heap.", LogLevel.Info);
             
             Logger.Log("Freed allocated memory.", LogLevel.Info);
             

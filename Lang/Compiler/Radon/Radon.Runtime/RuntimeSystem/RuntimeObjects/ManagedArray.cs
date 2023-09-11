@@ -69,7 +69,12 @@ internal sealed class ManagedArray : RuntimeObject
         
         throw new InvalidOperationException($"Cannot perform operation {operation} on an array.");
     }
-    
+
+    public override RuntimeObject CopyTo(nuint address)
+    {
+        return new ManagedArray(Type, address, _elements);
+    }
+
     public override string ToString()
     {
         var sb = new StringBuilder();

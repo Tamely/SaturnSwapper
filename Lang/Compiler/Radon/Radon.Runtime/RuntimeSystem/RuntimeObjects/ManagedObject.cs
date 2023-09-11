@@ -79,6 +79,11 @@ internal class ManagedObject : RuntimeObject
         throw new InvalidOperationException($"Operation {operation} is not supported for {Type.TypeInfo.Fullname}");
     }
 
+    public override RuntimeObject CopyTo(nuint address)
+    {
+        return new ManagedObject(Type, Size, address);
+    }
+
     private RuntimeObject ComputeStringOperation(OpCode operation, ManagedString str, ManagedString other, StackFrame stackFrame)
     {
         string value;

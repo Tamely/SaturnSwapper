@@ -42,6 +42,11 @@ internal sealed class ManagedArchive : RuntimeObject
         throw new InvalidOperationException($"Cannot perform operation {operation} on a archive.");
     }
 
+    public override RuntimeObject CopyTo(nuint address)
+    {
+        return new ManagedArchive(Archive, address);
+    }
+
     public override string ToString()
     {
         return Archive.Name.Value.Value;
