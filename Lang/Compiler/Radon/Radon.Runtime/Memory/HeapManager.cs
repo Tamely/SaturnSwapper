@@ -165,6 +165,11 @@ public sealed class HeapManager
             }
             case ManagedReference managedReference:
             {
+                if (managedReference.Target == nuint.Zero)
+                {
+                    break;
+                }
+                
                 var heapObject = ManagedRuntime.HeapManager.GetObject(managedReference.Target);
                 ManagedRuntime.HeapManager.Deallocate(heapObject);
                 break;
@@ -208,6 +213,11 @@ public sealed class HeapManager
             {
                 try
                 {
+                    if (managedReference.Target == nuint.Zero)
+                    {
+                        break;
+                    }
+                    
                     var heapObject = ManagedRuntime.HeapManager.GetObject(managedReference.Target);
                     ManagedRuntime.HeapManager.DeallocateIfDead(heapObject);
                 }
