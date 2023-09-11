@@ -735,7 +735,7 @@ internal sealed class MethodRuntime
                         var type = ManagedRuntime.System.GetType(typeDef);
                         var value = type.TypeInfo.IsArray 
                             ? _stackFrame.AllocateArray(type, 0) 
-                            : _stackFrame.AllocateObject(type);
+                            : _stackFrame.AllocateObject(type, true);
                         _stackFrame.Push(value);
                         break;
                     }
