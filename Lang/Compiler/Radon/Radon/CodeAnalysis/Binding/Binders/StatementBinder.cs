@@ -126,6 +126,11 @@ internal sealed class StatementBinder : Binder
     private BoundStatement BindVariableDeclaration(VariableDeclarationSyntax syntax)
     {
         var type = BindTypeSyntax(syntax.Type);
+        if (type == TypeSymbol.Void)
+        {
+            Diagnostics.ReportVariableCannotBeVoid(syntax.Type.Location);
+        }
+        
         var declarator = syntax.Declarator;
         var variable = declarator.Identifier.Text;
         var initializer = declarator.Initializer;
@@ -174,6 +179,12 @@ internal sealed class StatementBinder : Binder
         
         var expressionBinder = new ExpressionBinder(this);
         var boundExpression = (BoundExpression)expressionBinder.Bind(expression);
+        if (boundExpression.Type == TypeSymbol.Void)
+        {
+            Diagnostics.ReportCannotReturnVoid(syntax.Expression!.Location);
+            return new BoundErrorStatement(syntax, new SemanticContext(this, syntax, Diagnostics));
+        }
+        
         var context = new SemanticContext(this, syntax, Diagnostics);
         var type = MethodSymbol.Type;
         if (!TryResolveSymbol<TypeSymbol>(context, ref type))

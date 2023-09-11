@@ -90,5 +90,9 @@ public enum ErrorCode
     CannotInvokeStaticMethodOnInstance,
     CannotInvokeInstanceMethodOnType,
     CannotAccessStaticMemberOnInstance,
-    CannotAccessInstanceMemberOnType
+    CannotAccessInstanceMemberOnType,
+    VariableCannotBeVoid,
+    CannotConstructType,
+    CannotReturnVoid,
+    ArrayElementTypeCannotBeType
 }
