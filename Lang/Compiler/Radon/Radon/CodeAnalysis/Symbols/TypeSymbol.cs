@@ -47,6 +47,12 @@ public abstract class TypeSymbol : Symbol
         var mods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword, SyntaxKind.RefKeyword);
         Archive = new StructSymbol("archive", 8, EmptyMembers, null, mods);
         {
+            MethodSymbol saveMethod;
+            {
+                var parameters = ImmutableArray<ParameterSymbol>.Empty;
+                saveMethod = new MethodSymbol(Archive, "Save", Void, parameters, Mods);
+            }
+            
             MethodSymbol createArrayPropertyMethod;
             {
                 var parameters = ImmutableArray.Create(new ParameterSymbol("array", new ArrayTypeSymbol(SoftObjectProperty), 0));
@@ -102,6 +108,7 @@ public abstract class TypeSymbol : Symbol
                 importMethod = new MethodSymbol(Archive, "Import", Archive, parameters, importMods);
             }
             
+            Archive.AddMember(saveMethod);
             Archive.AddMember(swapArrayMethod);
             Archive.AddMember(swapSoftObjectMethod);
             Archive.AddMember(swapLinearColorMethod);
