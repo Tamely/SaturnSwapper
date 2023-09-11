@@ -47,6 +47,11 @@ internal sealed class ManagedArchive : RuntimeObject
         return new ManagedArchive(Archive, address);
     }
 
+    public void Save()
+    {
+        
+    }
+
     public override string ToString()
     {
         return Archive.Name.Value.Value;

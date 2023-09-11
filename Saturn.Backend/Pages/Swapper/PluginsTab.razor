@@ -7,6 +7,10 @@
 @using System.Net
 @using Newtonsoft.Json
 @using Radon.CodeAnalysis.Disassembly
+@using Radon.Runtime.RuntimeSystem
+@using Radon.Runtime.RuntimeSystem.RuntimeObjects
+@using Saturn.Backend.Data
+@using Saturn.Backend.Data.Plugins
 @using Saturn.Backend.Data.Plugins.Marketplace
 @using Saturn.Backend.Data.SaturnAPI
 
@@ -34,10 +38,10 @@
             {
                 foreach (var plugin in Constants.OwnedPlugins)
                 {
-                    <div id="@(plugin.Name + "-section")" class="section hoverable" @onclick="@(async () => await Swap(plugin))">
-                        <img src=@(plugin.Icon ?? "https://image.fnbr.co/outfit/5ab15c3e0499b850d8511de4/icon_192.png") alt="Icon"/>
+                    <div id="@(plugin.Name + "-section")" class="section hoverable" @onclick="@(async () => await Swap(plugin.AssemblyInfo))">
+                        <img src=@(plugin.Icon) alt="Icon"/>
                         <div class="name">
-                            <h1>@(plugin.Name + $" (v{plugin.Version ?? "1.0.0"})")</h1>
+                            <h1>@(plugin.Name + $" (v{plugin.Version})")</h1>
                             <h3>@("By: " + plugin.Author + " | " + plugin.Description)</h3>
                         </div>
                     </div>
@@ -95,22 +99,65 @@
             var compiledPlugin = await File.ReadAllBytesAsync(file);
             var assembly = Disassembler.Disassemble(compiledPlugin);
             var assemblyInfo = new AssemblyInfo(assembly);
-            //assemblyInfo.Metadata.Signs.Signs[0].Key
+
+            string Name = "Unset Name";
+            string Description = "Unset Description";
+            string Version = "1.0.0";
+            string Author = "Unset Author";
+            string Icon = "https://image.fnbr.co/outfit/5ab15c3e0499b850d8511de4/icon_192.png";
+
+            foreach (var sign in assemblyInfo.Metadata.Signs.Signs)
+            {
+                if (string.Equals(sign.Key, "name", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    Name = sign.Value;
+                }
+                
+                if (string.Equals(sign.Key, "description", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    Description = sign.Value;
+                }
+                
+                if (string.Equals(sign.Key, "version", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    Version = sign.Value;
+                }
+                
+                if (string.Equals(sign.Key, "author", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    Author = sign.Value;
+                }
+                
+                if (string.Equals(sign.Key, "icon", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    Icon = sign.Value;
+                }
+            }
+            
+            Constants.OwnedPlugins.Add(new PluginModel()
+            {
+                Name = Name,
+                Description = Description,
+                AssemblyInfo = assemblyInfo,
+                Author = Author,
+                Icon = Icon,
+                Version = Version
+            });
         }
     }
 
-    List<string> SwappedPlugins = new();
-    private async Task Swap(Plugin plugin)
+    List<Guid> SwappedPlugins = new();
+    private async Task Swap(AssemblyInfo assemblyInfo)
     {
-        if (!SwappedPlugins.Contains(plugin.Name))
+        if (!SwappedPlugins.Contains(assemblyInfo.Guid))
         {
-            await Convert(plugin);
-            SwappedPlugins.Add(plugin.Name);
+            await Convert(assemblyInfo);
+            SwappedPlugins.Add(assemblyInfo.Guid);
             return;
         }
 
-        await Revert(plugin);
-        SwappedPlugins.Remove(plugin.Name);
+        await Revert(assemblyInfo);
+        SwappedPlugins.Remove(assemblyInfo.Guid);
     }
     
     private async Task Download(MarketplaceModel plugin)
@@ -126,13 +173,27 @@
         await RefreshPlugins();
     }
 
-    private async Task Convert(Plugin plugin)
+    private async Task Convert(AssemblyInfo assemblyInfo)
     {
-        await PluginLogic.Convert(plugin);
+        var runtime = new ManagedRuntime(assemblyInfo);
+        Logger.Log($"Disassembled assembly {assemblyInfo.Guid}");
+        var entryType = runtime.Types.First(type => type.Key.IsEntry).Value;
+        var entryPoint = entryType.TypeInfo.Methods.First(method => method.IsEntry);
+        entryType.InvokeStatic(assemblyInfo, entryPoint, ManagedRuntime.EmptyDictionary<ParameterInfo, RuntimeObject>());
+        ManagedRuntime.StackManager.DeallocateStackFrame();
+        ManagedRuntime.StackManager.FreeStack();
+        ManagedRuntime.HeapManager.FreeHeap();
     }
 
-    private async Task Revert(Plugin plugin)
+    private async Task Revert(AssemblyInfo assemblyInfo)
     {
-        await PluginLogic.Revert(plugin);
+        var runtime = new ManagedRuntime(assemblyInfo);
+        Logger.Log($"Disassembled assembly {assemblyInfo.Guid}");
+        var entryType = runtime.Types.First(type => type.Key.IsEntry).Value;
+        var entryPoint = entryType.TypeInfo.Methods.First(method => method.IsEntry);
+        entryType.InvokeStatic(assemblyInfo, entryPoint, ManagedRuntime.EmptyDictionary<ParameterInfo, RuntimeObject>());
+        ManagedRuntime.StackManager.DeallocateStackFrame();
+        ManagedRuntime.StackManager.FreeStack();
+        ManagedRuntime.HeapManager.FreeHeap();
     }
 }

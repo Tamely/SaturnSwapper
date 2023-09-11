@@ -575,6 +575,17 @@ internal sealed class MethodRuntime
 
                         break;
                     }
+                    case "Save":
+                    {
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        archive.Save();
+                        break;
+                    }
                     case "Swap":
                     {
                         var other = _stackFrame.GetArgument(0);
