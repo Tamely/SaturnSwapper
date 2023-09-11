@@ -355,6 +355,11 @@ public sealed class StackFrame
             {
                 try
                 {
+                    if (managedReference.Target == nuint.Zero)
+                    {
+                        return;
+                    }
+                    
                     var heapObject = ManagedRuntime.HeapManager.GetObject(managedReference.Target);
                     ManagedRuntime.HeapManager.DeallocateIfDead(heapObject);
                 }

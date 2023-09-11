@@ -110,7 +110,7 @@ internal sealed class AssemblyBinder : Binder
         if (programUnit is not null)
         {
             var programBinder = new ProgramBinder(this, programUnit);
-            var program = (BoundType)programBinder.Bind(null);
+            var program = (BoundType)programBinder.Bind(programUnit);
             boundTypes.Add(program);
             Diagnostics.AddRange(programBinder.Diagnostics);
         }

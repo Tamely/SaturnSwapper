@@ -40,6 +40,12 @@ public sealed class HeapManager
 
     public RuntimeObject GetObject(nuint pointer)
     {
+        if (pointer == nuint.Zero)
+        {
+            Logger.Log("Pointer is null.", LogLevel.Error);
+            throw new NullReferenceException();
+        }
+        
         Logger.Log($"Getting object at {pointer}", LogLevel.Info);
         if (!_allocatedObjects.TryGetValue(pointer, out var obj))
         {
