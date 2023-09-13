@@ -496,6 +496,7 @@ namespace UAssetAPI.IO
             {
                 TrailingData = reader.ReadArray<byte>((int)reader.BaseStream.Length - (int)reader.BaseStream.Position);
             }
+            isReadingTime = false;
         }
 
         /// <summary>
@@ -559,8 +560,7 @@ namespace UAssetAPI.IO
             {
                 data.AddRange(entry.Encoding.GetBytes(entry.Value));
             }
-
-            isReadingTime = false;
+            
             return data.ToArray();
         }
 

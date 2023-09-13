@@ -16,11 +16,7 @@ public class SoftObjectFactory
         FactoryUtils.ASSET.AddNameReference(new FString(value));
 
         int PackageIndex = FactoryUtils.ASSET.SearchNameReference(new FString(value.Split('.')[0]));
-        int AssetIndex = -1;
-        if (value.Contains('.'))
-        {
-            AssetIndex = FactoryUtils.ASSET.SearchNameReference(new FString(value.Split('.')[1]));
-        }
+        int AssetIndex = value.Contains('.') ? FactoryUtils.ASSET.SearchNameReference(new FString(value.Split('.')[1])) : -1;
 
         FSoftObjectPath Value = new()
         {

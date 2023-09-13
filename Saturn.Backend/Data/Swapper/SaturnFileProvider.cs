@@ -51,7 +51,7 @@ public class SaturnFileProvider : IDisposable
 
         Constants.CanSpecialSwap = _provider.MountedVfs.Any(x => x.Name == "pakchunk0-WindowsClient.pak");
 
-        GlobalFileProvider.Provider = Provider;
+        GlobalFileProvider.Provider = _provider;
     }
     
     public void Dispose()
