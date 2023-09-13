@@ -8,7 +8,7 @@ public abstract class RuntimeObject
 {
     public abstract RuntimeType Type { get; }
     public abstract int Size { get; }
-    public abstract nuint Pointer { get; }
+    public abstract nuint Address { get; }
     
     public bool IsReference => this is ManagedReference;
     public bool IsValueType => Type.TypeInfo.IsValueType;

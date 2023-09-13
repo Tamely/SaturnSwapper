@@ -45,8 +45,11 @@ public sealed class ManagedRuntime
     public static RuntimeType Float64 => System.GetType("double");
     public static RuntimeType Char => System.GetType("char");
     public static RuntimeType String => System.GetType("string");
+    public static RuntimeType Archive => System.GetType("archive");
     public static RuntimeType CharArray => System.GetType("char[]");
     public static RuntimeType SoftObject => System.GetType("SoftObjectProperty");
+    public static RuntimeType LinearColor => System.GetType("LinearColorProperty");
+    public static RuntimeType ArrayProperty => System.GetType("ArrayProperty");
 
     static ManagedRuntime()
     {

@@ -9,7 +9,7 @@ internal sealed class ManagedPointer : RuntimeObject
 {
     public override RuntimeType Type { get; }
     public override int Size => sizeof(ulong);
-    public override nuint Pointer { get; }
+    public override nuint Address { get; }
     public nuint Target { get; set; } // The pointer to the object this pointer points to.
 
     public ManagedPointer(RuntimeType type, nuint pointer, nuint target)
@@ -20,7 +20,7 @@ internal sealed class ManagedPointer : RuntimeObject
         }
         
         Type = type;
-        Pointer = pointer;
+        Address = pointer;
         Target = target;
     }
     
@@ -35,11 +35,11 @@ internal sealed class ManagedPointer : RuntimeObject
         {
             case OpCode.Ceq:
             {
-                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Pointer == otherPointer.Pointer);
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Address == otherPointer.Address);
             }
             case OpCode.Cne:
             {
-                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Pointer != otherPointer.Pointer);
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Address != otherPointer.Address);
             }
         }
         

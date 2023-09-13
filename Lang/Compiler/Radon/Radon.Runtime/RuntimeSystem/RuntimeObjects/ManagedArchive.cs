@@ -10,13 +10,13 @@ internal sealed class ManagedArchive : RuntimeObject
 {
     public override RuntimeType Type { get; }
     public override int Size { get; } // The size in bytes of the array on the heap. This includes the 4 bytes for the length.
-    public override nuint Pointer { get; } // The address of the array on the heap.
+    public override nuint Address { get; } // The address of the array on the heap.
     public ZenAsset Archive { get; set; } // The archive
 
-    public ManagedArchive(ZenAsset archive, nuint pointer)
+    public ManagedArchive(ZenAsset? archive, nuint pointer)
     {
-        Archive = archive;
-        Pointer = pointer;
+        Archive = archive ?? new ZenAsset();
+        Address = pointer;
         Type = ManagedRuntime.System.GetType("archive");
         Size = Type.Size;
     }
@@ -32,11 +32,11 @@ internal sealed class ManagedArchive : RuntimeObject
         {
             case OpCode.Ceq:
             {
-                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Pointer == otherArchive.Pointer);
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Address == otherArchive.Address);
             }
             case OpCode.Cne:
             {
-                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Pointer != otherArchive.Pointer);
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Address != otherArchive.Address);
             }
         }
 

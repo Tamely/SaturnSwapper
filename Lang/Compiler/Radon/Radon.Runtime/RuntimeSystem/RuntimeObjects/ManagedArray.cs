@@ -13,9 +13,9 @@ internal sealed class ManagedArray : RuntimeObject
     private readonly List<RuntimeObject> _elements;
     public override RuntimeType Type { get; }
     public override int Size { get; } // The size in bytes of the array on the heap. This includes the 4 bytes for the length.
-    public override UIntPtr Pointer { get; } // The address of the array on the heap.
+    public override UIntPtr Address { get; } // The address of the array on the heap.
     public RuntimeType ElementType { get; }
-    public nuint ArrayStart => Pointer + sizeof(int);
+    public nuint ArrayStart => Address + sizeof(int);
     public int Length { get; }
     public ImmutableArray<RuntimeObject> Elements => _elements.ToImmutableArray();
 
@@ -30,7 +30,7 @@ internal sealed class ManagedArray : RuntimeObject
 
         ElementType = ManagedRuntime.System.GetType(type.TypeInfo.UnderlyingType);
         Size = ElementType.Size * _elements.Count;
-        Pointer = pointer;
+        Address = pointer;
         Length = _elements.Count;
     }
     
@@ -45,7 +45,7 @@ internal sealed class ManagedArray : RuntimeObject
         Logger.Log($"Setting element at index {index}.", LogLevel.Info);
         _elements[index] = element;
         var pointer = ArrayStart + (nuint)index * (nuint)ElementType.Size;
-        MemoryUtils.Copy(element.Pointer, pointer, ElementType.Size);
+        MemoryUtils.Copy(element.Address, pointer, ElementType.Size);
     }
     
     public override RuntimeObject ComputeOperation(OpCode operation, RuntimeObject? other, StackFrame stackFrame)
@@ -59,11 +59,11 @@ internal sealed class ManagedArray : RuntimeObject
         {
             case OpCode.Ceq:
             {
-                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Pointer == otherArray.Pointer);
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Address == otherArray.Address);
             }
             case OpCode.Cne:
             {
-                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Pointer != otherArray.Pointer);
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Address != otherArray.Address);
             }
         }
         

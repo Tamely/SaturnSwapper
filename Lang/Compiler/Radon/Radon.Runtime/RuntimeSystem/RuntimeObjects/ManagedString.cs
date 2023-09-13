@@ -1,19 +1,26 @@
-﻿namespace Radon.Runtime.RuntimeSystem.RuntimeObjects;
+﻿using System;
+
+namespace Radon.Runtime.RuntimeSystem.RuntimeObjects;
 
 internal sealed class ManagedString : ManagedObject
 {
-    public nuint CharArrayReference { get; }
+    public unsafe nuint CharArrayReference => (nuint)(*(ulong*)Address);
     public ManagedString(RuntimeType type, nuint address) 
         : base(type, type.Size, address)
     {
-        CharArrayReference = address;
     }
-    
+
+    public override unsafe RuntimeObject CopyTo(nuint address)
+    {
+        var obj = new ManagedString(Type, address);
+        *(ulong*)address = *(ulong*)Address;
+        return obj;
+    }
+
     public override unsafe string ToString()
     {
         // The char array reference points to a char array allocated on the heap
-        var arrayRef = (ulong*)CharArrayReference;
-        var array = (ManagedArray)ManagedRuntime.HeapManager.GetObject((nuint)arrayRef);
+        var array = (ManagedArray)ManagedRuntime.HeapManager.GetObject(CharArrayReference);
         // The length is an int
         var length = array.Length;
         var chars = new char[length];
