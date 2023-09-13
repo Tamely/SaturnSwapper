@@ -7,23 +7,23 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Saturn.Backend", "Saturn.Ba
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Saturn.Client", "Saturn.Client\Saturn.Client.csproj", "{9CCD77A2-AE82-41E2-9365-45C5CACAF035}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Saturn.Launcher", "Saturn.Launcher\Saturn.Launcher.csproj", "{8BB76C34-D7A7-4486-B375-0203C95FA5AC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Saturn.Launcher", "Saturn.Launcher\Saturn.Launcher.csproj", "{8BB76C34-D7A7-4486-B375-0203C95FA5AC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpicManifestParser", "EpicManifestParser\EpicManifestParser.csproj", "{736A7A2C-141B-4602-8591-24C64893137D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EpicManifestParser", "EpicManifestParser\EpicManifestParser.csproj", "{736A7A2C-141B-4602-8591-24C64893137D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radon.Runtime", "Lang\Compiler\Radon\Radon.Runtime\Radon.Runtime.csproj", "{DA21B981-9571-43C5-ABE5-289C2F3B789B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Radon.Runtime", "Lang\Compiler\Radon\Radon.Runtime\Radon.Runtime.csproj", "{DA21B981-9571-43C5-ABE5-289C2F3B789B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radon", "Lang\Compiler\Radon\Radon\Radon.csproj", "{68EBB149-F5D6-41D4-899E-0CE98A9264CE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Radon", "Lang\Compiler\Radon\Radon\Radon.csproj", "{68EBB149-F5D6-41D4-899E-0CE98A9264CE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radon.Generator", "Lang\Compiler\Radon\Radon.Generator\Radon.Generator.csproj", "{C3999E71-9210-43F1-8BD2-C76FD65DAA28}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Radon.Generator", "Lang\Compiler\Radon\Radon.Generator\Radon.Generator.csproj", "{C3999E71-9210-43F1-8BD2-C76FD65DAA28}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radon.Repl", "Lang\Compiler\Radon\Radon.Repl\Radon.Repl.csproj", "{E836019B-7ACC-4ACD-BAC8-C2DB761BE0A5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Radon.Repl", "Lang\Compiler\Radon\Radon.Repl\Radon.Repl.csproj", "{E836019B-7ACC-4ACD-BAC8-C2DB761BE0A5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UAssetAPI", "UAssetAPI\UAssetAPI.csproj", "{178417EC-1177-413E-BE85-C83AECD64279}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UAssetAPI", "UAssetAPI\UAssetAPI.csproj", "{178417EC-1177-413E-BE85-C83AECD64279}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CUE4Parse", "CUE4Parse\CUE4Parse.csproj", "{93B2B80B-5476-4555-8C59-2B5DB2932350}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CUE4Parse", "CUE4Parse\CUE4Parse.csproj", "{93B2B80B-5476-4555-8C59-2B5DB2932350}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CUE4Parse-Conversion", "CUE4Parse-Conversion\CUE4Parse-Conversion.csproj", "{AEC118EA-0978-46C4-AD33-89D3CE0DB4DA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CUE4Parse-Conversion", "CUE4Parse-Conversion\CUE4Parse-Conversion.csproj", "{AEC118EA-0978-46C4-AD33-89D3CE0DB4DA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -173,5 +173,8 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {B9D0FE52-AD59-4FE4-8382-8F4E42657110}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Saturn.Shared\Saturn.Shared.projitems*{0438f375-b4f1-4438-8a58-b8dc58fefab8}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

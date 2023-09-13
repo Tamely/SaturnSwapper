@@ -638,6 +638,7 @@ internal sealed class MethodRuntime
                         
                         var str = managedString.ToString();
                         var stackPtr = _stackFrame.Allocate(archiveSize);
+                        SaturnData.Clear();
                         var byteData = GlobalFileProvider.Provider?.SaveAsset(str.Split('.')[0]);
                         if (byteData is null)
                         {
@@ -645,7 +646,7 @@ internal sealed class MethodRuntime
                         }
                         
                         var archive = new ZenAsset(new AssetBinaryReader(byteData), EngineVersion.VER_LATEST, Usmap.CachedMappings);
-                        var managedArchive = new ManagedArchive(archive, stackPtr);
+                        var managedArchive = new ManagedArchive(archive, SaturnData.ToNonStatic(), stackPtr);
                         _stackFrame.Push(managedArchive);
 
                         break;

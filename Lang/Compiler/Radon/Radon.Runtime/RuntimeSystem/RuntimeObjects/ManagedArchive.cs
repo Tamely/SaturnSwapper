@@ -1,21 +1,32 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using CUE4Parse;
 using Radon.CodeAnalysis.Emit;
 using Radon.Runtime.Memory;
 using UAssetAPI.IO;
 
 namespace Radon.Runtime.RuntimeSystem.RuntimeObjects;
 
-internal sealed class ManagedArchive : RuntimeObject
+public sealed class ManagedArchive : RuntimeObject
 {
+    public static List<SwapData> Swaps = new();
+    public class SwapData
+    {
+        public NonStaticSaturnData SaturnData { get; set; }
+        public byte[] Data { get; set; }
+    }
+    
     public override RuntimeType Type { get; }
     public override int Size { get; } // The size in bytes of the array on the heap. This includes the 4 bytes for the length.
     public override nuint Address { get; } // The address of the array on the heap.
     public ZenAsset Archive { get; set; } // The archive
+    public NonStaticSaturnData Data { private get; set; } // The file info
 
-    public ManagedArchive(ZenAsset? archive, nuint pointer)
+    public ManagedArchive(ZenAsset? archive, NonStaticSaturnData? data, nuint pointer)
     {
         Archive = archive ?? new ZenAsset();
+        Data = data ?? new NonStaticSaturnData();
         Address = pointer;
         Type = ManagedRuntime.System.GetType("archive");
         Size = Type.Size;
@@ -45,12 +56,16 @@ internal sealed class ManagedArchive : RuntimeObject
 
     public override RuntimeObject CopyTo(nuint address)
     {
-        return new ManagedArchive(Archive, address);
+        return new ManagedArchive(Archive, Data, address);
     }
 
     public void Save()
     {
-        File.WriteAllBytes(Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Saturn", "SaturnPlugin.uasset"), Archive.WriteData().GetBuffer());
+        Swaps.Add(new SwapData()
+        {
+            SaturnData = Data,
+            Data = Archive.WriteData().GetBuffer()
+        });
     }
 
     public override string ToString()

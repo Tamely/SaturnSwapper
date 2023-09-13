@@ -108,7 +108,7 @@ public sealed class RuntimeType
         
         if (TypeInfo == ManagedRuntime.Archive.TypeInfo)
         {
-            return new ManagedArchive(null, address);
+            return new ManagedArchive(null, null, address);
         }
         
         if (TypeInfo == ManagedRuntime.ArrayProperty.TypeInfo)
