@@ -23,6 +23,19 @@ namespace Radon.Runtime.RuntimeSystem;
 
 internal sealed class MethodRuntime
 {
+    private static readonly IReadOnlyDictionary<string, int> _predefMethods;
+
+    static MethodRuntime()
+    {
+        _predefMethods = new Dictionary<string, int>
+        {
+            { "CreateArrayProperty", ManagedRuntime.Archive.Size },
+            { "CreateLinearColorProperty", ManagedRuntime.Archive.Size },
+            { "CreateSoftObjectProperty", ManagedRuntime.Archive.Size },
+            { "Import", ManagedRuntime.Archive.Size },
+        };
+    }
+    
     private readonly AssemblyInfo _assembly;
     private readonly Metadata _metadata;
     private readonly RuntimeObject? _instance;
@@ -54,10 +67,20 @@ internal sealed class MethodRuntime
         {
             size += local.Type.Size;
         }
+        
+        foreach (var (_, argument) in arguments)
+        {
+            size += argument.Type.Size;
+        }
 
         Logger.Log("Resolving stack size...",  LogLevel.Info);
         var stackSize = ResolveStackSize();
         size += stackSize.MaxStackSize;
+        if (_predefMethods.ContainsKey(_method.Name))
+        {
+            size += _predefMethods[_method.Name];
+        }
+        
         _stackFrame = ManagedRuntime.StackManager.AllocateStackFrame(size, stackSize.MaxStack, instance, 
             locals.Values.ToImmutableArray(), arguments);
     }
@@ -401,7 +424,7 @@ internal sealed class MethodRuntime
                 }
                 
                 var name = nameBuilder.ToString();
-                const int archiveSize = 8;
+                var archiveSize = ManagedRuntime.Archive.Size;
                 switch (name)
                 {
                     case "SwapArrayProperty":
@@ -527,10 +550,10 @@ internal sealed class MethodRuntime
                             return _stackFrame;
                         }
 
-                        var red = MemoryUtils.GetValue<float>(redManagedObject.Pointer);
-                        var green = MemoryUtils.GetValue<float>(greenManagedObject.Pointer);
-                        var blue = MemoryUtils.GetValue<float>(blueManagedObject.Pointer);
-                        var alpha = MemoryUtils.GetValue<float>(alphaManagedObject.Pointer);
+                        var red = MemoryUtils.GetValue<float>(redManagedObject.Address);
+                        var green = MemoryUtils.GetValue<float>(greenManagedObject.Address);
+                        var blue = MemoryUtils.GetValue<float>(blueManagedObject.Address);
+                        var alpha = MemoryUtils.GetValue<float>(alphaManagedObject.Address);
                         FactoryUtils.ASSET = archive.Archive;
 
                         var stackPtr = _stackFrame.Allocate(archiveSize);
@@ -878,7 +901,7 @@ internal sealed class MethodRuntime
                         }
                         
                         var managedArray = (ManagedArray)ManagedRuntime.HeapManager.GetObject(reference.Target);
-                        var indexValue = *(int*)index.Pointer;
+                        var indexValue = *(int*)index.Address;
                         if (instruction.OpCode == OpCode.Ldelem)
                         {
                             var value = managedArray.GetElement(indexValue);
@@ -917,7 +940,7 @@ internal sealed class MethodRuntime
                                 return;
                             }
                             
-                            var value = obj.Pointer + (nuint)field.Offset;
+                            var value = obj.Address + (nuint)field.Offset;
                             var ptr = _stackFrame.AllocatePointer(type, value);
                             _stackFrame.Push(ptr);
                             _stackFrame.DeallocateIfDead(instance);
@@ -974,9 +997,9 @@ internal sealed class MethodRuntime
                         var typeIndex = _stackFrame.Pop();
                         var type = ResolveTypeFromIndex(typeIndex);
                         var managedArray = (ManagedArray)ManagedRuntime.HeapManager.GetObject(reference.Target);
-                        var indexValue = *(int*)index.Pointer;
+                        var indexValue = *(int*)index.Address;
                         var element = managedArray.GetElement(indexValue);
-                        var ptr = _stackFrame.AllocatePointer(type, element.Pointer);
+                        var ptr = _stackFrame.AllocatePointer(type, element.Address);
                         _stackFrame.Push(ptr);
                         _stackFrame.DeallocateIfDead(array);
                         _stackFrame.DeallocateIfDead(index);
@@ -996,7 +1019,7 @@ internal sealed class MethodRuntime
                         
                         // Effectively copying the object.
                         var obj = _stackFrame.AllocateObject(type);
-                        MemoryUtils.Copy(managedPointer.Target, obj.Pointer, type.Size);
+                        MemoryUtils.Copy(managedPointer.Target, obj.Address, type.Size);
                         _stackFrame.Push(obj);
                         _stackFrame.DeallocateIfDead(ptr);
                         break;
@@ -1013,7 +1036,7 @@ internal sealed class MethodRuntime
                         }
                         
                         var value = _stackFrame.Pop();
-                        MemoryUtils.Copy(value.Pointer, managedPointer.Target, type.Size);
+                        MemoryUtils.Copy(value.Address, managedPointer.Target, type.Size);
                         _stackFrame.DeallocateIfDead(value);
                         _stackFrame.DeallocateIfDead(ptr);
                         break;
@@ -1030,7 +1053,7 @@ internal sealed class MethodRuntime
                         var typeDef = _metadata.Types.Types[operand];
                         var type = ManagedRuntime.System.GetType(typeDef);
                         var converted = _stackFrame.AllocateObject(type);
-                        MemoryUtils.Copy(value.Pointer, converted.Pointer, type.Size);
+                        MemoryUtils.Copy(value.Address, converted.Address, type.Size);
                         _stackFrame.Push(converted);
                         _stackFrame.DeallocateIfDead(value);
                         break;
@@ -1044,7 +1067,7 @@ internal sealed class MethodRuntime
                             return;
                         }
                         
-                        var intSize = *(int*)size.Pointer;
+                        var intSize = *(int*)size.Address;
                         var typeDef = _metadata.Types.Types[operand];
                         var type = ManagedRuntime.System.GetType(typeDef);
                         var array = _stackFrame.AllocateArray(type, intSize);
@@ -1150,7 +1173,7 @@ internal sealed class MethodRuntime
                             return;
                         }
                         
-                        var branch = *(bool*)value.Pointer;
+                        var branch = *(bool*)value.Address;
                         if (branch)
                         {
                             label = operand - 1;
@@ -1168,7 +1191,7 @@ internal sealed class MethodRuntime
                             return;
                         }
                         
-                        var branch = *(bool*)value.Pointer;
+                        var branch = *(bool*)value.Address;
                         if (!branch)
                         {
                             label = operand - 1;
@@ -1260,7 +1283,7 @@ internal sealed class MethodRuntime
             return ManagedRuntime.Void;
         }
                         
-        var typeIndex = *(int*)managedObject.Pointer;
+        var typeIndex = *(int*)managedObject.Address;
         var typeDef = _metadata.Types.Types[typeIndex];
         var type = ManagedRuntime.System.GetType(typeDef);
         return type;

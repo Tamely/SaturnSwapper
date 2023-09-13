@@ -43,8 +43,7 @@ public sealed class StackFrame
         {
             var type = ManagedRuntime.System.GetType(parameter.Type);
             var address = Allocate(type.Size);
-            var copy = value.Type.CreateDefault(address);
-            MemoryUtils.Copy(value.Pointer, address, value.Size);
+            var copy = value.CopyTo(address);
             _arguments.Add(parameter, address);
             _variables.Add(address, copy);
         }
@@ -61,14 +60,14 @@ public sealed class StackFrame
 
     public void Push(RuntimeObject value)
     {
-        Logger.Log($"Pushing value at {value.Pointer} onto the stack.", LogLevel.Info);
+        Logger.Log($"Pushing value at {value.Address} onto the stack.", LogLevel.Info);
         _evaluationStack.Push(value);
     }
 
     public RuntimeObject Pop()
     {
         var value = _evaluationStack.Pop();
-        Logger.Log($"Popping value at {value.Pointer} from the stack.", LogLevel.Info);
+        Logger.Log($"Popping value at {value.Address} from the stack.", LogLevel.Info);
         return value;
     }
 
@@ -83,7 +82,7 @@ public sealed class StackFrame
         var variable = value.CopyTo(address);
         _variables[address] = variable;
         Logger.Log($"Setting argument '{parameter.Name}'", LogLevel.Info);
-        MemoryUtils.Copy(value.Pointer, address, value.Size);
+        MemoryUtils.Copy(value.Address, address, value.Size);
     }
 
     public RuntimeObject GetArgument(ParameterInfo parameter)
@@ -134,7 +133,7 @@ public sealed class StackFrame
         var variable = value.CopyTo(address);
         _variables[address] = variable;
         Logger.Log($"Setting local '{local.Name}'", LogLevel.Info);
-        MemoryUtils.Copy(value.Pointer, address, value.Size);
+        MemoryUtils.Copy(value.Address, address, value.Size);
     }
 
     public RuntimeObject GetLocal(LocalInfo local)
@@ -206,15 +205,16 @@ public sealed class StackFrame
         var address = Allocate(type.Size);
         // In the case of the Radon Runtime, the string type itself is not a reference type
         // However, the character array that it contains is a reference type
-        var array = (ManagedReference)AllocateArray(ManagedRuntime.CharArray, str.Length);
-        var firstElement = array.Target + sizeof(int);
+        var arrayRef = (ManagedReference)AllocateArray(ManagedRuntime.CharArray, str.Length);
+        var array = (ManagedArray)ManagedRuntime.HeapManager.GetObject(arrayRef.Target);
+        var firstElement = array.ArrayStart;
         for (var i = 0; i < str.Length; i++)
         {
             var c = str[i];
             *(byte*)(firstElement + (nuint)i) = (byte)c;
         }
 
-        *(ulong*)address = array.Pointer;
+        *(ulong*)address = array.Address;
         return new ManagedString(type, address);
     }
     
@@ -245,8 +245,8 @@ public sealed class StackFrame
         }
 
         var obj = ManagedRuntime.HeapManager.AllocateObject(type);
-        *(ulong*)address = obj.Pointer;
-        return new ManagedReference(type, address, obj.Pointer);
+        *(ulong*)address = obj.Address;
+        return new ManagedReference(type, address, obj.Address);
     }
 
     public unsafe RuntimeObject AllocateArray(RuntimeType type, int length, bool isDefault = false)
@@ -263,8 +263,8 @@ public sealed class StackFrame
         }
         
         var array = ManagedRuntime.HeapManager.AllocateArray(type, length);
-        *(ulong*)address = array.Pointer;
-        return new ManagedReference(type, address, array.Pointer);
+        *(ulong*)address = array.Address;
+        return new ManagedReference(type, address, array.Address);
     }
 
     public nuint Allocate(int size)
@@ -307,7 +307,7 @@ public sealed class StackFrame
 
     public void Deallocate(RuntimeObject obj)
     {
-        Logger.Log($"Deallocating object at {obj.Pointer}", LogLevel.Info);
+        Logger.Log($"Deallocating object at {obj.Address}", LogLevel.Info);
         Free(obj);
         switch (obj)
         {
@@ -382,7 +382,7 @@ public sealed class StackFrame
 
     private void Free(RuntimeObject obj)
     {
-        var address = obj.Pointer;
+        var address = obj.Address;
         var size = obj.Size;
         var block = new FreeBlock(address, size);
         var current = _freeBlocks.First;

@@ -13,14 +13,14 @@ internal class ManagedObject : RuntimeObject
     private readonly Dictionary<FieldInfo, RuntimeObject> _fields;
     public override RuntimeType Type { get; }
     public override int Size { get; }
-    public override nuint Pointer { get; }
+    public override nuint Address { get; }
     public ImmutableArray<RuntimeObject> Fields => _fields.Values.ToImmutableArray();
 
     public ManagedObject(RuntimeType type, int size, nuint pointer)
     {
         Type = type;
         Size = size;
-        Pointer = pointer;
+        Address = pointer;
         _fields = new Dictionary<FieldInfo, RuntimeObject>();
         var fields = type.TypeInfo.Fields;
         foreach (var field in fields)
@@ -40,8 +40,8 @@ internal class ManagedObject : RuntimeObject
         }
         
         _fields[field] = value;
-        var address = Pointer + (nuint)field.Offset;
-        MemoryUtils.Copy(value.Pointer, address, value.Size);
+        var address = Address + (nuint)field.Offset;
+        MemoryUtils.Copy(value.Address, address, value.Size);
     }
     
     public RuntimeObject GetField(FieldInfo field)
@@ -110,26 +110,26 @@ internal class ManagedObject : RuntimeObject
         dynamic rightValue;
         if (Type == ManagedRuntime.Float32)
         {
-            leftValue = *(float*)Pointer;
+            leftValue = *(float*)Address;
         }
         else
         {
-            leftValue = *(double*)Pointer;
+            leftValue = *(double*)Address;
         }
         
         if (other is ManagedObject otherValue)
         {
             if (otherValue.Type == ManagedRuntime.Int32)
             {
-                rightValue = *(int*)otherValue.Pointer;
+                rightValue = *(int*)otherValue.Address;
             }
             else if (otherValue.Type == ManagedRuntime.Float32)
             {
-                rightValue = *(float*)otherValue.Pointer;
+                rightValue = *(float*)otherValue.Address;
             }
             else
             {
-                rightValue = *(double*)otherValue.Pointer;
+                rightValue = *(double*)otherValue.Address;
             }
         }
         else
@@ -251,13 +251,13 @@ internal class ManagedObject : RuntimeObject
         int shift;
         fixed (byte* leftPtr = leftBytes)
         {
-            MemoryUtils.Copy(Pointer, (nuint)leftPtr, Size);
+            MemoryUtils.Copy(Address, (nuint)leftPtr, Size);
             leftValue = *(Int128*)leftPtr;
         }
         
         fixed (byte* rightPtr = rightBytes)
         {
-            MemoryUtils.Copy(other.Pointer, (nuint)rightPtr, other.Size);
+            MemoryUtils.Copy(other.Address, (nuint)rightPtr, other.Size);
             rightValue = *(Int128*)rightPtr;
             shift = *(int*)rightPtr;
         }
@@ -374,12 +374,12 @@ internal class ManagedObject : RuntimeObject
         var rightBytes = new byte[Size];
         fixed (byte* leftPtr = leftBytes)
         {
-            MemoryUtils.Copy(Pointer, (nuint)leftPtr, Size);
+            MemoryUtils.Copy(Address, (nuint)leftPtr, Size);
         }
         
         fixed (byte* rightPtr = rightBytes)
         {
-            MemoryUtils.Copy(other.Pointer, (nuint)rightPtr, other.Size);
+            MemoryUtils.Copy(other.Address, (nuint)rightPtr, other.Size);
         }
 
         byte[] result;
@@ -480,11 +480,11 @@ internal class ManagedObject : RuntimeObject
         dynamic value;
         if (Type == ManagedRuntime.Float32)
         {
-            value = *(float*)Pointer;
+            value = *(float*)Address;
         }
         else
         {
-            value = *(double*)Pointer;
+            value = *(double*)Address;
         }
 
         dynamic result;
@@ -546,7 +546,7 @@ internal class ManagedObject : RuntimeObject
         fixed (byte* ptr = bytes)
         {
             var bytesPointer = new nuint(ptr);
-            MemoryUtils.Copy(Pointer, bytesPointer, Size);
+            MemoryUtils.Copy(Address, bytesPointer, Size);
         }
         
         var value = BitConverter.ToString(bytes);

@@ -64,7 +64,7 @@ public sealed class HeapManager
         }
 
         _allocatedObjects[pointer] = obj;
-        MemoryUtils.Copy(obj.Pointer, pointer, obj.Size);
+        MemoryUtils.Copy(obj.Address, pointer, obj.Size);
     }
 
     public RuntimeObject AllocateObject(RuntimeType type)
@@ -139,7 +139,7 @@ public sealed class HeapManager
 
     public void Deallocate(RuntimeObject obj)
     {
-        Logger.Log($"Deallocating object at {obj.Pointer}", LogLevel.Info);
+        Logger.Log($"Deallocating object at {obj.Address}", LogLevel.Info);
         Free(obj);
         switch (obj)
         {
@@ -176,7 +176,7 @@ public sealed class HeapManager
             }
         }
 
-        _allocatedObjects.Remove(obj.Pointer);
+        _allocatedObjects.Remove(obj.Address);
     }
 
     public void DeallocateIfDead(RuntimeObject obj)
@@ -235,7 +235,7 @@ public sealed class HeapManager
 
     private void Free(RuntimeObject obj)
     {
-        var address = obj.Pointer;
+        var address = obj.Address;
         var size = obj.Size;
         var block = new FreeBlock(address, size);
         var current = _freeBlocks.First;

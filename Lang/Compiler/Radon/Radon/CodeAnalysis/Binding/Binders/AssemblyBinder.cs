@@ -61,6 +61,7 @@ internal sealed class AssemblyBinder : Binder
         }
 
         var primitiveTypes = TypeSymbol.GetPrimitiveTypes();
+        Register(context, new ArrayTypeSymbol(TypeSymbol.Char));
         foreach (var type in primitiveTypes)
         {
             Register(context, type);

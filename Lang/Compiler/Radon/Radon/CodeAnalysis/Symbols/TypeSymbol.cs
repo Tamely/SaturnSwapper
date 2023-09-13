@@ -29,7 +29,6 @@ public abstract class TypeSymbol : Symbol
     public static readonly StructSymbol Float = new("float", 4, EmptyMembers, null, Mods);
     public static readonly StructSymbol Double = new("double", 8, EmptyMembers, null, Mods);
     public static readonly StructSymbol Char = new("char", 1, EmptyMembers, null, Mods);
-    public static readonly StructSymbol CharArray = new("char[]", 8, EmptyMembers, null, Mods);
     public static readonly StructSymbol String = new("string", 8, EmptyMembers, null, Mods);
     public static readonly StructSymbol Archive;
     public static readonly EnumSymbol SeekOrigin = new("seek_origin", EmptyMembers, null, Mods);
@@ -379,7 +378,7 @@ public abstract class TypeSymbol : Symbol
     {
         return ImmutableArray.Create<TypeSymbol>(
             Void, Bool, SByte, Byte, Short, UShort, Int, UInt, Long, ULong, 
-            Float, Double, Char, CharArray, String, Archive, SeekOrigin, System, SoftObjectProperty,
+            Float, Double, Char, String, Archive, SeekOrigin, System, SoftObjectProperty,
             ArrayProperty, LinearColorProperty
         );
     }

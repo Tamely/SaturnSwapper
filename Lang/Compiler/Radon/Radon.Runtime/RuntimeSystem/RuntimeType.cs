@@ -7,6 +7,7 @@ using Radon.CodeAnalysis.Disassembly;
 using Radon.Common;
 using Radon.Runtime.Memory;
 using Radon.Runtime.RuntimeSystem.RuntimeObjects;
+using Radon.Runtime.RuntimeSystem.RuntimeObjects.Properties;
 
 namespace Radon.Runtime.RuntimeSystem;
 
@@ -29,7 +30,7 @@ public sealed class RuntimeType
         {
             var fieldType = ManagedRuntime.System.GetType(field.Type);
             var obj = ManagedRuntime.HeapManager.AllocateObject(fieldType);
-            _staticFields.Add(field, obj.Pointer);
+            _staticFields.Add(field, obj.Address);
         }
     }
 
@@ -100,6 +101,36 @@ public sealed class RuntimeType
     
     public RuntimeObject CreateDefault(nuint address)
     {
+        if (TypeInfo == ManagedRuntime.String.TypeInfo)
+        {
+            return new ManagedString(this, address);
+        }
+        
+        if (TypeInfo == ManagedRuntime.Archive.TypeInfo)
+        {
+            return new ManagedArchive(null, address);
+        }
+        
+        if (TypeInfo == ManagedRuntime.ArrayProperty.TypeInfo)
+        {
+            return new ManagedArrayObject(null, address);
+        }
+        
+        if (TypeInfo == ManagedRuntime.LinearColor.TypeInfo)
+        {
+            return new ManagedLinearColorObject(null, address);
+        }
+        
+        if (TypeInfo == ManagedRuntime.SoftObject.TypeInfo)
+        {
+            return new ManagedSoftObject(null, address);
+        }
+
+        if (TypeInfo.IsPointer)
+        {
+            return new ManagedPointer(this, address, nuint.Zero);
+        }
+        
         if (TypeInfo.IsReferenceType)
         {
             return new ManagedReference(this, address, 0);
