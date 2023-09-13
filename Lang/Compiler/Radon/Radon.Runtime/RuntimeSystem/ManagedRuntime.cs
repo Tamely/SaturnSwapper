@@ -15,9 +15,9 @@ public sealed class ManagedRuntime
 {
     private static ManagedRuntime? _system;
     
-    public static StackManager StackManager { get; }
-    public static HeapManager HeapManager { get;}
-    public static HeapManager StaticHeapManager { get; }
+    public static StackManager StackManager { get; private set; }
+    public static HeapManager HeapManager { get; private set; }
+    public static HeapManager StaticHeapManager { get; private set; }
     public static ManagedRuntime System
     {
         get
@@ -54,9 +54,6 @@ public sealed class ManagedRuntime
     static ManagedRuntime()
     {
         _system = null;
-        StackManager = new StackManager();
-        HeapManager = new HeapManager();
-        StaticHeapManager = new HeapManager();
     }
     
     public AssemblyInfo AssemblyInfo { get; }
@@ -77,6 +74,10 @@ public sealed class ManagedRuntime
             var runtimeType = new RuntimeType(type);
             Types.Add(type, runtimeType);
         }
+        
+        StackManager = new StackManager();
+        HeapManager = new HeapManager();
+        StaticHeapManager = new HeapManager();
     }
 
     public static ReadOnlyDictionary<TKey, TValue> EmptyDictionary<TKey, TValue>() 
