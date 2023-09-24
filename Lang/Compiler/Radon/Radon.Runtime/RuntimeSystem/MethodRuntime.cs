@@ -639,26 +639,27 @@ internal sealed class MethodRuntime
                         
                         var str = managedString.ToString();
                         var stackPtr = _stackFrame.Allocate(archiveSize);
-                        var byteData = GlobalFileProvider.Provider?.SaveAsset(str);
+                        SaturnData.Clear();
+                        var byteData = GlobalFileProvider.Provider?.SaveAsset(str.Split('.')[0]);
                         if (byteData is null)
                         {
                             throw new InvalidOperationException($"Cannot find asset '{str}'.");
                         }
                         
                         var archive = new ZenAsset(new AssetBinaryReader(byteData), EngineVersion.VER_LATEST, Usmap.CachedMappings);
-                        var managedArchive = new ManagedArchive(archive, stackPtr);
+                        var managedArchive = new ManagedArchive(archive, SaturnData.ToNonStatic(), stackPtr);
                         _stackFrame.Push(managedArchive);
 
                         break;
                     }
                 }
             }
-            
+
             goto Return;
         }
 
         RunInstructions();
-Return:
+        Return:
         if (_method.Type == ManagedRuntime.Void.TypeInfo)
         {
             if (_stackFrame.EvaluationStackSize == 0)

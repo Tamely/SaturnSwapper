@@ -14,6 +14,9 @@
 @using Saturn.Backend.Data.Plugins
 @using Saturn.Backend.Data.Plugins.Marketplace
 @using Saturn.Backend.Data.SaturnAPI
+@using Saturn.Backend.Data.Swapper.Assets
+@using Saturn.Backend.Data.Swapper.Core.Models
+@using Saturn.Backend.Data.Swapper.Swapping
 
 @inject IJSRuntime _jsRuntime;
 @inject IFortniteCentralService _fortniteCentralService;
@@ -39,7 +42,7 @@
             {
                 foreach (var plugin in Constants.OwnedPlugins)
                 {
-                    <div id="@(plugin.Name + "-section")" class="section hoverable" @onclick="@(async () => await Swap(plugin.AssemblyInfo))">
+                    <div id="@(plugin.Name + "-section")" class="section hoverable" @onclick="@(async () => await Swap(plugin))">
                         <img src=@(plugin.Icon) alt="Icon"/>
                         <div class="name">
                             <h1>@(plugin.Name + $" (v{plugin.Version})")</h1>
@@ -148,17 +151,23 @@
     }
 
     List<Guid> SwappedPlugins = new();
-    private async Task Swap(AssemblyInfo assemblyInfo)
+    private async Task Swap(PluginModel plugin)
     {
-        if (!SwappedPlugins.Contains(assemblyInfo.Guid))
+        if (!SwappedPlugins.Contains(plugin.AssemblyInfo.Guid))
         {
-            await Convert(assemblyInfo);
-            SwappedPlugins.Add(assemblyInfo.Guid);
+            Constants.SelectedItem = new AssetSelectorItem()
+            {
+                DisplayName = plugin.Name,
+                ID = plugin.AssemblyInfo.Guid.ToString()
+            };
+            
+            await Convert(plugin.AssemblyInfo);
+            SwappedPlugins.Add(plugin.AssemblyInfo.Guid);
             return;
         }
 
-        await Revert(assemblyInfo);
-        SwappedPlugins.Remove(assemblyInfo.Guid);
+        await Revert(plugin.AssemblyInfo);
+        SwappedPlugins.Remove(plugin.AssemblyInfo.Guid);
     }
     
     private async Task Download(MarketplaceModel plugin)
@@ -187,6 +196,11 @@
         ManagedRuntime.StackManager.FreeStack();
         ManagedRuntime.HeapManager.FreeHeap();
         Logger.Log($"Assembly {assemblyInfo.Guid} finished executing successfully!");
+
+        var swaps = ManagedArchive.Swaps.Select(x => new SwapData { Data = x.Data, SaturnData = x.SaturnData }).ToList();
+        await FileLogic.Convert(swaps);
+
+        Logger.Log("Finished swapping!");
     }
 
     private async Task Revert(AssemblyInfo assemblyInfo)
