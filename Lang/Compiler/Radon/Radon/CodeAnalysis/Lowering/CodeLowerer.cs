@@ -294,6 +294,67 @@ internal sealed class CodeLowerer
         // gotoTrue <condition> body
         // end:
         
+        // for (int i = 0; i < 10; i++)
+        // {
+        //     Console.WriteLine(i);
+        // }
+        //
+        // ----->
+        //
+        // int i = 0;
+        // gotoTrue i < 10 body
+        // break:
+        // goto end
+        // body:
+        // Console.WriteLine(i);
+        // continue:
+        // i++;
+        // gotoTrue i < 10 body
+        // end:
+        //
+        // ----->
+        //
+        // ldc 0
+        // stloc i
+        // ldloc i
+        // ldc 10
+        // clt
+        // brfalse end
+        // body:
+        // ldloc i
+        // call Console.WriteLine
+        // continue:
+        // ldc 1
+        // ldloc i
+        // add
+        // stloc i
+        // ldloc i
+        // ldc 10
+        // clt
+        // brtrue body
+        // end:
+        //
+        // The IL form of the loop is not as optimized as it could be.
+        // We want it to be:
+        //
+        // ldc 0
+        // condition:
+        // stloc i
+        // ldloc i
+        // ldc 10
+        // clt
+        // brfalse end
+        // body:
+        // ldloc i
+        // call Console.WriteLine
+        // ldloc i
+        // ldc 1
+        // add
+        // br condition
+        // end:
+        //
+        // Unfortunately, we can't do that with the lowerer, because this involves moving around IL instructions.
+        
         var bodyLabel = GenerateLabel();
         var endLabel = GenerateLabel();
         var result = new BoundBlockStatement(
