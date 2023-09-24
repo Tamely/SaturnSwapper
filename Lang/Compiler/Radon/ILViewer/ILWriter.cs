@@ -262,42 +262,6 @@ internal sealed class ILWriter
         {
             var opCode = instruction.OpCode;
             // Check if it's the start of a for loop
-
-            // A for loop will look something like:
-            // brtrue <continue label>
-            // nop                      // This is the break label
-            // br <end label>
-            // nop                      // This is the body label
-            // <body>
-            // nop                      // This is the continue label
-            // <increment/action>
-            // brtrue <body label>
-            // nop                      // This is the end label
-            if (opCode == OpCode.Brtrue)
-            {
-                var nextInstruction = instructions[loopStart + 1];
-                if (nextInstruction.OpCode == OpCode.Nop)
-                {
-                    var endLabel = instructions[loopStart + 2].Operand;
-                    var bodyLabel = instructions[loopStart + 3].Label;
-                    for (var i = loopStart + 3; i < instructions.Length; i++)
-                    {
-                        var currentInstruction = instructions[i];
-                        var peek = instructions[i + 1];
-                        if (currentInstruction.OpCode == OpCode.Brtrue &&
-                            currentInstruction.Operand == bodyLabel &&
-                            peek.OpCode == OpCode.Nop &&
-                            peek.Label == endLabel)
-                        {
-                            // loop start, loop end, skip
-                            return new Tuple<int, int, int>(loopStart, i + 1, 3);
-                        }
-                    }
-                }
-            }
-            
-            // Check if it's the start of a while loop
-
             // A while loop will look something like:
             // br <continue label>
             // nop                      // This is the body label
@@ -319,7 +283,7 @@ internal sealed class ILWriter
                             currentInstruction.Operand == bodyLabel &&
                             instructions[i + 1].OpCode == OpCode.Nop)
                         {
-                            return new Tuple<int, int, int>(loopStart, i + 1, 0);
+                            return new Tuple<int, int, int>(loopStart + 1, i + 1, 0);
                         }
                     }
                 }
