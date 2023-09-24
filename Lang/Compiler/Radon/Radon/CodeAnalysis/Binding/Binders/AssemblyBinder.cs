@@ -115,14 +115,15 @@ internal sealed class AssemblyBinder : Binder
             boundTypes.Add(program);
             Diagnostics.AddRange(programBinder.Diagnostics);
         }
-        
-        foreach (var templateBinder in _templateBinders)
+
+        for (var i = 0; i < _templateBinders.Count; i++)
         {
+            var templateBinder = _templateBinders[i];
             if (CheckForIncompleteTemplate(templateBinder))
             {
                 continue;
             }
-            
+
             var binder = templateBinder.GetBinder();
             switch (binder)
             {
@@ -135,7 +136,7 @@ internal sealed class AssemblyBinder : Binder
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            
+
             var boundType = (BoundType)templateBinder.Bind(null);
             if (templateBinder.GetTypeArguments().Any(x => x is TypeParameterSymbol))
             {
@@ -146,10 +147,10 @@ internal sealed class AssemblyBinder : Binder
             {
                 boundTypes.Add(boundType);
             }
-            
+
             Diagnostics.AddRange(binder.Diagnostics);
         }
-        
+
         foreach (var primitiveBinder in primitiveBinders)
         {
             var boundType = (BoundType)primitiveBinder.Bind(null);

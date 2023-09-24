@@ -980,32 +980,6 @@ Skip:
         _shouldBreakRightShift = false;
         return type;
     }
-    
-    /*private TypeSyntax ParseTypeClause()
-    {
-        _shouldBreakRightShift = true;
-        var identifier = MatchToken(SyntaxKind.IdentifierToken);
-        var typeArguments = ParseTypeArguments();
-        var type = new TypeSyntax(_syntaxTree, identifier, typeArguments);
-        _shouldBreakRightShift = false;
-        return Current.Kind == SyntaxKind.OpenBracketToken ? ParseArrayType(type) : type;
-    }
-
-    private ArrayTypeSyntax ParseArrayType(TypeSyntax? type)
-    {
-        _shouldBreakRightShift = true;
-        type ??= ParseTypeClause();
-        var openBracket = MatchToken(SyntaxKind.OpenBracketToken);
-        ExpressionSyntax? size = null;
-        if (Current.Kind != SyntaxKind.CloseBracketToken)
-        {
-            size = ParseExpression();
-        }
-        
-        var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
-        _shouldBreakRightShift = false;
-        return new ArrayTypeSyntax(_syntaxTree, type, openBracket, size, closeBracket);
-    }*/
 
     private TypeParameterListSyntax ParseTypeParameters()
     {
@@ -1053,7 +1027,8 @@ Skip:
             {
                 angleBracketPairs++;
             }
-            else if (Current.Kind == SyntaxKind.GreaterThanToken)
+            
+            if (Current.Kind == SyntaxKind.GreaterThanToken)
             {
                 angleBracketPairs--;
             }
@@ -1062,7 +1037,8 @@ Skip:
             {
                 if (lastToken.Kind == SyntaxKind.IdentifierToken &&
                     Current.Kind != SyntaxKind.CommaToken &&
-                    Current.Kind != SyntaxKind.GreaterThanToken)
+                    Current.Kind != SyntaxKind.GreaterThanToken &&
+                    Current.Kind != SyntaxKind.LessThanToken)
                 {
                     isValidTypeArgumentList = false;
                     break;
