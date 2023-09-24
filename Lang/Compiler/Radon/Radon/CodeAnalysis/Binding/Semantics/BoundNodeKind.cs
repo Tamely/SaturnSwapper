@@ -1,4 +1,3 @@
-
 namespace Radon.CodeAnalysis.Binding.Semantics;
 
 internal enum BoundNodeKind
@@ -39,12 +38,11 @@ internal enum BoundNodeKind
     IfStatement,
     WhileStatement,
     ForStatement,
-    Label,
     LabelStatement,
     ConditionalGotoStatement,
     GotoStatement,
     Array,
     AddressOfExpression,
     DereferenceExpression,
-    Pointer
+    Pointer,
 }
