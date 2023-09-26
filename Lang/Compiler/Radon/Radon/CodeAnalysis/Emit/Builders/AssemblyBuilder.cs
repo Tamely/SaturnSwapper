@@ -19,12 +19,12 @@ namespace Radon.CodeAnalysis.Emit.Builders;
 
 internal sealed class AssemblyBuilder
 {
+    private AssemblyFlags _flags;
     private readonly TypeDefinitionComparer _typeDefinitionComparer;
     private readonly MethodComparer _methodComparer;
     private readonly FieldComparer _fieldComparer;
     private readonly LocalComparer _localComparer;
     private readonly ParameterComparer _parameterComparer;
-    private AssemblyFlags _flags;
     private readonly BoundAssembly _assembly;
     private readonly List<string> _stringTable;
     private readonly List<Constant> _constantTable;

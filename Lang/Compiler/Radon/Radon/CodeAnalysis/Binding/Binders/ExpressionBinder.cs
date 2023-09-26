@@ -167,16 +167,13 @@ internal sealed class ExpressionBinder : Binder
 
     private BoundExpression BindAssignmentExpression(AssignmentExpressionSyntax syntax, SemanticContext context)
     {
-        // We don't have compound assignment yet
         var boundLeft = BindExpression(syntax.Left);
         if (boundLeft is BoundErrorExpression)
         {
             return new BoundErrorExpression(syntax, context);
         }
-
-        if (boundLeft is BoundInvocationExpression or BoundAddressOfExpression or BoundLiteralExpression or
-            BoundDefaultExpression or BoundImportExpression or BoundNewExpression or BoundNewArrayExpression or
-            BoundThisExpression)
+        
+        if (!IsAssignable(boundLeft))
         {
             if (boundLeft is BoundThisExpression)
             {
@@ -191,6 +188,9 @@ internal sealed class ExpressionBinder : Binder
         var boundRight = BindExpression(syntax.Right);
         var convertedRight = BindConversion(boundRight, boundLeft.Type, ImmutableArray<TypeSymbol>.Empty);
         return new BoundAssignmentExpression(syntax, boundLeft, convertedRight, syntax.OperatorToken.Kind);
+        
+        static bool IsAssignable(BoundExpression expression) => expression is BoundAssignmentExpression
+            or BoundDereferenceExpression or BoundElementAccessExpression or BoundMemberAccessExpression or BoundNameExpression;
     }
     
     private BoundExpression BindBinaryExpression(BinaryExpressionSyntax syntax, SemanticContext context)
