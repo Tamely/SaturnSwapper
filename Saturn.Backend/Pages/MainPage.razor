@@ -192,9 +192,6 @@
             await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "emergency");
         }
         
-        File.WriteAllBytes(Constants.BasePath + "original.uasset", pkg);
-        File.WriteAllBytes(Constants.BasePath + "serialized.uasset", asset.WriteData().ToArray());
-
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(82));
 
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerWelcomeOut");
