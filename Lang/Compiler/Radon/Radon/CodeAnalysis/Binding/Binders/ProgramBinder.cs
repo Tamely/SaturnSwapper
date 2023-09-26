@@ -15,9 +15,9 @@ namespace Radon.CodeAnalysis.Binding.Binders;
 
 internal sealed class ProgramBinder : Binder
 {
-    private readonly PluginCompilationUnitSyntax _syntax;
+    private readonly TopLevelStatementCompilationUnitSyntax _syntax;
     private readonly AssemblySymbol _assembly;
-    internal ProgramBinder(AssemblyBinder binder, PluginCompilationUnitSyntax syntax) 
+    internal ProgramBinder(AssemblyBinder binder, TopLevelStatementCompilationUnitSyntax syntax) 
         : base(binder)
     {
         _syntax = syntax;

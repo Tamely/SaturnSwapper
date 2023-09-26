@@ -11,7 +11,7 @@ public sealed class TypeParameterSymbol : TypeSymbol
 
     public override int Size
     {
-        get => throw new InvalidOperationException("Type parameters have no size.");
+        get => 0;
         internal set => throw new InvalidOperationException("Type parameters have no size.");
     }
     internal override TypeBinder? TypeBinder { get; set; } = null;

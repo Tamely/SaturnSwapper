@@ -294,48 +294,67 @@ internal sealed class CodeLowerer
         // gotoTrue <condition> body
         // end:
         
+        // for (int i = 0; i < 10; i++)
+        // {
+        //     Console.WriteLine(i);
+        // }
+        //
+        // ----->
+        //
+        // int i = 0;
+        // gotoTrue i < 10 body
+        // break:
+        // goto end
+        // body:
+        // Console.WriteLine(i);
+        // continue:
+        // i++;
+        // gotoTrue i < 10 body
+        // end:
+        //
+        // -----> New
+        //
+        // int i = 0;
+        // goto continue
+        // body:
+        // Console.WriteLine(i);
+        // continue:
+        // i++;
+        // gotoTrue i < 10 body
+        // break:
+        
         var bodyLabel = GenerateLabel();
-        var endLabel = GenerateLabel();
+        var syntax = node.Syntax;
         var result = new BoundBlockStatement(
-            node.Syntax,
+            syntax,
             ImmutableArray.Create(
                 node.Initializer,
-                new BoundConditionalGotoStatement(
-                    node.Syntax,
-                    bodyLabel,
-                    node.Condition,
-                    true
-                ),
-                new BoundLabelStatement(
-                    node.Syntax,
-                    node.BreakLabel
-                ),
                 new BoundGotoStatement(
-                    node.Syntax,
-                    endLabel
+                    syntax,
+                    node.ContinueLabel
                 ),
                 new BoundLabelStatement(
-                    node.Syntax,
+                    syntax,
                     bodyLabel
                 ),
                 node.Body,
                 new BoundLabelStatement(
-                    node.Syntax,
+                    syntax,
                     node.ContinueLabel
                 ),
                 new BoundExpressionStatement(
-                    node.Syntax,
+                    syntax,
                     node.Action
                 ),
                 new BoundConditionalGotoStatement(
-                    node.Syntax,
+                    syntax,
                     bodyLabel,
                     node.Condition,
                     true
                 ),
                 new BoundLabelStatement(
-                    node.Syntax,
-                    endLabel
+                    syntax,
+                    node.BreakLabel
                 )
             )
         );

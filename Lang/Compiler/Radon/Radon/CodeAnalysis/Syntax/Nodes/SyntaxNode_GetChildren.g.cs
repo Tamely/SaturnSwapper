@@ -720,23 +720,6 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Expressions
     }
 }
 
-namespace Radon.CodeAnalysis.Syntax.Nodes
-{
-    public partial class PluginCompilationUnitSyntax
-    {
-        public override string SyntaxName => "Plugin Compilation Unit";
-        public override SyntaxKind Kind => SyntaxKind.PluginCompilationUnit;
-        public override IEnumerable<SyntaxNode> GetChildren()
-        {
-            foreach (var child in Statements)
-            {
-                yield return child;
-            }
-            
-        }
-    }
-}
-
 namespace Radon.CodeAnalysis.Syntax.Nodes.Clauses
 {
     public partial class PointerTypeSyntax
@@ -889,6 +872,23 @@ namespace Radon.CodeAnalysis.Syntax.Nodes.Expressions
         public override IEnumerable<SyntaxNode> GetChildren()
         {
             yield return ThisKeyword;
+        }
+    }
+}
+
+namespace Radon.CodeAnalysis.Syntax.Nodes
+{
+    public partial class TopLevelStatementCompilationUnitSyntax
+    {
+        public override string SyntaxName => "Top Level Statement Compilation Unit";
+        public override SyntaxKind Kind => SyntaxKind.TopLevelStatementCompilationUnit;
+        public override IEnumerable<SyntaxNode> GetChildren()
+        {
+            foreach (var child in Statements)
+            {
+                yield return child;
+            }
+            
         }
     }
 }

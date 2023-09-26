@@ -276,8 +276,8 @@ public sealed class SyntaxKind
 
     public static readonly SyntaxKind Empty =
         new(nameof(Empty), null, Node);
-    public static readonly SyntaxKind PluginCompilationUnit =
-        new(nameof(PluginCompilationUnit), null, Node);
+    public static readonly SyntaxKind TopLevelStatementCompilationUnit =
+        new(nameof(TopLevelStatementCompilationUnit), null, Node);
     public static readonly SyntaxKind CodeCompilationUnit =
         new(nameof(CodeCompilationUnit), null, Node);
     public static readonly SyntaxKind Type =

@@ -256,48 +256,12 @@ internal sealed class ILWriter
         WriteNewLine();
     }
 
-    private Tuple<int, int, int>? ResolveLoop(Instruction instruction, Instruction[] instructions, int index)
+    private Tuple<int, int, int>? ResolveLoop(Instruction instruction, Instruction[] instructions, int loopStart)
     {
         try
         {
             var opCode = instruction.OpCode;
             // Check if it's the start of a for loop
-
-            // A for loop will look something like:
-            // brtrue <continue label>
-            // nop                      // This is the break label
-            // br <end label>
-            // nop                      // This is the body label
-            // <body>
-            // nop                      // This is the continue label
-            // <increment/action>
-            // brtrue <body label>
-            // nop                      // This is the end label
-            var loopStart = index + 1;
-            if (opCode == OpCode.Brtrue)
-            {
-                var nextInstruction = instructions[index + 1];
-                if (nextInstruction.OpCode == OpCode.Nop)
-                {
-                    var endLabel = instructions[index + 2].Operand;
-                    var bodyLabel = instructions[index + 3].Label;
-                    for (var i = index + 3; i < instructions.Length; i++)
-                    {
-                        var currentInstruction = instructions[i];
-                        var peek = instructions[i + 1];
-                        if (currentInstruction.OpCode == OpCode.Brtrue &&
-                            currentInstruction.Operand == bodyLabel &&
-                            peek.OpCode == OpCode.Nop &&
-                            peek.Label == endLabel)
-                        {
-                            return new Tuple<int, int, int>(loopStart, i, 3);
-                        }
-                    }
-                }
-            }
-            
-            // Check if it's the start of a while loop
-
             // A while loop will look something like:
             // br <continue label>
             // nop                      // This is the body label
@@ -308,18 +272,18 @@ internal sealed class ILWriter
             // nop                      // This is the break label
             if (opCode == OpCode.Br)
             {
-                var nextInstruction = instructions[index + 1];
+                var nextInstruction = instructions[loopStart + 1];
                 if (nextInstruction.OpCode == OpCode.Nop)
                 {
                     var bodyLabel = nextInstruction.Label;
-                    for (var i = index + 2; i < instructions.Length; i++)
+                    for (var i = loopStart + 2; i < instructions.Length; i++)
                     {
                         var currentInstruction = instructions[i];
                         if (currentInstruction.OpCode == OpCode.Brtrue &&
                             currentInstruction.Operand == bodyLabel &&
                             instructions[i + 1].OpCode == OpCode.Nop)
                         {
-                            return new Tuple<int, int, int>(loopStart, i, 0);
+                            return new Tuple<int, int, int>(loopStart + 1, i + 1, 0);
                         }
                     }
                 }

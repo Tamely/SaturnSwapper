@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using CUE4Parse;
@@ -1054,8 +1055,13 @@ internal sealed class MethodRuntime
                         var value = _stackFrame.Pop();
                         var typeDef = _metadata.Types.Types[operand];
                         var type = ManagedRuntime.System.GetType(typeDef);
-                        var converted = _stackFrame.AllocateObject(type);
-                        MemoryUtils.Copy(value.Address, converted.Address, type.Size);
+                        var converted = RuntimeConvert(value, type);
+                        if (converted is null)
+                        {
+                            converted = _stackFrame.AllocateObject(type);
+                            MemoryUtils.Copy(value.Address, converted.Address, type.Size);
+                        }
+                        
                         _stackFrame.Push(converted);
                         _stackFrame.DeallocateIfDead(value);
                         break;
@@ -1291,6 +1297,28 @@ internal sealed class MethodRuntime
         return type;
     }
 
+    private RuntimeObject? RuntimeConvert(RuntimeObject value, RuntimeType type)
+    {
+        if (value is ManagedObject { Type.TypeInfo.IsNumeric: true } obj &&
+            type == ManagedRuntime.String)
+        {
+            if (obj.Type.TypeInfo.IsFloatingPoint)
+            {
+                var floatValue = MemoryUtils.GetValue<float>(obj.Address);
+                var str = floatValue.ToString(CultureInfo.InvariantCulture);
+                var valueObj = _stackFrame.AllocateString(str);
+                return valueObj;
+            }
+            
+            var int128Value = MemoryUtils.GetValue<Int128>(obj.Address);
+            var strValue = int128Value.ToString();
+            var valueObject = _stackFrame.AllocateString(strValue);
+            return valueObject;
+        }
+        
+        return null;
+    }
+    
     private static RuntimeObject ResolveObject(RuntimeObject instance)
     {
         var obj = instance;

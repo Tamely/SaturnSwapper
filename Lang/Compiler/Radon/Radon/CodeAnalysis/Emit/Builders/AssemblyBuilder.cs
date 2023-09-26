@@ -576,22 +576,24 @@ internal sealed class AssemblyBuilder
     private void BuildMethod(Method method)
     {
         MethodEmitter methodEmitter;
+        int methodIndex;
         if (_unfinishedMethodMap.TryGetValue(method, out var boundMethod))
         {
-            methodEmitter = new MethodEmitter(this, boundMethod, method);
+            methodIndex = _methodTable.IndexOf(method, _methodComparer);
+            methodEmitter = new MethodEmitter(this, boundMethod, method, methodIndex);
         }
         else if (_unfinishedConstructorMap.TryGetValue(method, out var boundConstructor))
         {
-            methodEmitter = new MethodEmitter(this, boundConstructor, method);
+            methodIndex = _methodTable.IndexOf(method, _methodComparer);
+            methodEmitter = new MethodEmitter(this, boundConstructor, method, methodIndex);
         }
         else
         {
             throw new Exception("Method not found.");
         }
-
-        var index = _methodTable.IndexOf(method, _methodComparer);
+        
         var finishedMethod = methodEmitter.EmitMethod();
-        _methodTable[index] = finishedMethod;
+        _methodTable[methodIndex] = finishedMethod;
         _allMethodSymbolMap[methodEmitter.Symbol] = finishedMethod;
     }
 
@@ -610,7 +612,7 @@ internal sealed class AssemblyBuilder
 
         public AbstractMethodSymbol Symbol { get; }
         
-        public MethodEmitter(AssemblyBuilder builder, BoundMethod boundMethod, Method method)
+        public MethodEmitter(AssemblyBuilder builder, BoundMethod boundMethod, Method method, int methodIndex)
         {
             _builder = builder;
             _statements = boundMethod.Statements;
@@ -622,7 +624,7 @@ internal sealed class AssemblyBuilder
             for (_localCount = 0; _localCount < boundMethod.Locals.Length; _localCount++)
             {
                 var local = boundMethod.Locals[_localCount];
-                var emittedLocal = new Local(_localCount, _builder.AddString(local.Name),
+                var emittedLocal = new Local(methodIndex, _localCount, _builder.AddString(local.Name),
                     _builder.BuildType(local.Type));
                 _builder._localSymbolMap.Add(local, emittedLocal);
                 _builder._localTable.Add(emittedLocal);
@@ -632,7 +634,7 @@ internal sealed class AssemblyBuilder
             Symbol = boundMethod.Symbol;
         }
         
-        public MethodEmitter(AssemblyBuilder builder, BoundConstructor boundConstructor, Method method)
+        public MethodEmitter(AssemblyBuilder builder, BoundConstructor boundConstructor, Method method, int methodIndex)
         {
             _builder = builder;
             _statements = boundConstructor.Statements;
@@ -644,7 +646,7 @@ internal sealed class AssemblyBuilder
             for (_localCount = 0; _localCount < boundConstructor.Locals.Length; _localCount++)
             {
                 var local = boundConstructor.Locals[_localCount];
-                var emittedLocal = new Local(_localCount, _builder.AddString(local.Name),
+                var emittedLocal = new Local(methodIndex, _localCount, _builder.AddString(local.Name),
                     _builder.BuildType(local.Type));
                 _builder._localSymbolMap.Add(local, emittedLocal);
                 _builder._localTable.Add(emittedLocal);
@@ -1159,7 +1161,7 @@ internal sealed class AssemblyBuilder
         {
             var enumMember = (EnumMemberSymbol)expression.Member;
             var value = enumMember.Value;
-            var constantIndex = _builder.EmitConstant(value, expression.Type);
+            var constantIndex = _builder.EmitConstant(value, enumMember.UnderlyingType);
             EmitInstruction(OpCode.Ldc, constantIndex);
         }
         

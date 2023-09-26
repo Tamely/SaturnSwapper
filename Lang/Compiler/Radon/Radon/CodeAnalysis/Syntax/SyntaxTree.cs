@@ -40,7 +40,7 @@ public sealed class SyntaxTree
         }
         catch (Exception e)
         {
-            Root = new PluginCompilationUnitSyntax(this, ImmutableSyntaxList<StatementSyntax>.Empty,
+            Root = new TopLevelStatementCompilationUnitSyntax(this, ImmutableSyntaxList<StatementSyntax>.Empty,
                                              SyntaxKind.EndOfFileToken.ManifestToken(this));
             var diagnosticBag = new DiagnosticBag();
             diagnosticBag.ReportInternalCompilerError(e);
@@ -138,7 +138,7 @@ public sealed class SyntaxTree
         catch (Exception e)
         {
             included = ImmutableArray<SyntaxTree>.Empty;
-            root = new PluginCompilationUnitSyntax(tree, ImmutableSyntaxList<StatementSyntax>.Empty,
+            root = new TopLevelStatementCompilationUnitSyntax(tree, ImmutableSyntaxList<StatementSyntax>.Empty,
                                              SyntaxKind.EndOfFileToken.ManifestToken(tree));
             var diagnosticBag = new DiagnosticBag();
             diagnosticBag.ReportInternalCompilerError(e);
@@ -198,7 +198,7 @@ public sealed class SyntaxTree
 
                 if (token.Kind == SyntaxKind.EndOfFileToken)
                 {
-                    root = new PluginCompilationUnitSyntax(st, ImmutableSyntaxList<StatementSyntax>.Empty, token);
+                    root = new TopLevelStatementCompilationUnitSyntax(st, ImmutableSyntaxList<StatementSyntax>.Empty, token);
                     break;
                 }
             }

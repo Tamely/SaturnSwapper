@@ -17,34 +17,24 @@ internal abstract class Binder
 
     private protected Binder(Scope? scope)
     {
-        if (scope is null)
-        {
-            Scope = new Scope(null);
-        }
-        else
-        {
-            Scope = scope.CreateChild();
-        }
-
+        Scope = scope is null ? new Scope(null) : scope.CreateChild();
         Diagnostics = new DiagnosticBag();
     }
 
     private protected Binder(Binder binder)
     {
-        if (binder.Scope is null)
-        {
-            Scope = new Scope(null);
-        }
-        else
-        {
-            Scope = binder.Scope.CreateChild();
-        }
-
+        Scope = binder.Scope is null ? new Scope(null) : binder.Scope.CreateChild();
         Diagnostics = new DiagnosticBag();
     }
     
     public abstract BoundNode Bind(SyntaxNode node, params object[] args);
 
+    /// <summary>
+    /// Registers a symbol in the current scope.
+    /// </summary>
+    /// <param name="context">The semantic context</param>
+    /// <param name="symbol">The symbol to register</param>
+    /// <returns></returns>
     protected bool Register(SemanticContext context, Symbol symbol)
     {
         if (Scope is null)
@@ -62,36 +52,22 @@ internal abstract class Binder
         return true;
     }
 
-    protected void Reregister<TSymbol>(SemanticContext context, TSymbol symbol, TSymbol newSymbol)
-        where TSymbol : Symbol
-    {
-        if (Scope is null)
-        {
-            context.Diagnostics.ReportNullScope(context.Location);
-            return;
-        }
-        
-        if (!Scope.TryLookupSymbol<TSymbol>(symbol.Name, out var existingSymbol))
-        {
-            Diagnostics.ReportUnresolvedSymbol(context.Location, symbol.Name);
-        }
-
-        if (existingSymbol is not null)
-        {
-            Scope.RemoveSymbol(existingSymbol);
-            Register(context, newSymbol);
-        }
-        else
-        {
-            Diagnostics.ReportUnresolvedSymbol(context.Location, symbol.Name);
-        }
-    }
-
+    /// <summary>
+    /// Attempts to resolve a symbol in the current scope.
+    /// </summary>
+    /// <param name="context">The semantic context</param>
+    /// <param name="name">The name of the symbol</param>
+    /// <param name="symbol">The resolved symbol</param>
+    /// <param name="reportUnresolvedSymbol">If true, the method will report an error</param>
+    /// <typeparam name="TSymbol">Symbol Type</typeparam>
+    /// <returns>False if the symbol does not exist in the current or parent scopes</returns>
     protected bool TryResolve<TSymbol>(SemanticContext context, string name, out TSymbol? symbol, bool reportUnresolvedSymbol = true)
         where TSymbol : Symbol
     {
         try
         {
+            // We check if the symbol exists in the current scope.
+            // This should never be null, but we check just in case.
             if (Scope is null)
             {
                 context.Diagnostics.ReportNullScope(context.Location);
@@ -99,11 +75,13 @@ internal abstract class Binder
                 return false;
             }
         
+            // We check if the symbol exists in the current scope.
             if (Scope.TryLookupSymbol(name, out symbol!))
             {
                 return TryResolveSymbol(context, ref symbol);
             }
 
+            // We did not find the symbol. Report an error if specified.
             if (reportUnresolvedSymbol)
             {
                 if (typeof(TSymbol).IsAssignableTo(typeof(TypeSymbol)))
@@ -128,19 +106,22 @@ internal abstract class Binder
     public bool TryResolveSymbol<TSymbol>(SemanticContext context, ref TSymbol symbol) 
         where TSymbol : Symbol
     {
+        // Check if the symbol is a TypeSymbol
         if (typeof(TSymbol).IsAssignableTo(typeof(TypeSymbol)))
         {
-            if (this is NamedTypeBinder ntb &&
-                ntb.CurrentMember == SymbolKind.Constructor)
+            // I don't remember the purpose of this, but I know it prevents an error.
+            if (this is NamedTypeBinder { CurrentMember: SymbolKind.Constructor })
             {
                 return true; // The ref symbol should be the parent type, which is the needed type, therefore, we do not need to do anything.
             }
             
+            // Check the type of TypeSymbol
             switch (symbol)
             {
                 case TemplateSymbol:
                 {
                     ImmutableArray<TypeSymbol> typeArguments;
+                    // Get the type arguments from the context.
                     if (symbol is TemplateSymbol template && context.Tag is ImmutableArray<TypeSymbol> typeArgs)
                     {
                         typeArguments = typeArgs;
@@ -149,15 +130,18 @@ internal abstract class Binder
                     {
                         throw new InvalidOperationException("The symbol is not a template symbol.");
                     }
-
+                    
+                    // Resolve the type arguments.
                     var resolvedTypeArgs = new TypeSymbol[typeArguments.Length];
                     for (var i = 0; i < typeArguments.Length; i++)
                     {
                         var typeArg = typeArguments[i];
-                        if (typeArg is TypeParameterSymbol) // We can't build the template if we have unresolved type parameters.
+                        // We can't build the template if we have unresolved type parameters.
+                        if (typeArg is TypeParameterSymbol)
                         {
+                            // We check if the type parameter has been resolved.
                             if (TryResolve<TypeSymbol>(context, typeArg.Name, out var resolvedArg,
-                                    false)) // We check if the type parameter has been resolved.
+                                    false))
                             {
                                 resolvedTypeArgs[i] = resolvedArg!;
                                 continue;
@@ -170,12 +154,14 @@ internal abstract class Binder
                         resolvedTypeArgs[i] = typeArg;
                     }
 
+                    // Build the template.
                     var templateSymbol = AssemblyBinder.Current.BuildTemplate(template, resolvedTypeArgs.ToImmutableArray());
                     symbol = (TSymbol)(object)templateSymbol;
                     return true;
                 }
                 case TypeParameterSymbol typeParameter:
                 {
+                    // We check if the type parameter has been resolved.
                     var boundTypeParameters = Scope!.GetSymbols<BoundTypeParameterSymbol>();
                     foreach (var tp in boundTypeParameters)
                     {
@@ -188,12 +174,12 @@ internal abstract class Binder
 
                     break;
                 }
-            }
-
-            if (symbol is BoundTypeParameterSymbol boundTypeParameter)
-            {
-                symbol = (TSymbol)(object)boundTypeParameter.BoundType;
-                return true;
+                case BoundTypeParameterSymbol boundTypeParameter:
+                {
+                    // Return the type that is bound to the type parameter.
+                    symbol = (TSymbol)(object)boundTypeParameter.BoundType;
+                    return true;
+                }
             }
         }
 
