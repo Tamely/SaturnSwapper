@@ -231,7 +231,7 @@ Skip:
         // Get the first token, and add the directives to the leading trivia.
         var statements = ParseStatements(SyntaxKind.EndOfFileToken);
         var eofToken = MatchToken(SyntaxKind.EndOfFileToken);
-        return new PluginCompilationUnitSyntax(_syntaxTree, statements, eofToken);
+        return new TopLevelStatementCompilationUnitSyntax(_syntaxTree, statements, eofToken);
     }
 
     private ImmutableSyntaxList<TypeDeclarationSyntax> ParseTypeDeclarations()
