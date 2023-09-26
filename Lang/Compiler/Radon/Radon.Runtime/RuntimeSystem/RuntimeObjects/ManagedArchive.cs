@@ -64,7 +64,7 @@ public sealed class ManagedArchive : RuntimeObject
         Swaps.Add(new SwapData()
         {
             SaturnData = Data,
-            Data = Archive.WriteData().GetBuffer()
+            Data = Archive.WriteData().ToArray()
         });
     }
 
