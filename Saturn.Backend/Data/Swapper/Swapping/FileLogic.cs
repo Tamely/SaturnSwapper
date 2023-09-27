@@ -67,7 +67,7 @@ public class FileLogic
         return result;
     }
 
-    private static bool isLocked = false;
+    public static bool isLocked = false;
 
     public static async Task ConvertGlobal(string search, string replace)
     {
@@ -213,8 +213,8 @@ public class FileLogic
         {
             replace.Description = $"Swapping asset: {Path.GetFileNameWithoutExtension(characterPart.Path)}";
 
-            var pkg = await Constants.Provider.SavePackageAsync(characterPart.Path.Split('.')[0]);
-            AssetBinaryReader oldReader = new AssetBinaryReader(pkg.Values.First());
+            var pkg = await Constants.Provider.SaveAssetAsync(characterPart.Path.Split('.')[0]);
+            AssetBinaryReader oldReader = new AssetBinaryReader(pkg);
             ZenAsset oldAsset = new ZenAsset(oldReader, EngineVersion.VER_LATEST, Usmap.CachedMappings);
 
             var data = SaturnData.ToNonStatic();
@@ -223,8 +223,8 @@ public class FileLogic
             var item = Constants.AssetCache[replace.ID];
             var swapPart = item.ExportParts.FirstOrDefault(part => part.Part == characterPart.Part);
 
-            pkg = await Constants.Provider.SavePackageAsync(swapPart == null ? Constants.EmptyParts[characterPart.Part].Path : swapPart.Path.Split('.')[0]);
-            AssetBinaryReader newReader = new AssetBinaryReader(pkg.Values.First());
+            pkg = await Constants.Provider.SaveAssetAsync(swapPart == null ? Constants.EmptyParts[characterPart.Part].Path : swapPart.Path.Split('.')[0]);
+            AssetBinaryReader newReader = new AssetBinaryReader(pkg);
             ZenAsset newAsset = new ZenAsset(newReader, EngineVersion.VER_LATEST, Usmap.CachedMappings);
 
             var asset = oldAsset.Swap(newAsset);

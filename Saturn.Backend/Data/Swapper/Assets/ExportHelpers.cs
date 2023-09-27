@@ -30,15 +30,12 @@ public static class ExportHelpers
         {
             var skeletalMesh = part.GetOrDefault<USkeletalMesh?>("SkeletalMesh");
             if (skeletalMesh is null) continue;
-            
-            if (!skeletalMesh.TryConvert(out var convertedMesh)) continue;
-            if (convertedMesh.LODs.Count <= 0) continue;
 
             var exportPart = new ExportPart();
             exportPart.Path = part.GetPathName();
             exportPart.MeshPath = skeletalMesh.GetPathName();
 
-            exportPart.NumLods = convertedMesh.LODs.Count;
+            exportPart.NumLods = (skeletalMesh.LODModels ?? Array.Empty<FStaticLODModel>()).Length;
 
             var characterPartType = part.GetOrDefault<EFortCustomPartType>("CharacterPartType");
             exportPart.Part = characterPartType.ToString();
@@ -81,16 +78,14 @@ public static class ExportHelpers
                 }
             }
 
-            var sections = convertedMesh.LODs[0].Sections.Value;
-            for (int idx = 0; idx < sections.Length; idx++)
+            foreach (var mat in skeletalMesh.Materials)
             {
-                var section = sections[idx];
-                if (section.Material is null) continue;
-
-                if (!section.Material.TryLoad(out var materialObject)) continue;
+                if (mat is null) continue;
+                
+                if (!mat.TryLoad(out var materialObject)) continue;
                 if (materialObject is not UMaterialInterface material) continue;
-
-                var exportMaterial = CreateExportMaterial(material, idx);
+                
+                var exportMaterial = CreateExportMaterial(material);
                 exportPart.Materials.Add(exportMaterial);
             }
 

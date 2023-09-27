@@ -278,6 +278,11 @@
             await FileLogic.Convert(Constants.SelectedOption, Constants.SelectedItem);
             await FileLogic.ConvertLobby(Constants.SelectedOption, Constants.SelectedItem);
         }
+
+        while (FileLogic.isLocked)
+        {
+            await Task.Delay(500);
+        }
         
         Constants.SelectedItem.Description = "Swapped from " + Constants.SelectedOption.DisplayName + " to " + Constants.SelectedItem.DisplayName;
         StateHasChanged();
