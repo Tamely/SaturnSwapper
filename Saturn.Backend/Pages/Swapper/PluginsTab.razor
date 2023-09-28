@@ -25,6 +25,7 @@
 
 <PluginsSidebar/>
 <PluginKeyModal/>
+<FinishedModal/>
 <div class="tab-page" id="plugin-page" style="display: none">
     @switch (Constants.CosmeticState)
     {
@@ -208,6 +209,7 @@
         await FileLogic.Convert(swaps);
 
         Logger.Log("Finished swapping!");
+        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "finished");
     }
 
     private async Task Revert(AssemblyInfo assemblyInfo)
@@ -217,5 +219,6 @@
             File.Delete(Constants.DataPath + assemblyInfo.Guid + ".json");
         }
         Logger.Log($"Reverted assembly {assemblyInfo.Guid}");
+        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "finished");
     }
 }

@@ -27,6 +27,7 @@
 
 <KeyModal/>
 <OptionModal/>
+<FinishedModal/>
 <CosmeticsSidebar/>
 <div class="tab-page" id="cosmetic-page" style="display: none">
     <div class="header" onclick="saturn.modalManager.showModal('changelog')">
@@ -243,6 +244,8 @@
         StateHasChanged();
         
         Constants.CurrentSwaps.RemoveAll(x => string.Equals(x.ItemModel.ID, item.ID, StringComparison.CurrentCultureIgnoreCase));
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "finished");
     }
 
     private async Task Swap()
@@ -312,6 +315,8 @@
         Constants.SelectedOption = new();
         Constants.SelectedItem = new();
         currentlySwapping = false;
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "finished");
     }
 
     private bool _handled = false;
