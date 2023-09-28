@@ -73,7 +73,16 @@ public class OptionHandler
         
         await Constants.Handler.Reset();
 
-        AssetExportData exportData = await AssetExportData.Create(item.Asset, item.Type, styles.ToArray());
+        AssetExportData exportData;
+        if (Constants.AssetCache.TryGetValue(item.ID, out var value))
+        {
+            exportData = value;
+        }
+        else
+        {
+            exportData = await AssetExportData.Create(item.Asset, item.Type, styles.ToArray());
+            Constants.AssetCache.Add(item.ID, exportData);
+        }
         
         if (Constants.ShouldGlobalSwap)
         {

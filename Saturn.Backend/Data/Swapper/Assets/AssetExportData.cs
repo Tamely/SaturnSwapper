@@ -66,7 +66,7 @@ public class AssetExportData : ExportDataBase
                     data.ExportParts.Add(new ExportPart()
                     {
                         Path = asset.GetPathName(),
-                        Part = "Asset"
+                        Part = "Gameplay"
                     });
                     break;
                 }
@@ -77,7 +77,7 @@ public class AssetExportData : ExportDataBase
                     data.ExportParts.Add(new ExportPart()
                     {
                         Path = asset.GetPathName(),
-                        Part = "Asset"
+                        Part = "Gameplay"
                     });
                     break;
                 }
@@ -109,7 +109,7 @@ public class AssetExportData : ExportDataBase
                     data.ExportParts.Add(new ExportPart()
                     {
                         Path = asset.GetPathName(),
-                        Part = "Asset"
+                        Part = "Gameplay"
                     });
                     break;
                 }
