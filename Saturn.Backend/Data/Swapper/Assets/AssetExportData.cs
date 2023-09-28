@@ -22,6 +22,7 @@ public class AssetExportData : ExportDataBase
     public List<ExportMeshOverride> StyleMeshes = new();
     public List<ExportMaterialParams> StyleMaterialParams = new();
     public string? WeaponActorClass = null;
+    public string? Mesh = null;
 
     public static async Task<AssetExportData?> Create(UObject asset, EAssetType assetType, FStructFallback[] styles)
     {
@@ -57,17 +58,25 @@ public class AssetExportData : ExportDataBase
                 case EAssetType.Glider:
                 {
                     var mesh = asset.Get<USkeletalMesh>("SkeletalMesh");
-                    var part = ExportHelpers.Mesh<ExportPart>(mesh);
-                    if (part is null) break;
-                    var overrides = asset.GetOrDefault("MaterialOverrides", Array.Empty<FStructFallback>());
-                    ExportHelpers.OverrideMaterials(overrides, part.OverrideMaterials);
-                    data.Parts.Add(part);
+                    if (mesh != null)
+                    {
+                        data.Mesh = mesh.GetPathName();
+                    }
+
+                    data.ExportParts.Add(new ExportPart()
+                    {
+                        Path = asset.GetPathName()
+                    });
                     break;
                 }
                 case EAssetType.Pickaxe:
                 {
                     var weapon = asset.Get<UObject>("WeaponDefinition");
                     data.WeaponActorClass = ExportHelpers.Weapon(weapon, data.Parts);
+                    data.ExportParts.Add(new ExportPart()
+                    {
+                        Path = asset.GetPathName()
+                    });
                     break;
                 }
                 case EAssetType.Weapon:
@@ -91,6 +100,14 @@ public class AssetExportData : ExportDataBase
                 case EAssetType.Wildlife:
                 {
                     ExportHelpers.Mesh(asset as USkeletalMesh, data.Parts);
+                    break;
+                }
+                case EAssetType.Dance:
+                {
+                    data.ExportParts.Add(new ExportPart()
+                    {
+                        Path = asset.GetPathName()
+                    });
                     break;
                 }
                 default:
