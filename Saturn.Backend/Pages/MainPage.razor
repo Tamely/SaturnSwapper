@@ -196,7 +196,7 @@
 
         if (assetRegistries.Count == 0)
         {
-            Logger.Log("Failed to load asset registry, please ensure your game is up to date");
+            throw new Exception("Failed to load asset registry, please ensure your game is up to date");
         }
 
         Constants.PlaceholderTexture = await Constants.Provider.TryLoadObjectAsync<UTexture2D>("FortniteGame/Content/Athena/Prototype/Textures/T_Placeholder_Generic");
