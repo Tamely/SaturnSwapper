@@ -324,16 +324,19 @@ namespace UAssetAPI.IO
         public override int AddNameReference(FString name, bool forceAddDuplicates = false)
         {
             if (isReadingTime) return base.AddNameReference(name, forceAddDuplicates);
-            
-            HeaderSize += (uint)name.Value.Length;
-            CookedHeaderSize += (uint)name.Value.Length;
-            ImportedPublicExportHashesOffset += name.Value.Length;
-            ImportMapOffset += name.Value.Length;
-            ExportMapOffset += name.Value.Length;
-            ExportBundleEntriesOffset += name.Value.Length;
-            DependencyBundleHeadersOffset += name.Value.Length;
-            DependencyBundleEntriesOffset += name.Value.Length;
-            ImportedPackageNamesOffset += name.Value.Length;
+
+            if ((!ContainsNameReference(name) || forceAddDuplicates) && !name.Value.Contains('.'))
+            {
+                HeaderSize += (uint)name.Value.Length + 8 + 2;
+                CookedHeaderSize += (uint)name.Value.Length + 8 + 2;
+                ImportedPublicExportHashesOffset += name.Value.Length + 8 + 2;
+                ImportMapOffset += name.Value.Length + 8 + 2;
+                ExportMapOffset += name.Value.Length + 8 + 2;
+                ExportBundleEntriesOffset += name.Value.Length + 8 + 2;
+                DependencyBundleHeadersOffset += name.Value.Length + 8 + 2;
+                DependencyBundleEntriesOffset += name.Value.Length + 8 + 2;
+                ImportedPackageNamesOffset += name.Value.Length + 8 + 2;
+            }
 
             return base.AddNameReference(name, forceAddDuplicates);
 
