@@ -184,6 +184,7 @@ namespace Saturn.Backend.Data.Variables
         public static List<string> ConvertedIDs = new();
         public static bool CanSpecialSwap = false;
         public static bool ShouldLobbySwap = false;
+        public static bool ShouldCreativeSwap = false;
         public static bool ShouldGlobalSwap = false;
         public static bool IsRemoving = false;
         public static Dictionary<long, byte[]> GlobalSwaps = new();

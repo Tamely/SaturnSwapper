@@ -1,0 +1,20 @@
+﻿@using Saturn.Backend.Data.Services
+
+@inject LocalizationResourceService _localizationResourceService;
+
+<div class="modal minimized" id="creative-modal">
+    <div class="modal-window" style="width: 490px">
+        <div class="close-button" onclick="saturn.modalManager.hideModal('creative')">
+            <i class="fas fa-times"></i>
+        </div>
+        
+        <div class="modal-header">
+            <h1 class="modal-title">Kick Bypass</h1>
+            <p class="modal-desc">This allows you to be able to swap anything to anything, but Fortnite will kick you out of the game unless you follow these directions.</p>
+        </div>
+        
+        <div class="section vertical">
+            <h1>To not be kicked, load into a Creative game wearing non-swapped items, then change to your swapped items in an ingame phone booth.</h1>
+        </div>
+    </div>
+</div>
