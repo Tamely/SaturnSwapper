@@ -369,3 +369,6 @@ FodyWeavers.xsd
 .vscode/
 .idea/.idea.Radon/.idea
 .idea
+
+# Ignore ILViewer folder
+ILViewer/

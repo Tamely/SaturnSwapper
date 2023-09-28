@@ -14,6 +14,7 @@ public static class Program
     {
         while (true)
         {
+            Console.WriteLine("Enter the path to your source file:");
             var text = Console.ReadLine();
             if (text == null)
             {
