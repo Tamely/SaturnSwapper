@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using EpicManifestParser.Objects;
 using Newtonsoft.Json;
+using Radon.Runtime;
 using RestSharp;
 using Saturn.Backend.Data.Fortnite;
 using Saturn.Backend.Data.Manifest.Objects;
@@ -63,6 +64,17 @@ public class Fortnite
             
             Logger.Log($"Deleting non-stock file {file} in paks folder!", LogLevel.Warning);
             File.Delete(Path.Join(DataCollection.GetGamePath(), file));
+        }
+
+        foreach (var file in _manifest.FileManifests)
+        {
+            if (!file.Name.Contains("utoc") || !file.Name.Contains('-') || file.Name.Contains("Early") || !file.Name.Contains("pakchunk")) continue;
+
+            string numToParse = file.Name.Split('-')[0].Split("pakchunk")[1];
+            if (int.TryParse(numToParse, out int i) && i < 10)
+            {
+                Shared.AllowedFiles.Add(Path.GetFileNameWithoutExtension(file.Name));
+            }
         }
     }
 

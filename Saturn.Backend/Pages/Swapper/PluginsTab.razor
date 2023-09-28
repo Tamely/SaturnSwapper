@@ -195,6 +195,8 @@
 
     private async Task Convert(AssemblyInfo assemblyInfo)
     {
+        Shared.LogItems.Clear();
+        
         MemoryUtils.HeapSize = 0x100000;
         MemoryUtils.StackSize = 0x100000;
         var runtime = new ManagedRuntime(assemblyInfo);
@@ -212,10 +214,17 @@
 
         Logger.Log("Finished swapping!");
         await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "finished");
+
+        foreach (var log in Shared.LogItems)
+        {
+            Logger.Log(log);
+        }
     }
 
     private async Task Revert(AssemblyInfo assemblyInfo)
     {
+        Shared.LogItems.Clear();
+        
         if (File.Exists(Constants.DataPath + assemblyInfo.Guid + ".json"))
         {
             File.Delete(Constants.DataPath + assemblyInfo.Guid + ".json");

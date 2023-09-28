@@ -7,6 +7,7 @@
 @using CUE4Parse.UE4.AssetRegistry
 @using CUE4Parse.UE4.Assets.Exports.Texture
 @using Newtonsoft.Json
+@using Radon.Runtime
 @using Saturn.Backend.Data
 @using Saturn.Backend.Data.Fortnite
 @using Saturn.Backend.Data.FortniteCentral
@@ -226,5 +227,7 @@
 
         DiscordModal.DiscordLink = idx.DiscordServer;
         await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "discord");
+
+        Shared.PakPath = DataCollection.GetGamePath();
     }
 }

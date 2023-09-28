@@ -17,14 +17,14 @@ namespace Saturn.Backend.Data.Fortnite
                 if (model == null)
                     return string.Empty;
                 if (model.InstallationList.Any(x => x.AppName == "Fortnite"))
-                    return model.InstallationList.First(x => x.AppName == "Fortnite").InstallLocation + "\\FortniteGame\\Content\\Paks";
+                    return model.InstallationList.First(x => x.AppName == "Fortnite").InstallLocation + "\\FortniteGame\\Content\\Paks\\";
             }
 
             if (File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) +
                             "//.config/legendary/installed.json"))
             {
                 dynamic model = JsonConvert.DeserializeObject(File.ReadAllText(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "//.config/legendary/installed.json"));
-                return model["Fortnite"]["install_path"] + "\\FortniteGame\\Content\\Paks";
+                return model["Fortnite"]["install_path"] + "\\FortniteGame\\Content\\Paks\\";
             }
 
             return string.Empty;

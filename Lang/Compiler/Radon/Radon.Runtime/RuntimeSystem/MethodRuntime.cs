@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using CUE4Parse;
 using Radon.CodeAnalysis.Disassembly;
@@ -34,6 +36,8 @@ internal sealed class MethodRuntime
             { "CreateLinearColorProperty", ManagedRuntime.Archive.Size },
             { "CreateSoftObjectProperty", ManagedRuntime.Archive.Size },
             { "Import", ManagedRuntime.Archive.Size },
+            { "Print", 0 },
+            { "Download", 0 },
         };
     }
     
@@ -649,6 +653,82 @@ internal sealed class MethodRuntime
                         var archive = new ZenAsset(new AssetBinaryReader(byteData), EngineVersion.VER_LATEST, Usmap.CachedMappings);
                         var managedArchive = new ManagedArchive(archive, SaturnData.ToNonStatic(), stackPtr);
                         _stackFrame.Push(managedArchive);
+
+                        break;
+                    }
+                }
+            }
+            
+            if (_method.Parent.Name == "system")
+            {
+                // Some methods are templates
+                // Example: archive::Read`int
+                // We need to get the name of the method, and it's template arguments.
+                var methodName = _method.Name;
+                var nameBuilder = new StringBuilder();
+                foreach (var character in methodName)
+                {
+                    if (character == '`')
+                    {
+                        break;
+                    }
+
+                    nameBuilder.Append(character);
+                }
+                
+                var name = nameBuilder.ToString();
+                switch (name)
+                {
+                    case "Print":
+                    {
+                        var valueObject = _stackFrame.GetArgument(0);
+                        
+                        if (valueObject is ManagedString str)
+                        {
+                            Shared.LogItems.Add(str.ToString());
+                        }
+                        else
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        break;
+                    }
+                    case "Download":
+                    {
+                        var urlObject = _stackFrame.GetArgument(0);
+                        var typeObject = _stackFrame.GetArgument(1);
+
+                        WebClient wc = new WebClient();
+                        
+                        if (urlObject is ManagedString url && typeObject is ManagedString type)
+                        {
+                            foreach (var file in Shared.AllowedFiles.Where(file => !File.Exists(Shared.PakPath + file + ".sig")))
+                            {
+                                if (type.ToString().Equals("ucas", StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    wc.DownloadFile(url.ToString(), Shared.PakPath + file + ".ucas");
+                                }
+                                else if (type.ToString().Equals("utoc", StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    wc.DownloadFile(url.ToString(), Shared.PakPath + file + ".utoc");                                                      
+                                }
+                                else if (type.ToString().Equals("pak", StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    wc.DownloadFile(url.ToString(), Shared.PakPath + file + ".pak");                                                     
+                                }
+                                else if (type.ToString().Equals("sig", StringComparison.InvariantCultureIgnoreCase))
+                                {
+                                    wc.DownloadFile(url.ToString(), Shared.PakPath + file + ".sig");                                                     
+                                }
+                            }
+                        }
+                        else
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
 
                         break;
                     }

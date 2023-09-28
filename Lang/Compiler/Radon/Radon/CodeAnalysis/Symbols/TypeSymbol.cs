@@ -129,7 +129,7 @@ public abstract class TypeSymbol : Symbol
             MethodSymbol downloadMethod;
             {
                 var parameters = ImmutableArray.Create(new ParameterSymbol("url", String, 0),
-                    new ParameterSymbol("path", String, 1));
+                    new ParameterSymbol("type", String, 1));
                 downloadMethod = new MethodSymbol(System, "Download", Void, parameters, Mods);
             }
 
