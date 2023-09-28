@@ -111,7 +111,22 @@ namespace Saturn.Backend.Data
                 
             saturnApiService.ReturnEndpoint($"/api/v1/Saturn/SetHWID?key={Config.Get()._config.Key}&hwid={GetHWID()}");
             return true;
-
+        }
+        
+        public static async Task<bool> IsKeyPluginValid(ISaturnAPIService saturnApiService)
+        {
+            if (string.IsNullOrWhiteSpace(Config.Get()._config.PluginKey))
+                return false;
+            
+            KeySearchModel keyData = await saturnApiService.ReturnEndpointAsync<KeySearchModel>($"/api/v1/Saturn/ReturnPluginKeyExists?key={Config.Get()._config.PluginKey}");
+            if (!keyData.Found) return false;
+            if (keyData.HWID != GetHWID() && keyData.HWID != "NotSet")
+            {
+                throw new Exception("Key is already in use on another PC. Please contact support if you believe this is an error.");
+            }
+                
+            saturnApiService.ReturnEndpoint($"/api/v1/Saturn/SetPluginHWID?key={Config.Get()._config.PluginKey}&hwid={GetHWID()}");
+            return true;
         }
         
         public static string GetHWID() => System.Security.Principal.WindowsIdentity.GetCurrent().User.Value;

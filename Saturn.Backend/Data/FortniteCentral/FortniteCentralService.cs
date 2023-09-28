@@ -71,7 +71,7 @@ public class FortniteCentralService : IFortniteCentralService
             Directory.CreateDirectory(Constants.APICachePath);
             
         CacheModel<T> data;
-        if (File.Exists(Constants.APICachePath + "index" + url.Replace("/", "").Replace(" ", "").Replace("?", "")))
+        if (url != "/api/v1/aes" && File.Exists(Constants.APICachePath + "index" + url.Replace("/", "").Replace(" ", "").Replace("?", "")))
         {
             data = JsonConvert.DeserializeObject<CacheModel<T>>(File.ReadAllText(Constants.APICachePath + "index" + url.Replace("/", "").Replace(" ", "").Replace("?", "")));
             if (data?.Expiration > DateTime.UtcNow)

@@ -1,0 +1,64 @@
+﻿@using Saturn.Backend.Data
+@using Saturn.Backend.Data.SaturnAPI
+@using Saturn.Backend.Data.SaturnConfig
+@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Data.Variables
+
+@inject LocalizationResourceService _localizationResourceService
+@inject ISaturnAPIService _saturnApiService
+
+<div class="modal minimized" id="plugin-key-modal">
+    <div class="modal-window" style="width: 490px">
+        <div class="close-button" onclick="saturn.modalManager.hideModal('plugin-key')">
+            <i class="fas fa-times"></i>
+        </div>
+        
+        <div class="modal-header">
+            <h1 class="modal-title">Plugin Key</h1>
+            <p class="modal-desc">Plugins require a separate key from the swapper to use!</p>
+        </div>
+        
+        <div class="section vertical">
+            <h1>@_localizationResourceService.GetString(36)</h1>
+            <h3>@_localizationResourceService.GetString(37)</h3>
+                    
+            <div class="input-block">
+                <input placeholder="@_localizationResourceService.GetString(39)" @onfocusout="@(async() => await CheckKey())" @bind="@Config.Get()._config.PluginKey"/>
+                <span class="label">@_localizationResourceService.GetString(39)</span>
+            </div>
+        </div>
+
+        <div class="modal-bottom">
+            <h3><span class="hyperlink" onclick="@(() => Utilities.OpenBrowser(KeyLink))">@_localizationResourceService.GetString(41)</span></h3>
+        </div>
+    </div>
+</div>
+
+<div class="modal minimized" id="plugin-nokey-modal">
+    <div class="modal-window" style="width: 490px">
+        <div class="close-button" onclick="saturn.modalManager.hideModal('plugin-nokey')">
+            <i class="fas fa-times"></i>
+        </div>
+
+        <div class="modal-header">
+            <h1 class="modal-title">@_localizationResourceService.GetString(51)</h1>
+            <p class="modal-desc">@_localizationResourceService.GetString(52)</p>
+        </div>
+                        
+        <div class="modal-bottom">
+            <h3><span class="hyperlink" onclick="@(() => Utilities.OpenBrowser(KeyLink))">@_localizationResourceService.GetString(53)</span></h3>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    public string KeyLink = "https://link-hub.net/972767/radon-key";
+    
+    private async Task CheckKey()
+    {
+        Config.Get().Dispose();
+        Constants.isPluginKeyValid = await Utilities.IsKeyPluginValid(_saturnApiService);
+    }
+
+}

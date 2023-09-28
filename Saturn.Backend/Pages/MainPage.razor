@@ -67,6 +67,14 @@
 
         // Check if the swapper has an update
         var idx = await _saturnAPIService.ReturnEndpointAsync<IndexModel>("/");
+        
+        for (int i = 0; i < 10; i++)
+        {
+            if (idx == null)
+                idx = await _saturnAPIService.ReturnEndpointAsync<IndexModel>("/");
+            else
+                break;
+        }
 
         if (idx == null)
             throw new Exception("Unable to connect to Saturn's API. Please try using a VPN to resolve this.");
@@ -78,6 +86,14 @@
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(74));
         
         var mappings = await _fortniteCentralService.ReturnEndpointAsync<FortniteCentralMappingsModel[]>("/api/v1/mappings");
+
+        for (int i = 0; i < 10; i++)
+        {
+            if (mappings == null)
+                mappings = await _fortniteCentralService.ReturnEndpointAsync<FortniteCentralMappingsModel[]>("/api/v1/mappings");
+            else
+                break;
+        }
         
         if (mappings == null)
             throw new Exception("Unable to connect to FortniteCentral's API. Please try using a VPN to resolve this.");
@@ -128,9 +144,11 @@
         // Check if key is valid
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(81));
         Constants.isKeyValid = await Utilities.IsKeyValid(_saturnAPIService);
+        Constants.isPluginKeyValid = await Utilities.IsKeyPluginValid(_saturnAPIService);
         Constants.isKeyValid |= Constants.isPlus;
-        
-        // Download the manifest
+        Constants.isPluginKeyValid |= Constants.isPlus;
+
+    // Download the manifest
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(106));
         Fortnite manifest = new Fortnite();
         

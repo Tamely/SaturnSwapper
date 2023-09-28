@@ -24,6 +24,7 @@
 @inject ISaturnAPIService _saturnAPIService
 
 <PluginsSidebar/>
+<PluginKeyModal/>
 <div class="tab-page" id="plugin-page" style="display: none">
     @switch (Constants.CosmeticState)
     {
@@ -153,6 +154,12 @@
     List<Guid> SwappedPlugins = new();
     private async Task Swap(PluginModel plugin)
     {
+        if (!Constants.isPluginKeyValid)
+        {
+            await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "plugin-nokey");
+            return;
+        }
+        
         if (!SwappedPlugins.Contains(plugin.AssemblyInfo.Guid))
         {
             Constants.SelectedItem = new AssetSelectorItem()
@@ -205,13 +212,10 @@
 
     private async Task Revert(AssemblyInfo assemblyInfo)
     {
-        var runtime = new ManagedRuntime(assemblyInfo);
-        Logger.Log($"Disassembled assembly {assemblyInfo.Guid}");
-        var entryType = runtime.Types.First(type => type.Key.IsEntry).Value;
-        var entryPoint = entryType.TypeInfo.Methods.First(method => method.IsEntry);
-        entryType.InvokeStatic(assemblyInfo, entryPoint, ManagedRuntime.EmptyDictionary<ParameterInfo, RuntimeObject>());
-        ManagedRuntime.StackManager.DeallocateStackFrame();
-        ManagedRuntime.StackManager.FreeStack();
-        ManagedRuntime.HeapManager.FreeHeap();
+        if (File.Exists(Constants.DataPath + assemblyInfo.Guid + ".json"))
+        {
+            File.Delete(Constants.DataPath + assemblyInfo.Guid + ".json");
+        }
+        Logger.Log($"Reverted assembly {assemblyInfo.Guid}");
     }
 }

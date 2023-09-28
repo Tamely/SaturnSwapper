@@ -118,6 +118,7 @@ namespace Saturn.Backend.Data.Variables
         public static readonly string CosmeticsPath = BasePath + "cosmetics.json";
 
         public static bool isKeyValid = false;
+        public static bool isPluginKeyValid = false;
         public static bool isPlus = false;
         public static bool isBeta = false;
         public static bool isClosingCorrectly = false;

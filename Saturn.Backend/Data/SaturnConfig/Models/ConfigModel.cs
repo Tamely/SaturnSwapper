@@ -7,6 +7,7 @@ namespace Saturn.Backend.Data.SaturnConfig.Models
     public class ConfigModel
     {
         public string Key { get; set; }
+        public string PluginKey { get; set; }
         public string FortniteVersion { get; set; }
         public Dictionary<string, string> DependencyVersions { get; set; } = new();
         public OobeType OobeType { get; set; }
