@@ -18,9 +18,9 @@ public sealed record AssemblyInfo
     public AssemblyInfo(Assembly assembly)
     {
         var metadata = assembly.Metadata;
-        Guid = assembly.Guid;
-        EncryptionKey = assembly.EncryptionKey;
-        Version = assembly.Version;
+        Guid = assembly.Header.Guid;
+        EncryptionKey = assembly.Header.EncryptionKey;
+        Version = assembly.Header.Version;
         Instructions = assembly.Instructions.Instructions;
         var types = ImmutableArray.CreateBuilder<TypeInfo>();
         foreach (var type in metadata.Types.Types)
