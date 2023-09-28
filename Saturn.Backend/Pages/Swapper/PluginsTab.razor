@@ -170,11 +170,13 @@
             };
             
             await Convert(plugin.AssemblyInfo);
+            plugin.Description = "Converted!";
             SwappedPlugins.Add(plugin.AssemblyInfo.Guid);
             return;
         }
 
         await Revert(plugin.AssemblyInfo);
+        plugin.Description = "Reverted!";
         SwappedPlugins.Remove(plugin.AssemblyInfo.Guid);
     }
     
