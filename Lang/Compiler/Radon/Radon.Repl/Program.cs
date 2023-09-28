@@ -54,7 +54,6 @@ public static class Program
             
             continue;
 #endif
-            
             var compilation = new Compilation(syntaxTree);
             var diagnostics = compilation.Diagnostics;
             if (diagnostics.Any())

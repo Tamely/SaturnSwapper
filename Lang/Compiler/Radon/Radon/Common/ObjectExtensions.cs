@@ -13,25 +13,27 @@ public static class ObjectExtensions
     
     public static unsafe T Encrypt<T>(this object value, long key)
     {
-        if (typeof(T) != value.GetType())
+        if (!value.GetType().IsAssignableTo(typeof(T)))
         {
             throw new ArgumentException("The type of the value must be the same as the type of the generic parameter.");
         }
-        
-        if (value.IsUnmanaged())
-        {
-            var size = Marshal.SizeOf<T>();
-            var bytes = stackalloc byte[size];
-            Marshal.StructureToPtr(value, (nint)bytes, true);
-            for (var i = 0; i < size; i++)
-            {
-                bytes[i] ^= (byte)key;
-            }
 
-            return Marshal.PtrToStructure<T>((nint)bytes)!;
+        if (!value.IsUnmanaged())
+        {
+            return (T)value;
+        }
+        
+        // Get size of value
+        var size = Marshal.SizeOf(value);
+        var bytes = stackalloc byte[size];
+        Marshal.StructureToPtr(value, (nint)bytes, true);
+        for (var i = 0; i < size; i++)
+        {
+            bytes[i] ^= (byte)key;
         }
 
-        return (T)value;
+        var obj = Marshal.PtrToStructure((nint)bytes, value.GetType());
+        return (T?)obj ?? throw new NullReferenceException("The object was null after encryption.");
     }
     
     public static T Decrypt<T>(this object value, long key) => value.Encrypt<T>(key);

@@ -61,7 +61,7 @@ internal sealed class AssemblyBuilder
         _fieldComparer = new FieldComparer();
         _localComparer = new LocalComparer();
         _parameterComparer = new ParameterComparer();
-        _flags = AssemblyFlags.None;
+        _flags = AssemblyFlags.Encryption;
         _assembly = assembly;
         _stringTable = new List<string>();
         _constantTable = new List<Constant>();
@@ -747,10 +747,18 @@ internal sealed class AssemblyBuilder
         {
             var key = signStatement.Key;
             var value = signStatement.Value;
-            if (key.ToLower() == "encryption" &&
-                value.ToLower() == "true")
+            if (key.ToLower() == "encrypted")
             {
-                _builder._flags |= AssemblyFlags.Encryption;
+                if (Convert.ToBoolean(value.ToLower()))
+                {
+                    // Set the encryption flag
+                    _builder._flags |= AssemblyFlags.Encryption;
+                }
+                else
+                {
+                    // Unset the encryption flag
+                    _builder._flags &= ~AssemblyFlags.Encryption;
+                }
             }
 
             key = key.Encrypt(_builder._encryptionKey);

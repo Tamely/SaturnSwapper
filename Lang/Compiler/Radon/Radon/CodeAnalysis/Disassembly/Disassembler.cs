@@ -1,4 +1,5 @@
 using System;
+using Radon.CodeAnalysis.Emit.Binary;
 using Radon.Common;
 using Assembly = Radon.CodeAnalysis.Emit.Binary.Assembly;
 using AssemblyFlags = Radon.CodeAnalysis.Emit.Binary.AssemblyFlags;

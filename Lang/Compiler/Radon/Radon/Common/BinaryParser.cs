@@ -5,14 +5,15 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Radon.CodeAnalysis.Emit;
 using Radon.CodeAnalysis.Emit.Binary;
+using AssemblyFlags = Radon.CodeAnalysis.Emit.Binary.AssemblyFlags;
 
 namespace Radon.Common;
 
 public sealed class BinaryParser
 {
     private readonly MemoryStream _stream;
-    private readonly bool _decrypt;
     private readonly long _key;
+    private bool _decrypt;
     public BinaryParser(byte[] bytes, bool decrypt = false, long key = 0L)
     {
         _stream = new MemoryStream(bytes);
@@ -40,6 +41,19 @@ public sealed class BinaryParser
             var opCode = (OpCode)ReadObject(typeof(OpCode));
             var operand = opCode.NoOperandRequired() ? -1 : (int)ReadObject(typeof(int));
             return new Instruction(label, opCode, operand);
+        }
+
+        if (type == typeof(AssemblyHeader))
+        {
+            var previous = _decrypt;
+            _decrypt = false;
+            var magicNumber = (ulong)ReadObject(typeof(ulong));
+            var guid = (Guid)ReadObject(typeof(Guid));
+            var flags = (AssemblyFlags)ReadObject(typeof(AssemblyFlags));
+            var encryptionKey = (long)ReadObject(typeof(long));
+            var version = (double)ReadObject(typeof(double));
+            _decrypt = previous;
+            return new AssemblyHeader(magicNumber, guid, flags, encryptionKey, version);
         }
         
         if (type.IsUnmanaged())
