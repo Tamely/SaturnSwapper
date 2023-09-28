@@ -74,7 +74,10 @@ namespace Saturn.Backend.Data.Discord
             _httpListener.Stop();
             GuildMemberModel CurrentUser = GetGuildMember(OAuthToken.access_token, GuildID);
             if (CurrentUser == null)
-                throw new Exception("Discord user not found. Are you in the Saturn+ server?");
+            {
+                Logger.Log("Discord user not found. Are you in the Saturn+ server?", LogLevel.Error);
+                return;
+            }
 
             if (CurrentUser.roles.Any(x => TargetRoles.Contains(CityHash.CityHash64(Encoding.UTF8.GetBytes(x)))))
             {

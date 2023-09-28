@@ -183,6 +183,14 @@ public class OptionHandler
                 {
                     return;
                 }
+                
+                if (!Constants.ShouldCreativeSwap && (from part in exportData.ExportParts
+                        let optionPart = optionExportData.ExportParts.First(optionPart => part.Part == optionPart.Part)
+                        where part.MeshPath != optionPart.MeshPath
+                        select optionPart).Any())
+                {
+                    return;
+                }
 
                 foreach (var _ in from part in exportData.ExportParts 
                          let optionPart = optionExportData.ExportParts.First(optionPart => part.Part == optionPart.Part) 

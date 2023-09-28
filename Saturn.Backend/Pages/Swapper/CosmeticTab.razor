@@ -276,6 +276,12 @@
         else
         {
             await FileLogic.Convert(Constants.SelectedOption, Constants.SelectedItem);
+            
+            while (FileLogic.isLocked)
+            {
+                await Task.Delay(500);
+            }
+            
             await FileLogic.ConvertLobby(Constants.SelectedOption, Constants.SelectedItem);
         }
 

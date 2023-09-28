@@ -16,6 +16,7 @@
 @inject LocalizationResourceService _localizationResourceService
 
 <PresetModal/>
+<CreativeSwapModal/>
 <KeyModal/>
 <FinishedModal/>
 
@@ -46,6 +47,10 @@
     
     <div class="section vertical" id="swapper-settings">
         <h1>@_localizationResourceService.GetString(96)</h1>
+        
+        <button @onclick="@(async () => await ToggleCreativeSwaps())">
+            @("Toggle Creative Swaps: " + (Constants.ShouldCreativeSwap ? "On" : "Off"))
+        </button>
 
         <button @onclick="@(async() => await NavToSelect())">
             @_localizationResourceService.GetString(97)
@@ -85,6 +90,16 @@
     protected override async Task OnInitializedAsync()
     {
         UpdateState();
+    }
+    
+    private async Task ToggleCreativeSwaps()
+    {
+        Constants.ShouldCreativeSwap = !Constants.ShouldCreativeSwap;
+
+        if (Constants.ShouldCreativeSwap)
+        {
+            await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "creative");
+        }
     }
 
     private async Task CheckSaturnPlus()

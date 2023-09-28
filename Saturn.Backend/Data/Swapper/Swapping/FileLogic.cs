@@ -154,7 +154,7 @@ public class FileLogic
     }
     public static async Task ConvertLobby(AssetSelectorItem search, AssetSelectorItem replace)
     {
-        if (!Constants.ShouldLobbySwap || !Constants.isPlus) return;
+        //if (!Constants.ShouldLobbySwap || !Constants.isPlus) return;
         
         if (isLocked) return;
         isLocked = true;
