@@ -65,7 +65,8 @@ public class AssetExportData : ExportDataBase
 
                     data.ExportParts.Add(new ExportPart()
                     {
-                        Path = asset.GetPathName()
+                        Path = asset.GetPathName(),
+                        Part = "Asset"
                     });
                     break;
                 }
@@ -75,7 +76,8 @@ public class AssetExportData : ExportDataBase
                     data.WeaponActorClass = ExportHelpers.Weapon(weapon, data.Parts);
                     data.ExportParts.Add(new ExportPart()
                     {
-                        Path = asset.GetPathName()
+                        Path = asset.GetPathName(),
+                        Part = "Asset"
                     });
                     break;
                 }
@@ -106,7 +108,8 @@ public class AssetExportData : ExportDataBase
                 {
                     data.ExportParts.Add(new ExportPart()
                     {
-                        Path = asset.GetPathName()
+                        Path = asset.GetPathName(),
+                        Part = "Asset"
                     });
                     break;
                 }
