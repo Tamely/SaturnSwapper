@@ -68,6 +68,11 @@ public sealed class ManagedArchive : RuntimeObject
         });
     }
 
+    public void Invalidate()
+    {
+        Archive.Invalidate();
+    }
+
     public override string ToString()
     {
         return Archive.Name.Value.Value;

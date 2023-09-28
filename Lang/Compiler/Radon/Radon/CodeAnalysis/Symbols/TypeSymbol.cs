@@ -100,6 +100,12 @@ public abstract class TypeSymbol : Symbol
                 var parameters = ImmutableArray.Create(new ParameterSymbol("other", Archive, 0));
                 swapMethod = new MethodSymbol(Archive, "Swap", Void, parameters, Mods);
             }
+            
+            MethodSymbol invalidateMethod;
+            {
+                var parameters = ImmutableArray<ParameterSymbol>.Empty;
+                invalidateMethod = new MethodSymbol(Archive, "Invalidate", Void, parameters, Mods);
+            }
 
             MethodSymbol importMethod;
             {
@@ -109,6 +115,7 @@ public abstract class TypeSymbol : Symbol
             }
             
             Archive.AddMember(saveMethod);
+            Archive.AddMember(invalidateMethod);
             Archive.AddMember(swapArrayMethod);
             Archive.AddMember(swapSoftObjectMethod);
             Archive.AddMember(swapLinearColorMethod);

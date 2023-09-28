@@ -614,6 +614,17 @@ internal sealed class MethodRuntime
                         archive.Save();
                         break;
                     }
+                    case "Invalidate":
+                    {
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        archive.Invalidate();
+                        break;
+                    }
                     case "Swap":
                     {
                         var other = _stackFrame.GetArgument(0);

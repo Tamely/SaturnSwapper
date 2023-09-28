@@ -339,7 +339,12 @@ namespace UAssetAPI.IO
             }
 
             return base.AddNameReference(name, forceAddDuplicates);
+        }
 
+        public void Invalidate()
+        {
+            nameMapIndexList[^2].Value = nameMapIndexList[^2].Value.Replace("_", "1");
+            FixNameMapLookupIfNeeded();
         }
 
         /// <summary>
