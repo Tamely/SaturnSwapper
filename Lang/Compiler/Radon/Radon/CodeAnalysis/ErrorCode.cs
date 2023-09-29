@@ -25,6 +25,10 @@ public enum ErrorCode
     InvalidIncludePath,
     DuplicateInclude,
     CircularInclude,
+    ExpressionCannotBeStatement,
+    InvalidTypeModifier,
+    InvalidMethodModifier,
+    InvalidFieldModifier,
 
     // ReSharper disable once InconsistentNaming
     // ReSharper disable once UnusedMember.Global
@@ -67,5 +71,28 @@ public enum ErrorCode
     NullConstantValue,
     CannotHaveBothPublicAndPrivateModifier,
     DuplicateModifier,
-    CannotAccessNonPublicMember
+    CannotAccessNonPublicMember,
+    InvalidBreakOrContinue,
+    EntryModifierOnlyAllowedOnMethodsAndTypes,
+    EntryModifierMustBeAppliedToParentStruct,
+    MultipleEntryTypes,
+    MultipleEntryMethods,
+    CannotTakeAddress,
+    OperatorMustBeAppliedToPointer,
+    CannotAssignToThis,
+    InvalidAssignmentTarget,
+    CannotHaveStaticModifierOnEnum,
+    CannotHaveNonStaticMemberInStaticType,
+    CannotInstantiateStaticType,
+    ElementTypeCannotBeStatic,
+    PointerTypeCannotBeStatic,
+    InvalidMemberAccess,
+    CannotInvokeStaticMethodOnInstance,
+    CannotInvokeInstanceMethodOnType,
+    CannotAccessStaticMemberOnInstance,
+    CannotAccessInstanceMemberOnType,
+    VariableCannotBeVoid,
+    CannotConstructType,
+    CannotReturnVoid,
+    ArrayElementTypeCannotBeType
 }

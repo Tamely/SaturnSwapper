@@ -3,12 +3,20 @@
 @using Saturn.Backend.Data.FortniteCentral
 @using Saturn.Backend.Data.SaturnAPI.Models
 @using Radon.Runtime
-@using Saturn.Backend.Data.Plugins.TEMPORARY
 @using System.IO
 @using System.Net
 @using Newtonsoft.Json
+@using Radon.CodeAnalysis.Disassembly
+@using Radon.Runtime.Memory
+@using Radon.Runtime.RuntimeSystem
+@using Radon.Runtime.RuntimeSystem.RuntimeObjects
+@using Saturn.Backend.Data
+@using Saturn.Backend.Data.Plugins
 @using Saturn.Backend.Data.Plugins.Marketplace
 @using Saturn.Backend.Data.SaturnAPI
+@using Saturn.Backend.Data.Swapper.Assets
+@using Saturn.Backend.Data.Swapper.Core.Models
+@using Saturn.Backend.Data.Swapper.Swapping
 
 @inject IJSRuntime _jsRuntime;
 @inject IFortniteCentralService _fortniteCentralService;
@@ -16,6 +24,8 @@
 @inject ISaturnAPIService _saturnAPIService
 
 <PluginsSidebar/>
+<PluginKeyModal/>
+<FinishedModal/>
 <div class="tab-page" id="plugin-page" style="display: none">
     @switch (Constants.CosmeticState)
     {
@@ -35,9 +45,9 @@
                 foreach (var plugin in Constants.OwnedPlugins)
                 {
                     <div id="@(plugin.Name + "-section")" class="section hoverable" @onclick="@(async () => await Swap(plugin))">
-                        <img src=@(plugin.Icon ?? "https://image.fnbr.co/outfit/5ab15c3e0499b850d8511de4/icon_192.png") alt="Icon"/>
+                        <img src=@(plugin.Icon) alt="Icon"/>
                         <div class="name">
-                            <h1>@(plugin.Name + $" (v{plugin.Version ?? "1.0.0"})")</h1>
+                            <h1>@(plugin.Name + $" (v{plugin.Version})")</h1>
                             <h3>@("By: " + plugin.Author + " | " + plugin.Description)</h3>
                         </div>
                     </div>
@@ -71,13 +81,7 @@
     protected override async Task OnInitializedAsync()
     {
         ChangeState();
-
-        if (File.Exists(Constants.BasePath + "Plugin.json"))
-        {
-            Plugin plugin = JsonConvert.DeserializeObject<Plugin>(File.ReadAllText(Constants.BasePath + "Plugin.json"));
-            File.WriteAllBytes(Constants.PluginPath + "Plugin.saturn", new PluginSerializer(plugin).Data());
-        }
-
+        
         await RefreshPlugins();
         Marketplace = await _saturnAPIService.ReturnEndpointAsync<List<MarketplaceModel>>("/api/v1/Saturn/PluginMarketplace");
     }
@@ -96,25 +100,84 @@
         Constants.OwnedPlugins = new();
         foreach (var file in Directory.EnumerateFiles(Constants.PluginPath))
         {
-            if (!file.EndsWith(".saturn")) continue;
+            if (!file.EndsWith(".csp")) continue;
 
-            PluginDeserializer deserializer = new PluginDeserializer(await File.ReadAllBytesAsync(file));
-            Constants.OwnedPlugins.Add(deserializer.DeserializedPlugin());
+            var compiledPlugin = await File.ReadAllBytesAsync(file);
+            var assembly = Disassembler.Disassemble(compiledPlugin);
+            var assemblyInfo = new AssemblyInfo(assembly);
+
+            string Name = "Unset Name";
+            string Description = "Unset Description";
+            string Version = "1.0.0";
+            string Author = "Unset Author";
+            string Icon = "https://image.fnbr.co/outfit/5ab15c3e0499b850d8511de4/icon_192.png";
+
+            foreach (var sign in assemblyInfo.Metadata.Signs.Signs)
+            {
+                if (string.Equals(sign.Key, "name", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    Name = sign.Value;
+                }
+                
+                if (string.Equals(sign.Key, "description", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    Description = sign.Value;
+                }
+                
+                if (string.Equals(sign.Key, "version", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    Version = sign.Value;
+                }
+                
+                if (string.Equals(sign.Key, "author", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    Author = sign.Value;
+                }
+                
+                if (string.Equals(sign.Key, "icon", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    Icon = sign.Value;
+                }
+            }
+            
+            Constants.OwnedPlugins.Add(new PluginModel()
+            {
+                Name = Name,
+                Description = Description,
+                AssemblyInfo = assemblyInfo,
+                Author = Author,
+                Icon = Icon,
+                Version = Version
+            });
         }
     }
 
-    List<string> SwappedPlugins = new();
-    private async Task Swap(Plugin plugin)
+    List<Guid> SwappedPlugins = new();
+    private async Task Swap(PluginModel plugin)
     {
-        if (!SwappedPlugins.Contains(plugin.Name))
+        if (!Constants.isPluginKeyValid)
         {
-            await Convert(plugin);
-            SwappedPlugins.Add(plugin.Name);
+            await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "plugin-nokey");
+            return;
+        }
+        
+        if (!SwappedPlugins.Contains(plugin.AssemblyInfo.Guid))
+        {
+            Constants.SelectedItem = new AssetSelectorItem()
+            {
+                DisplayName = plugin.Name,
+                ID = plugin.AssemblyInfo.Guid.ToString()
+            };
+            
+            await Convert(plugin.AssemblyInfo);
+            plugin.Description = "Converted!";
+            SwappedPlugins.Add(plugin.AssemblyInfo.Guid);
             return;
         }
 
-        await Revert(plugin);
-        SwappedPlugins.Remove(plugin.Name);
+        await Revert(plugin.AssemblyInfo);
+        plugin.Description = "Reverted!";
+        SwappedPlugins.Remove(plugin.AssemblyInfo.Guid);
     }
     
     private async Task Download(MarketplaceModel plugin)
@@ -130,13 +193,43 @@
         await RefreshPlugins();
     }
 
-    private async Task Convert(Plugin plugin)
+    private async Task Convert(AssemblyInfo assemblyInfo)
     {
-        await PluginLogic.Convert(plugin);
+        Shared.LogItems.Clear();
+        
+        MemoryUtils.HeapSize = 0x100000;
+        MemoryUtils.StackSize = 0x100000;
+        var runtime = new ManagedRuntime(assemblyInfo);
+        Logger.Log($"Disassembled assembly {assemblyInfo.Guid}");
+        var entryType = runtime.Types.First(type => type.Key.IsEntry).Value;
+        var entryPoint = entryType.TypeInfo.Methods.First(method => method.IsEntry);
+        entryType.InvokeStatic(assemblyInfo, entryPoint, ManagedRuntime.EmptyDictionary<ParameterInfo, RuntimeObject>());
+        ManagedRuntime.StackManager.DeallocateStackFrame();
+        ManagedRuntime.StackManager.FreeStack();
+        ManagedRuntime.HeapManager.FreeHeap();
+        Logger.Log($"Assembly {assemblyInfo.Guid} finished executing successfully!");
+
+        var swaps = ManagedArchive.Swaps.Select(x => new SwapData { Data = x.Data, SaturnData = x.SaturnData }).ToList();
+        await FileLogic.Convert(swaps);
+
+        Logger.Log("Finished swapping!");
+        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "finished");
+
+        foreach (var log in Shared.LogItems)
+        {
+            Logger.Log(log);
+        }
     }
 
-    private async Task Revert(Plugin plugin)
+    private async Task Revert(AssemblyInfo assemblyInfo)
     {
-        await PluginLogic.Revert(plugin);
+        Shared.LogItems.Clear();
+        
+        if (File.Exists(Constants.DataPath + assemblyInfo.Guid + ".json"))
+        {
+            File.Delete(Constants.DataPath + assemblyInfo.Guid + ".json");
+        }
+        Logger.Log($"Reverted assembly {assemblyInfo.Guid}");
+        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "finished");
     }
 }

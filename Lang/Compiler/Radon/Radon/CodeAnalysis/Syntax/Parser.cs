@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Radon.CodeAnalysis.Syntax.Nodes;
 using Radon.CodeAnalysis.Syntax.Nodes.Clauses;
@@ -85,9 +86,9 @@ internal sealed class Parser
             if (_shouldBreakRightShift && current.Kind == SyntaxKind.GreaterGreaterToken)
             {
                 // we split the right shift into two tokens
-                var first = new SyntaxToken(_syntaxTree, SyntaxKind.GreaterToken, current.Position, ">", null
+                var first = new SyntaxToken(_syntaxTree, SyntaxKind.GreaterThanToken, current.Position, ">", null
                     , ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
-                var second = new SyntaxToken(_syntaxTree, SyntaxKind.GreaterToken, current.Position + 1, ">", null
+                var second = new SyntaxToken(_syntaxTree, SyntaxKind.GreaterThanToken, current.Position + 1, ">", null
                     , ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
                     
                 // Remove the right shift token and insert the two new tokens
@@ -172,7 +173,7 @@ internal sealed class Parser
     private DirectiveSyntax ParseDirective()
     {
         var hashToken = MatchToken(SyntaxKind.HashToken);
-        if (!Current.Kind.TryGetAttribute(SKAttributes.DirectiveOperator, out _))
+        if (!Current.Kind.HasAttribute(SKAttributes.DirectiveOperator))
         {
             var expected = SyntaxKind.GetKinds(SKAttributes.DirectiveOperator);
             Diagnostics.ReportUnfinishedDirective(Current.Location, expected);
@@ -217,8 +218,8 @@ internal sealed class Parser
         _tokens = _tokens.SetItem(_position, firstToken);
 
 Skip:
-        var isCodeUnit = Current.Kind.TryGetAttribute(SKAttributes.TypeModifier, out _) ||
-                           Current.Kind.TryGetAttribute(SKAttributes.TypeKeyword, out _);
+        var isCodeUnit = Current.Kind.HasAttribute(SKAttributes.TypeModifier) ||
+                           Current.Kind.HasAttribute(SKAttributes.TypeKeyword);
 
         if (isCodeUnit)
         {
@@ -230,17 +231,17 @@ Skip:
         // Get the first token, and add the directives to the leading trivia.
         var statements = ParseStatements(SyntaxKind.EndOfFileToken);
         var eofToken = MatchToken(SyntaxKind.EndOfFileToken);
-        return new PluginCompilationUnitSyntax(_syntaxTree, statements, eofToken);
+        return new TopLevelStatementCompilationUnitSyntax(_syntaxTree, statements, eofToken);
     }
 
     private ImmutableSyntaxList<TypeDeclarationSyntax> ParseTypeDeclarations()
     {
         var types = ImmutableArray.CreateBuilder<TypeDeclarationSyntax>();
-        if (Current.Kind.TryGetAttribute(SKAttributes.Modifier, out _) ||
-            Current.Kind.TryGetAttribute(SKAttributes.TypeKeyword, out _))
+        if (Current.Kind.HasAttribute(SKAttributes.Modifier) ||
+            Current.Kind.HasAttribute(SKAttributes.TypeKeyword))
         {
-            while (Current.Kind.TryGetAttribute(SKAttributes.Modifier, out _) ||
-                   Current.Kind.TryGetAttribute(SKAttributes.TypeKeyword, out _))
+            while (Current.Kind.HasAttribute(SKAttributes.Modifier) ||
+                   Current.Kind.HasAttribute(SKAttributes.TypeKeyword))
             {
                 var current = Current;
                 var type = ParseTypeDeclaration();
@@ -285,7 +286,7 @@ Skip:
     private ImmutableSyntaxList<SyntaxToken> ParseModifiers()
     {
         var modifiers = ImmutableArray.CreateBuilder<SyntaxToken>();
-        while (Current.Kind.TryGetAttribute(SKAttributes.Modifier, out _))
+        while (Current.Kind.HasAttribute(SKAttributes.Modifier))
         {
             var modifier = NextToken();
             modifiers.Add(modifier);
@@ -332,6 +333,12 @@ Skip:
         if (Current.Kind == SyntaxKind.TemplateKeyword &&
             Peek(1).Kind == SyntaxKind.IdentifierToken)
         {
+            var invalidTypeModifier = modifiers.FirstOrDefault(m => !m.Kind.HasAttribute(SKAttributes.TypeModifier));
+            if (invalidTypeModifier is not null)
+            {
+                Diagnostics.ReportInvalidTypeModifier(invalidTypeModifier.Location, invalidTypeModifier.Text);
+            }
+            
             var templateKeyword = MatchToken(SyntaxKind.TemplateKeyword);
             var type = ParseTypeClause();
             var identifier = MatchToken(SyntaxKind.IdentifierToken);
@@ -345,18 +352,9 @@ Skip:
         {
             Diagnostics.Block();
             var pos = _position;
-            NextToken();
-            if (Current.Kind == SyntaxKind.LessToken)
+            if (!IsValidType())
             {
-                _shouldBreakRightShift = true;
-                ParseTypeArguments();
-                _shouldBreakRightShift = false;
-            }
-            
-            if (Current.Kind == SyntaxKind.OpenBracketToken) // Array type
-            {
-                NextToken(); // Skip the open bracket
-                NextToken(); // Skip the close bracket
+                goto Skip;
             }
             
             if (Current.Kind == SyntaxKind.IdentifierToken)
@@ -382,6 +380,7 @@ Skip:
             }
         }
 
+        Skip:
         Diagnostics.ReportUnexpectedToken(Current.Location, Current.Text);
         NextToken(); // Skip the unexpected token, otherwise we'll get stuck in an infinite loop
         return new InvalidMemberDeclarationSyntax(_syntaxTree, modifiers, Current);
@@ -390,6 +389,12 @@ Skip:
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private MethodDeclarationSyntax ParseMethod(ImmutableSyntaxList<SyntaxToken> modifiers)
     {
+        var invalidMethodModifier = modifiers.FirstOrDefault(m => !m.Kind.HasAttribute(SKAttributes.MethodModifier));
+        if (invalidMethodModifier is not null)
+        {
+            Diagnostics.ReportInvalidMethodModifier(invalidMethodModifier.Location, invalidMethodModifier.Text);
+        }
+        
         var methodType = ParseTypeClause();
         var identifier = MatchToken(SyntaxKind.IdentifierToken);
         var parameterList = ParseParameterList();
@@ -400,6 +405,12 @@ Skip:
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private FieldDeclarationSyntax ParseField(ImmutableSyntaxList<SyntaxToken> modifiers)
     {
+        var invalidFieldModifier = modifiers.FirstOrDefault(m => !m.Kind.HasAttribute(SKAttributes.FieldModifier));
+        if (invalidFieldModifier is not null)
+        {
+            Diagnostics.ReportInvalidFieldModifier(invalidFieldModifier.Location, invalidFieldModifier.Text);
+        }
+        
         var fieldType = ParseTypeClause();
         var initializer = ParseVariableDeclarator();
         var semicolon = ExpectToken(SyntaxKind.SemicolonToken);
@@ -465,6 +476,25 @@ Skip:
         
         return new ImmutableSyntaxList<ParameterSyntax>(parameters.ToImmutable());
     }
+    
+    private ImmutableSyntaxList<StatementSyntax> ParseStatements(SyntaxKind cancellationToken)
+    {
+        var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
+        while (Current.Kind != cancellationToken && Current.Kind != SyntaxKind.EndOfFileToken)
+        {
+            var startToken = Current;
+            var statement = ParseStatement();
+            statements.Add(statement);
+            
+            // If ParseStatement() consumed no tokens, skip the current token
+            if (Current == startToken)
+            {
+                NextToken();
+            }
+        }
+        
+        return new ImmutableSyntaxList<StatementSyntax>(statements.ToImmutable());
+    }
 
     private StatementSyntax ParseStatement()
     {
@@ -482,32 +512,41 @@ Skip:
         {
             return ParseReturnStatement();
         }
+
+        if (Current.Kind == SyntaxKind.IfKeyword)
+        {
+            return ParseIfStatement();
+        }
+        
+        if (Current.Kind == SyntaxKind.WhileKeyword)
+        {
+            return ParseWhileStatement();
+        }
+        
+        if (Current.Kind == SyntaxKind.ForKeyword)
+        {
+            return ParseForStatement();
+        }
+        
+        if (Current.Kind == SyntaxKind.BreakKeyword)
+        {
+            return ParseBreakStatement();
+        }
+        
+        if (Current.Kind == SyntaxKind.ContinueKeyword)
+        {
+            return ParseContinueStatement();
+        }
         
         if (Current.Kind == SyntaxKind.IdentifierToken)
         {
             var pos = _position;
             Diagnostics.Block();
-            NextToken();
-            if (Current.Kind == SyntaxKind.LessToken)
+            if (!IsValidType())
             {
-                _shouldBreakRightShift = true;
-                // We will try to parse the type arguments for the return type
-                while (Current.Kind != SyntaxKind.GreaterToken &&
-                       Current.Kind != SyntaxKind.EndOfFileToken)
-                {
-                    NextToken();
-                }
-
-                NextToken(); // Skip the greater token
-                _shouldBreakRightShift = false;
+                goto Skip;
             }
             
-            if (Current.Kind == SyntaxKind.OpenBracketToken) // Array type
-            {
-                NextToken(); // Skip the open bracket
-                NextToken(); // Skip the close bracket
-            }
-
             if (Current.Kind == SyntaxKind.IdentifierToken)
             {
                 NextToken();
@@ -517,11 +556,57 @@ Skip:
                     return ParseVariableDeclarationStatement();
                 }
             }
-            
+
+            Skip:
             ResetPos(pos);
         }
         
         return ParseExpressionStatement();
+    }
+
+    private bool IsValidType()
+    {
+        if (Current.Kind != SyntaxKind.IdentifierToken)
+        {
+            return false;
+        }
+        
+        NextToken();
+        if (Current.Kind == SyntaxKind.LessThanToken)
+        {
+            // We need to be able to differentiate between Foo < 10 and Foo<10> bar;
+            // Foo<10> is not valid, but we still want to parse it as if it was, and report that there should be a name
+            if (!IsValidTypeArgumentList(out var position))
+            {
+                return false;
+            }
+                
+            _position = position;
+        }
+
+        while (true)
+        {
+            if (Current.Kind == SyntaxKind.OpenBracketToken)
+            {
+                NextToken(); // Skip the open bracket
+                if (Current.Kind != SyntaxKind.CloseBracketToken)
+                {
+                    return false;
+                }
+                
+                NextToken(); // Skip the close bracket
+            }
+            else if (Current.Kind == SyntaxKind.StarToken)
+            {
+                NextToken(); // Skip the star
+            }
+            else
+            {
+                break;
+            }
+        }
+        
+        return true;
     }
     
     private BlockStatementSyntax ParseBlockStatement()
@@ -545,30 +630,77 @@ Skip:
     private ReturnStatementSyntax ParseReturnStatement()
     {
         var returnKeyword = MatchToken(SyntaxKind.ReturnKeyword);
-        var expression = ParseExpression();
-        var semicolon = ExpectToken(SyntaxKind.SemicolonToken);
-        return new ReturnStatementSyntax(_syntaxTree, returnKeyword, expression, semicolon);
-    }
-    
-    private ImmutableSyntaxList<StatementSyntax> ParseStatements(SyntaxKind cancellationToken)
-    {
-        var statements = ImmutableArray.CreateBuilder<StatementSyntax>();
-        while (Current.Kind != cancellationToken && Current.Kind != SyntaxKind.EndOfFileToken)
+        if (Current.Kind == SyntaxKind.SemicolonToken)
         {
-            var startToken = Current;
-            var statement = ParseStatement();
-            statements.Add(statement);
-            
-            // If ParseStatement() consumed no tokens, skip the current token
-            if (Current == startToken)
-            {
-                NextToken();
-            }
+            var semicolon = NextToken();
+            return new ReturnStatementSyntax(_syntaxTree, returnKeyword, null, semicolon);
         }
         
-        return new ImmutableSyntaxList<StatementSyntax>(statements.ToImmutable());
+        var expression = ParseExpression();
+        var exprSemicolon = ExpectToken(SyntaxKind.SemicolonToken);
+        return new ReturnStatementSyntax(_syntaxTree, returnKeyword, expression, exprSemicolon);
+    }
+
+    private IfStatementSyntax ParseIfStatement()
+    {
+        var ifKeyword = MatchToken(SyntaxKind.IfKeyword);
+        var openParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+        var condition = ParseExpression();
+        var closeParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+        var body = ParseStatement();
+        if (Current.Kind != SyntaxKind.ElseKeyword)
+        {
+            return new IfStatementSyntax(_syntaxTree, ifKeyword, openParenthesis, condition, closeParenthesis, body, null);
+        }
+        
+        var elseClause = ParseElseClause();
+        return new IfStatementSyntax(_syntaxTree, ifKeyword, openParenthesis, condition, closeParenthesis, body, elseClause);
+
+    }
+
+    private WhileStatementSyntax ParseWhileStatement()
+    {
+        var whileKeyword = MatchToken(SyntaxKind.WhileKeyword);
+        var openParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+        var condition = ParseExpression();
+        var closeParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+        var body = ParseStatement();
+        return new WhileStatementSyntax(_syntaxTree, whileKeyword, openParenthesis, condition, closeParenthesis, body);
+    }
+
+    private ForStatementSyntax ParseForStatement()
+    {
+        var forKeyword = MatchToken(SyntaxKind.ForKeyword);
+        var openParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+        var initializer = ParseStatement();
+        var condition = ParseExpression();
+        var conditionSemicolon = MatchToken(SyntaxKind.SemicolonToken);
+        var incrementor = ParseExpression();
+        if (!incrementor.CanBeStatement)
+        {
+            Diagnostics.ReportExpressionCannotBeStatement(incrementor.Location, incrementor);
+        }
+        
+        var closeParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+        var body = ParseStatement();
+        return new ForStatementSyntax(_syntaxTree, forKeyword, openParenthesis, initializer, condition, 
+            conditionSemicolon, incrementor, closeParenthesis, body);
     }
     
+    private BreakStatementSyntax ParseBreakStatement()
+    {
+        var breakKeyword = MatchToken(SyntaxKind.BreakKeyword);
+        var semicolon = ExpectToken(SyntaxKind.SemicolonToken);
+        return new BreakStatementSyntax(_syntaxTree, breakKeyword, semicolon);
+    }
+    
+    private ContinueStatementSyntax ParseContinueStatement()
+    {
+        var continueKeyword = MatchToken(SyntaxKind.ContinueKeyword);
+        var semicolon = ExpectToken(SyntaxKind.SemicolonToken);
+        return new ContinueStatementSyntax(_syntaxTree, continueKeyword, semicolon);
+    }
+
     private VariableDeclarationSyntax ParseVariableDeclarationStatement()
     {
         var type = ParseTypeClause();
@@ -594,6 +726,11 @@ Skip:
     {
         var expression = ParseExpression();
         var semicolon = ExpectToken(SyntaxKind.SemicolonToken);
+        if (!expression.CanBeStatement)
+        {
+            Diagnostics.ReportExpressionCannotBeStatement(expression.Location, expression);
+        }
+        
         return new ExpressionStatementSyntax(_syntaxTree, expression, semicolon);
     }
     
@@ -601,11 +738,14 @@ Skip:
     {
         return ParseAssignmentExpression();
     }
-
+    
     private ExpressionSyntax ParseAssignmentExpression()
     {
-        var left = ParseElementAccess();
-        if (Current.Kind == SyntaxKind.EqualsToken)
+        var left = ParseBinaryExpression();
+        if (Current.Kind == SyntaxKind.EqualsToken || Current.Kind == SyntaxKind.PlusEqualsToken ||
+            Current.Kind == SyntaxKind.MinusEqualsToken || Current.Kind == SyntaxKind.StarEqualsToken ||
+            Current.Kind == SyntaxKind.SlashEqualsToken || Current.Kind == SyntaxKind.PercentEqualsToken ||
+            Current.Kind == SyntaxKind.PipeEqualsToken || Current.Kind == SyntaxKind.AmpersandEqualsToken)
         {
             var equals = NextToken();
             var right = ParseExpression();
@@ -615,50 +755,73 @@ Skip:
         return left;
     }
 
-    private ExpressionSyntax ParseElementAccess()
-    {
-        var expression = ParseBinaryExpression();
-        if (Current.Kind == SyntaxKind.OpenBracketToken)
-        {
-            var openBracket = NextToken();
-            var argument = ParseExpression();
-            var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
-            return new ElementAccessExpressionSyntax(_syntaxTree, expression, openBracket, argument, closeBracket);
-        }
-        
-        return expression;
-    }
-    
-    private ExpressionSyntax ParseBinaryExpression(int precedence = 0)
+    private ExpressionSyntax ParseBinaryExpression(int parentPrecedence = 0)
     {
         ExpressionSyntax left;
         if (Current.Kind.TryGetAttribute(SKAttributes.Operator, out var attribute) &&
-            attribute.Value is OperatorData { IsUnaryOperator: true } op &&
-            op.Precedence >= precedence)
+            attribute.Value is OperatorData { IsPrefixUnaryOperator: true } prefix &&
+            prefix.Precedence >= parentPrecedence)
         {
             var operatorToken = NextToken();
-            var operand = ParseBinaryExpression(op.Precedence);
-            left = new UnaryExpressionSyntax(_syntaxTree, operatorToken, operand);
+            var operand = ParseBinaryExpression(prefix.Precedence);
+            left = new UnaryExpressionSyntax(_syntaxTree, operatorToken, operand, null);
         }
         else
         {
-            left = ParseMemberAccessOrInvocation();
+            left = ParseCastExpression();
         }
-
-        while (Current.Kind.TryGetAttribute(SKAttributes.Operator, out var attr) &&
-               attr.Value is OperatorData { IsBinaryOperator: true } binOp &&
-               binOp.Precedence != 0 &&
-               binOp.Precedence <= precedence)
+        
+        if (Current.Kind.TryGetAttribute(SKAttributes.Operator, out var attribute1) &&
+            attribute1.Value is OperatorData { IsPostfixUnaryOperator: true } postfix &&
+            postfix.Precedence >= parentPrecedence)
         {
             var operatorToken = NextToken();
-            var right = ParseBinaryExpression(binOp.Precedence);
+            left = new UnaryExpressionSyntax(_syntaxTree, null, left, operatorToken);
+        }
+        
+        while (true)
+        {
+            if (!Current.Kind.TryGetAttribute(SKAttributes.Operator, out var attr))
+            {
+                break;
+            }
+
+            var opData = (OperatorData)attr.Value!;
+            var precedence = opData.Precedence;
+            if (precedence == 0 || precedence <= parentPrecedence)
+            {
+                break;
+            }
+            
+            var operatorToken = NextToken();
+            var right = ParseBinaryExpression(precedence);
             left = new BinaryExpressionSyntax(_syntaxTree, left, operatorToken, right);
         }
         
         return left;
     }
     
-    private ExpressionSyntax ParseMemberAccessOrInvocation()
+    private ExpressionSyntax ParseCastExpression()
+    {
+        var pos = _position;
+        // type: expression
+        //
+        // int x = 100;
+        // byte b = byte: x;
+        if (IsValidType() && Current.Kind == SyntaxKind.ColonToken)
+        {
+            ResetPos(pos);
+            var type = ParseTypeClause();
+            var colon = MatchToken(SyntaxKind.ColonToken);
+            var expression = ParseCastExpression();
+            return new CastExpressionSyntax(_syntaxTree, type, colon, expression);
+        }
+        
+        ResetPos(pos);
+        return ParseMemberAccessInvocationOrElementAccess();
+    }
+    
+    private ExpressionSyntax ParseMemberAccessInvocationOrElementAccess()
     {
         // We do this because MemberAccess and Invocation are left-associative and have the same precedence
         // left-associative means that we parse the left side first, then the right side
@@ -666,18 +829,26 @@ Skip:
         var left = ParsePrimaryExpression();
         while (true)
         {
-            if (Current.Kind == SyntaxKind.DotToken)
+            if (Current.Kind == SyntaxKind.DotToken ||
+                Current.Kind == SyntaxKind.ArrowToken)
             {
-                var dot = NextToken();
-                var name = MatchToken(SyntaxKind.IdentifierToken);
-                left = new MemberAccessExpressionSyntax(_syntaxTree, left, dot, name);
+                var accessToken = NextToken();
+                var name = ExpectToken(SyntaxKind.IdentifierToken);
+                left = new MemberAccessExpressionSyntax(_syntaxTree, left, accessToken, name);
             }
             else if (Current.Kind == SyntaxKind.OpenParenthesisToken ||
-                     Current.Kind == SyntaxKind.LessToken)
+                     IsValidTypeArgumentList(out _))
             {
                 var typeArguments = ParseTypeArguments();
                 var arguments = ParseArgumentList();
                 left = new InvocationExpressionSyntax(_syntaxTree, left, typeArguments, arguments);
+            }
+            else if (Current.Kind == SyntaxKind.OpenBracketToken)
+            {
+                var openBracket = NextToken();
+                var argument = ParseExpression();
+                var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
+                left = new ElementAccessExpressionSyntax(_syntaxTree, left, openBracket, argument, closeBracket);
             }
             else
             {
@@ -728,7 +899,7 @@ Skip:
             return new DefaultExpressionSyntax(_syntaxTree, defaultKeyword, colon, type);
         }
 
-        if (Current.Kind.TryGetAttribute(SKAttributes.Literal, out _))
+        if (Current.Kind.HasAttribute(SKAttributes.Literal))
         {
             var literal = NextToken();
             return new LiteralExpressionSyntax(_syntaxTree, literal);
@@ -740,7 +911,7 @@ Skip:
             return new ThisExpressionSyntax(_syntaxTree, thisKeyword);
         }
 
-        var identifier = MatchToken(SyntaxKind.IdentifierToken);
+        var identifier = ExpectToken(SyntaxKind.IdentifierToken);
         return new NameExpressionSyntax(_syntaxTree, identifier);
     }
 
@@ -754,22 +925,24 @@ Skip:
     
     private TypeArgumentListSyntax? ParseTypeArguments()
     {
-        if (Current.Kind != SyntaxKind.LessToken)
+        if (Current.Kind != SyntaxKind.LessThanToken)
         {
             return null;
         }
 
+        _shouldBreakRightShift = true;
         var less = NextToken();
-        var arguments = ParseSeparatedSyntaxList(ParseTypeClause, SyntaxKind.CommaToken, SyntaxKind.GreaterToken);
-        var greater = MatchToken(SyntaxKind.GreaterToken);
+        var arguments = ParseSeparatedSyntaxList(ParseTypeClause, SyntaxKind.CommaToken, SyntaxKind.GreaterThanToken);
+        var greater = ExpectToken(SyntaxKind.GreaterThanToken);
+        _shouldBreakRightShift = false;
         return new TypeArgumentListSyntax(_syntaxTree, less, arguments, greater);
     }
 
     private ArgumentListSyntax ParseArgumentList()
     {
-        var openParenthesis = MatchToken(SyntaxKind.OpenParenthesisToken);
+        var openParenthesis = ExpectToken(SyntaxKind.OpenParenthesisToken);
         var arguments = ParseSeparatedSyntaxList(ParseExpression, SyntaxKind.CommaToken, SyntaxKind.CloseParenthesisToken);
-        var closeParenthesis = MatchToken(SyntaxKind.CloseParenthesisToken);
+        var closeParenthesis = ExpectToken(SyntaxKind.CloseParenthesisToken);
         return new ArgumentListSyntax(_syntaxTree, openParenthesis, arguments, closeParenthesis);
     }
     
@@ -779,31 +952,40 @@ Skip:
         var identifier = MatchToken(SyntaxKind.IdentifierToken);
         var typeArguments = ParseTypeArguments();
         var type = new TypeSyntax(_syntaxTree, identifier, typeArguments);
-        _shouldBreakRightShift = false;
-        return Current.Kind == SyntaxKind.OpenBracketToken ? ParseArrayType(type) : type;
-    }
-
-    private ArrayTypeSyntax ParseArrayType(TypeSyntax? type)
-    {
-        _shouldBreakRightShift = true;
-        type ??= ParseTypeClause();
-        var openBracket = MatchToken(SyntaxKind.OpenBracketToken);
-        ExpressionSyntax? size = null;
-        if (Current.Kind != SyntaxKind.CloseBracketToken)
+        while (true)
         {
-            size = ParseExpression();
+            if (Current.Kind == SyntaxKind.OpenBracketToken)
+            {
+                var openBracket = NextToken();
+                ExpressionSyntax? size = null;
+                if (Current.Kind != SyntaxKind.CloseBracketToken)
+                {
+                    size = ParseExpression();
+                }
+                
+                var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
+                type = new ArrayTypeSyntax(_syntaxTree, type, openBracket, size, closeBracket);
+            }
+            else if (Current.Kind == SyntaxKind.StarToken)
+            {
+                var star = NextToken();
+                type = new PointerTypeSyntax(_syntaxTree, type, star);
+            }
+            else
+            {
+                break;
+            }
         }
         
-        var closeBracket = MatchToken(SyntaxKind.CloseBracketToken);
         _shouldBreakRightShift = false;
-        return new ArrayTypeSyntax(_syntaxTree, type, openBracket, size, closeBracket);
+        return type;
     }
 
     private TypeParameterListSyntax ParseTypeParameters()
     {
-        var openAngle = MatchToken(SyntaxKind.LessToken);
-        var parameters = ParseSeparatedSyntaxList(ParseTypeParameter, SyntaxKind.CommaToken, SyntaxKind.GreaterToken);
-        var closeAngle = MatchToken(SyntaxKind.GreaterToken);
+        var openAngle = MatchToken(SyntaxKind.LessThanToken);
+        var parameters = ParseSeparatedSyntaxList(ParseTypeParameter, SyntaxKind.CommaToken, SyntaxKind.GreaterThanToken);
+        var closeAngle = MatchToken(SyntaxKind.GreaterThanToken);
         return new TypeParameterListSyntax(_syntaxTree, openAngle, parameters, closeAngle);
     }
     
@@ -812,7 +994,72 @@ Skip:
         var identifier = MatchToken(SyntaxKind.IdentifierToken);
         return new TypeParameterSyntax(_syntaxTree, identifier);
     }
+    
+    private ElseClauseSyntax ParseElseClause()
+    {
+        var elseKeyword = MatchToken(SyntaxKind.ElseKeyword);
+        var statement = ParseStatement();
+        return new ElseClauseSyntax(_syntaxTree, elseKeyword, statement);
+    }
 
+    private bool IsValidTypeArgumentList(out int position)
+    {
+        if (Current.Kind != SyntaxKind.LessThanToken)
+        {
+            position = _position;
+            return false;
+        }
+
+        bool IsValidTypeArgumentToken(SyntaxKind kind) => kind == SyntaxKind.LessThanToken ||
+                                                          kind == SyntaxKind.GreaterThanToken ||
+                                                          kind == SyntaxKind.IdentifierToken ||
+                                                          kind == SyntaxKind.CommaToken;
+        
+        var pos = _position;
+        _shouldBreakRightShift = true;
+        var isValidTypeArgumentList = true;
+        var lastToken = Current;
+        NextToken(); // Skip the less than token
+        var angleBracketPairs = 1;
+        while (angleBracketPairs != 0 && Current.Kind != SyntaxKind.EndOfFileToken)
+        {
+            if (Current.Kind == SyntaxKind.LessThanToken)
+            {
+                angleBracketPairs++;
+            }
+            
+            if (Current.Kind == SyntaxKind.GreaterThanToken)
+            {
+                angleBracketPairs--;
+            }
+
+            if (IsValidTypeArgumentToken(Current.Kind))
+            {
+                if (lastToken.Kind == SyntaxKind.IdentifierToken &&
+                    Current.Kind != SyntaxKind.CommaToken &&
+                    Current.Kind != SyntaxKind.GreaterThanToken &&
+                    Current.Kind != SyntaxKind.LessThanToken)
+                {
+                    isValidTypeArgumentList = false;
+                    break;
+                }
+                
+                lastToken = Current;
+                NextToken();
+                continue;
+            }
+            
+            isValidTypeArgumentList = false;
+            break;
+        }
+
+        var p = _position;
+        position = p;
+        _position = pos;
+        _shouldBreakRightShift = false;
+        return isValidTypeArgumentList;
+    }
+    
     private SeparatedSyntaxList<T> ParseSeparatedSyntaxList<T>(Func<T> parseElement, SyntaxKind separatorTokenKind, SyntaxKind cancelTokenKind)
         where T : SyntaxNode
     {

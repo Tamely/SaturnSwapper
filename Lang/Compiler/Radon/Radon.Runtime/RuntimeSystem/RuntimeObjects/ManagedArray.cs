@@ -1,100 +1,99 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Text;
 using Radon.CodeAnalysis.Emit;
+using Radon.Common;
+using Radon.Runtime.Memory;
 
 namespace Radon.Runtime.RuntimeSystem.RuntimeObjects;
 
 internal sealed class ManagedArray : RuntimeObject
 {
-    // <index, element>
-    private readonly Dictionary<int, IRuntimeObject> _elements;
-    public int Length { get; } // Length of the array
-    public override int Size { get; }
+    private readonly List<RuntimeObject> _elements;
     public override RuntimeType Type { get; }
-    public override object? Value => null;
+    public override int Size { get; } // The size in bytes of the array on the heap. This includes the 4 bytes for the length.
+    public override UIntPtr Address { get; } // The address of the array on the heap.
+    public RuntimeType ElementType { get; }
+    public nuint ArrayStart => Address + sizeof(int);
+    public int Length { get; }
+    public ImmutableArray<RuntimeObject> Elements => _elements.ToImmutableArray();
 
-    public ManagedArray(RuntimeType type, int length)
+    public ManagedArray(RuntimeType type, nuint pointer, IEnumerable<RuntimeObject> elements)
     {
-        var typeInfo = type.TypeInfo;
-        if (!typeInfo.IsArray || typeInfo.UnderlyingType is null)
-        {
-            throw new ArgumentException("Type must be an array type", nameof(type));
-        }
-        
-        if (typeInfo.UnderlyingType is null)
-        {
-            throw new InvalidOperationException("Cannot resolve size of array with no underlying type");
-        }
-        
-        Size = -1;
+        _elements = new List<RuntimeObject>(elements);
         Type = type;
-        Length = length;
-        var elements = new Dictionary<int, IRuntimeObject>();
-        for (var i = 0; i < length; i++)
+        if (type.TypeInfo.UnderlyingType is null)
         {
-            var defaultElement = IRuntimeObject.CreateDefault(ManagedRuntime.System.GetType(typeInfo.UnderlyingType));
-            elements.Add(i, defaultElement);
-        }
-        
-        _elements = elements;
-    }
-
-    public override int ResolveSize()
-    {
-        if (Size != -1)
-        {
-            return Size;
+            throw new InvalidOperationException("Underlying type cannot be null.");
         }
 
-        var size = 0;
-        for (var i = 0; i < Length; i++)
-        {
-            size += _elements[i].ResolveSize();
-        }
-        
-        return size;
-    }
-
-    public override byte[] Serialize()
-    {
-        var bytes = new List<byte>();
-        var lengthBytes = BitConverter.GetBytes(Length);
-        bytes.AddRange(lengthBytes);
-        foreach (var element in _elements)
-        {
-            bytes.AddRange(element.Value.Serialize());
-        }
-        
-        return bytes.ToArray();
-    }
-
-    public override IRuntimeObject? ComputeOperation(OpCode operation, IRuntimeObject? other)
-    {
-        return null;
-    }
-
-    public override IRuntimeObject? ConvertTo(RuntimeType type)
-    {
-        return null;
-    }
-
-    public void SetElement(int index, IRuntimeObject value)
-    {
-        if (_elements.ContainsKey(index))
-        {
-            throw new IndexOutOfRangeException($"Index {index} is out of range for array of length {Length}");
-        }
-        
-        _elements[index] = value;
+        ElementType = ManagedRuntime.System.GetType(type.TypeInfo.UnderlyingType);
+        Size = ElementType.Size * _elements.Count;
+        Address = pointer;
+        Length = _elements.Count;
     }
     
-    public IRuntimeObject GetElement(int index)
+    public RuntimeObject GetElement(int index)
     {
-        if (!_elements.ContainsKey(index))
+        Logger.Log($"Getting element at index {index}.", LogLevel.Info);
+        return _elements[index];
+    }
+    
+    public void SetElement(int index, RuntimeObject element)
+    {
+        Logger.Log($"Setting element at index {index}.", LogLevel.Info);
+        _elements[index] = element;
+        var pointer = ArrayStart + (nuint)index * (nuint)ElementType.Size;
+        MemoryUtils.Copy(element.Address, pointer, ElementType.Size);
+    }
+    
+    public override RuntimeObject ComputeOperation(OpCode operation, RuntimeObject? other, StackFrame stackFrame)
+    {
+        if (other is not ManagedArray otherArray)
         {
-            throw new IndexOutOfRangeException($"Index {index} is out of range for array of length {Length}");
+            throw new InvalidOperationException("Cannot perform an operation on an array and a non-array.");
         }
         
-        return _elements[index];
+        switch (operation)
+        {
+            case OpCode.Ceq:
+            {
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Address == otherArray.Address);
+            }
+            case OpCode.Cne:
+            {
+                return stackFrame.AllocatePrimitive(ManagedRuntime.Boolean, Address != otherArray.Address);
+            }
+        }
+        
+        throw new InvalidOperationException($"Cannot perform operation {operation} on an array.");
+    }
+
+    public override RuntimeObject CopyTo(nuint address)
+    {
+        return new ManagedArray(Type, address, _elements);
+    }
+
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        sb.Append(ElementType);
+        sb.Append('[');
+        sb.Append(Length);
+        sb.Append(']');
+        sb.Append(' ');
+        sb.Append("{ ");
+        for (var i = 0; i < Length; i++)
+        {
+            sb.Append(_elements[i]);
+            if (i != Length - 1)
+            {
+                sb.Append(", ");
+            }
+        }
+        
+        sb.Append(" }");
+        return sb.ToString();
     }
 }

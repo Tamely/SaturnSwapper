@@ -160,11 +160,12 @@ public class LocalizationResourceService
         { 106, "Downloading Fortnite's file manifest" },
         { 107, "Checking for modified files" },
         { 108, "Initializing file provider" },
-        { 109, "Guilded Server" },
-        { 110, "Please join Saturn's guilded server!" },
+        { 109, "Discord Server" },
+        { 110, "Please join Saturn's discord server!" },
         { 111, "This would help you stay updated on what's happening with the swapper!" },
         { 112, "Join Saturn" },
         { 113, "Plugins" },
+        { 114, "Parsing rarity data" },
     };
     
     private Dictionary<int, string> ItalianStringTable = new()
@@ -278,11 +279,12 @@ public class LocalizationResourceService
         { 106, "Scaricare il file manifest di Fortnite" },
         { 107, "Controllo dei file modificati" },
         { 108, "Inizializzazione del provider di file" },
-        { 109, "Server Guilded" },
-        { 110, "Unitevi al server guilded di Saturn!" },
+        { 109, "Server Discord" },
+        { 110, "Unitevi al server discord di Saturn!" },
         { 111, "Questo vi aiuterà a rimanere aggiornati su ciò che accade con lo swapper!" },
         { 112, "Unisciti a Saturno" },
         { 113, "Plugins" },
+        { 114, "Analizzare i dati sulla rarità" },
     };
     
     private Dictionary<int, string> SpanishStringTable = new()
@@ -396,11 +398,12 @@ public class LocalizationResourceService
         { 106, "Descarga del manifiesto de archivos de Fortnite" },
         { 107, "Comprobación de archivos modificados" },
         { 108, "Inicialización del proveedor de archivos" },
-        { 109, "Servidor Guilded" },
-        { 110, "Únete al servidor guilded de Saturno." },
+        { 109, "Servidor Discord" },
+        { 110, "Únete al servidor discord de Saturno." },
         { 111, "Esto te ayudará a estar al día de lo que ocurre con el swapper." },
         { 112, "Únete a Saturno" },
         { 113, "Plugins" },
+        { 114, "Análisis de datos de rareza" },
     };
     
     private Dictionary<int, string> PortugueseStringTable = new()
@@ -514,11 +517,12 @@ public class LocalizationResourceService
         { 106, "Descarregar o manifesto de ficheiros do Fortnite" },
         { 107, "Verificação de ficheiros modificados" },
         { 108, "Inicialização do fornecedor de ficheiros" },
-        { 109, "Servidor do Guilded" },
-        { 110, "Juntem-se ao servidor guilded de Saturno!" },
+        { 109, "Servidor do Discord" },
+        { 110, "Juntem-se ao servidor discord de Saturno!" },
         { 111, "Isto ajudá-lo-á a manter-se actualizado sobre o que está a acontecer com o permutador!" },
         { 112, "Juntar-se a Saturno" },
         { 113, "Plugins" },
+        { 114, "Analisar dados de raridade" },
     };
     
     private Dictionary<int, string> FrenchStringTable = new()
@@ -632,11 +636,12 @@ public class LocalizationResourceService
         { 106, "Télécharger le manifeste des fichiers de Fortnite" },
         { 107, "Vérification des fichiers modifiés" },
         { 108, "Initialisation du fournisseur de fichiers" },
-        { 109, "Serveur Guilded" },
-        { 110, "Rejoignez le serveur guilded de Saturn!" },
+        { 109, "Serveur Discord" },
+        { 110, "Rejoignez le serveur discord de Saturn!" },
         { 111, "Cela vous permettra de rester au courant de ce qui se passe avec l'échangiste!" },
         { 112, "Rejoindre Saturne" },
         { 113, "Plugins" },
+        { 114, "Analyse des données de rareté" },
     };
     
     private Dictionary<int, string> GermanStringTable = new()
@@ -750,11 +755,12 @@ public class LocalizationResourceService
         { 106, "Herunterladen des Dateimanifests von Fortnite" },
         { 107, "Prüfen auf geänderte Dateien" },
         { 108, "Dateianbieter initialisieren" },
-        { 109, "Guilded-Server" },
-        { 110, "Bitte treten Sie dem Saturn-Guilded-Server bei!" },
+        { 109, "Discord-Server" },
+        { 110, "Bitte treten Sie dem Saturn-Discord-Server bei!" },
         { 111, "So bleiben Sie auf dem Laufenden, was mit dem Swapper passiert!" },
         { 112, "Saturn beitreten" },
         { 113, "Plugins" },
+        { 114, "Analyse von Seltenheitsdaten" },
     };
     
     private Dictionary<int, string> RussianStringTable = new()
@@ -868,11 +874,12 @@ public class LocalizationResourceService
         { 106, "Загрузка файлового манифеста Fortnite" },
         { 107, "Проверка наличия измененных файлов" },
         { 108, "Инициализация поставщика файлов" },
-        { 109, "Сервер Guilded" },
-        { 110, "Пожалуйста, присоединяйтесь к guilded-серверу Сатурна!" },
+        { 109, "Сервер Discord" },
+        { 110, "Пожалуйста, присоединяйтесь к discord-серверу Сатурна!" },
         { 111, "Это поможет вам быть в курсе того, что происходит с обменщиком!" },
         { 112, "Присоединиться к Сатурну" },
         { 113, "Плагины" },
+        { 114, "Разбор данных о редкости" },
     };
     
     private Dictionary<int, string> UkrainianStringTable = new()
@@ -986,11 +993,12 @@ public class LocalizationResourceService
         { 106, "Завантаження файлового маніфесту Fortnite" },
         { 107, "Перевірка на наявність змінених файлів" },
         { 108, "Ініціалізація файлового провайдера" },
-        { 109, "Сервер Guilded" },
-        { 110, "Будь ласка, приєднуйтесь до сервера Guilded Сатурна!" },
+        { 109, "Сервер Discord" },
+        { 110, "Будь ласка, приєднуйтесь до сервера Discord Сатурна!" },
         { 111, "Це допоможе вам залишатися в курсі того, що відбувається зі своппером!" },
         { 112, "Приєднуйтесь до Сатурна" },
         { 113, "Плагіни" },
+        { 114, "Парсинг даних про рідкість" },
     };
     
     public string GetString(int id)

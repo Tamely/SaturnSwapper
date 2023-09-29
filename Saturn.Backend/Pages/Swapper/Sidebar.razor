@@ -22,9 +22,9 @@
     <li id="plugin-li" onclick="@(async() => await SwitchState("plugin"))">
         <h6><i class="fas fa-plug"></i> @_localizationResourceService.GetString(113)</h6>
     </li>
-    
-    <li id="asset-li" onclick="@(async() => await SwitchState("asset"))">
-        <h6><i class="fas fa-file-import"></i> @_localizationResourceService.GetString(57)</h6>
+
+    <li id="plus-li" onclick="@(async() => await SwitchState("plus"))">
+        <h6><i class="fas fa-plus"></i> Saturn+</h6>
     </li>
     
     <li id="settings-li" class="settings" onclick="@(async() => await SwitchState("settings"))">
@@ -62,6 +62,7 @@
             SaturnState.S_Importer => "asset",
             SaturnState.S_Settings => "settings",
             SaturnState.S_Dash => "dash",
+            SaturnState.S_Plus => "plus",
             SaturnState.S_SelectCosmetics => "cosmetic",
             SaturnState.S_Plugin => "plugin",
             _ => "cosmetic"
@@ -74,6 +75,7 @@
             "settings" => SaturnState.S_Settings,
             "dash" => SaturnState.S_Dash,
             "plugin" => SaturnState.S_Plugin,
+            "plus" => SaturnState.S_Plus,
             _ => SaturnState.S_Skin
         };
         
@@ -83,18 +85,16 @@
         if (stateToGoTo == SaturnState.S_Skin)
         {
             Logger.Log("Generating cosmetics!");
-            Constants.ChunkedItems = (await new SkinGenerator().Generate()).OrderBy(x => x.ID).ToList()
-                .Select((x, i) => new { Index = i, Value = x })
-                .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
-                .Select(x => x.Select(v => v.Value).ToList())
-                .ToList();
+            await Constants.Handler.SwitchHandler(Constants.Handler.SkinHandler);
+            Constants.Cosmetics.Clear();
+            await Constants.Handler.Initialize();
             Logger.Log("Done!");
         }
         
         DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", stateToGoTo.ToString().Split("S_")[1]);
         
         if (DiscordUtilities.Member != null && !File.Exists(Constants.ExternalPath + "user.json"))
-            File.WriteAllText(Constants.ExternalPath + "user.json", JsonConvert.SerializeObject(DiscordUtilities.Member, Formatting.None));
+            await File.WriteAllTextAsync(Constants.ExternalPath + "user.json", JsonConvert.SerializeObject(DiscordUtilities.Member, Formatting.None));
 
         if (stateToGoTo == SaturnState.S_Plugin)
         {

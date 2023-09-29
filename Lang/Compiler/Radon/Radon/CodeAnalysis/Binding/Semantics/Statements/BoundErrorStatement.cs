@@ -1,4 +1,3 @@
-using Radon.CodeAnalysis.Binding.Analyzers;
 using Radon.CodeAnalysis.Syntax.Nodes;
 
 namespace Radon.CodeAnalysis.Binding.Semantics.Statements;

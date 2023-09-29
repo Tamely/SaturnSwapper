@@ -15,4 +15,9 @@ internal sealed class BoundField : BoundMember
         Symbol = symbol;
         Initializer = initializer;
     }
+    
+    public override string ToString()
+    {
+        return Symbol.ToString();
+    }
 }

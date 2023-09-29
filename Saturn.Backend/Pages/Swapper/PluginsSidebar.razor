@@ -16,7 +16,11 @@
     <li id="marketplace-li" @onclick="@(async() => await SwitchState(SaturnState.S_Marketplace))">
         <h6><i class="fas fa-download"></i> Marketplace</h6>
     </li>
-
+    
+    <li id="key-li" onclick="saturn.modalManager.showModal('plugin-key')">
+        <h6><i class="fas fa-key"></i> Key</h6>
+    </li>
+    
     <li id="back-li" class="settings" @onclick="@(async() => await GoBack())">
         <h6><i class="fas fa-arrow-to-left"></i> @_localizationResourceService.GetString(23)</h6>
     </li>

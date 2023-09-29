@@ -25,11 +25,14 @@ public class Program
     private static Dictionary<string, List<(long, byte[])>> currentSwapBackups = new();
     private static ulong[] TargetRoles = { 8312334953691727223, 14469599625845645863, 15712186866927928291, 16885141162808554974 };
     private static readonly string USER_PATH = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "/Saturn/Externals/user.json";
+    private static readonly string FILE_PATH = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "/Saturn/Externals/files.json";
     public static void Main(string[] args)
     {
         foreach (var process in Process.GetProcesses())
-            if (process.ProcessName == "Saturn")
+        {
+            if ((process.ProcessName.ToLower().Contains("saturn") && !process.ProcessName.ToLower().Contains("launcher")) || process.ProcessName.ToLower().Contains("fortnite"))
                 process.Kill();
+        }
 
         bool isPlus = false;
         if (File.Exists(USER_PATH))
@@ -38,7 +41,7 @@ public class Program
             isPlus = user.roles.Any(x => TargetRoles.Contains(CityHash.CityHash64(Encoding.UTF8.GetBytes(x))));
             File.Delete(USER_PATH);
         }
-        
+
         Console.ForegroundColor = ConsoleColor.White;
 
         Console.WriteLine("████████████████████████████████████████");
@@ -207,24 +210,33 @@ public class Program
             File.Delete(file);
         }
 
-        int i = 100;
-        while (File.Exists(GetGamePath() + $"\\pakchunk{i++}-WindowsClient.ucas"))
+        if (File.Exists(FILE_PATH))
         {
-            File.Delete(GetGamePath() + $"\\pakchunk{i - 1}-WindowsClient.ucas");
-            File.Delete(GetGamePath() + $"\\pakchunk{i - 1}-WindowsClient.utoc");
-            File.Delete(GetGamePath() + $"\\pakchunk{i - 1}-WindowsClient.pak");
-            File.Delete(GetGamePath() + $"\\pakchunk{i - 1}-WindowsClient.sig");
-        }
-
-        for (i = 100; i < 250; i++)
-        {
-            if (File.Exists(GetGamePath() + $"\\pakchunk{i}-WindowsClient.ucas"))
+            var files = JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(FILE_PATH)) ?? new List<string>();
+            foreach (var file in files)
             {
-                File.Delete(GetGamePath() + $"\\pakchunk{i}-WindowsClient.ucas");
-                File.Delete(GetGamePath() + $"\\pakchunk{i}-WindowsClient.utoc");
-                File.Delete(GetGamePath() + $"\\pakchunk{i}-WindowsClient.pak");
-                File.Delete(GetGamePath() + $"\\pakchunk{i}-WindowsClient.sig");
+                if (File.Exists(GetGamePath() + file + ".utoc"))
+                {
+                    File.Delete(GetGamePath() + file + ".utoc");
+                }
+                
+                if (File.Exists(GetGamePath() + file + ".ucas"))
+                {
+                    File.Delete(GetGamePath() + file + ".ucas");
+                }
+                
+                if (File.Exists(GetGamePath() + file + ".pak"))
+                {
+                    File.Delete(GetGamePath() + file + ".pak");
+                }
+                
+                if (File.Exists(GetGamePath() + file + ".sig"))
+                {
+                    File.Delete(GetGamePath() + file + ".sig");
+                }
             }
+            
+            File.Delete(FILE_PATH);
         }
 
         Process.GetCurrentProcess().Kill();

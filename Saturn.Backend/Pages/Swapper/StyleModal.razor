@@ -1,0 +1,30 @@
+﻿@using Saturn.Backend.Data.Swapper.Generation
+@using Saturn.Backend.Data.Swapper.Assets
+
+<div class="modal minimized" id="option-modal">
+    <div class="modal-window" style="width: 490px">
+        <div class="close-button" onclick="saturn.modalManager.hideModal('option')">
+            <i class="fas fa-times"></i>
+        </div>
+        
+        <div class="modal-header">
+            <h1 class="modal-title">Style Selector</h1>
+            <p class="modal-desc">Pick which styles you want to swap to</p>
+        </div>
+        
+        @foreach (var item in new List<AssetSelectorItem>())
+        {
+            <div id="@(item.ID + "-section")" class="section hoverable">
+                <img src=@($"https://fortnite-api.com/images/cosmetics/br/{item.ID}/smallicon.png") alt="Icon"/>
+                <div class="name">
+                    <h1>@item.DisplayName</h1>
+                    <h3>@item.Description</h3>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    
+}

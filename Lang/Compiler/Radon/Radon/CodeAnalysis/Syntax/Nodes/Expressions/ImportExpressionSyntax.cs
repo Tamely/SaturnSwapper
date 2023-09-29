@@ -4,6 +4,7 @@ public sealed partial class ImportExpressionSyntax : ExpressionSyntax
 {
     public SyntaxToken ImportKeyword { get; }
     public LiteralExpressionSyntax Path { get; }
+    public override bool CanBeStatement => false;
     
     public ImportExpressionSyntax(SyntaxTree syntaxTree, SyntaxToken importKeyword, LiteralExpressionSyntax path)
         : base(syntaxTree)

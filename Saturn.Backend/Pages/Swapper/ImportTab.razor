@@ -8,7 +8,6 @@
 @using CUE4Parse.UE4.Objects.Core.Misc
 @using CUE4Parse.UE4.Versions
 @using Newtonsoft.Json
-@using Saturn.Backend.Data.Asset
 @using Saturn.Backend.Data.Compression
 @using Saturn.Backend.Data.FortniteCentral
 @using Saturn.Backend.Data.Services
@@ -148,7 +147,7 @@
     private CompressionBase compressor = new Oodle();
     
     private DefaultFileProvider UEFNProvider;
-    private Deserializer parentObj;
+    private object parentObj;
 
     private string workingDirectory;
     private string customExperienceName;
@@ -191,7 +190,7 @@
 
     private async Task MakeEmpty(string search)
     {
-        parentObj.SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), "/Game/G.G");
+        //parentObj.SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), "/Game/G.G");
         await Swap();
     }
 
@@ -204,21 +203,21 @@
             throw new Exception($"Parent package with the path '{assetPath}' doesn't exist!");
         }
 
-        parentObj = new Deserializer(parentPkg.Values.First());
-        parentObj.Deserialize();
+        //parentObj = new Deserializer(parentPkg.Values.First());
+        //parentObj.Deserialize();
 
-        int count = parentObj.ModifiedNameMap.Count(x => x.Name.ToLower().Contains("mesh") && !x.Name.ToLower().Contains("material") && !x.Name.ToLower().Contains("skeleton") && !x.Name.ToLower().Contains("animbp") && !x.Name.ToLower().Contains("abp"));
-        if (count == 1)
-        {
-            string search = parentObj.ModifiedNameMap.First(x => x.Name.ToLower().Contains("mesh") && !x.Name.ToLower().Contains("material") && !x.Name.ToLower().Contains("skeleton") && !x.Name.ToLower().Contains("animbp") && !x.Name.ToLower().Contains("abp")).Name;
-            parentObj.SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), "/Game/G.G");
-            await Swap();
-        }
-        else
-        {
-            UEFNState = UEFNImporterState.S_Empty;
-            StateHasChanged();
-        }
+        //int count = parentObj.ModifiedNameMap.Count(x => x.Name.ToLower().Contains("mesh") && !x.Name.ToLower().Contains("material") && !x.Name.ToLower().Contains("skeleton") && !x.Name.ToLower().Contains("animbp") && !x.Name.ToLower().Contains("abp"));
+        //if (count == 1)
+        //{
+        //    string search = parentObj.ModifiedNameMap.First(x => x.Name.ToLower().Contains("mesh") && !x.Name.ToLower().Contains("material") && !x.Name.ToLower().Contains("skeleton") && !x.Name.ToLower().Contains("animbp") && !x.Name.ToLower().Contains("abp")).Name;
+       //     parentObj.SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), "/Game/G.G");
+        //    await Swap();
+        //}
+       // else
+       // {
+        //    UEFNState = UEFNImporterState.S_Empty;
+       //     StateHasChanged();
+       // }
     }
     
     private async Task Swap()
@@ -228,7 +227,7 @@
             new()
             {
                 SaturnData = SaturnData.ToNonStatic(),
-                Data = new Serializer(parentObj).Serialize()
+                //Data = new Serializer(parentObj).Serialize()
             }
         };
 
@@ -261,7 +260,7 @@
 
     private async Task SwapNameMap(string search)
     {
-        parentObj.SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), customAssetPath.Split('.')[0] + '.' + Path.GetFileNameWithoutExtension(customAssetPath));
+        //parentObj.SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), customAssetPath.Split('.')[0] + '.' + Path.GetFileNameWithoutExtension(customAssetPath));
 
         UEFNState = UEFNImporterState.S_Swap;
         StateHasChanged();
@@ -276,10 +275,11 @@
             throw new Exception($"Parent package with the path '{assetPath}' doesn't exist!");
         }
         
-        parentObj = new Deserializer(parentPkg.Values.First());
-        parentObj.Deserialize();
+        //parentObj = new Deserializer(parentPkg.Values.First());
+        //parentObj.Deserialize();
 
-        return parentObj.ReadNameMap.Select(x => x.Name).Where(x => x.Contains('/')).ToArray();
+        //return parentObj.ReadNameMap.Select(x => x.Name).Where(x => x.Contains('/')).ToArray();
+        return Array.Empty<string>();
     }
 
     private async Task SetParent()

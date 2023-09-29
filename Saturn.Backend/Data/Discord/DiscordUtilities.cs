@@ -74,7 +74,10 @@ namespace Saturn.Backend.Data.Discord
             _httpListener.Stop();
             GuildMemberModel CurrentUser = GetGuildMember(OAuthToken.access_token, GuildID);
             if (CurrentUser == null)
-                throw new Exception("Null current discord user!");
+            {
+                Logger.Log("Discord user not found. Are you in the Saturn+ server?", LogLevel.Error);
+                return;
+            }
 
             if (CurrentUser.roles.Any(x => TargetRoles.Contains(CityHash.CityHash64(Encoding.UTF8.GetBytes(x)))))
             {
@@ -84,7 +87,6 @@ namespace Saturn.Backend.Data.Discord
 
             Constants.DiscordAvatar = $"https://cdn.discordapp.com/avatars/{CurrentUser.user.id}/{CurrentUser.user.avatar}.png";
             Constants.DiscordName = CurrentUser.user.username;
-            Constants.DiscordDiscriminator = CurrentUser.user.discriminator;
         }
 
         private TokenResponseModel GetToken(string code)

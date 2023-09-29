@@ -4,7 +4,9 @@
 @using System.IO
 @using Saturn.Backend.Data.Fortnite
 @using System.Diagnostics
+@using System.Threading
 @using Newtonsoft.Json
+@using Radon.Runtime
 @using Saturn.Backend.Data
 @using Saturn.Backend.Data.Compression
 @using Saturn.Backend.Data.Discord
@@ -15,6 +17,7 @@
 @inject LocalizationResourceService _localizationResourceService
 
 <PresetModal/>
+<CreativeSwapModal/>
 <KeyModal/>
 <FinishedModal/>
 
@@ -22,21 +25,33 @@
     <div class="section vertical" id="user-settings">
         <h1>@_localizationResourceService.GetString(95)</h1>
         
-        <img class="avatar" src="@Constants.DiscordAvatar" alt="Avatar"/>
-        @if (Constants.isPlus)
+        @if (Constants.DiscordName != Environment.UserName)
         {
-            <div class="additional-info">
-                <h3>SATURN+</h3>
+            <div class="flex-box">
+                <img class="avatar" src="@Constants.DiscordAvatar" alt="Avatar"/>
+                @if (Constants.isPlus)
+                {
+                    <div class="additional-info">
+                        <h3>SATURN+</h3>
+                    </div>
+                }
             </div>
+            <span>@(Constants.DiscordName)</span>
         }
-        <span>@(Constants.DiscordName + "#" + Constants.DiscordDiscriminator)</span>
-        <button @onclick="@(async() => await CheckSaturnPlus())">
-            @_localizationResourceService.GetString(99)
-        </button>
+        else
+        {
+            <button @onclick="@(async() => await CheckSaturnPlus())">
+                @_localizationResourceService.GetString(99)
+            </button>
+        }
     </div>
     
     <div class="section vertical" id="swapper-settings">
         <h1>@_localizationResourceService.GetString(96)</h1>
+        
+        <button @onclick="@(async () => await ToggleCreativeSwaps())">
+            @("Toggle Creative Swaps: " + (Constants.ShouldCreativeSwap ? "On" : "Off"))
+        </button>
 
         <button @onclick="@(async() => await NavToSelect())">
             @_localizationResourceService.GetString(97)
@@ -48,10 +63,6 @@
         
         <button onclick="saturn.modalManager.showModal('presetmanager')">
             @_localizationResourceService.GetString(103)
-        </button>
-        
-        <button @onclick="@(async() => await ToggleLobbySwaps())">
-            @(_localizationResourceService.GetString(101) + (Constants.ShouldLobbySwap ? "On" : "Off"))
         </button>
     </div>
     
@@ -68,15 +79,44 @@
 </div>
 
 @code {
+    private async Task UpdateState()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(500);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        UpdateState();
+    }
+    
+    private async Task ToggleCreativeSwaps()
+    {
+        Constants.ShouldCreativeSwap = !Constants.ShouldCreativeSwap;
+
+        if (Constants.ShouldCreativeSwap)
+        {
+            await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "creative");
+        }
+    }
+
     private async Task CheckSaturnPlus()
     {
-        new DiscordUtilities();
-        StateHasChanged();
-        Constants.isKeyValid |= Constants.isPlus;
+        new Thread(() =>
+        {
+            new DiscordUtilities();
+            Constants.isKeyValid |= Constants.isPlus;
+            Constants.isPluginKeyValid |= Constants.isPlus;
+        }).Start();
     }
 
     private async Task LaunchFortnite()
     {
+        await File.WriteAllTextAsync(Constants.ExternalPath + "files.json", JsonConvert.SerializeObject(Shared.AllowedFiles, Formatting.None));
+        
         if (Constants.CurrentLobbySwaps.Count > 0)
         {
             CompressionBase oodle = new Oodle();
@@ -109,34 +149,17 @@
         });
     }
 
-    private async Task ToggleLobbySwaps()
-    {
-        Constants.ShouldLobbySwap = !Constants.ShouldLobbySwap;
-    }
-    
     private async Task NavToSelect()
     {
-        string stateFrom = Constants.State switch
-        {
-            SaturnState.S_Skin => "cosmetic",
-            SaturnState.S_Importer => "asset",
-            SaturnState.S_Settings => "settings",
-            SaturnState.S_Dash => "dash",
-            SaturnState.S_SelectCosmetics => "cosmetic",
-            _ => "cosmetic"
-        };
-        
         Logger.Log("Generating cosmetics!");
-        Constants.ChunkedItems = (await new SkinGenerator().Generate()).OrderBy(x => x.ID).ToList()
-            .Select((x, i) => new { Index = i, Value = x })
-            .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
-            .Select(x => x.Select(v => v.Value).ToList())
-            .ToList();
+        await Constants.Handler.SwitchHandler(Constants.Handler.SkinHandler);
+        Constants.Cosmetics.Clear();
+        await Constants.Handler.Initialize();
         Logger.Log("Done!");
 
         DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", "Selecting Cosmetics");
         
-        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOut", stateFrom);
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOut", "settings");
         Constants.State = SaturnState.S_SelectCosmetics;
         while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "cosmetic")) {}
         await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "cosmetic");

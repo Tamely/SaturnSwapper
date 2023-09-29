@@ -13,6 +13,7 @@
         S_Importer,
         S_Plugin,
         S_Marketplace,
+        S_Plus,
         S_SelectCosmetics
     }
 

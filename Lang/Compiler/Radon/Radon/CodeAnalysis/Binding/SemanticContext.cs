@@ -1,4 +1,4 @@
-using Radon.CodeAnalysis.Binding.Analyzers;
+using Radon.CodeAnalysis.Binding.Binders;
 using Radon.CodeAnalysis.Syntax;
 using Radon.CodeAnalysis.Syntax.Nodes;
 using Radon.CodeAnalysis.Text;

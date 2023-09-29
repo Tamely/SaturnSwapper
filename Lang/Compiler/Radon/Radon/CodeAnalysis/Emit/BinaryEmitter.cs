@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
-using Radon.Utilities;
+using Radon.CodeAnalysis.Emit.Binary;
+using Radon.Common;
 
 namespace Radon.CodeAnalysis.Emit;
 
@@ -11,14 +14,20 @@ internal sealed class BinaryEmitter
 {
     private readonly object _obj;
     private readonly MemoryStream _stream;
-    private readonly bool _encrypt;
     private readonly long _key;
+    private bool _encrypt;
     public BinaryEmitter(object obj, bool encrypt = false, long key = 0L)
     {
         _obj = obj;
         _stream = new MemoryStream();
         _encrypt = encrypt;
         _key = key;
+    }
+
+    public static byte[] Emit(object obj)
+    {
+        var emitter = new BinaryEmitter(obj);
+        return emitter.Emit();
     }
 
     public byte[] Emit()
@@ -29,7 +38,29 @@ internal sealed class BinaryEmitter
 
     private unsafe void WriteObject(object value)
     {
+        var previous = _encrypt;
         var type = value.GetType();
+        switch (value)
+        {
+            case Instruction instruction:
+            {
+                var label = instruction.Label;
+                var opCode = instruction.OpCode;
+                WriteObject(label);
+                WriteObject(opCode);
+                if (!opCode.NoOperandRequired())
+                {
+                    var operand = instruction.Operand;
+                    WriteObject(operand);
+                }
+            
+                return;
+            }
+            case AssemblyHeader:
+                _encrypt = false;
+                break;
+        }
+        
         if (value.IsUnmanaged())
         {
             if (type.IsEnum)
@@ -38,6 +69,7 @@ internal sealed class BinaryEmitter
                 var enumType = Enum.GetUnderlyingType(type);
                 var convertedValue = Convert.ChangeType(enumValue, enumType);
                 WriteObject(convertedValue);
+                _encrypt = previous;
                 return;
             }
             
@@ -54,6 +86,7 @@ internal sealed class BinaryEmitter
 
             // Write the bytes to the stream
             _stream.Write(new ReadOnlySpan<byte>(bytes, size));
+            _encrypt = previous;
             return;
         }
 
@@ -69,6 +102,7 @@ internal sealed class BinaryEmitter
             var length = bytes.Length;
             WriteObject(length);
             _stream.Write(bytes, 0, length);
+            _encrypt = previous;
             return;
         }
         
@@ -82,6 +116,7 @@ internal sealed class BinaryEmitter
                 WriteObject(item);
             }
             
+            _encrypt = previous;
             return;
         }
         
@@ -97,5 +132,7 @@ internal sealed class BinaryEmitter
             
             WriteObject(fieldValue);
         }
+        
+        _encrypt = previous;
     }
 }

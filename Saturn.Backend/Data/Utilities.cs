@@ -1,24 +1,38 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using CUE4Parse;
+using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Assets;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Exports.Material.Parameters;
+using CUE4Parse.UE4.Objects.Core.Math;
+using CUE4Parse.UE4.Objects.GameplayTags;
 using CUE4Parse.Utils;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
-using Saturn.Backend.Data.Asset;
 using Saturn.Backend.Data.Discord;
 using Saturn.Backend.Data.Fortnite;
 using Saturn.Backend.Data.SaturnAPI;
 using Saturn.Backend.Data.SaturnAPI.Models;
 using Saturn.Backend.Data.SaturnConfig;
+using Saturn.Backend.Data.Swapper.Assets;
 using Saturn.Backend.Data.Swapper.Core.Models;
 using Saturn.Backend.Data.Swapper.Swapping;
 using Saturn.Backend.Data.Swapper.Swapping.Models;
 using Saturn.Backend.Data.Variables;
+using SkiaSharp;
+using UAssetAPI;
+using UAssetAPI.IO;
+using UAssetAPI.UnrealTypes;
+using UAssetAPI.Unversioned;
+using FName = CUE4Parse.UE4.Objects.UObject.FName;
 
 namespace Saturn.Backend.Data
 {
@@ -43,72 +57,41 @@ namespace Saturn.Backend.Data
                 await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "key");
                 return;
             }
-
-            foreach (var item in preset.PresetSwaps)
+            
+            foreach (var swapItem in preset.PresetSwaps)
             {
                 List<SwapData> swapData = new();
-        
-                foreach (var characterPart in item.OptionModel.CharacterParts.Where(characterPart => item.ItemModel.CharacterParts.ContainsKey(characterPart.Key)))
+                AssetExportData selectedOption = await swapItem.ItemModel.OptionHandler.GenerateOptionDataWithFix(swapItem.OptionModel);
+
+                foreach (var characterPart in selectedOption.ExportParts)
                 {
-                    var oldPkg = await Constants.Provider.SavePackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
-                    Deserializer oldDeserializer = new Deserializer(oldPkg.Values.First());
-                    oldDeserializer.Deserialize();
-                    
+                    var pkg = await Constants.Provider.SavePackageAsync(characterPart.Path.Split('.')[0]);
+                    AssetBinaryReader oldReader = new AssetBinaryReader(pkg.Values.First());
+                    ZenAsset oldAsset = new ZenAsset(oldReader, EngineVersion.VER_LATEST, Usmap.CachedMappings);
+
                     var data = SaturnData.ToNonStatic();
                     SaturnData.Clear();
                     
-                    var newPkg = await Constants.Provider.SavePackageAsync(item.ItemModel.CharacterParts[characterPart.Key].Path.Split('.')[0] + ".uasset");
-                    Deserializer newDeserializer = new Deserializer(newPkg.Values.First());
-                    newDeserializer.Deserialize();
+                    AssetExportData item = await swapItem.ItemModel.OptionHandler.GenerateOptionDataWithFix(swapItem.ItemModel);
+                    var swapPart = item.ExportParts.FirstOrDefault(part => part.Part == characterPart.Part);
 
-                    Serializer serializer = new Serializer(oldDeserializer.Swap(newDeserializer));
+                    pkg = await Constants.Provider.SavePackageAsync(swapPart == null ? Constants.EmptyParts[characterPart.Part].Path : swapPart.Path.Split('.')[0]);
+                    AssetBinaryReader newReader = new AssetBinaryReader(pkg.Values.First());
+                    ZenAsset newAsset = new ZenAsset(newReader, EngineVersion.VER_LATEST, Usmap.CachedMappings);
 
-                    swapData.Add(new SwapData
+                    var asset = oldAsset.Swap(newAsset);
+
+                    swapData.Add(new SwapData()
                     {
                         SaturnData = data,
-                        Data = serializer.Serialize()
+                        Data = asset.WriteData().ToArray()
                     });
-
-                    SaturnData.Clear();
-                }
-
-                foreach (var characterPart in item.OptionModel.CharacterParts.Where(characterPart => !item.ItemModel.CharacterParts.ContainsKey(characterPart.Key)))
-                {
-                    var oldPkg = await Constants.Provider.SavePackageAsync(characterPart.Value.Path.Split('.')[0] + ".uasset");
-                    Deserializer oldDeserializer = new Deserializer(oldPkg.Values.First());
-                    oldDeserializer.Deserialize();
-                    
-                    var data = SaturnData.ToNonStatic();
-                    SaturnData.Clear();
-                    
-                    var realPartType = characterPart.Value.Enums["CharacterPartType"];
-                    
-                    var newPkg = await Constants.Provider.SavePackageAsync(Constants.EmptyParts[realPartType].Path.Split('.')[0] + ".uasset");
-                    Deserializer newDeserializer = new Deserializer(newPkg.Values.First());
-                    newDeserializer.Deserialize();
-
-                    Serializer serializer = new Serializer(oldDeserializer.Swap(newDeserializer));
-
-                    swapData.Add(new SwapData
-                    {
-                        SaturnData = data,
-                        Data = serializer.Serialize()
-                    });
-
-                    SaturnData.Clear();
-                }
-
-                await FileLogic.Convert(swapData);
             
-                if (Constants.CanLobbySwap && Constants.ShouldLobbySwap && Constants.isPlus)
-                {
-                    await FileLogic.ConvertLobby(item.OptionModel.ID, item.ItemModel.ID);
                     SaturnData.Clear();
                 }
-                else if (Constants.isPlus && Constants.ShouldLobbySwap)
-                {
-                    Logger.Log("Unable to lobby swap at this time... pakchunk0 was unable to be mounted.", LogLevel.Error);
-                }
+                
+                await FileLogic.Convert(swapData);
+                await FileLogic.ConvertLobby(swapItem.OptionModel, swapItem.ItemModel);
             }
             
             await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "finished");
@@ -128,10 +111,126 @@ namespace Saturn.Backend.Data
                 
             saturnApiService.ReturnEndpoint($"/api/v1/Saturn/SetHWID?key={Config.Get()._config.Key}&hwid={GetHWID()}");
             return true;
-
+        }
+        
+        public static async Task<bool> IsKeyPluginValid(ISaturnAPIService saturnApiService)
+        {
+            if (string.IsNullOrWhiteSpace(Config.Get()._config.PluginKey))
+                return false;
+            
+            KeySearchModel keyData = await saturnApiService.ReturnEndpointAsync<KeySearchModel>($"/api/v1/Saturn/ReturnPluginKeyExists?key={Config.Get()._config.PluginKey}");
+            if (!keyData.Found) return false;
+            if (keyData.HWID != GetHWID() && keyData.HWID != "NotSet")
+            {
+                throw new Exception("Key is already in use on another PC. Please contact support if you believe this is an error.");
+            }
+                
+            saturnApiService.ReturnEndpoint($"/api/v1/Saturn/SetPluginHWID?key={Config.Get()._config.PluginKey}&hwid={GetHWID()}");
+            return true;
         }
         
         public static string GetHWID() => System.Security.Principal.WindowsIdentity.GetCurrent().User.Value;
+        
+        public static string TitleCase(this string text)
+        {
+            var textInfo = CultureInfo.CurrentCulture.TextInfo;
+            return textInfo.ToTitleCase(text);
+        }
+        
+        public static T GetOrDefault<T>(this UObject obj, params string[] names)
+        {
+            foreach (var name in names)
+            {
+                if (obj.Properties.Any(x => x.Name.Text.Equals(name)))
+                {
+                    return obj.GetOrDefault<T>(name);
+                }
+            }
+
+            return default;
+        }
+        
+        public static bool CheckEncoding(this string value, Encoding encoding)
+        {
+            bool retCode;
+            var charArray = value.ToCharArray();
+            byte[] bytes = new byte[charArray.Length];
+            for (int i = 0; i < charArray.Length; i++)
+            {
+                bytes[i] = (byte)charArray[i];
+            }
+            retCode = string.Equals(encoding.GetString(bytes, 0, bytes.Length), value, StringComparison.InvariantCulture);
+            return retCode;
+        }
+        
+        public static bool AddUnique<T>(this List<T> list, T item)
+        {
+            if (list.Contains(item)) return false;
+            list.Add(item);
+            return true;
+        }
+
+        public static bool AddUnique<T>(this ObservableCollection<T> list, T item)
+        {
+            if (list.Contains(item)) return false;
+            list.Add(item);
+            return true;
+        }
+        
+        public static FLinearColor ToLinearColor(this FStaticComponentMaskParameter componentMask)
+        {
+            return new FLinearColor
+            {
+                R = componentMask.R ? 1 : 0,
+                G = componentMask.G ? 1 : 0,
+                B = componentMask.B ? 1 : 0,
+                A = componentMask.A ? 1 : 0
+            };
+        }
+        
+        public static bool TryLoadObjectExports(this AbstractFileProvider provider, string path, out IEnumerable<UObject> exports)
+        {
+            exports = Enumerable.Empty<UObject>();
+            try
+            {
+                exports = provider.LoadAllObjects(path);
+            }
+            catch (KeyNotFoundException)
+            {
+                return false;
+            }
+
+            return true;
+        }
+        
+        public static bool TryLoadEditorData<T>(this UObject asset, out T? editorData) where T : UObject
+        {
+            var path = asset.GetPathName().SubstringBeforeLast(".") + ".o.uasset";
+            if (Constants.Provider.TryLoadObjectExports(path, out var exports))
+            {
+                editorData = exports.FirstOrDefault() as T;
+                return editorData is not null;
+            }
+
+            editorData = default;
+            return false;
+        }
+
+        public static FName? GetValueOrDefault(this FGameplayTagContainer tags, string category, FName def = default)
+        {
+            return tags.GameplayTags is not { Length: > 0 } ? def : tags.GameplayTags.FirstOrDefault(it => it.TagName.Text.StartsWith(category), new FGameplayTag(def)).TagName;
+        }
+
+        public static bool ContainsAny(this FGameplayTagContainer tags, params string[] check)
+        {
+            return check.Any(x => tags.ContainsAny(x));
+        }
+
+        public static bool ContainsAny(this FGameplayTagContainer tags, string check)
+        {
+            if (tags.GameplayTags is null) return false;
+            return tags.GameplayTags.Any(x => x.TagName.Text.Contains(check));
+        }
 
         public static string GetKeyFromValue(this Dictionary<string, string> dict, string value)
         {

@@ -1,16 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using CUE4Parse.FileProvider;
-using Saturn.Backend.Data.Plugins.TEMPORARY;
+using CUE4Parse.UE4.AssetRegistry.Objects;
+using CUE4Parse.UE4.Assets.Exports.Texture;
+using Saturn.Backend.Data.Plugins;
 using Saturn.Backend.Data.SaturnAPI.Models;
 using Saturn.Backend.Data.SaturnConfig.Models;
+using Saturn.Backend.Data.Swapper.Assets;
+using Saturn.Backend.Data.Swapper.Generation;
 using Saturn.Backend.Data.Swapper.Swapping.Models;
+using UAssetAPI.UnrealTypes;
+using UAssetAPI.Unversioned;
 
 namespace Saturn.Backend.Data.Variables
 {
     public class Constants
     {
-        public const string USER_VERSION = "2.2.3";
+        public const string USER_VERSION = "2.2.4";
 
         public static readonly Changelog Changelog = new Changelog()
         {
@@ -111,6 +118,7 @@ namespace Saturn.Backend.Data.Variables
         public static readonly string CosmeticsPath = BasePath + "cosmetics.json";
 
         public static bool isKeyValid = false;
+        public static bool isPluginKeyValid = false;
         public static bool isPlus = false;
         public static bool isBeta = false;
         public static bool isClosingCorrectly = false;
@@ -168,34 +176,46 @@ namespace Saturn.Backend.Data.Variables
         };
         
         public const string MANIFEST_URL = "launcher/api/public/assets/v2/platform/Windows/namespace/fn/catalogItem/4fe75bbc5a674f4f9b356b5c90567da5/app/Fortnite/label/Live";
+        public const string DEFAULTGAMEDATACOSMETICS_PATH = "FortniteGame/Content/Balance/DefaultGameDataCosmetics.uasset";
 
         // These aren't really constants but :shrug:
         public static string DiscordAvatar = "img/Saturn.png";
         public static string DiscordName = Environment.UserName;
-        public static string DiscordDiscriminator = "0000";
 
         public static List<string> ConvertedIDs = new();
-        public static bool CanLobbySwap = false;
-        public static bool ShouldLobbySwap = true;
+        public static bool CanSpecialSwap = false;
+        public static bool ShouldLobbySwap = false;
+        public static bool ShouldCreativeSwap = false;
+        public static bool ShouldGlobalSwap = false;
         public static bool IsRemoving = false;
+        public static Dictionary<long, byte[]> GlobalSwaps = new();
+
+        public static int CosmeticCount = -1;
+        public static int ChunkCount = 0;
+        public static List<AssetSelectorItem> Cosmetics = new();
+
+        public static AssetHandler Handler = new();
+        public static List<FAssetData> AssetDataBuffers = new();
+        public static RarityCollection[] RarityData = new RarityCollection[8];
+        public static UTexture2D PlaceholderTexture;
         
         public static SaturnState State = SaturnState.S_Installer;
         public static SaturnState CosmeticState = SaturnState.S_Skin;
         
         public static DefaultFileProvider Provider;
         
-        public const int CHUNK_SIZE = 500;
+        public const int CHUNK_SIZE = 250;
         public static int ChunkIndex = 0;
 
-        public static List<Plugin> OwnedPlugins = new();
-        public static List<List<DisplayItemModel>> ChunkedItems = new();
-        public static DisplayItemModel SelectedDisplayItem = new();
-        public static SaturnItemModel SelectedItem = new();
-        public static SaturnItemModel SelectedOption = new();
+        public static List<PluginModel> OwnedPlugins = new();
+        public static AssetSelectorItem SelectedItem = new();
+        public static AssetSelectorItem SelectedOption = new();
 
         public static List<string> PotentialOptions = new();
 
         public static List<Swaps> CurrentSwaps = new();
         public static List<ItemModel> CurrentLobbySwaps = new();
+
+        public static Dictionary<string, AssetExportData> AssetCache = new();
     }
 }

@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Globalization;
 using System.Text;
 using System.Linq;
 using Radon.CodeAnalysis.Syntax.Nodes;
@@ -67,7 +66,7 @@ internal sealed class Lexer
         ReadTrivia(false);
         
         var trailingTrivia = _triviaBuilder.ToImmutable();
-        var tokenText = _kind.TryGetAttribute(SKAttributes.IsFixed, out _) 
+        var tokenText = _kind.HasAttribute(SKAttributes.IsFixed) 
                             ? _kind.Text! : _text.ToString(tokenStart, tokenLength);
         
         return new SyntaxToken(_syntaxTree, tokenKind, tokenStart, tokenText, tokenValue, leadingTrivia, trailingTrivia);
@@ -243,10 +242,14 @@ internal sealed class Lexer
         }
         
         var kinds = SyntaxKind.GetKinds()
-                              .Where(k => k.TryGetAttribute(SKAttributes.IsFixed, out _))
+                              .Where(k => k.HasAttribute(SKAttributes.IsFixed))
                               .OrderByDescending(k => k.Text!.Length);
         foreach (var kind in kinds)
         {
+            // We need this because say we had a variable call "enum1", it would parse the enum keyword,
+            // then the number 1, instead of the "enum1" identifier
+            var mustBeSeparated = kind.HasAttribute(SKAttributes.Keyword) ||
+                                      kind.HasAttribute(SKAttributes.Literal);
             var text = kind.Text!;
             if (text.Length == 0)
             {
@@ -267,14 +270,29 @@ internal sealed class Lexer
 
                 if (done)
                 {
-                    _kind = kind;
-                    _position += text.Length;
-                    return;
+                    var isSeparated = true;
+                    if (mustBeSeparated)
+                    {
+                        var pos = _position;
+                        _position = _start + text.Length;
+                        isSeparated = !IsIdentifierPart(Current);
+                        _position = pos;
+                    }
+                    
+                    if (isSeparated)
+                    {
+                        _kind = kind;
+                        _position += text.Length;
+                        return;
+                    }
+                    
+                    // If it isn't separated, then it's probably and identifier
+                    break;
                 }
             }
         }
 
-        if (char.IsNumber(Current))
+        if (char.IsDigit(Current))
         {
             while (char.IsDigit(Current))
             {
@@ -311,8 +329,7 @@ internal sealed class Lexer
         if (char.IsLetter(Current) ||
             Current == '_')
         {
-            while (char.IsLetterOrDigit(Current) ||
-                   Current == '_')
+            while (IsIdentifierPart(Current))
             {
                 _position++;
             }
@@ -367,5 +384,10 @@ internal sealed class Lexer
         var badLocation = new TextLocation(_text, badSpan);
         Diagnostics.ReportUnexpectedCharacter(badLocation, Current);
         _position++;
+    }
+    
+    private static bool IsIdentifierPart(char c)
+    {
+        return char.IsLetterOrDigit(c) || c == '_';
     }
 }

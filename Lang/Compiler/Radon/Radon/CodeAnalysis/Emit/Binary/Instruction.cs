@@ -5,23 +5,19 @@ using System.Text;
 namespace Radon.CodeAnalysis.Emit.Binary;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly struct Instruction
+public readonly struct Instruction
 {
+    public readonly int Label;
     public readonly OpCode OpCode;
     public readonly int Operand;
     
-    public Instruction(OpCode opCode, int operand)
+    public Instruction(int label, OpCode opCode, int operand)
     {
+        Label = label;
         OpCode = opCode;
         Operand = operand;
     }
-    
-    public Instruction(OpCode opCode)
-    {
-        OpCode = opCode;
-        Operand = -1;
-    }
-    
+
     public override string ToString()
     {
         // Opcode Operand: OpCodeBytes OperandBytes

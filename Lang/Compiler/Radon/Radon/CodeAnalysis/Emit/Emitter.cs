@@ -14,8 +14,8 @@ internal sealed class Emitter
 
     public byte[] Emit()
     {
-        var binaryEmitter = new BinaryEmitter(_assembly, _assembly.Flags.HasFlag(AssemblyFlags.Encryption),
-            _assembly.EncryptionKey);
+        var binaryEmitter = new BinaryEmitter(_assembly, _assembly.Header.Flags.HasFlag(AssemblyFlags.Encryption),
+            _assembly.Header.EncryptionKey);
         return binaryEmitter.Emit();
     }
 }

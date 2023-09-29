@@ -8,7 +8,9 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using Radon.Runtime;
 using Saturn.Backend.Data;
+using Saturn.Backend.Data.Fortnite;
 using Saturn.Backend.Data.FortniteCentral;
 using Saturn.Backend.Data.SaturnAPI;
 using Saturn.Backend.Data.Services;
@@ -78,6 +80,29 @@ namespace Saturn.Client
             {
                 File.Delete(file);
             }
+
+            foreach (var file in Shared.AllowedFiles)
+            {
+                if (File.Exists(DataCollection.GetGamePath() + file + ".utoc"))
+                {
+                    File.Delete(DataCollection.GetGamePath() + file + ".utoc");
+                }
+                
+                if (File.Exists(DataCollection.GetGamePath() + file + ".ucas"))
+                {
+                    File.Delete(DataCollection.GetGamePath() + file + ".ucas");
+                }
+                
+                if (File.Exists(DataCollection.GetGamePath() + file + ".pak"))
+                {
+                    File.Delete(DataCollection.GetGamePath() + file + ".pak");
+                }
+                
+                if (File.Exists(DataCollection.GetGamePath() + file + ".sig"))
+                {
+                    File.Delete(DataCollection.GetGamePath() + file + ".sig");
+                }
+            }
         }
         
         private void CurrentDomainOnFirstChanceException(object? sender, FirstChanceExceptionEventArgs e)
@@ -90,7 +115,7 @@ namespace Saturn.Client
             
             if (exception.StackTrace != null && exception.StackTrace!.Contains("There is an update ready to download!"))
             {
-                MessageBox.Show("There is an update ready to download! Please download it from discord.gg/Saturn.", "Update", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("There is an update ready to download! Please download it from discord.gg/SaturnSwapper.", "Update", MessageBoxButton.OK, MessageBoxImage.Information);
                 Environment.Exit(0);
             }
 
@@ -105,7 +130,7 @@ namespace Saturn.Client
                         Logger.Log(exception.StackTrace ?? "", LogLevel.Error);
                         
                         MessageBox.Show(
-                            "Important files seem to have been deleted from Saturn. Please redownload Saturn from discord.gg/Saturn and check if your antivirus might be deleting files.\n\n" +
+                            "Important files seem to have been deleted from Saturn. Please redownload Saturn from discord.gg/SaturnSwapper and check if your antivirus might be deleting files.\n\n" +
                             e.Exception.Message, "Files missing", MessageBoxButton.OK, MessageBoxImage.Warning);
                         Process.Start(Constants.LogFile);
                         Environment.Exit(0);

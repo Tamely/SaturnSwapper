@@ -15,5 +15,6 @@ public enum SymbolKind
     Error,
     Template,
     TemplateMethod,
-    Array
+    Array,
+    Pointer
 }

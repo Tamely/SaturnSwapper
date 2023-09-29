@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using CUE4Parse;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
@@ -38,6 +39,24 @@ public class SaturnFileProvider : IDisposable
         // Load the aes
         var fetchedAes = fortniteCentralService.ReturnEndpoint<FortniteCentralAESModel>("/api/v1/aes");
         
+        for (int i = 0; i < 10; i++)
+        {
+            if (fetchedAes == null)
+                fetchedAes = fortniteCentralService.ReturnEndpoint<FortniteCentralAESModel>("/api/v1/aes");
+            else
+                break;
+        }
+
+        if (fetchedAes == null)
+        {
+            Logger.Log("AES was null!");
+            fetchedAes = new FortniteCentralAESModel()
+            {
+                MainKey = null,
+                DynamicKeys = new()
+            };
+        }
+        
         // Submit the main aes key
         _provider.SubmitKey(new FGuid(),
             fetchedAes.MainKey != null
@@ -48,7 +67,9 @@ public class SaturnFileProvider : IDisposable
         var dynamicAesKeys = fetchedAes.DynamicKeys.Select(aes => new KeyValuePair<FGuid, FAesKey>(new FGuid(aes.Guid), new FAesKey(aes.Key))).ToList();
         _provider.SubmitKeys(dynamicAesKeys);
 
-        Constants.CanLobbySwap = _provider.MountedVfs.Any(x => x.Name == "pakchunk0-WindowsClient.pak");
+        Constants.CanSpecialSwap = _provider.MountedVfs.Any(x => x.Name == "pakchunk0-WindowsClient.pak");
+
+        GlobalFileProvider.Provider = _provider;
     }
     
     public void Dispose()

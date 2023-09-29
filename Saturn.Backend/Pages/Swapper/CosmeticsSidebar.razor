@@ -41,60 +41,36 @@
 </ul>
 
 @code {
-    private static Generator _generator;
+    private string SearchPattern = "";
 
-    private static string SearchPattern = "";
-
-    private async Task FilterItems(KeyboardEventArgs key)
+    private async Task FilterItems(KeyboardEventArgs key, int count = 0)
     {
         if (key.Code != "Enter")
             return;
         
-        Constants.ChunkedItems = new List<List<DisplayItemModel>>()
-        {
-            new List<DisplayItemModel>()
-            {
-                new DisplayItemModel()
-                {
-                    Name = "Please wait...",
-                    Description = "Filtering items...",
-                    ID = "CID_117_Athena_Commando_M_TacticalJungle"
-                }
-            }
-        };
         StateHasChanged();
-        
-        switch (Constants.CosmeticState)
-        {
-            case SaturnState.S_Pickaxe:
-                _generator = new PickaxeGenerator();
-                break;
-            case SaturnState.S_Emote:
-                _generator = new EmoteGenerator();
-                break;
-            case SaturnState.S_Skin:
-                _generator = new SkinGenerator();
-                break;
-            case SaturnState.S_Backbling:
-                _generator = new BackblingGenerator();
-                break;
-            case SaturnState.S_Glider:
-                _generator = new GliderGenerator();
-                break;
-        }
+        await Task.Delay(250);
+        StateHasChanged();
 
-        Constants.ChunkedItems[0] = (await _generator.Generate()).OrderBy(x => x.ID).ToList();
-        Constants.ChunkedItems[0].RemoveAll(x => !x.Name.ToLower().Contains(SearchPattern.ToLower()) && !x.Description.ToLower().Contains(SearchPattern.ToLower()) && !x.ID.ToLower().Contains(SearchPattern.ToLower()));
-        
-        Constants.ChunkedItems = Constants.ChunkedItems[0]
-            .Select((x, i) => new { Index = i, Value = x })
-            .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
-            .Select(x => x.Select(v => v.Value).ToList())
-            .ToList();
+        Constants.CosmeticCount = -1;
+        Constants.Cosmetics.Clear();
+        await Constants.Handler.Reset();
+        if (string.IsNullOrWhiteSpace(SearchPattern))
+        {
+            await Constants.Handler.Handler.Execute();
+        }
+        else
+        {
+            await Constants.Handler.Handler.Execute(SearchPattern);
+        }
+        await Task.Delay(250);
+        StateHasChanged();
     }
     
     private async Task SwitchState(SaturnState state)
     {
+        if (Constants.Handler.Handler.HasStarted) return;
+        
         Constants.CosmeticState = state;
         await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOutNoOutro", "pickaxe");
         await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOutNoOutro", "emote");
@@ -105,31 +81,30 @@
         {
             case SaturnState.S_Pickaxe:
                 await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "pickaxe");
-                _generator = new PickaxeGenerator();
+                await Constants.Handler.SwitchHandler(Constants.Handler.PickaxeHandler);
                 break;
             case SaturnState.S_Emote:
                 await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "emote");
-                _generator = new EmoteGenerator();
+                await Constants.Handler.SwitchHandler(Constants.Handler.DanceHandler);
                 break;
             case SaturnState.S_Skin:
                 await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "skin");
-                _generator = new SkinGenerator();
+                await Constants.Handler.SwitchHandler(Constants.Handler.SkinHandler);
                 break;
             case SaturnState.S_Backbling:
                 await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "backbling");
-                _generator = new BackblingGenerator();
+                await Constants.Handler.SwitchHandler(Constants.Handler.BackpackHandler);
                 break;
             case SaturnState.S_Glider:
                 await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "glider");
-                _generator = new GliderGenerator();
+                await Constants.Handler.SwitchHandler(Constants.Handler.GliderHandler);
                 break;
         }
-        
-        Constants.ChunkedItems = (await _generator.Generate()).OrderBy(x => x.ID).ToList()
-            .Select((x, i) => new { Index = i, Value = x })
-            .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
-            .Select(x => x.Select(v => v.Value).ToList())
-            .ToList();
+
+        Constants.ChunkIndex = 0;
+        Constants.CosmeticCount = -1;
+        Constants.Cosmetics.Clear();
+        await Constants.Handler.Handler.Execute();
         StateHasChanged();
     }
 

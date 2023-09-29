@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly struct Metadata
+public readonly struct Metadata
 {
     public readonly StringTable Strings;
     private readonly Padding __padding0;

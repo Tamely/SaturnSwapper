@@ -146,11 +146,8 @@ else if (!_oobeService.OobeType.HasFlag(OobeType.Done) && Constants.State == Sat
         await _oobeService.AddFlag(OobeType.ClickEndPickCosmetics);
         
         Data.Logger.Log("Generating cosmetics!");
-        Constants.ChunkedItems = (await new SkinGenerator().Generate()).OrderBy(x => x.ID).ToList()
-            .Select((x, i) => new { Index = i, Value = x })
-            .GroupBy(x => x.Index / Constants.CHUNK_SIZE)
-            .Select(x => x.Select(v => v.Value).ToList())
-            .ToList();
+        await Constants.Handler.SwitchHandler(Constants.Handler.SkinHandler);
+        await Constants.Handler.Handler.Execute();
         Data.Logger.Log("Done!");
 
         DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", SaturnState.S_Skin.ToString().Split("S_")[1]);

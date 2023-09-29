@@ -1,13 +1,13 @@
 # Contribution to Saturn
 
-You can contribute to the Saturn project with issues and pull requests. Simply filing issues or utilizing the `Support` channel in [Saturn's Discord](https://discord.gg/Saturn) is a great way to contribute. Contributing implementations is also greatly appreciated and will earn you the `Contributor` role on [Saturn's Discord](https://discord.gg/Saturn).
+You can contribute to the Saturn project with issues and pull requests. Simply filing issues or utilizing the `Support` channel in [Saturn's Discord](https://discord.gg/SaturnSwapper) is a great way to contribute. Contributing implementations is also greatly appreciated and will earn you the `Contributor` role on [Saturn's Discord](https://discord.gg/SaturnSwapper).
 
 ## Reporting Issues
 
 We always welcome bug reports, API issues, or feature requests. Please file an issue on [Saturn's GitHub](https://github.com/Tamely/SaturnSwapper) if you want to contribute in this way.
 
-* If your issue is a security vulnerability, please to not file it as a normal issue. Instead, privately DM a holder of either the Contributor or Admin role in [Saturn's Discord](https://discord.gg/Saturn) and ask them to fix it or report it to Tamely.
-    - Usually, you will get a response from them within 24 hours, but if - for whatever reason - you don't, please contact Tamely#6469 directly on Discord and report it to him.
+* If your issue is a security vulnerability, please to not file it as a normal issue. Instead, privately DM a holder of either the Contributor or Manager role in [Saturn's Discord](https://discord.gg/SaturnSwapper) and ask them to fix it or you can report it to @tamely directly.
+    - Usually, you will get a response from them within 24 hours, but if - for whatever reason - you don't, please contact @tamely directly on Discord and report it to him.
 
 ## Contributing Changes
 
@@ -21,7 +21,7 @@ Do:
 * **DO** follow our [coding style](https://github.com/Tamely/SaturnSwapper/blob/master/docs/contributing/CodingStyle.md)
 * **DO** test your implementation before making a pull request
 * **DO** mark an line with `// TODO: ` or `// FIXME: ` to indicate a task that needs to be done and you weren't able to finish it then let us know in the pull request thread
-* **DO** post in [Saturn's Discord](https://discord.gg/Saturn) about your contribution and how it helps the project as we might be able to share insight with you on how to improve or better align your idea with the current project
+* **DO** post in [Saturn's Discord](https://discord.gg/SaturnSwapper) about your contribution and how it helps the project as we might be able to share insight with you on how to improve or better align your idea with the current project
 
 Don't:
 * **DON'T** make pull requests for style changes
@@ -31,7 +31,7 @@ Don't:
 ### Suggested Workflow
 
 We use and recommend the following workflow:
-1. Create an issue for your work on this repo or post about it in [Saturn's Discord](https://discord.gg/Saturn).
+1. Create an issue for your work on this repo or post about it in [Saturn's Discord](https://discord.gg/SaturnSwapper).
     - You can skip this step for trivial changes.
     - Reuse an existing issue on the topic if you can.
     - Get agreement from project maintainers that your issue is worth working on or that no one else is working on it.

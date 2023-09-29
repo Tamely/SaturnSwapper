@@ -1,4 +1,3 @@
-using Radon.CodeAnalysis.Binding.Analyzers;
 using Radon.CodeAnalysis.Syntax.Nodes;
 
 namespace Radon.CodeAnalysis.Binding.Semantics.Members;
@@ -11,5 +10,10 @@ internal sealed class BoundErrorMember : BoundMember
         : base(syntax)
     {
         Context = context;
+    }
+    
+    public override string ToString()
+    {
+        return "?";
     }
 }

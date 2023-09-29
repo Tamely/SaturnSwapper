@@ -5,6 +5,7 @@ public sealed partial class ParenthesizedExpressionSyntax : ExpressionSyntax
     public SyntaxToken OpenParenthesisToken { get; }
     public ExpressionSyntax Expression { get; }
     public SyntaxToken CloseParenthesisToken { get; }
+    public override bool CanBeStatement => false;
     
     public ParenthesizedExpressionSyntax(SyntaxTree syntaxTree, SyntaxToken openParenthesisToken, 
                                          ExpressionSyntax expression, SyntaxToken closeParenthesisToken) 

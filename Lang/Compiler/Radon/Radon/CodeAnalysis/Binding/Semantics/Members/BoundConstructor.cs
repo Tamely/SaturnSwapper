@@ -10,10 +10,18 @@ internal sealed class BoundConstructor : BoundMember
     public override BoundNodeKind Kind => BoundNodeKind.Constructor;
     public ConstructorSymbol Symbol { get; }
     public ImmutableArray<BoundStatement> Statements { get; }
-    public BoundConstructor(SyntaxNode syntax, ConstructorSymbol symbol, ImmutableArray<BoundStatement> statements) 
+    public ImmutableArray<LocalVariableSymbol> Locals { get; }
+    public BoundConstructor(SyntaxNode syntax, ConstructorSymbol symbol, ImmutableArray<BoundStatement> statements, 
+                            ImmutableArray<LocalVariableSymbol> locals) 
         : base(syntax)
     {
         Symbol = symbol;
         Statements = statements;
+        Locals = locals;
+    }
+    
+    public override string ToString()
+    {
+        return Symbol.ToString();
     }
 }

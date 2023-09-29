@@ -1,5 +1,6 @@
-﻿using System.Collections.Immutable;
-using Radon.CodeAnalysis.Binding.Analyzers;
+﻿using System;
+using System.Collections.Immutable;
+using Radon.CodeAnalysis.Binding.Binders;
 using Radon.CodeAnalysis.Syntax;
 
 namespace Radon.CodeAnalysis.Symbols;
@@ -7,7 +8,12 @@ namespace Radon.CodeAnalysis.Symbols;
 public sealed class TemplateSymbol : TypeSymbol
 {
     public override string Name { get; }
-    public override int Size { get; internal set; }
+
+    public override int Size
+    {
+        get => throw new InvalidOperationException("Templates have no size.");
+        internal set => throw new InvalidOperationException("Templates have no size.");
+    }
     internal override TypeBinder? TypeBinder { get; set; }
     public override SymbolKind Kind => SymbolKind.Template;
     public override ImmutableArray<MemberSymbol> Members { get; private protected set; }
@@ -27,8 +33,7 @@ public sealed class TemplateSymbol : TypeSymbol
         {
             AddMember(member);
         }
-
-        Size = -1;
+        
         TypeBinder = typeBinder;
     }
 

@@ -3,11 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using Radon.CodeAnalysis.Binding.Semantics;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
 using Radon.CodeAnalysis.Syntax.Nodes;
+using Radon.CodeAnalysis.Syntax.Nodes.Expressions;
+using Radon.CodeAnalysis.Syntax.Nodes.Statements;
 using Radon.CodeAnalysis.Text;
 
 namespace Radon.CodeAnalysis;
@@ -15,14 +18,18 @@ namespace Radon.CodeAnalysis;
 internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
 {
     private readonly List<Diagnostic> _diagnostics;
+    private readonly List<Diagnostic> _collection;
     private readonly bool _disabled;
     private bool _block;
+    private bool _isCollecting;
 
     public int Count => _diagnostics.Count;
+    public int CollectionCount => _collection.Count;
     
     public DiagnosticBag(bool disabled = false)
     {
         _diagnostics = new List<Diagnostic>();
+        _collection = new List<Diagnostic>();
         _disabled = disabled;
     }
 
@@ -41,14 +48,33 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
         return $"Errors: {Count}";
     }
 
+    /// <summary>
+    /// Blocks the diagnostic bag from reporting diagnostics.
+    /// </summary>
     public void Block()
     {
         _block = true;
     }
 
+    /// <summary>
+    /// Unblocks the diagnostic bag from reporting diagnostics.
+    /// </summary>
     public void Unblock()
     {
         _block = false;
+    }
+
+    public void StartCollection()
+    {
+        _isCollecting = true;
+    }
+    
+    public ImmutableArray<Diagnostic> EndCollection()
+    {
+        _isCollecting = false;
+        var collection = _collection.ToImmutableArray();
+        _collection.Clear();
+        return collection;
     }
 
     private static string GetText(SyntaxKind kind)
@@ -125,6 +151,12 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
 
         var methodString = GetMethod();
         var diagnostic = Diagnostic.Error(location, message, code, methodString);
+        if (_isCollecting)
+        {
+            _collection.Add(diagnostic);
+            return;
+        }
+        
         _diagnostics.Add(diagnostic);
     }
     
@@ -251,8 +283,9 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
             expectedKindText = $"{indefiniteArticle} {name}";
         }
 
-        var message = isDynamic ? $"Unexpected token '{text}', expected {expectedKindText}." 
-                                     : $"Unexpected token '{text}', expected '{expectedKindText}'.";
+        var unexpectedKindText = GetText(expectedKind);
+        var message = isDynamic ? $"Unexpected token '{unexpectedKindText}', expected {expectedKindText}." 
+                                     : $"Unexpected token '{unexpectedKindText}', expected '{expectedKindText}'.";
         
         ReportError(location, message, ErrorCode.UnexpectedToken);
     }
@@ -277,6 +310,61 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
         sb.Append('.');
         var message = sb.ToString();
         ReportError(location, message, ErrorCode.UnexpectedToken);
+    }
+    
+    public void ReportExpressionCannotBeStatement(TextLocation location, ExpressionSyntax expression)
+    {
+        var expressionTypes = typeof(ExpressionSyntax).Assembly.GetTypes()
+            .Where(type => type.IsSubclassOf(typeof(ExpressionSyntax)));
+        var validTypes = new List<ExpressionSyntax>();
+        foreach (var expressionType in expressionTypes)
+        {
+            var instance = Activator.CreateInstance(expressionType, expression.SyntaxTree);
+            if (instance is ExpressionSyntax { CanBeStatement: true } expr)
+            {
+                validTypes.Add(expr);
+            }
+        }
+        
+        var sb = new StringBuilder();
+        for (var i = 0; i < validTypes.Count; i++)
+        {
+            var validType = validTypes[i];
+            sb.Append('\'');
+            sb.Append(validType.SyntaxName);
+            sb.Append('s');
+            sb.Append('\'');
+
+            if (i == validTypes.Count - 2)
+            {
+                sb.Append(", or ");
+            }
+            else if (i != validTypes.Count - 1)
+            {
+                sb.Append(", ");
+            }
+        }
+        
+        var message = $"{expression.SyntaxName} cannot be a statement. Only {sb} can be statements.";
+        ReportError(location, message, ErrorCode.ExpressionCannotBeStatement);
+    }
+    
+    public void ReportInvalidTypeModifier(TextLocation location, string text)
+    {
+        var message = $"The modifier '{text}' cannot be applied to a type.";
+        ReportError(location, message, ErrorCode.InvalidTypeModifier);
+    }
+
+    public void ReportInvalidMethodModifier(TextLocation location, string text)
+    {
+        var message = $"The modifier '{text}' cannot be applied to a method.";
+        ReportError(location, message, ErrorCode.InvalidMethodModifier);
+    }
+
+    public void ReportInvalidFieldModifier(TextLocation location, string text)
+    {
+        var message = $"The modifier '{text}' cannot be applied to a field.";
+        ReportError(location, message, ErrorCode.InvalidFieldModifier);
     }
 
     public void ReportInternalCompilerError(Exception e)
@@ -481,7 +569,7 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
     public void ReportUnresolvedMethod(TextLocation location, string name, ImmutableArray<TypeSymbol> parameterTypes)
     {
         var parameterTypesString = $"parameter types '{string.Join(", ", parameterTypes)}'";
-        if (parameterTypesString.Length == 0)
+        if (parameterTypes.Length == 0)
         {
             parameterTypesString = "no parameters";
         }
@@ -602,5 +690,143 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
     {
         var message = $"Cannot access non-public member '{name}'.";
         ReportError(location, message, ErrorCode.CannotAccessNonPublicMember);
+    }
+
+    public void ReportInvalidBreakOrContinue(TextLocation location, string text)
+    {
+        var message = $"The keyword '{text}' can only be used inside a loop.";
+        ReportError(location, message, ErrorCode.InvalidBreakOrContinue);
+    }
+
+    public void ReportEntryModifierOnlyAllowedOnMethodsAndStructs(TextLocation location)
+    {
+        var message = $"The '{SyntaxKind.EntryKeyword.Text}' modifier can only be used on methods and types.";
+        ReportError(location, message, ErrorCode.EntryModifierOnlyAllowedOnMethodsAndTypes);
+    }
+
+    public void ReportEntryModifierMustBeAppliedToParentStruct(TextLocation location)
+    {
+        var message = $"The '{SyntaxKind.EntryKeyword.Text}' modifier must be applied to a parent struct.";
+        ReportError(location, message, ErrorCode.EntryModifierMustBeAppliedToParentStruct);
+    }
+
+    public void ReportMultipleEntryTypes(TextLocation location)
+    {
+        const string message = "Multiple entry types are not allowed.";
+        ReportError(location, message, ErrorCode.MultipleEntryTypes);
+    }
+
+    public void ReportMultipleEntryMethods(TextLocation location)
+    {
+        const string message = "Multiple entry methods are not allowed.";
+        ReportError(location, message, ErrorCode.MultipleEntryMethods);
+    }
+
+    public void ReportCannotTakeAddress(TextLocation location)
+    {
+        const string message = "Cannot take the address of the given expression.";
+        ReportError(location, message, ErrorCode.CannotTakeAddress);
+    }
+
+    public void ReportOperatorMustBeAppliedToPointer(TextLocation location, string operatorText)
+    {
+        var message = $"The operator '{operatorText}' must be applied to a pointer.";
+        ReportError(location, message, ErrorCode.OperatorMustBeAppliedToPointer);
+    }
+
+    public void ReportCannotAssignToThis(TextLocation location)
+    {
+        const string message = "Cannot assign to 'this'.";
+        ReportError(location, message, ErrorCode.CannotAssignToThis);
+    }
+
+    public void ReportInvalidAssignmentTarget(TextLocation location)
+    {
+        const string message = "Invalid assignment target.";
+        ReportError(location, message, ErrorCode.InvalidAssignmentTarget);
+    }
+
+    public void ReportCannotHaveStaticModifierOnEnum(TextLocation location)
+    {
+        const string message = "Cannot have static modifier on an enum.";
+        ReportError(location, message, ErrorCode.CannotHaveStaticModifierOnEnum);
+    }
+
+    public void ReportCannotHaveNonStaticMemberInStaticType(TextLocation location)
+    {
+        const string message = "Cannot have non-static member in a static type.";
+        ReportError(location, message, ErrorCode.CannotHaveNonStaticMemberInStaticType);
+    }
+
+    public void ReportCannotInstantiateStaticType(TextLocation location, string name)
+    {
+        var message = $"Cannot instantiate static type '{name}'.";
+        ReportError(location, message, ErrorCode.CannotInstantiateStaticType);
+    }
+
+    public void ReportElementTypeCannotBeStatic(TextLocation location)
+    {
+        const string message = "Element type cannot be static.";
+        ReportError(location, message, ErrorCode.ElementTypeCannotBeStatic);
+    }
+
+    public void ReportPointerTypeCannotBeStatic(TextLocation location)
+    {
+        const string message = "Pointer type cannot be static.";
+        ReportError(location, message, ErrorCode.PointerTypeCannotBeStatic);
+    }
+
+    public void ReportInvalidMemberAccess(TextLocation location, string name)
+    {
+        var message = $"Accessing of member '{name}' is not valid at this point";
+        ReportError(location, message, ErrorCode.InvalidMemberAccess);
+    }
+
+    public void ReportCannotInvokeStaticMethodOnInstance(TextLocation location, string name)
+    {
+        var message = $"Cannot invoke static method '{name}' on an instance.";
+        ReportError(location, message, ErrorCode.CannotInvokeStaticMethodOnInstance);
+    }
+
+    public void ReportCannotInvokeInstanceMethodOnType(TextLocation location, string nane)
+    {
+        var message = $"Cannot invoke instance method '{nane}' on a type.";
+        ReportError(location, message, ErrorCode.CannotInvokeInstanceMethodOnType);
+    }
+
+    public void ReportCannotAccessStaticMemberOnInstance(TextLocation location, string name)
+    {
+        var message = $"Cannot access static member '{name}' on an instance.";
+        ReportError(location, message, ErrorCode.CannotAccessStaticMemberOnInstance);
+    }
+
+    public void ReportCannotAccessInstanceMemberOnType(TextLocation location, string name)
+    {
+        var message = $"Cannot access instance member '{name}' on a type.";
+        ReportError(location, message, ErrorCode.CannotAccessInstanceMemberOnType);
+    }
+
+    public void ReportVariableCannotBeVoid(TextLocation location)
+    {
+        const string message = "A variable cannot be of type 'void'.";
+        ReportError(location, message, ErrorCode.VariableCannotBeVoid);
+    }
+
+    public void ReportCannotConstructType(TextLocation location, string name)
+    {
+        var message = $"Cannot construct type '{name}'.";
+        ReportError(location, message, ErrorCode.CannotConstructType);
+    }
+
+    public void ReportCannotReturnVoid(TextLocation location)
+    {
+        const string message = "Cannot return 'void'.";
+        ReportError(location, message, ErrorCode.CannotReturnVoid);
+    }
+
+    public void ArrayElementTypeCannotBeType(TextLocation location, string name)
+    {
+        var message = $"Array element type cannot be '{name}'.";
+        ReportError(location, message, ErrorCode.ArrayElementTypeCannotBeType);
     }
 }

@@ -3,6 +3,7 @@
 @using Saturn.Backend.Data.SaturnAPI.Models
 @using System.IO
 @using Newtonsoft.Json
+@using Saturn.Backend.Data.Swapper.Assets
 
 @inject LocalizationResourceService _localizationResourceService
 
@@ -18,22 +19,32 @@
         </div>
     </div>
     
-    @if (Constants.ChunkedItems.Count == 0 || Constants.ChunkedItems[0].Count == 0)
+    @if (Constants.Cosmetics.Count == 0)
     {
         <div class="tab-message">
-            <div class="text">
-                <h1>@NoCosmeticsKoomoji</h1>
-                <h3>@_localizationResourceService.GetString(26)</h3>
-                <h3>@_localizationResourceService.GetString(27)</h3>
-            </div>
+             <div class="text">
+                 <h1>@NoCosmeticsKoomoji</h1>
+                 <h3>@_localizationResourceService.GetString(26)</h3>
+                 <h3>@_localizationResourceService.GetString(27)</h3>
+             </div>
         </div>
+    }
+    else if (Constants.Handler.Handler.HasStarted && !Constants.Handler.Handler.IsOption)
+    {
+         <div class="tab-message">
+             <div class="text">
+                 <h1>@NoCosmeticsKoomoji</h1>
+                 <h3>Generating cosmetics</h3>
+                 <h3>Please be patient</h3>
+             </div>
+         </div>
     }
     else
     {
-        @foreach (var item in Constants.ChunkedItems[Constants.ChunkIndex])
+        foreach (var item in Constants.Cosmetics)
         {
             <div id="@(item.ID + "-section")" class="section hoverable" @onclick="@(async () => await AddPotentialOption(item))">
-                <img src=@($"https://fortnite-api.com/images/cosmetics/br/{item.ID}/smallicon.png") alt="Icon"/>
+                <img src=@(item.GetHTMLImage()) alt="Icon"/>
                 @if (FaultyIDs.Keys.Contains(item.ID))
                 {
                     <div class="icon-overlay">
@@ -41,7 +52,7 @@
                     </div>
                 }
                 <div class="name">
-                    <h1>@item.Name</h1>
+                    <h1>@item.DisplayName</h1>
 
                     @if (FaultyIDs.Keys.Contains(item.ID))
                     {
@@ -56,18 +67,18 @@
                         </h3>
                     }
                 </div>
-                @if (Constants.PotentialOptions.Contains(item.ID))
+                @if (Constants.ConvertedIDs.Contains(item.ID))
                 {
                     <div class="item-info">
-                        <h3>@_localizationResourceService.GetString(83)</h3>
+                        <h3>@_localizationResourceService.GetString(33)</h3>
                     </div>
                 }
             </div>
         }
 
-        @if (Constants.ChunkIndex == 0 && Constants.ChunkIndex != Constants.ChunkedItems.Count - 1)
+        if (Constants.ChunkIndex == 0 && Constants.ChunkIndex != Constants.ChunkCount - 1)
         {
-            <div id="@("next-section")" class="section hoverable" @onclick="@(() => Constants.ChunkIndex++)">
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async () => await IndexUp())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/Character_HeadhunterStar/smallicon.png") alt="Icon"/>
                 <div class="name">
                     <h1>@_localizationResourceService.GetString(29)</h1>
@@ -75,9 +86,9 @@
                 </div>
             </div>
         }
-        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex == Constants.ChunkedItems.Count - 1)
+        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex == Constants.ChunkCount - 1)
         {
-            <div id="@("next-section")" class="section hoverable" @onclick="@(() => Constants.ChunkIndex--)">
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async () => await IndexDown())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>
                 <div class="name">
                     <h1>@_localizationResourceService.GetString(31)</h1>
@@ -85,9 +96,9 @@
                 </div>
             </div>
         }
-        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex != Constants.ChunkedItems.Count - 1)
+        else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex != Constants.ChunkCount - 1)
         {
-            <div id="@("next-section")" class="section hoverable" @onclick="@(() => Constants.ChunkIndex--)">
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async () => await IndexDown())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>
                 <div class="name">
                     <h1>@_localizationResourceService.GetString(31)</h1>
@@ -95,7 +106,7 @@
                 </div>
             </div>
 
-            <div id="@("next-section")" class="section hoverable" @onclick="@(() => Constants.ChunkIndex++)">
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async () => await IndexUp())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/Character_HeadhunterStar/smallicon.png") alt="Icon"/>
                 <div class="name">
                     <h1>@_localizationResourceService.GetString(29)</h1>
@@ -112,6 +123,24 @@
 
     private string UpdateBackgroundUrl = "/img/banner.png";
     private string NoCosmeticsKoomoji = "(⇀‸↼‶)";
+    
+    private async Task IndexUp()
+    {
+        Constants.CosmeticCount = -1;
+        Constants.Cosmetics.Clear();
+        Constants.ChunkIndex++;
+        await Constants.Handler.Reset();
+        await Constants.Handler.Handler.Execute();
+    }
+    
+    private async Task IndexDown()
+    {
+        Constants.CosmeticCount = -1;
+        Constants.Cosmetics.Clear();
+        Constants.ChunkIndex--;
+        await Constants.Handler.Reset();
+        await Constants.Handler.Handler.Execute();
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -123,11 +152,11 @@
         while (true)
         {
             StateHasChanged();
-            await Task.Delay(500);
+            await Task.Delay(50);
         }
     }
 
-    private async Task AddPotentialOption(DisplayItemModel item)
+    private async Task AddPotentialOption(AssetSelectorItem item)
     {
         if (Constants.PotentialOptions.Contains(item.ID.ToLower()))
             Constants.PotentialOptions.Remove(item.ID.ToLower());

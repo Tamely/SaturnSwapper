@@ -3,20 +3,20 @@ using System.Runtime.InteropServices;
 namespace Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly struct EnumMember
+public readonly struct EnumMember
 {
-    public readonly BindingFlags Flags;
+    public readonly BindingFlags MemberBindingFlags;
     public readonly int Name;
     public readonly int Type;
-    public readonly int Value;
+    public readonly int ValueIndex;
     public readonly int Parent;
     
-    public EnumMember(BindingFlags flags, int name, int type, int value, int parent)
+    public EnumMember(BindingFlags memberBindingFlags, int name, int type, int valueIndex, int parent)
     {
-        Flags = flags;
+        MemberBindingFlags = memberBindingFlags;
         Name = name;
         Type = type;
-        Value = value;
+        ValueIndex = valueIndex;
         Parent = parent;
     }
 }

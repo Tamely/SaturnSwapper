@@ -5,7 +5,7 @@ namespace Radon.Generators;
 
 internal class CurlyIndenter : IDisposable
 {
-    private IndentedTextWriter _indentedTextWriter;
+    private readonly IndentedTextWriter _indentedTextWriter;
     
     public CurlyIndenter(IndentedTextWriter indentedTextWriter, string openingLine = "")
     {

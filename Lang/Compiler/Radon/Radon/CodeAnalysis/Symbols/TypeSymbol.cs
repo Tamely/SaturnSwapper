@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using Radon.CodeAnalysis.Binding;
-using Radon.CodeAnalysis.Binding.Analyzers;
+using Radon.CodeAnalysis.Binding.Binders;
 using Radon.CodeAnalysis.Binding.Semantics.Conversions;
 using Radon.CodeAnalysis.Binding.Semantics.Expressions;
 using Radon.CodeAnalysis.Syntax;
@@ -16,7 +15,7 @@ public abstract class TypeSymbol : Symbol
     private static readonly ImmutableArray<MemberSymbol> EmptyMembers = ImmutableArray<MemberSymbol>.Empty;
     private static readonly ImmutableArray<SyntaxKind> Mods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword);
 
-    public static readonly StructSymbol Error = new("?", -1, EmptyMembers, null, Mods);
+    public static readonly StructSymbol Error = new("?", 0, EmptyMembers, null, Mods);
     public static readonly StructSymbol Void = new("void", 0, EmptyMembers, null, Mods);
     public static readonly StructSymbol Bool = new("bool", 1, EmptyMembers, null, Mods);
     public static readonly StructSymbol SByte = new("sbyte", 1, EmptyMembers, null, Mods);
@@ -30,45 +29,70 @@ public abstract class TypeSymbol : Symbol
     public static readonly StructSymbol Float = new("float", 4, EmptyMembers, null, Mods);
     public static readonly StructSymbol Double = new("double", 8, EmptyMembers, null, Mods);
     public static readonly StructSymbol Char = new("char", 1, EmptyMembers, null, Mods);
-    public static readonly StructSymbol String = new("string", -1, EmptyMembers, null, Mods);
-    public static readonly StructSymbol Archive = new("archive", -1, EmptyMembers, null, Mods);
-    public static readonly EnumSymbol SeekOrigin = new("seekorigin", EmptyMembers, null, Mods);
-    public static readonly TemplateSymbol List;
+    public static readonly StructSymbol String = new("string", 8, EmptyMembers, null, Mods);
+    public static readonly StructSymbol Archive;
+    public static readonly EnumSymbol SeekOrigin = new("seek_origin", EmptyMembers, null, Mods);
     public static readonly StructSymbol System = new("system", 0, EmptyMembers, null, Mods);
+    
+    public static readonly StructSymbol SoftObjectProperty = new("SoftObjectProperty", 8, EmptyMembers, null, Mods);
+    public static readonly StructSymbol ArrayProperty = new("ArrayProperty", 8, EmptyMembers, null, Mods);
+    public static readonly StructSymbol LinearColorProperty = new("LinearColorProperty", 8, EmptyMembers, null, Mods);
+
 
     static TypeSymbol()
     {
         SeekOrigin.AddEnumMember("Begin", 0);
         SeekOrigin.AddEnumMember("Current", 1);
         SeekOrigin.AddEnumMember("End", 2);
-        
-        var typeParameterBuilder = new TypeParameterBuilder();
+        var arMods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword, SyntaxKind.RefKeyword);
+        Archive = new StructSymbol("archive", 8, EmptyMembers, null, arMods);
         {
-            TemplateMethodSymbol writeMethod;
+            MethodSymbol saveMethod;
             {
-                var t = typeParameterBuilder.AddTypeParameter("T");
-                var parameters = ImmutableArray.Create(new ParameterSymbol("value", t, 0));
-                writeMethod = new(Archive, "Write", Void, parameters, Mods, typeParameterBuilder.Build());
-            }
-
-            TemplateMethodSymbol readMethod;
-            {
-                var t = typeParameterBuilder.AddTypeParameter("T");
                 var parameters = ImmutableArray<ParameterSymbol>.Empty;
-                readMethod = new(Archive, "Read", t, parameters, Mods, typeParameterBuilder.Build());
+                saveMethod = new MethodSymbol(Archive, "Save", Void, parameters, Mods);
             }
-
-            MethodSymbol seekMethod;
+            
+            MethodSymbol createArrayPropertyMethod;
             {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("offset", Int, 0),
-                    new ParameterSymbol("origin", SeekOrigin, 1));
-                seekMethod = new MethodSymbol(Archive, "Seek", Void, parameters, Mods);
+                var parameters = ImmutableArray.Create(new ParameterSymbol("array", new ArrayTypeSymbol(SoftObjectProperty), 0));
+                createArrayPropertyMethod = new MethodSymbol(Archive, "CreateArrayProperty", ArrayProperty, parameters, Mods);
             }
-
-            MethodSymbol seekStrMethod;
+            
+            MethodSymbol createLinearColorPropertyMethod;
             {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("str", String, 0));
-                seekStrMethod = new MethodSymbol(Archive, "Seek", Void, parameters, Mods);
+                var parameters = ImmutableArray.Create(new ParameterSymbol("red", Float, 0), new ParameterSymbol("green", Float, 1), new ParameterSymbol("blue", Float, 2), new ParameterSymbol("alpha", Float, 3));
+                createLinearColorPropertyMethod = new MethodSymbol(Archive, "CreateLinearColorProperty", LinearColorProperty, parameters, Mods);
+            }
+            
+            MethodSymbol createSoftObjectPropertyMethod;
+            {
+                var parameters = ImmutableArray.Create(new ParameterSymbol("assetPath", String, 0));
+                createSoftObjectPropertyMethod = new MethodSymbol(Archive, "CreateSoftObjectProperty", SoftObjectProperty, parameters, Mods);
+            }
+            
+            MethodSymbol createSoftObjectPropertyWithSubstringMethod;
+            {
+                var parameters = ImmutableArray.Create(new ParameterSymbol("assetPath", String, 0), new ParameterSymbol("subString", String, 1));
+                createSoftObjectPropertyWithSubstringMethod = new MethodSymbol(Archive, "CreateSoftObjectProperty", SoftObjectProperty, parameters, Mods);
+            }
+            
+            MethodSymbol swapArrayMethod;
+            {
+                var parameters = ImmutableArray.Create(new ParameterSymbol("search", ArrayProperty, 0), new ParameterSymbol("replace", ArrayProperty, 1));
+                swapArrayMethod = new MethodSymbol(Archive, "SwapArrayProperty", Void, parameters, Mods);
+            }
+            
+            MethodSymbol swapSoftObjectMethod;
+            {
+                var parameters = ImmutableArray.Create(new ParameterSymbol("search", SoftObjectProperty, 0), new ParameterSymbol("replace", SoftObjectProperty, 1));
+                swapSoftObjectMethod = new MethodSymbol(Archive, "SwapSoftObjectProperty", Void, parameters, Mods);
+            }
+            
+            MethodSymbol swapLinearColorMethod;
+            {
+                var parameters = ImmutableArray.Create(new ParameterSymbol("search", LinearColorProperty, 0), new ParameterSymbol("replace", LinearColorProperty, 1));
+                swapLinearColorMethod = new MethodSymbol(Archive, "SwapLinearColorProperty", Void, parameters, Mods);
             }
 
             MethodSymbol swapMethod;
@@ -76,94 +100,45 @@ public abstract class TypeSymbol : Symbol
                 var parameters = ImmutableArray.Create(new ParameterSymbol("other", Archive, 0));
                 swapMethod = new MethodSymbol(Archive, "Swap", Void, parameters, Mods);
             }
+            
+            MethodSymbol invalidateMethod;
+            {
+                var parameters = ImmutableArray<ParameterSymbol>.Empty;
+                invalidateMethod = new MethodSymbol(Archive, "Invalidate", Void, parameters, Mods);
+            }
 
             MethodSymbol importMethod;
             {
+                var importMods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword, SyntaxKind.StaticKeyword);
                 var parameters = ImmutableArray.Create(new ParameterSymbol("path", String, 0));
-                importMethod = new MethodSymbol(Archive, "Import", Void, parameters, Mods);
+                importMethod = new MethodSymbol(Archive, "Import", Archive, parameters, importMods);
             }
-
-            Archive.AddMember(writeMethod);
-            Archive.AddMember(readMethod);
-            Archive.AddMember(seekMethod);
-            Archive.AddMember(seekStrMethod);
+            
+            Archive.AddMember(saveMethod);
+            Archive.AddMember(invalidateMethod);
+            Archive.AddMember(swapArrayMethod);
+            Archive.AddMember(swapSoftObjectMethod);
+            Archive.AddMember(swapLinearColorMethod);
+            Archive.AddMember(createArrayPropertyMethod);
+            Archive.AddMember(createLinearColorPropertyMethod);
+            Archive.AddMember(createSoftObjectPropertyWithSubstringMethod);
+            Archive.AddMember(createSoftObjectPropertyMethod);
             Archive.AddMember(swapMethod);
             Archive.AddMember(importMethod);
         }
         {
-            var t = typeParameterBuilder.AddTypeParameter("T");
-            List = new TemplateSymbol("list", EmptyMembers, null, Mods, typeParameterBuilder.Build());
-
-            MethodSymbol addMethod;
-            {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("value", t, 0));
-                addMethod = new MethodSymbol(List, "Add", Void, parameters, Mods);
-            }
-
-            MethodSymbol addRangeMethod;
-            {
-                var listT = new PrimitiveTemplateSymbol(List, ImmutableArray.Create<TypeSymbol>(t));
-                var parameters = ImmutableArray.Create(new ParameterSymbol("items", listT, 0));
-                addRangeMethod = new MethodSymbol(List, "AddRange", Void, parameters, Mods);
-            }
-
-            MethodSymbol removeMethod;
-            {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("item", t, 0));
-                removeMethod = new MethodSymbol(List, "Remove", Void, parameters, Mods);
-            }
-
-            MethodSymbol removeAtMethod;
-            {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("index", Int, 0));
-                removeAtMethod = new MethodSymbol(List, "RemoveAt", Void, parameters, Mods);
-            }
-
-            MethodSymbol clearMethod;
-            {
-                var parameters = ImmutableArray<ParameterSymbol>.Empty;
-                clearMethod = new MethodSymbol(List, "Clear", Void, parameters, Mods);
-            }
-
-            MethodSymbol containsMethod;
-            {
-                var parameters = ImmutableArray.Create(new ParameterSymbol("item", t, 0));
-                containsMethod = new MethodSymbol(List, "Contains", Bool, parameters, Mods);
-            }
-
-            MethodSymbol lengthMethod;
-            {
-                var parameters = ImmutableArray<ParameterSymbol>.Empty;
-                lengthMethod = new MethodSymbol(List, "Length", Int, parameters, Mods);
-            }
-
-            ConstructorSymbol constructor;
-            {
-                var parameters = ImmutableArray<ParameterSymbol>.Empty;
-                constructor = new ConstructorSymbol(List, parameters, Mods);
-            }
-
-            List.AddMember(addMethod);
-            List.AddMember(addRangeMethod);
-            List.AddMember(removeMethod);
-            List.AddMember(removeAtMethod);
-            List.AddMember(clearMethod);
-            List.AddMember(containsMethod);
-            List.AddMember(lengthMethod);
-            List.AddMember(constructor);
-        }
-        {
+            var mods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword, SyntaxKind.StaticKeyword);
             MethodSymbol printMethod;
             {
                 var parameters = ImmutableArray.Create(new ParameterSymbol("value", String, 0));
-                printMethod = new MethodSymbol(System, "Print", Void, parameters, Mods);
+                printMethod = new MethodSymbol(System, "Print", Void, parameters, mods);
             }
 
             MethodSymbol downloadMethod;
             {
                 var parameters = ImmutableArray.Create(new ParameterSymbol("url", String, 0),
-                    new ParameterSymbol("path", String, 1));
-                downloadMethod = new MethodSymbol(System, "Download", Void, parameters, Mods);
+                    new ParameterSymbol("type", String, 1));
+                downloadMethod = new MethodSymbol(System, "Download", Void, parameters, mods);
             }
 
             System.AddMember(printMethod);
@@ -171,6 +146,15 @@ public abstract class TypeSymbol : Symbol
             System = (StructSymbol)System.WithModifer(SyntaxKind.StaticKeyword);
         }
     }
+    
+    public abstract ImmutableArray<MemberSymbol> Members { get; private protected set; }
+    public abstract AssemblySymbol? ParentAssembly { get; }
+    public abstract int Size { get; internal set; }
+    internal abstract TypeBinder? TypeBinder { get; set; }
+    internal TemplateBinder? TemplateBinder { get; set; } // This is only used for templates.
+    public sealed override bool HasType => true;
+    public sealed override TypeSymbol Type => this;
+    public bool IsStatic => HasModifier(SyntaxKind.StaticKeyword);
     
     public static bool operator ==(TypeSymbol? left, TypeSymbol? right)
     {
@@ -200,6 +184,17 @@ public abstract class TypeSymbol : Symbol
         }
 
         Members = Members.Add(member);
+        if (member is FieldSymbol field)
+        {
+            try
+            {
+                var size = field.Type.Size;
+                Size += size;
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
     }
 
     public MemberSymbol? GetMember(string name)
@@ -223,25 +218,26 @@ public abstract class TypeSymbol : Symbol
     
     internal bool TryLookupMethod<TMethodSymbol>(Binder binder, string name, ImmutableArray<TypeSymbol> typeArguments,
         ImmutableArray<BoundExpression> arguments, SyntaxNode callSite, out bool methodNotFound, 
-        out ImmutableArray<TMethodSymbol> ambiguousCalls, out TMethodSymbol methodSymbol) 
+        out ImmutableArray<TMethodSymbol> ambiguousCalls, out TMethodSymbol? methodSymbol) 
         where TMethodSymbol : AbstractMethodSymbol
     {
         methodNotFound = false;
         ambiguousCalls = ImmutableArray<TMethodSymbol>.Empty;
-        methodSymbol = null!;
-        var possibleCandidates = new List<(TMethodSymbol Method, TypeSymbol From, TypeSymbol To)>();
-        var ambiguousCandidates = new List<TMethodSymbol>();
+        methodSymbol = null;
+        var possibleMethods = new List<(TMethodSymbol Method, TypeSymbol From, TypeSymbol To)>();
+        var ambiguousMethods = new List<TMethodSymbol>();
         foreach (var member in Members)
         {
             if (member is TMethodSymbol method &&
                 method.Name == name)
             {
                 var parameterTypes = new List<TypeSymbol>();
-                foreach (var parameter in method.Parameters)
+                for (var i = 0; i < method.Parameters.Length; i++)
                 {
+                    var parameter = method.Parameters[i];
                     parameterTypes.Add(parameter.Type);
                 }
-                
+
                 if (method is TemplateMethodSymbol templateMethod)
                 {
                     if (templateMethod.TypeParameters.Length != typeArguments.Length)
@@ -260,7 +256,11 @@ public abstract class TypeSymbol : Symbol
                         }
                         
                         method = (TMethodSymbol)(object)typeBinder.BuildTemplateMethod(templateMethod, typeArguments, callSite);
-                        parameterTypes = method.Parameters.Select(p => p.Type).ToList();
+                        for (var i = 0; i < method.Parameters.Length; i++)
+                        {
+                            var parameter = method.Parameters[i];
+                            parameterTypes[i] = parameter.Type;
+                        }
                     }
                 }
                 
@@ -278,45 +278,51 @@ public abstract class TypeSymbol : Symbol
                         (conversion.IsIdentity ||
                          conversion.IsImplicit)))
                     {
-                        binder.Diagnostics.ReportCannotConvert(argument.Syntax.Location, argument.Type, parameterType);
-                        possibleCandidates.Add((method, argument.Type, parameterType));
+                        if (argument.Type != Error &&
+                            parameterType != Error)
+                        {
+                            binder.Diagnostics.ReportCannotConvert(argument.Syntax.Location, argument.Type, parameterType);
+                        }
+                        
+                        possibleMethods.Add((method, argument.Type, parameterType));
+                        ambiguousMethods.Add(method);
                         goto failed;
                     }
                 }
                 
-                ambiguousCandidates.Add(method); // If this is called twice, there are at least two methods that fit
+                ambiguousMethods.Add(method); // If this is called twice, there are at least two methods that fit
                                                  // the call, making it ambiguous.
                 failed:;
             }
         }
 
         var ambiguousCall = false;
-        if (possibleCandidates.Count == 0 &&
-            ambiguousCandidates.Count == 0)
+        if (possibleMethods.Count == 0 &&
+            ambiguousMethods.Count == 0)
         {
             methodNotFound = true;
         }
         else
         {
-            if (ambiguousCandidates.Count == 1 &&
-                possibleCandidates.Count == 0)
+            if (ambiguousMethods.Count == 1 &&
+                possibleMethods.Count == 0)
             {
-                methodSymbol = ambiguousCandidates[0];
+                methodSymbol = ambiguousMethods[0];
             }
-            else if (ambiguousCandidates.Count > 1 ||
-                     possibleCandidates.Count > 1)
+            else if (ambiguousMethods.Count > 1 ||
+                     possibleMethods.Count > 1)
             {
                 ambiguousCall = true;
-                foreach (var (method, _, _) in possibleCandidates)
+                foreach (var (method, _, _) in possibleMethods)
                 {
-                    ambiguousCandidates.Add(method);
+                    ambiguousMethods.Add(method);
                 }
                 
-                ambiguousCalls = ambiguousCandidates.ToImmutableArray();
+                ambiguousCalls = ambiguousMethods.ToImmutableArray();
             }
         }
         
-        return !methodNotFound && !ambiguousCall;
+        return !methodNotFound && !ambiguousCall && methodSymbol is not null;
     }
     
     public TypeSymbol WithMembers(ImmutableArray<MemberSymbol> members)
@@ -329,8 +335,8 @@ public abstract class TypeSymbol : Symbol
             _ => throw new InvalidOperationException("Cannot add members to this type.")
         };
     }
-    
-    public TypeSymbol WithModifer(SyntaxKind modifier)
+
+    private TypeSymbol WithModifer(SyntaxKind modifier)
     {
         return this switch
         {
@@ -340,7 +346,7 @@ public abstract class TypeSymbol : Symbol
             _ => throw new InvalidOperationException("Cannot add modifiers to this type.")
         };
     }
-    
+
     public override bool Equals(object? obj)
     {
         if (ReferenceEquals(obj, this))
@@ -379,7 +385,10 @@ public abstract class TypeSymbol : Symbol
     public static ImmutableArray<TypeSymbol> GetPrimitiveTypes()
     {
         return ImmutableArray.Create<TypeSymbol>(
-            Void, Bool, SByte, Byte, Short, UShort, Int, UInt, Long, ULong, Float, Double, Char, String, Archive, SeekOrigin, List, System);
+            Void, Bool, SByte, Byte, Short, UShort, Int, UInt, Long, ULong, 
+            Float, Double, Char, String, Archive, SeekOrigin, System, SoftObjectProperty,
+            ArrayProperty, LinearColorProperty
+        );
     }
     
     public static ImmutableArray<TypeSymbol> GetNumericTypes()
@@ -397,12 +406,4 @@ public abstract class TypeSymbol : Symbol
     {
         return ImmutableArray.Create<TypeSymbol>(Float, Double);
     }
-
-    public abstract ImmutableArray<MemberSymbol> Members { get; private protected set; }
-    public abstract AssemblySymbol? ParentAssembly { get; }
-    public abstract int Size { get; internal set; }
-    internal abstract TypeBinder? TypeBinder { get; set; }
-    internal TemplateBinder? TemplateBinder { get; set; } // This is only used for templates.
-    public sealed override bool HasType => true;
-    public sealed override TypeSymbol Type => this;
 }

@@ -1,4 +1,3 @@
-
 namespace Radon.CodeAnalysis.Binding.Semantics;
 
 internal enum BoundNodeKind
@@ -15,7 +14,6 @@ internal enum BoundNodeKind
     ErrorExpression,
     BlockStatement,
     ExpressionStatement,
-    InvalidStatement,
     SignStatement,
     VariableDeclarationStatement,
     Struct,
@@ -36,5 +34,15 @@ internal enum BoundNodeKind
     TemplateMethod,
     NewArrayExpression,
     ElementAccessExpression,
-    ReturnStatement
+    ReturnStatement,
+    IfStatement,
+    WhileStatement,
+    ForStatement,
+    LabelStatement,
+    ConditionalGotoStatement,
+    GotoStatement,
+    Array,
+    AddressOfExpression,
+    DereferenceExpression,
+    Pointer,
 }

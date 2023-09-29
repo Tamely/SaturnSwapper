@@ -2,12 +2,20 @@ namespace Radon.CodeAnalysis.Binding.Semantics.Operators;
 
 internal enum BoundBinaryOperatorKind
 {
+    PlusEquals,
+    MinusEquals,
+    StarEquals,
+    SlashEquals,
+    PercentEquals,
+    PipeEquals,
+    AmpersandEquals,
+    
     LogicalOr,
     LogicalAnd,
-    LogicalNot,
-    
+
     BitwiseOr,
     BitwiseAnd,
+    BitwiseXor,
     
     Equality,
     Inequality,
@@ -26,6 +34,5 @@ internal enum BoundBinaryOperatorKind
 
     Multiplication,
     Division,
-    Modulo,
-    
+    Modulus,
 }

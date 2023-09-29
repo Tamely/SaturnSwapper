@@ -3,31 +3,17 @@ using System.Runtime.InteropServices;
 namespace Radon.CodeAnalysis.Emit.Binary.MetadataBinary;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-internal readonly struct Method
+public readonly record struct Method(BindingFlags Flags, int Name, int ReturnType, int Parent, int ParameterCount, int FirstParameter, 
+    int LocalCount, int FirstLocal, int InstructionCount, int FirstInstruction)
 {
-    public readonly BindingFlags Flags;
-    public readonly int Name;
-    public readonly int ReturnType;
-    public readonly int Parent;
-    public readonly int ParameterCount;
-    public readonly int FirstParameter;
-    public readonly int LocalCount;
-    public readonly int FirstLocal;
-    public readonly int InstructionCount;
-    public readonly int FirstInstruction;
-    
-    public Method(BindingFlags flags, int name, int returnType, int parent, int parameterCount, int firstParameter, 
-        int localCount, int firstLocal, int instructionCount, int firstInstruction)
-    {
-        Flags = flags;
-        Name = name;
-        ReturnType = returnType;
-        Parent = parent;
-        ParameterCount = parameterCount;
-        FirstParameter = firstParameter;
-        LocalCount = localCount;
-        FirstLocal = firstLocal;
-        InstructionCount = instructionCount;
-        FirstInstruction = firstInstruction;
-    }
+    public readonly BindingFlags Flags = Flags;
+    public readonly int Name = Name;
+    public readonly int ReturnType = ReturnType;
+    public readonly int Parent = Parent;
+    public readonly int ParameterCount = ParameterCount;
+    public readonly int FirstParameter = FirstParameter;
+    public readonly int LocalCount = LocalCount;
+    public readonly int FirstLocal = FirstLocal;
+    public readonly int InstructionCount = InstructionCount;
+    public readonly int FirstInstruction = FirstInstruction;
 }

@@ -1,4 +1,0 @@
-template List<T>
-{
-    
-}
