@@ -44,6 +44,7 @@ internal sealed class ManagedIntProperty : RuntimeObject
 
     public override RuntimeObject CopyTo(nuint address)
     {
+        MemoryUtils.Copy(Address, address, Size);
         return new ManagedIntProperty(IntPropertyData, address);
     }
 

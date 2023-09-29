@@ -48,6 +48,7 @@ internal sealed class ManagedPointer : RuntimeObject
 
     public override RuntimeObject CopyTo(nuint address)
     {
+        MemoryUtils.Copy(Address, address, Size);
         return new ManagedPointer(Type, address, Target);
     }
 

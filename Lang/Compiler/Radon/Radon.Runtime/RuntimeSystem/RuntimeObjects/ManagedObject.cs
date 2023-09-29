@@ -81,6 +81,7 @@ internal class ManagedObject : RuntimeObject
 
     public override RuntimeObject CopyTo(nuint address)
     {
+        MemoryUtils.Copy(Address, address, Size);
         return new ManagedObject(Type, Size, address);
     }
 

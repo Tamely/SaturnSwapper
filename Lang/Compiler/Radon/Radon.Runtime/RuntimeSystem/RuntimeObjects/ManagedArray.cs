@@ -72,6 +72,7 @@ internal sealed class ManagedArray : RuntimeObject
 
     public override RuntimeObject CopyTo(nuint address)
     {
+        MemoryUtils.Copy(Address, address, Size);
         return new ManagedArray(Type, address, _elements);
     }
 

@@ -56,6 +56,7 @@ public sealed class ManagedArchive : RuntimeObject
 
     public override RuntimeObject CopyTo(nuint address)
     {
+        MemoryUtils.Copy(Address, address, Size);
         return new ManagedArchive(Archive, Data, address);
     }
 
