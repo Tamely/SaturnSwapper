@@ -6,6 +6,7 @@
 @using System.Diagnostics
 @using System.Threading
 @using Newtonsoft.Json
+@using Radon.Runtime
 @using Saturn.Backend.Data
 @using Saturn.Backend.Data.Compression
 @using Saturn.Backend.Data.Discord
@@ -114,6 +115,8 @@
 
     private async Task LaunchFortnite()
     {
+        await File.WriteAllTextAsync(Constants.ExternalPath + "files.json", JsonConvert.SerializeObject(Shared.AllowedFiles, Formatting.None));
+        
         if (Constants.CurrentLobbySwaps.Count > 0)
         {
             CompressionBase oodle = new Oodle();

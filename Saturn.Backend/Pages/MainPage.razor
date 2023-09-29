@@ -229,5 +229,6 @@
         await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "discord");
 
         Shared.PakPath = DataCollection.GetGamePath();
+        Shared.AllowedFiles.RemoveAll(x => File.Exists(DataCollection.GetGamePath() + x + ".utoc"));
     }
 }

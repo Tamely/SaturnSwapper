@@ -8,7 +8,9 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
+using Radon.Runtime;
 using Saturn.Backend.Data;
+using Saturn.Backend.Data.Fortnite;
 using Saturn.Backend.Data.FortniteCentral;
 using Saturn.Backend.Data.SaturnAPI;
 using Saturn.Backend.Data.Services;
@@ -77,6 +79,29 @@ namespace Saturn.Client
             foreach (var file in Directory.EnumerateFiles(Constants.DataPath))
             {
                 File.Delete(file);
+            }
+
+            foreach (var file in Shared.AllowedFiles)
+            {
+                if (File.Exists(DataCollection.GetGamePath() + file + ".utoc"))
+                {
+                    File.Delete(DataCollection.GetGamePath() + file + ".utoc");
+                }
+                
+                if (File.Exists(DataCollection.GetGamePath() + file + ".ucas"))
+                {
+                    File.Delete(DataCollection.GetGamePath() + file + ".ucas");
+                }
+                
+                if (File.Exists(DataCollection.GetGamePath() + file + ".pak"))
+                {
+                    File.Delete(DataCollection.GetGamePath() + file + ".pak");
+                }
+                
+                if (File.Exists(DataCollection.GetGamePath() + file + ".sig"))
+                {
+                    File.Delete(DataCollection.GetGamePath() + file + ".sig");
+                }
             }
         }
         
