@@ -760,9 +760,7 @@ internal sealed class AssemblyBuilder
                     _builder._flags &= ~AssemblyFlags.Encryption;
                 }
             }
-
-            key = key.Encrypt(_builder._encryptionKey);
-            value = value.Encrypt(_builder._encryptionKey);
+            
             _builder._signTable.Add(new Sign(key, value));
         }
         
