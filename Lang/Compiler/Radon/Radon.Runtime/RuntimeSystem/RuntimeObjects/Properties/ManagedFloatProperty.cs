@@ -44,6 +44,7 @@ internal sealed class ManagedFloatProperty : RuntimeObject
 
     public override RuntimeObject CopyTo(nuint address)
     {
+        MemoryUtils.Copy(Address, address, Size);
         return new ManagedFloatProperty(FloatPropertyData, address);
     }
 

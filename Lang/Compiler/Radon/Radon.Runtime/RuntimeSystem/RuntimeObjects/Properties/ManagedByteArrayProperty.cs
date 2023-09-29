@@ -51,6 +51,6 @@ internal sealed class ManagedByteArrayProperty : RuntimeObject
 
     public override string ToString()
     {
-        return ByteArrayPropertyData.Value.ToString();
+        return ByteArrayPropertyData.Value.ToString() ?? "null";
     }
 }
