@@ -715,24 +715,23 @@ internal sealed class MethodRuntime
                         
                         if (urlObject is ManagedString url && typeObject is ManagedString type)
                         {
-                            foreach (var file in Shared.AllowedFiles.Where(file => !File.Exists(Shared.PakPath + file + ".sig")))
+                            string file = Shared.AllowedFiles.Where(file => !File.Exists(Shared.PakPath + file + ".sig")).ToArray()[0];
+                            
+                            if (type.ToString().Equals("ucas", StringComparison.InvariantCultureIgnoreCase))
                             {
-                                if (type.ToString().Equals("ucas", StringComparison.InvariantCultureIgnoreCase))
-                                {
-                                    wc.DownloadFile(url.ToString(), Shared.PakPath + file + ".ucas");
-                                }
-                                else if (type.ToString().Equals("utoc", StringComparison.InvariantCultureIgnoreCase))
-                                {
-                                    wc.DownloadFile(url.ToString(), Shared.PakPath + file + ".utoc");                                                      
-                                }
-                                else if (type.ToString().Equals("pak", StringComparison.InvariantCultureIgnoreCase))
-                                {
-                                    wc.DownloadFile(url.ToString(), Shared.PakPath + file + ".pak");                                                     
-                                }
-                                else if (type.ToString().Equals("sig", StringComparison.InvariantCultureIgnoreCase))
-                                {
-                                    wc.DownloadFile(url.ToString(), Shared.PakPath + file + ".sig");                                                     
-                                }
+                                wc.DownloadFile(url.ToString(), Shared.PakPath + file + ".ucas");
+                            }
+                            else if (type.ToString().Equals("utoc", StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                wc.DownloadFile(url.ToString(), Shared.PakPath + file + ".utoc");                                                      
+                            }
+                            else if (type.ToString().Equals("pak", StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                wc.DownloadFile(url.ToString(), Shared.PakPath + file + ".pak");                                                     
+                            }
+                            else if (type.ToString().Equals("sig", StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                wc.DownloadFile(url.ToString(), Shared.PakPath + file + ".sig");                                                     
                             }
                         }
                         else

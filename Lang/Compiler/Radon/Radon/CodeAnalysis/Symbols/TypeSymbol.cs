@@ -44,8 +44,8 @@ public abstract class TypeSymbol : Symbol
         SeekOrigin.AddEnumMember("Begin", 0);
         SeekOrigin.AddEnumMember("Current", 1);
         SeekOrigin.AddEnumMember("End", 2);
-        var mods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword, SyntaxKind.RefKeyword);
-        Archive = new StructSymbol("archive", 8, EmptyMembers, null, mods);
+        var arMods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword, SyntaxKind.RefKeyword);
+        Archive = new StructSymbol("archive", 8, EmptyMembers, null, arMods);
         {
             MethodSymbol saveMethod;
             {
@@ -127,17 +127,18 @@ public abstract class TypeSymbol : Symbol
             Archive.AddMember(importMethod);
         }
         {
+            var mods = ImmutableArray.Create(SyntaxKind.PublicKeyword, SyntaxKind.RuntimeInternalKeyword, SyntaxKind.StaticKeyword);
             MethodSymbol printMethod;
             {
                 var parameters = ImmutableArray.Create(new ParameterSymbol("value", String, 0));
-                printMethod = new MethodSymbol(System, "Print", Void, parameters, Mods);
+                printMethod = new MethodSymbol(System, "Print", Void, parameters, mods);
             }
 
             MethodSymbol downloadMethod;
             {
                 var parameters = ImmutableArray.Create(new ParameterSymbol("url", String, 0),
                     new ParameterSymbol("type", String, 1));
-                downloadMethod = new MethodSymbol(System, "Download", Void, parameters, Mods);
+                downloadMethod = new MethodSymbol(System, "Download", Void, parameters, mods);
             }
 
             System.AddMember(printMethod);
