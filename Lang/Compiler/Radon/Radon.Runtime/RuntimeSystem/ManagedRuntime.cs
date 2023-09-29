@@ -50,6 +50,10 @@ public sealed class ManagedRuntime
     public static RuntimeType SoftObject => System.GetType("SoftObjectProperty");
     public static RuntimeType LinearColor => System.GetType("LinearColorProperty");
     public static RuntimeType ArrayProperty => System.GetType("ArrayProperty");
+    public static RuntimeType ByteArrayProperty => System.GetType("ByteArrayProperty");
+    public static RuntimeType IntProperty => System.GetType("IntProperty");
+    public static RuntimeType FloatProperty => System.GetType("FloatProperty");
+    public static RuntimeType DoubleProperty => System.GetType("DoubleProperty");
 
     static ManagedRuntime()
     {

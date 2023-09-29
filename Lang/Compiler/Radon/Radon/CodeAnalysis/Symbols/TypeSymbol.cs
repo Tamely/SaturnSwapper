@@ -35,6 +35,10 @@ public abstract class TypeSymbol : Symbol
     public static readonly StructSymbol System = new("system", 0, EmptyMembers, null, Mods);
     
     public static readonly StructSymbol SoftObjectProperty = new("SoftObjectProperty", 8, EmptyMembers, null, Mods);
+    public static readonly StructSymbol DoubleProperty = new("DoubleProperty", 8, EmptyMembers, null, Mods);
+    public static readonly StructSymbol FloatProperty = new("FloatProperty", 8, EmptyMembers, null, Mods);
+    public static readonly StructSymbol IntProperty = new("IntProperty", 8, EmptyMembers, null, Mods);
+    public static readonly StructSymbol ByteArrayProperty = new("ByteArrayProperty", 8, EmptyMembers, null, Mods);
     public static readonly StructSymbol ArrayProperty = new("ArrayProperty", 8, EmptyMembers, null, Mods);
     public static readonly StructSymbol LinearColorProperty = new("LinearColorProperty", 8, EmptyMembers, null, Mods);
 
@@ -71,6 +75,30 @@ public abstract class TypeSymbol : Symbol
                 createSoftObjectPropertyMethod = new MethodSymbol(Archive, "CreateSoftObjectProperty", SoftObjectProperty, parameters, Mods);
             }
             
+            MethodSymbol createDoublePropertyMethod;
+            {
+                var parameters = ImmutableArray.Create(new ParameterSymbol("value", Double, 0));
+                createDoublePropertyMethod = new MethodSymbol(Archive, "CreateDoubleProperty", DoubleProperty, parameters, Mods);
+            }
+            
+            MethodSymbol createFloatPropertyMethod;
+            {
+                var parameters = ImmutableArray.Create(new ParameterSymbol("value", Float, 0));
+                createFloatPropertyMethod = new MethodSymbol(Archive, "CreateFloatProperty", FloatProperty, parameters, Mods);
+            }
+            
+            MethodSymbol createIntPropertyMethod;
+            {
+                var parameters = ImmutableArray.Create(new ParameterSymbol("value", Int, 0));
+                createIntPropertyMethod = new MethodSymbol(Archive, "CreateIntProperty", IntProperty, parameters, Mods);
+            }
+            
+            MethodSymbol createByteArrayPropertyMethod;
+            {
+                var parameters = ImmutableArray.Create(new ParameterSymbol("value", String, 0));
+                createByteArrayPropertyMethod = new MethodSymbol(Archive, "CreateByteArrayProperty", ByteArrayProperty, parameters, Mods);
+            }
+            
             MethodSymbol createSoftObjectPropertyWithSubstringMethod;
             {
                 var parameters = ImmutableArray.Create(new ParameterSymbol("assetPath", String, 0), new ParameterSymbol("subString", String, 1));
@@ -93,6 +121,30 @@ public abstract class TypeSymbol : Symbol
             {
                 var parameters = ImmutableArray.Create(new ParameterSymbol("search", LinearColorProperty, 0), new ParameterSymbol("replace", LinearColorProperty, 1));
                 swapLinearColorMethod = new MethodSymbol(Archive, "SwapLinearColorProperty", Void, parameters, Mods);
+            }
+            
+            MethodSymbol swapIntMethod;
+            {
+                var parameters = ImmutableArray.Create(new ParameterSymbol("search", IntProperty, 0), new ParameterSymbol("replace", IntProperty, 1));
+                swapIntMethod = new MethodSymbol(Archive, "SwapIntProperty", Void, parameters, Mods);
+            }
+            
+            MethodSymbol swapFloatMethod;
+            {
+                var parameters = ImmutableArray.Create(new ParameterSymbol("search", FloatProperty, 0), new ParameterSymbol("replace", FloatProperty, 1));
+                swapFloatMethod = new MethodSymbol(Archive, "SwapFloatProperty", Void, parameters, Mods);
+            }
+            
+            MethodSymbol swapDoubleMethod;
+            {
+                var parameters = ImmutableArray.Create(new ParameterSymbol("search", DoubleProperty, 0), new ParameterSymbol("replace", DoubleProperty, 1));
+                swapDoubleMethod = new MethodSymbol(Archive, "SwapDoubleProperty", Void, parameters, Mods);
+            }
+            
+            MethodSymbol swapByteArrayMethod;
+            {
+                var parameters = ImmutableArray.Create(new ParameterSymbol("search", ByteArrayProperty, 0), new ParameterSymbol("replace", ByteArrayProperty, 1));
+                swapByteArrayMethod = new MethodSymbol(Archive, "SwapByteArrayProperty", Void, parameters, Mods);
             }
 
             MethodSymbol swapMethod;
@@ -119,10 +171,18 @@ public abstract class TypeSymbol : Symbol
             Archive.AddMember(swapArrayMethod);
             Archive.AddMember(swapSoftObjectMethod);
             Archive.AddMember(swapLinearColorMethod);
+            Archive.AddMember(swapIntMethod);
+            Archive.AddMember(swapFloatMethod);
+            Archive.AddMember(swapDoubleMethod);
+            Archive.AddMember(swapByteArrayMethod);
             Archive.AddMember(createArrayPropertyMethod);
             Archive.AddMember(createLinearColorPropertyMethod);
             Archive.AddMember(createSoftObjectPropertyWithSubstringMethod);
             Archive.AddMember(createSoftObjectPropertyMethod);
+            Archive.AddMember(createFloatPropertyMethod);
+            Archive.AddMember(createDoublePropertyMethod);
+            Archive.AddMember(createIntPropertyMethod);
+            Archive.AddMember(createByteArrayPropertyMethod);
             Archive.AddMember(swapMethod);
             Archive.AddMember(importMethod);
         }
@@ -387,7 +447,7 @@ public abstract class TypeSymbol : Symbol
         return ImmutableArray.Create<TypeSymbol>(
             Void, Bool, SByte, Byte, Short, UShort, Int, UInt, Long, ULong, 
             Float, Double, Char, String, Archive, SeekOrigin, System, SoftObjectProperty,
-            ArrayProperty, LinearColorProperty
+            ArrayProperty, LinearColorProperty, FloatProperty, DoubleProperty, IntProperty, ByteArrayProperty
         );
     }
     
