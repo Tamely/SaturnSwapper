@@ -67,10 +67,10 @@
                         </h3>
                     }
                 </div>
-                @if (Constants.ConvertedIDs.Contains(item.ID))
+                @if (Constants.PotentialOptions.Contains(item.ID))
                 {
                     <div class="item-info">
-                        <h3>@_localizationResourceService.GetString(33)</h3>
+                        <h3>@_localizationResourceService.GetString(83)</h3>
                     </div>
                 }
             </div>
