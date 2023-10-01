@@ -38,32 +38,8 @@ internal sealed class ProgramBinder : Binder
             ImmutableArray<ParameterSymbol>.Empty, modifiers);
 
         programTypeSymbol = (StructSymbol)programTypeSymbol.WithMembers(ImmutableArray.Create<MemberSymbol>(mainMethodSymbol));
-        var fromArVar = new LocalVariableSymbol("from_ar", TypeSymbol.Archive);
-        var toArVar = new LocalVariableSymbol("to_ar", TypeSymbol.Archive);
-        var context = new SemanticContext(this, _syntax, Diagnostics);
-        Register(context, fromArVar);
-        Register(context, toArVar);
         var statements = _syntax.Statements;
-        var boundStatements = new List<BoundStatement>
-        {
-            new BoundVariableDeclarationStatement(
-                node,
-                fromArVar,
-                new BoundDefaultExpression(
-                    node,
-                    TypeSymbol.Archive
-                )
-            ),
-            new BoundVariableDeclarationStatement(
-                node,
-                toArVar,
-                new BoundDefaultExpression(
-                    node,
-                    TypeSymbol.Archive
-                )
-            ),
-        };
-        
+        var boundStatements = new List<BoundStatement>();
         var statementBinder = new StatementBinder(this);
         foreach (var statement in statements)
         {
