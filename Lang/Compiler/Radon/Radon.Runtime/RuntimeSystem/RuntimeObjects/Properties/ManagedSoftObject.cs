@@ -16,7 +16,7 @@ internal sealed class ManagedSoftObject : RuntimeObject
     {
         SoftObjectPropertyData = softObject ?? new SoftObjectPropertyData();
         Address = pointer;
-        Type = ManagedRuntime.System.GetType("SoftObjectProperty");
+        Type = ManagedRuntime.SoftObject;
         Size = Type.Size;
     }
 

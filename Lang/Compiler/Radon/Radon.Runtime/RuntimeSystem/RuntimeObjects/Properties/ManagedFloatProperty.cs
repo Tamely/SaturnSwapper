@@ -16,7 +16,7 @@ internal sealed class ManagedFloatProperty : RuntimeObject
     {
         FloatPropertyData = value ?? new FloatPropertyData();
         Address = pointer;
-        Type = ManagedRuntime.System.GetType("FloatProperty");
+        Type = ManagedRuntime.FloatProperty;
         Size = Type.Size;
     }
 

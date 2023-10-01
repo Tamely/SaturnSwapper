@@ -31,29 +31,29 @@ public sealed class ManagedRuntime
         }
     }
     
-    public static RuntimeType Void => System.GetType("void");
-    public static RuntimeType Boolean => System.GetType("bool");
-    public static RuntimeType Int8 => System.GetType("sbyte");
-    public static RuntimeType UInt8 => System.GetType("byte");
-    public static RuntimeType Int16 => System.GetType("short");
-    public static RuntimeType UInt16 => System.GetType("ushort");
-    public static RuntimeType Int32 => System.GetType("int");
-    public static RuntimeType UInt32 => System.GetType("uint");
-    public static RuntimeType Int64 => System.GetType("long");
-    public static RuntimeType UInt64 => System.GetType("ulong");
-    public static RuntimeType Float32 => System.GetType("float");
-    public static RuntimeType Float64 => System.GetType("double");
-    public static RuntimeType Char => System.GetType("char");
-    public static RuntimeType String => System.GetType("string");
-    public static RuntimeType Archive => System.GetType("archive");
-    public static RuntimeType CharArray => System.GetType("char[]");
-    public static RuntimeType SoftObject => System.GetType("SoftObjectProperty");
-    public static RuntimeType LinearColor => System.GetType("LinearColorProperty");
-    public static RuntimeType ArrayProperty => System.GetType("ArrayProperty");
-    public static RuntimeType ByteArrayProperty => System.GetType("ByteArrayProperty");
-    public static RuntimeType IntProperty => System.GetType("IntProperty");
-    public static RuntimeType FloatProperty => System.GetType("FloatProperty");
-    public static RuntimeType DoubleProperty => System.GetType("DoubleProperty");
+    public static RuntimeType Void => System.GetTypeFromVersion("void", RadonVersion.RADON_LATEST);
+    public static RuntimeType Boolean => System.GetTypeFromVersion("bool", RadonVersion.RADON_LATEST);
+    public static RuntimeType Int8 => System.GetTypeFromVersion("sbyte", RadonVersion.RADON_LATEST);
+    public static RuntimeType UInt8 => System.GetTypeFromVersion("byte", RadonVersion.RADON_LATEST);
+    public static RuntimeType Int16 => System.GetTypeFromVersion("short", RadonVersion.RADON_LATEST);
+    public static RuntimeType UInt16 => System.GetTypeFromVersion("ushort", RadonVersion.RADON_LATEST);
+    public static RuntimeType Int32 => System.GetTypeFromVersion("int", RadonVersion.RADON_LATEST);
+    public static RuntimeType UInt32 => System.GetTypeFromVersion("uint", RadonVersion.RADON_LATEST);
+    public static RuntimeType Int64 => System.GetTypeFromVersion("long", RadonVersion.RADON_LATEST);
+    public static RuntimeType UInt64 => System.GetTypeFromVersion("ulong", RadonVersion.RADON_LATEST);
+    public static RuntimeType Float32 => System.GetTypeFromVersion("float", RadonVersion.RADON_LATEST);
+    public static RuntimeType Float64 => System.GetTypeFromVersion("double", RadonVersion.RADON_LATEST);
+    public static RuntimeType Char => System.GetTypeFromVersion("char", RadonVersion.RADON_LATEST);
+    public static RuntimeType String => System.GetTypeFromVersion("string", RadonVersion.RADON_LATEST);
+    public static RuntimeType Archive => System.GetTypeFromVersion("archive", RadonVersion.RADON_LATEST);
+    public static RuntimeType CharArray => System.GetTypeFromVersion("char[]", RadonVersion.RADON_LATEST);
+    public static RuntimeType SoftObject => System.GetTypeFromVersion("SoftObjectProperty", RadonVersion.RADON_LATEST);
+    public static RuntimeType LinearColor => System.GetTypeFromVersion("LinearColorProperty", RadonVersion.RADON_LATEST);
+    public static RuntimeType ArrayProperty => System.GetTypeFromVersion("ArrayProperty", RadonVersion.RADON_LATEST);
+    public static RuntimeType ByteArrayProperty => System.GetTypeFromVersion("ByteArrayProperty", RadonVersion.RADON_LATEST);
+    public static RuntimeType IntProperty => System.GetTypeFromVersion("IntProperty", RadonVersion.RADON_LATEST);
+    public static RuntimeType FloatProperty => System.GetTypeFromVersion("FloatProperty", RadonVersion.RADON_LATEST);
+    public static RuntimeType DoubleProperty => System.GetTypeFromVersion("DoubleProperty", RadonVersion.RADON_LATEST);
 
     static ManagedRuntime()
     {
@@ -130,8 +130,25 @@ public sealed class ManagedRuntime
         return CreateType(typeInfo);
     }
 
-    public RuntimeType GetType(string name)
+    public RuntimeType GetTypeFromVersion(string name, RadonVersion endVersion)
     {
+        return GetTypeFromVersion(name, RadonVersion.RADON_1_0_0, endVersion);
+    }
+    
+    public RuntimeType GetTypeFromVersion(string name, RadonVersion begin, RadonVersion end)
+    {
+        var version = AssemblyInfo.Version;
+        // If the end version is 0, then it is the latest version.
+        if (end == 0)
+        {
+            end = RadonVersion.RADON_LATEST;
+        }
+        
+        if (version < begin.GetVersion() || version > end.GetVersion())
+        {
+            return null!;
+        }
+        
         var typeInfo = Types.Keys.FirstOrDefault(x => x.Name == name);
         if (typeInfo is not null)
         {

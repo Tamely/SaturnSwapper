@@ -17,7 +17,7 @@ internal sealed class ManagedByteArrayProperty : RuntimeObject
     {
         ByteArrayPropertyData = value ?? new ByteArrayPropertyData();
         Address = pointer;
-        Type = ManagedRuntime.System.GetType("ByteArrayProperty");
+        Type = ManagedRuntime.ByteArrayProperty;
         Size = Type.Size;
     }
 
