@@ -11,7 +11,7 @@ namespace Saturn.Backend.Data.SaturnAPI
 {
     public interface ISaturnAPIService
     {
-        public Task<T> ReturnEndpointAsync<T>(string url);
+        public Task<T?> ReturnEndpointAsync<T>(string url);
         public string ReturnEndpoint(string url);
     }
     public class SaturnAPIService : ISaturnAPIService
@@ -39,12 +39,12 @@ namespace Saturn.Backend.Data.SaturnAPI
             }, configureSerialization: s => s.UseSerializer<JsonNetSerializer>());
         }
 
-        public async Task<T> ReturnEndpointAsync<T>(string url)
+        public async Task<T?> ReturnEndpointAsync<T>(string url)
         {
             if (!Directory.Exists(Constants.APICachePath))
                 Directory.CreateDirectory(Constants.APICachePath);
             
-            CacheModel<T> data;
+            CacheModel<T?> data;
             if (File.Exists(Constants.APICachePath + "index" + url.Replace("/", "").Replace("?", "").Replace("&", "")))
             {
                 data = JsonConvert.DeserializeObject<CacheModel<T>>(await File.ReadAllTextAsync(Constants.APICachePath + "index" + url.Replace("/", "").Replace("?", "").Replace("&", "")));
@@ -62,7 +62,7 @@ namespace Saturn.Backend.Data.SaturnAPI
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
                 return default;
 
-            data = new CacheModel<T>
+            data = new CacheModel<T?>
             {
                 Data = JsonConvert.DeserializeObject<T>(response.Content ?? "{}"),
                 Expiration = DateTime.UtcNow.AddHours(3)
