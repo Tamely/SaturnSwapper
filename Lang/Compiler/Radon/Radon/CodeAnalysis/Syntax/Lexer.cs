@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Text;
 using System.Linq;
 using Radon.CodeAnalysis.Syntax.Nodes;
@@ -310,7 +311,7 @@ internal sealed class Lexer
             
             var length = _position - _start;
             var text = _text.ToString(_start, length);
-            if (double.TryParse(text, out var doubleValue))
+            if (double.TryParse(text, CultureInfo.InvariantCulture, out var doubleValue))
             {
                 _value = doubleValue;
                 _kind = SyntaxKind.NumberToken;
