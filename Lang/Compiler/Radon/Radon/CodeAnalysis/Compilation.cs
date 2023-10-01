@@ -7,6 +7,7 @@ using Radon.CodeAnalysis.Binding.Semantics;
 using Radon.CodeAnalysis.Binding.Semantics.Types;
 using Radon.CodeAnalysis.Emit;
 using Radon.CodeAnalysis.Emit.Builders;
+using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
 using Radon.CodeAnalysis.Syntax.Nodes;
 
@@ -19,6 +20,7 @@ public sealed class Compilation
     public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
     public ImmutableArray<Diagnostic> Diagnostics { get; }
     public Scope AssemblyScope => _boundTree.Scope ?? new Scope(null);
+    public AssemblySymbol Assembly => _boundTree.Assembly ?? throw new Exception("Assembly is null.");
     public Compilation(SyntaxTree syntaxTree)
     {
         var syntaxTrees = ImmutableArray.CreateBuilder<SyntaxTree>();
@@ -33,27 +35,6 @@ public sealed class Compilation
         
         _boundTree = GetTree();
         Diagnostics = _proceedWithCompilation ? _boundTree.Diagnostics.AddRange(diagnostics) : diagnostics;
-    }
-
-    private BoundAssembly GetTree()
-    {
-        if (!_proceedWithCompilation)
-        {
-            return new BoundAssembly(SyntaxNode.Empty, null, ImmutableArray<BoundType>.Empty, Diagnostics, null);
-        }
-        
-        try
-        {
-            var assemblyBinder = new AssemblyBinder();
-            var assembly = assemblyBinder.Bind(SyntaxNode.Empty, SyntaxTrees);
-            return (BoundAssembly)assembly;
-        }
-        catch (Exception e)
-        {
-            var diagnosticBag = new DiagnosticBag();
-            diagnosticBag.ReportInternalCompilerError(e);
-            return new BoundAssembly(SyntaxNode.Empty, null, ImmutableArray<BoundType>.Empty, diagnosticBag.ToImmutableArray(), null);
-        }
     }
     
     public byte[]? Compile(out ImmutableArray<Diagnostic> diagnostics)
@@ -72,6 +53,27 @@ public sealed class Compilation
             diagnosticBag.ReportInternalCompilerError(e);
             diagnostics = diagnosticBag.ToImmutableArray();
             return null;
+        }
+    }
+    
+    private BoundAssembly GetTree()
+    {
+        if (!_proceedWithCompilation)
+        {
+            return new BoundAssembly(SyntaxNode.Empty, null, ImmutableArray<BoundType>.Empty, Diagnostics, null);
+        }
+        
+        try
+        {
+            var assemblyBinder = new AssemblyBinder();
+            var assembly = assemblyBinder.Bind(SyntaxNode.Empty, SyntaxTrees);
+            return (BoundAssembly)assembly;
+        }
+        catch (Exception e)
+        {
+            var diagnosticBag = new DiagnosticBag();
+            diagnosticBag.ReportInternalCompilerError(e);
+            return new BoundAssembly(SyntaxNode.Empty, null, ImmutableArray<BoundType>.Empty, diagnosticBag.ToImmutableArray(), null);
         }
     }
 }

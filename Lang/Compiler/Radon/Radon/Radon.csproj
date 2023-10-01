@@ -17,5 +17,7 @@
     <ItemGroup>
         <InternalsVisibleTo Include="Radon.Runtime" />
         <InternalsVisibleTo Include="ILViewer" />
+        <InternalsVisibleTo Include="Radon.Lsp" />
+        <InternalsVisibleTo Include="Saturn.Backend" />
     </ItemGroup>
 </Project>
