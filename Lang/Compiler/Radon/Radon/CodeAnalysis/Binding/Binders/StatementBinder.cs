@@ -148,6 +148,7 @@ internal sealed class StatementBinder : Binder
             return new BoundVariableDeclarationStatement(syntax, variableSymbol, null);
         }
         
+        variableSymbol.HasBeenAssigned = true;
         var expressionBinder = new ExpressionBinder(this);
         var boundInitializer = (BoundExpression)expressionBinder.Bind(initializer);
         var boundConversion = expressionBinder.BindConversion(boundInitializer, type, ImmutableArray<TypeSymbol>.Empty);
