@@ -306,7 +306,7 @@ public static class ExportHelpers
             }
         }
         
-        return weaponDefinition.GetOrDefault<FSoftObjectPath>("WeaponActorClass").AssetPathName.Text;
+        return weaponDefinition.GetOrDefault<FSoftObjectPath>("PrimaryFireAbility").AssetPathName.Text;
     }
     
     public static List<UObject?> GetWeaponMeshes(UObject weaponDefinition)
