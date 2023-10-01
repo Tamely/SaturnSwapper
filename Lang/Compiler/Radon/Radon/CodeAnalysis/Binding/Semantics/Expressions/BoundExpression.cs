@@ -12,3 +12,8 @@ internal abstract class BoundExpression : BoundNode
     {
     }
 }
+
+internal interface ISymbolExpression
+{
+    Symbol Symbol { get; }
+}

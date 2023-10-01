@@ -3,7 +3,7 @@ using Radon.CodeAnalysis.Syntax.Nodes;
 
 namespace Radon.CodeAnalysis.Binding.Semantics.Expressions;
 
-internal sealed class BoundNameExpression : BoundExpression
+internal sealed class BoundNameExpression : BoundExpression, ISymbolExpression
 {
     public override BoundNodeKind Kind => BoundNodeKind.NameExpression;
     public override TypeSymbol Type { get; }
