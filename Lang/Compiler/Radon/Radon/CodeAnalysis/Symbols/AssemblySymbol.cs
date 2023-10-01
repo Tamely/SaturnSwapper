@@ -15,4 +15,5 @@ public sealed class AssemblySymbol : Symbol
     }
     
     public override string ToString() => Name;
+    public override int GetHashCode() => Name.GetHashCode();
 }

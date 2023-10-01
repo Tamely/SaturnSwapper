@@ -125,6 +125,26 @@ public sealed class RuntimeType
         {
             return new ManagedSoftObject(null, address);
         }
+        
+        if (TypeInfo == ManagedRuntime.FloatProperty.TypeInfo)
+        {
+            return new ManagedFloatProperty(null, address);
+        }
+        
+        if (TypeInfo == ManagedRuntime.DoubleProperty.TypeInfo)
+        {
+            return new ManagedDoubleProperty(null, address);
+        }
+        
+        if (TypeInfo == ManagedRuntime.IntProperty.TypeInfo)
+        {
+            return new ManagedIntProperty(null, address);
+        }
+        
+        if (TypeInfo == ManagedRuntime.ByteArrayProperty.TypeInfo)
+        {
+            return new ManagedByteArrayProperty(null, address);
+        }
 
         if (TypeInfo.IsPointer)
         {

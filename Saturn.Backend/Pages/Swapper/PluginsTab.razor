@@ -76,7 +76,7 @@
 @code {
     
     private string NoPluginsKoomoji = "(⇀‸↼‶)";
-    private List<MarketplaceModel> Marketplace = new();
+    private List<MarketplaceModel>? Marketplace = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -97,57 +97,62 @@
 
     private async Task RefreshPlugins()
     {
-        Constants.OwnedPlugins = new();
-        foreach (var file in Directory.EnumerateFiles(Constants.PluginPath))
+        Constants.OwnedPlugins = new List<PluginModel>();
+        var files = Directory.GetFiles(Constants.PluginPath);
+        foreach (var file in files)
         {
-            if (!file.EndsWith(".csp")) continue;
+            if (!file.EndsWith(".csp"))
+            {
+                continue;
+            }
 
             var compiledPlugin = await File.ReadAllBytesAsync(file);
             var assembly = Disassembler.Disassemble(compiledPlugin);
             var assemblyInfo = new AssemblyInfo(assembly);
+            TypeTracker.Clear();
 
-            string Name = "Unset Name";
-            string Description = "Unset Description";
-            string Version = "1.0.0";
-            string Author = "Unset Author";
-            string Icon = "https://image.fnbr.co/outfit/5ab15c3e0499b850d8511de4/icon_192.png";
+            var name = "Unset Name";
+            var description = "Unset Description";
+            var version = "1.0.0";
+            var author = "Unset Author";
+            var icon = "https://image.fnbr.co/outfit/5ab15c3e0499b850d8511de4/icon_192.png";
 
             foreach (var sign in assemblyInfo.Metadata.Signs.Signs)
             {
                 if (string.Equals(sign.Key, "name", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    Name = sign.Value;
+                    name = sign.Value;
                 }
                 
                 if (string.Equals(sign.Key, "description", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    Description = sign.Value;
+                    description = sign.Value;
                 }
                 
                 if (string.Equals(sign.Key, "version", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    Version = sign.Value;
+                    version = sign.Value;
                 }
                 
                 if (string.Equals(sign.Key, "author", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    Author = sign.Value;
+                    author = sign.Value;
                 }
                 
                 if (string.Equals(sign.Key, "icon", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    Icon = sign.Value;
+                    icon = sign.Value;
                 }
             }
             
             Constants.OwnedPlugins.Add(new PluginModel()
             {
-                Name = Name,
-                Description = Description,
+                Name = name,
+                Description = description,
                 AssemblyInfo = assemblyInfo,
-                Author = Author,
-                Icon = Icon,
-                Version = Version
+                Author = author,
+                Icon = icon,
+                Version = version
             });
         }
     }

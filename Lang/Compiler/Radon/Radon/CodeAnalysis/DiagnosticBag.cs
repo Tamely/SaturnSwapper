@@ -829,4 +829,10 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
         var message = $"Array element type cannot be '{name}'.";
         ReportError(location, message, ErrorCode.ArrayElementTypeCannotBeType);
     }
+
+    public void ReportVariableUseBeforeAssignment(TextLocation location, string name)
+    {
+        var message = $"Variable '{name}' is used before it is assigned.";
+        ReportError(location, message, ErrorCode.VariableUseBeforeAssignment);
+    }
 }

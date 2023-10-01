@@ -28,7 +28,7 @@ public sealed class ManagedArchive : RuntimeObject
         Archive = archive ?? new ZenAsset();
         Data = data ?? new NonStaticSaturnData();
         Address = pointer;
-        Type = ManagedRuntime.System.GetType("archive");
+        Type = ManagedRuntime.Archive;
         Size = Type.Size;
     }
 
@@ -56,6 +56,7 @@ public sealed class ManagedArchive : RuntimeObject
 
     public override RuntimeObject CopyTo(nuint address)
     {
+        MemoryUtils.Copy(Address, address, Size);
         return new ManagedArchive(Archive, Data, address);
     }
 

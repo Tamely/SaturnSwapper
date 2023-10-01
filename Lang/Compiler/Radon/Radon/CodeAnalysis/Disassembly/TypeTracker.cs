@@ -24,10 +24,14 @@ internal static class TypeTracker
         Types.Add(typeDefinition, type);
         return type;
     }
-    
+
     public static TypeInfo GetTypeInfo(TypeDefinition typeDefinition)
     {
-        // It has to exist, otherwise we wouldn't be able to get here.
         return Types[typeDefinition];
+    }
+    
+    public static void Clear()
+    {
+        Types.Clear();
     }
 }

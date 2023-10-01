@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using Radon.CodeAnalysis.Symbols;
-using Radon.CodeAnalysis.Syntax.Nodes;
 using Radon.CodeAnalysis.Text;
 
 namespace Radon.CodeAnalysis.Binding;
@@ -57,7 +55,7 @@ public sealed class Scope
 
     public bool TryDeclareSymbol(Symbol symbol, TextLocation location)
     {
-        if (_symbolDeclarations.ContainsKey(symbol))
+        if (HasConflicts(symbol))
         {
             return false;
         }
@@ -88,13 +86,6 @@ public sealed class Scope
         
         symbol = default;
         return false;
-    }
-
-    public void RemoveSymbol(Symbol symbol)
-    {
-        _symbols.Remove(symbol);
-        _symbolDeclarations.Remove(symbol);
-        _symbolReferences.Remove(symbol);
     }
     
     public TextLocation GetSymbolDeclaration(Symbol symbol)
@@ -160,5 +151,82 @@ public sealed class Scope
         }
         
         return symbols;
+    }
+
+    private bool HasConflicts(Symbol symbol)
+    {
+        if (symbol is VariableSymbol)
+        {
+            foreach (var sym in _symbols)
+            {
+                if (sym is VariableSymbol variableSymbol)
+                {
+                    if (variableSymbol.Name == symbol.Name)
+                    {
+                        return true;
+                    }
+                }
+            }
+            
+            return Parent?.HasConflicts(symbol) ?? false;
+        }
+
+        if (symbol is MemberSymbol)
+        {
+            foreach (var sym in _symbols)
+            {
+                if (sym is AbstractMethodSymbol left && symbol is AbstractMethodSymbol right)
+                {
+                    if (left.Name != right.Name)
+                    {
+                        continue;
+                    }
+                    
+                    var leftParameters = left.Parameters;
+                    var rightParameters = right.Parameters;
+                    if (leftParameters.Length != rightParameters.Length)
+                    {
+                        continue;
+                    }
+                    
+                    for (var i = 0; i < leftParameters.Length; i++)
+                    {
+                        if (leftParameters[i].Type != rightParameters[i].Type)
+                        {
+                            goto Continue;
+                        }
+                    }
+                    
+                    return true;
+                }
+
+                if (sym is MemberSymbol or TypeSymbol)
+                {
+                    if (sym.Name == symbol.Name)
+                    {
+                        return true;
+                    }
+                }
+                
+                Continue:;
+            }
+
+            return false;
+        }
+
+        if (symbol is TypeParameterSymbol)
+        {
+            foreach (var sym in _symbols)
+            {
+                if (sym.Name == symbol.Name)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        
+        return false;
     }
 }

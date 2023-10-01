@@ -109,7 +109,7 @@ public class OptionHandler
                 if (option.IsRandom) return;
                 if ((option.Series ?? "").Equals(item.Series ?? ""))
                 {
-                    if (!string.IsNullOrWhiteSpace(exportData.WeaponActorClass) ||!string.IsNullOrWhiteSpace(exportData.Mesh))
+                    if (!string.IsNullOrWhiteSpace(exportData.PrimaryFireAbility) ||!string.IsNullOrWhiteSpace(exportData.Mesh))
                     {
                         AssetExportData optionExportData;
                         if (Constants.AssetCache.TryGetValue(option.ID, out var value))
@@ -122,7 +122,7 @@ public class OptionHandler
                             Constants.AssetCache.Add(option.ID, optionExportData);
                         }
                         
-                        if (!(optionExportData.WeaponActorClass ?? "").Equals(exportData.WeaponActorClass ?? "", StringComparison.InvariantCultureIgnoreCase))
+                        if (!(optionExportData.PrimaryFireAbility ?? "").Equals(exportData.PrimaryFireAbility ?? "", StringComparison.InvariantCultureIgnoreCase))
                             return;
                         
                         if (!(optionExportData.Mesh ?? "").Equals(exportData.Mesh ?? "", StringComparison.InvariantCultureIgnoreCase))

@@ -550,7 +550,8 @@ Skip:
             if (Current.Kind == SyntaxKind.IdentifierToken)
             {
                 NextToken();
-                if (Current.Kind == SyntaxKind.EqualsToken)
+                if (Current.Kind == SyntaxKind.EqualsToken ||
+                    Current.Kind == SyntaxKind.SemicolonToken)
                 {
                     ResetPos(pos);
                     return ParseVariableDeclarationStatement();

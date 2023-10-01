@@ -231,27 +231,6 @@ internal sealed class ExpressionBinder : Binder
     
     private BoundExpression BindInvocationExpression(InvocationExpressionSyntax syntax, SemanticContext context)
     {
-        static SyntaxToken GetMethodIdentifier(InvocationExpressionSyntax syntax)
-        {
-            return syntax.Expression switch
-            {
-                NameExpressionSyntax nameExpression => nameExpression.IdentifierToken,
-                MemberAccessExpressionSyntax memberAccessExpression => memberAccessExpression.Name,
-                _ => throw new InvalidOperationException("Invalid invocation expression")
-            };
-        }
-        
-        static AbstractMethodSymbol? StripMethodSymbol(BoundExpression expression)
-        {
-            return expression switch
-            {
-                BoundMemberAccessExpression memberAccessExpression =>
-                    memberAccessExpression.Member as AbstractMethodSymbol,
-                BoundNameExpression nameExpression => (nameExpression.Symbol as AbstractMethodSymbol)!,
-                _ => null
-            };
-        }
-        
         var iArguments = ImmutableArray.CreateBuilder<BoundExpression>();
         Diagnostics.Block();
         foreach (var argument in syntax.ArgumentList.Arguments)
@@ -300,11 +279,38 @@ internal sealed class ExpressionBinder : Binder
         {
             var argument = syntax.ArgumentList.Arguments[i];
             var boundArgument = BindExpression(argument);
+            var symbol = GetSymbol(boundArgument);
+            if (symbol is LocalVariableSymbol { HasBeenAssigned: false })
+            {
+                Diagnostics.ReportVariableUseBeforeAssignment(argument.Location, symbol.Name);
+            }
+            
             var converted = BindConversion(boundArgument, methodSymbol.Parameters[i].Type, _typeArguments);
             arguments.Add(converted);
         }
         
         return new BoundInvocationExpression(syntax, methodSymbol, boundExpression, arguments.ToImmutable(), methodSymbol.Type);
+
+        static SyntaxToken GetMethodIdentifier(InvocationExpressionSyntax syntax)
+        {
+            return syntax.Expression switch
+            {
+                NameExpressionSyntax nameExpression => nameExpression.IdentifierToken,
+                MemberAccessExpressionSyntax memberAccessExpression => memberAccessExpression.Name,
+                _ => throw new InvalidOperationException("Invalid invocation expression")
+            };
+        }
+
+        static AbstractMethodSymbol? StripMethodSymbol(BoundExpression expression)
+        {
+            var symbol = GetSymbol(expression);
+            if (symbol is AbstractMethodSymbol methodSymbol)
+            {
+                return methodSymbol;
+            }
+            
+            return null;
+        }
     }
     
     private BoundExpression BindLiteralExpression(LiteralExpressionSyntax syntax, SemanticContext context)
@@ -371,6 +377,12 @@ internal sealed class ExpressionBinder : Binder
             expressionType = pointer.PointedType;
         }
         
+        var symbol = GetSymbol(boundExpression);
+        if (symbol is LocalVariableSymbol { HasBeenAssigned: false })
+        {
+            Diagnostics.ReportVariableUseBeforeAssignment(syntax.Name.Location, symbol.Name);
+        }
+        
         _isBindingInvocation = isBindingInvocation;
         if (expressionType == TypeSymbol.Error)
         {
@@ -404,45 +416,35 @@ internal sealed class ExpressionBinder : Binder
             
             return new BoundMemberAccessExpression(syntax, boundExpression, methodSymbol);
         }
-
+        
         var memberSymbol = expressionType.GetMember(memberName);
-        if (memberSymbol is AbstractMethodSymbol)
+        switch (memberSymbol)
         {
-            Diagnostics.ReportInvalidMemberAccess(syntax.Name.Location, memberName);
+            case AbstractMethodSymbol:
+                Diagnostics.ReportInvalidMemberAccess(syntax.Name.Location, memberName);
+                break;
+            case null:
+                Diagnostics.ReportUndefinedMember(syntax.Name.Location, memberName, expressionType);
+                return new BoundErrorExpression(syntax, context);
         }
-        
-        if (memberSymbol is null)
-        {
-            Diagnostics.ReportUndefinedMember(syntax.Name.Location, memberName, expressionType);
-            return new BoundErrorExpression(syntax, context);
-        }
-        
+
         if (!memberSymbol.HasModifier(SyntaxKind.PublicKeyword) &&
             _currentType != memberSymbol.ParentType)
         {
             Diagnostics.ReportCannotAccessNonPublicMember(syntax.Name.Location, memberName);
         }
         
-        if (memberSymbol.IsStatic && GetSymbol(boundExpression) is not TypeSymbol)
+        switch (memberSymbol.IsStatic)
         {
-            Diagnostics.ReportCannotAccessStaticMemberOnInstance(syntax.Name.Location, memberName);
-        }
-        else if (!memberSymbol.IsStatic && GetSymbol(boundExpression) is TypeSymbol)
-        {
-            Diagnostics.ReportCannotAccessInstanceMemberOnType(syntax.Name.Location, memberName);
+            case true when symbol is not TypeSymbol:
+                Diagnostics.ReportCannotAccessStaticMemberOnInstance(syntax.Name.Location, memberName);
+                break;
+            case false when symbol is TypeSymbol:
+                Diagnostics.ReportCannotAccessInstanceMemberOnType(syntax.Name.Location, memberName);
+                break;
         }
         
         return new BoundMemberAccessExpression(syntax, boundExpression, memberSymbol);
-
-        static Symbol GetSymbol(BoundExpression expression)
-        {
-            return expression switch
-            {
-                BoundNameExpression nameExpression => nameExpression.Symbol,
-                BoundMemberAccessExpression memberAccessExpression => memberAccessExpression.Member,
-                _ => throw new InvalidOperationException("Invalid member access expression")
-            };
-        }
     }
     
     private BoundExpression BindNameExpression(NameExpressionSyntax syntax, SemanticContext context)
@@ -517,8 +519,14 @@ internal sealed class ExpressionBinder : Binder
         var convertedArguments = ImmutableArray.CreateBuilder<BoundExpression>();
         for (var i = 0; i < arguments.Count; i++)
         {
-            var argument = arguments[i];
             var parameter = constructor.Parameters[i];
+            var argument = arguments[i];
+            var symbol = GetSymbol(argument);
+            if (symbol is LocalVariableSymbol { HasBeenAssigned: false })
+            {
+                Diagnostics.ReportVariableUseBeforeAssignment(argument.Syntax.Location, symbol.Name);
+            }
+            
             var convertedArgument = BindConversion(argument, parameter.Type, ImmutableArray<TypeSymbol>.Empty);
             convertedArguments.Add(convertedArgument);
         }
@@ -649,5 +657,15 @@ internal sealed class ExpressionBinder : Binder
         }
         
         return new BoundUnaryExpression(syntax, boundOperator, boundOperand);
+    }
+
+    private static Symbol? GetSymbol(BoundExpression expression)
+    {
+        if (expression is ISymbolExpression symbolExpression)
+        {
+            return symbolExpression.Symbol;
+        }
+        
+        return null;
     }
 }

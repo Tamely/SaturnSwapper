@@ -225,11 +225,6 @@ internal sealed class NamedTypeBinder : TypeBinder
                 {
                     continue;
                 }
-
-                if (!memberSymbol.HasModifier(SyntaxKind.PublicKeyword) &&
-                    !memberSymbol.HasModifier(SyntaxKind.PrivateKeyword))
-                {
-                }
                 
                 _members.Add(member, memberSymbol);
                 var memberRegContext = new SemanticContext(member.Location, this, member, Diagnostics);

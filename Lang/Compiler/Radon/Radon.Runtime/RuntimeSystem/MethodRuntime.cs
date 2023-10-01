@@ -35,6 +35,10 @@ internal sealed class MethodRuntime
             { "CreateArrayProperty", ManagedRuntime.Archive.Size },
             { "CreateLinearColorProperty", ManagedRuntime.Archive.Size },
             { "CreateSoftObjectProperty", ManagedRuntime.Archive.Size },
+            { "CreateDoubleProperty", ManagedRuntime.Archive.Size },
+            { "CreateFloatProperty", ManagedRuntime.Archive.Size },
+            { "CreateIntProperty", ManagedRuntime.Archive.Size },
+            { "CreateByteArrayProperty", ManagedRuntime.Archive.Size },
             { "Import", ManagedRuntime.Archive.Size },
             { "Print", 0 },
             { "Download", 0 },
@@ -507,6 +511,106 @@ internal sealed class MethodRuntime
 
                         break;
                     }
+                    case "SwapIntProperty":
+                    {
+                        var searchObject = _stackFrame.GetArgument(0);
+                        var replaceObject = _stackFrame.GetArgument(1);
+
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        FactoryUtils.ASSET = archive.Archive;
+                        
+                        if (searchObject is ManagedIntProperty search && replaceObject is ManagedIntProperty replace)
+                        {
+                            archive.Archive.Swap(search.IntPropertyData, replace.IntPropertyData);
+                        }
+                        else
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        break;
+                    }
+                    case "SwapFloatProperty":
+                    {
+                        var searchObject = _stackFrame.GetArgument(0);
+                        var replaceObject = _stackFrame.GetArgument(1);
+
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        FactoryUtils.ASSET = archive.Archive;
+                        
+                        if (searchObject is ManagedFloatProperty search && replaceObject is ManagedFloatProperty replace)
+                        {
+                            archive.Archive.Swap(search.FloatPropertyData, replace.FloatPropertyData);
+                        }
+                        else
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        break;
+                    }
+                    case "SwapDoubleProperty":
+                    {
+                        var searchObject = _stackFrame.GetArgument(0);
+                        var replaceObject = _stackFrame.GetArgument(1);
+
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        FactoryUtils.ASSET = archive.Archive;
+                        
+                        if (searchObject is ManagedDoubleProperty search && replaceObject is ManagedDoubleProperty replace)
+                        {
+                            archive.Archive.Swap(search.DoublePropertyData, replace.DoublePropertyData);
+                        }
+                        else
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        break;
+                    }
+                    case "SwapByteArrayProperty":
+                    {
+                        var searchObject = _stackFrame.GetArgument(0);
+                        var replaceObject = _stackFrame.GetArgument(1);
+
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        FactoryUtils.ASSET = archive.Archive;
+                        
+                        if (searchObject is ManagedByteArrayProperty search && replaceObject is ManagedByteArrayProperty replace)
+                        {
+                            archive.Archive.Swap(search.ByteArrayPropertyData, replace.ByteArrayPropertyData);
+                        }
+                        else
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        break;
+                    }
                     case "CreateArrayProperty":
                     {
                         var arrayObject = _stackFrame.GetArgument(0);
@@ -600,6 +704,111 @@ internal sealed class MethodRuntime
                         var data = SoftObjectFactory.Create(softObjectStr.ToString(), substring);
                         var managedSoftObject = new ManagedSoftObject(data, stackPtr);
                         _stackFrame.Push(managedSoftObject);
+
+                        break;
+                    }
+                    case "CreateIntProperty":
+                    {
+                        var intObject = _stackFrame.GetArgument(0);
+
+                        if (intObject is not ManagedObject intManagedObject)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        var Int = MemoryUtils.GetValue<int>(intManagedObject.Address);
+                        FactoryUtils.ASSET = archive.Archive;
+
+                        var stackPtr = _stackFrame.Allocate(archiveSize);
+                        var data = IntFactory.Create(Int);
+                        var managedIntPropertyObject = new ManagedIntProperty(data, stackPtr);
+                        _stackFrame.Push(managedIntPropertyObject);
+
+                        break;
+                    }
+                    case "CreateFloatProperty":
+                    {
+                        var floatObject = _stackFrame.GetArgument(0);
+
+                        if (floatObject is not ManagedObject floatManagedObject)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        var Float = MemoryUtils.GetValue<float>(floatManagedObject.Address);
+                        FactoryUtils.ASSET = archive.Archive;
+
+                        var stackPtr = _stackFrame.Allocate(archiveSize);
+                        var data = FloatFactory.Create(Float);
+                        var managedFloatPropertyObject = new ManagedFloatProperty(data, stackPtr);
+                        _stackFrame.Push(managedFloatPropertyObject);
+
+                        break;
+                    }
+                    case "CreateDoubleProperty":
+                    {
+                        var doubleObject = _stackFrame.GetArgument(0);
+
+                        if (doubleObject is not ManagedObject doubleManagedObject)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        var Double = MemoryUtils.GetValue<float>(doubleManagedObject.Address);
+                        FactoryUtils.ASSET = archive.Archive;
+
+                        var stackPtr = _stackFrame.Allocate(archiveSize);
+                        var data = DoubleFactory.Create(Double);
+                        var managedDoublePropertyObject = new ManagedDoubleProperty(data, stackPtr);
+                        _stackFrame.Push(managedDoublePropertyObject);
+
+                        break;
+                    }
+                    case "CreateByteArrayProperty":
+                    {
+                        var byteArrayObject = _stackFrame.GetArgument(0);
+
+                        if (byteArrayObject is not ManagedString byteArrayManagedObject)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+
+                        byte[] value = Convert.FromBase64String(byteArrayManagedObject.ToString());
+                        
+                        if (_instance is not ManagedArchive archive)
+                        {
+                            ThrowUnexpectedValue();
+                            return _stackFrame;
+                        }
+                        
+                        FactoryUtils.ASSET = archive.Archive;
+
+                        var stackPtr = _stackFrame.Allocate(archiveSize);
+                        var data = ByteArrayFactory.Create(value);
+                        var managedByteArrayPropertyObject = new ManagedByteArrayProperty(data, stackPtr);
+                        _stackFrame.Push(managedByteArrayPropertyObject);
 
                         break;
                     }

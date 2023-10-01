@@ -1,30 +1,30 @@
-using System;
+﻿using System;
 using Radon.CodeAnalysis.Emit;
 using Radon.Runtime.Memory;
 using UAssetAPI.PropertyTypes.Objects;
 
 namespace Radon.Runtime.RuntimeSystem.RuntimeObjects.Properties;
 
-internal sealed class ManagedSoftObject : RuntimeObject
+internal sealed class ManagedDoubleProperty : RuntimeObject
 {
     public override RuntimeType Type { get; }
     public override int Size { get; } // The size in bytes of the array on the heap. This includes the 4 bytes for the length.
     public override nuint Address { get; } // The address of the array on the heap.
-    public SoftObjectPropertyData SoftObjectPropertyData { get; }
+    public DoublePropertyData DoublePropertyData { get; }
 
-    public ManagedSoftObject(SoftObjectPropertyData? softObject, nuint pointer)
+    public ManagedDoubleProperty(DoublePropertyData? value, nuint pointer)
     {
-        SoftObjectPropertyData = softObject ?? new SoftObjectPropertyData();
+        DoublePropertyData = value ?? new DoublePropertyData();
         Address = pointer;
-        Type = ManagedRuntime.SoftObject;
+        Type = ManagedRuntime.DoubleProperty;
         Size = Type.Size;
     }
 
     public override RuntimeObject ComputeOperation(OpCode operation, RuntimeObject? other, StackFrame stackFrame)
     {
-        if (other is not ManagedSoftObject otherArchive)
+        if (other is not ManagedDoubleProperty otherArchive)
         {
-            throw new InvalidOperationException("Cannot perform an operation on a soft object and a non-soft object.");
+            throw new InvalidOperationException("Cannot perform an operation on a double and a non-double.");
         }
 
         switch (operation)
@@ -39,18 +39,18 @@ internal sealed class ManagedSoftObject : RuntimeObject
             }
         }
 
-        throw new InvalidOperationException($"Cannot perform operation {operation} on a soft object.");
+        throw new InvalidOperationException($"Cannot perform operation {operation} on a double.");
     }
 
     public override RuntimeObject CopyTo(nuint address)
     {
         MemoryUtils.Copy(Address, address, Size);
-        return new ManagedSoftObject(SoftObjectPropertyData, address);
+        return new ManagedDoubleProperty(DoublePropertyData, address);
     }
 
 
     public override string ToString()
     {
-        return SoftObjectPropertyData.Value.AssetPath.AssetName + "." + SoftObjectPropertyData.Value.AssetPath.PackageName;
+        return DoublePropertyData.Value.ToString();
     }
 }

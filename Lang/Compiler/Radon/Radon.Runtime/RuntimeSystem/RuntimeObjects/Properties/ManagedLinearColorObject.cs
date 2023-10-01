@@ -16,7 +16,7 @@ internal sealed class ManagedLinearColorObject : RuntimeObject
     {
         LinearColorPropertyData = linearColorPropertyData ?? new LinearColorPropertyData();
         Address = pointer;
-        Type = ManagedRuntime.System.GetType("LinearColorProperty");
+        Type = ManagedRuntime.LinearColor;
         Size = Type.Size;
     }
 
@@ -44,6 +44,7 @@ internal sealed class ManagedLinearColorObject : RuntimeObject
 
     public override RuntimeObject CopyTo(nuint address)
     {
+        MemoryUtils.Copy(Address, address, Size);
         return new ManagedLinearColorObject(LinearColorPropertyData, address);
     }
 

@@ -134,6 +134,17 @@
         // Check if dependencies are up to date
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(79));
         var deps = await _saturnAPIService.ReturnEndpointAsync<DependencyModel[]>("/api/v1/Saturn/Dependencies");
+        for (int i = 0; i < 10; i++)
+        {
+            if (deps == null)
+                deps = await _saturnAPIService.ReturnEndpointAsync<DependencyModel[]>("/api/v1/Saturn/Dependencies");
+            else
+                break;
+        }
+        
+        if (deps == null)
+            throw new Exception("Unable to connect to Saturn's API. Please try using a VPN to resolve this.");
+        
         foreach (var dep in deps)
         {
             if (Config.Get().CheckVersion(dep.name, dep.version)) continue;

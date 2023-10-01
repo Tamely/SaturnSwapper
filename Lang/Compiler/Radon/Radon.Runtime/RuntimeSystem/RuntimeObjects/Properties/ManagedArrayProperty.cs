@@ -16,7 +16,7 @@ internal sealed class ManagedArrayObject : RuntimeObject
     {
         ArrayPropertyData = array ?? new ArrayPropertyData();
         Address = pointer;
-        Type = ManagedRuntime.System.GetType("ArrayProperty");
+        Type = ManagedRuntime.ArrayProperty;
         Size = Type.Size;
     }
 
@@ -44,6 +44,7 @@ internal sealed class ManagedArrayObject : RuntimeObject
 
     public override RuntimeObject CopyTo(nuint address)
     {
+        MemoryUtils.Copy(Address, address, Size);
         return new ManagedArrayObject(ArrayPropertyData, address);
     }
 
