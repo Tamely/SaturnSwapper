@@ -21,7 +21,7 @@ public class AssetExportData : ExportDataBase
     public List<ExportMaterial> StyleMaterials = new();
     public List<ExportMeshOverride> StyleMeshes = new();
     public List<ExportMaterialParams> StyleMaterialParams = new();
-    public string? WeaponActorClass = null;
+    public string? PrimaryFireAbility = null;
     public string? Mesh = null;
 
     public static async Task<AssetExportData?> Create(UObject asset, EAssetType assetType, FStructFallback[] styles)
@@ -73,7 +73,7 @@ public class AssetExportData : ExportDataBase
                 case EAssetType.Pickaxe:
                 {
                     var weapon = asset.Get<UObject>("WeaponDefinition");
-                    data.WeaponActorClass = ExportHelpers.Weapon(weapon, data.Parts);
+                    data.PrimaryFireAbility = ExportHelpers.Weapon(weapon, data.Parts);
                     data.ExportParts.Add(new ExportPart()
                     {
                         Path = weapon.GetPathName(),
