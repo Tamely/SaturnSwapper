@@ -16,7 +16,7 @@ internal sealed class ManagedDoubleProperty : RuntimeObject
     {
         DoublePropertyData = value ?? new DoublePropertyData();
         Address = pointer;
-        Type = ManagedRuntime.System.GetType("DoubleProperty");
+        Type = ManagedRuntime.DoubleProperty;
         Size = Type.Size;
     }
 

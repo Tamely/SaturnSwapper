@@ -16,7 +16,7 @@ internal sealed class ManagedArrayObject : RuntimeObject
     {
         ArrayPropertyData = array ?? new ArrayPropertyData();
         Address = pointer;
-        Type = ManagedRuntime.System.GetType("ArrayProperty");
+        Type = ManagedRuntime.ArrayProperty;
         Size = Type.Size;
     }
 

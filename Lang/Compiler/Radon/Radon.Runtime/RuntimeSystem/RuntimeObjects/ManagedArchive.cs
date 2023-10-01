@@ -28,7 +28,7 @@ public sealed class ManagedArchive : RuntimeObject
         Archive = archive ?? new ZenAsset();
         Data = data ?? new NonStaticSaturnData();
         Address = pointer;
-        Type = ManagedRuntime.System.GetType("archive");
+        Type = ManagedRuntime.Archive;
         Size = Type.Size;
     }
 

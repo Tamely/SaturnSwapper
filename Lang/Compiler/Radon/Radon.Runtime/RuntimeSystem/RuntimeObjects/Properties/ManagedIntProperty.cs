@@ -16,7 +16,7 @@ internal sealed class ManagedIntProperty : RuntimeObject
     {
         IntPropertyData = value ?? new IntPropertyData();
         Address = pointer;
-        Type = ManagedRuntime.System.GetType("IntProperty");
+        Type = ManagedRuntime.IntProperty;
         Size = Type.Size;
     }
 
