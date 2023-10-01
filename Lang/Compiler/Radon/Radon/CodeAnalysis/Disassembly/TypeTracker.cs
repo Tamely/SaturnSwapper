@@ -25,6 +25,11 @@ internal static class TypeTracker
         return type;
     }
 
+    public static TypeInfo GetTypeInfo(TypeDefinition typeDefinition)
+    {
+        return Types[typeDefinition];
+    }
+    
     public static void Clear()
     {
         Types.Clear();
