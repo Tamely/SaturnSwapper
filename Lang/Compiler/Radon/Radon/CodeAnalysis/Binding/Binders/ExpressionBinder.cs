@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Immutable;
-using System.Globalization;
 using Radon.CodeAnalysis.Binding.Semantics;
 using Radon.CodeAnalysis.Binding.Semantics.Conversions;
 using Radon.CodeAnalysis.Binding.Semantics.Expressions;
@@ -183,6 +182,12 @@ internal sealed class ExpressionBinder : Binder
             
             Diagnostics.ReportInvalidAssignmentTarget(syntax.Left.Location);
             return new BoundErrorExpression(syntax, context);
+        }
+        
+        var symbol = GetSymbol(boundLeft);
+        if (symbol is LocalVariableSymbol local)
+        {
+            local.HasBeenAssigned = true;
         }
         
         var boundRight = BindExpression(syntax.Right);
