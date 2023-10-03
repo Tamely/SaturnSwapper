@@ -25,6 +25,6 @@ public static class Constants
     public static readonly string RuntimePath;
     public static readonly string LogPath;
     public static readonly string LogFile;
-    public const string RadonVersion = "1.1.1";
-    public const double RadonVersionNumber = 1.11;
+    public const string RadonVersion = "1.1.0";
+    public const double RadonVersionNumber = 1.10;
 }
