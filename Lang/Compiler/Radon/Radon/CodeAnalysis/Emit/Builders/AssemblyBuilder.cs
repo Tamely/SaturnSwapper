@@ -152,16 +152,17 @@ internal sealed class AssemblyBuilder
     public Assembly Build()
     {
         CollectMetadata();
-        var methods = _unfinishedMethodMap.Keys.Concat(_unfinishedConstructorMap.Keys);
-        foreach (var method in methods)
+        var methods = _unfinishedMethodMap.Keys.Concat(_unfinishedConstructorMap.Keys).ToArray();
+        for (var i = 0; i < methods.Length; i++)
         {
+            var method = methods[i];
             if (_unfinishedMethodMap.TryGetValue(method, out var boundMethod))
             {
                 if (!_methodSymbolMap.TryGetValue(boundMethod.Symbol, out var m))
                 {
                     throw new Exception("Method not found.");
                 }
-                
+
                 FinishMethod(boundMethod, m);
             }
             else if (_unfinishedConstructorMap.TryGetValue(method, out var boundConstructor))
@@ -170,7 +171,7 @@ internal sealed class AssemblyBuilder
                 {
                     throw new Exception("Constructor not found.");
                 }
-                
+
                 FinishConstructor(boundConstructor, c);
             }
             else
@@ -178,7 +179,7 @@ internal sealed class AssemblyBuilder
                 throw new Exception("Method not found.");
             }
         }
-        
+
         var instructions = new InstructionTable(_instructions.ToArray());
         var metadata = BuildMetadata();
         return new Assembly(_guid, _flags, _encryptionKey, instructions, metadata);
