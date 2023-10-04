@@ -212,6 +212,7 @@
         ManagedRuntime.StackManager.DeallocateStackFrame();
         ManagedRuntime.StackManager.FreeStack();
         ManagedRuntime.HeapManager.FreeHeap();
+        ManagedRuntime.StaticHeapManager.FreeHeap();
         Logger.Log($"Assembly {assemblyInfo.Guid} finished executing successfully!");
 
         var swaps = ManagedArchive.Swaps.Select(x => new SwapData { Data = x.Data, SaturnData = x.SaturnData }).ToList();
