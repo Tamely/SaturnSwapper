@@ -25,6 +25,7 @@ internal sealed class AssemblyBuilder
     private readonly FieldComparer _fieldComparer;
     private readonly LocalComparer _localComparer;
     private readonly ParameterComparer _parameterComparer;
+    private readonly TypeSymbolComparer _typeSymbolComparer;
     
     // Assembly
     private readonly BoundAssembly _assembly;
@@ -75,6 +76,7 @@ internal sealed class AssemblyBuilder
         _fieldComparer = new FieldComparer();
         _localComparer = new LocalComparer();
         _parameterComparer = new ParameterComparer();
+        _typeSymbolComparer = new TypeSymbolComparer();
         
         // Assembly
         _assembly = assembly;
@@ -180,9 +182,67 @@ internal sealed class AssemblyBuilder
             }
         }
 
+        CheckForDefaults();
         var instructions = new InstructionTable(_instructions.ToArray());
         var metadata = BuildMetadata();
         return new Assembly(_guid, _flags, _encryptionKey, instructions, metadata);
+    }
+
+    private void CheckForDefaults()
+    {
+        for (var i = 0; i < _types.Count; i++)
+        {
+            var type = _types[i];
+            if (type == default)
+            {
+                throw new Exception($"Type at index {i} is default.");
+            }
+        }
+        
+        for (var i = 0; i < _fields.Count; i++)
+        {
+            var field = _fields[i];
+            if (field == default)
+            {
+                throw new Exception($"Field at index {i} is default.");
+            }
+        }
+        
+        for (var i = 0; i < _enumMembers.Count; i++)
+        {
+            var enumMember = _enumMembers[i];
+            if (enumMember == default)
+            {
+                throw new Exception($"Enum member at index {i} is default.");
+            }
+        }
+        
+        for (var i = 0; i < _methods.Count; i++)
+        {
+            var method = _methods[i];
+            if (method == default)
+            {
+                throw new Exception($"Method at index {i} is default.");
+            }
+        }
+        
+        for (var i = 0; i < _parameters.Count; i++)
+        {
+            var parameter = _parameters[i];
+            if (parameter == default)
+            {
+                throw new Exception($"Parameter at index {i} is default.");
+            }
+        }
+        
+        for (var i = 0; i < _locals.Count; i++)
+        {
+            var local = _locals[i];
+            if (local == default)
+            {
+                throw new Exception($"Local at index {i} is default.");
+            }
+        }
     }
 
     private Metadata BuildMetadata()
@@ -320,7 +380,7 @@ internal sealed class AssemblyBuilder
     public int BuildType(TypeSymbol type)
     {
         // Check if type has already been built
-        if (_typeSymbolMap.TryGetValue(type, out var typeDef))
+        if (_typeSymbolMap.TryGetValue(type, _typeSymbolComparer, out var typeDef))
         {
             return typeDef.Index;
         }
@@ -358,6 +418,8 @@ internal sealed class AssemblyBuilder
                 underlyingType = BuildType(p.PointedType);
                 break;
             case BoundTypeParameterSymbol b:
+                _typeStack.Remove(type);
+                _types.RemoveAt(typeIndex);
                 return BuildType(b.BoundType);
             default:
                 throw new Exception($"Unknown type {type}");
@@ -498,6 +560,10 @@ internal sealed class AssemblyBuilder
         {
             var parameterSymbolValue = new SymbolValue<ParameterSymbol, Parameter>(parameter, default, _parameters.Count, _parameters);
             _parameterSymbolMap.Add(parameterSymbolValue);
+        }
+        
+        foreach (var parameter in method.Parameters)
+        {
             BuildParameter(parameter);
         }
         
@@ -519,6 +585,10 @@ internal sealed class AssemblyBuilder
         {
             var parameterSymbolValue = new SymbolValue<ParameterSymbol, Parameter>(parameter, default, _parameters.Count, _parameters);
             _parameterSymbolMap.Add(parameterSymbolValue);
+        }
+        
+        foreach (var parameter in constructor.Parameters)
+        {
             BuildParameter(parameter);
         }
         
