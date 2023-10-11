@@ -13,6 +13,7 @@ public sealed class HeapManager
 {
     private readonly LinkedList<FreeBlock> _freeBlocks;
     private readonly Dictionary<nuint, RuntimeObject> _allocatedObjects;
+    private readonly nuint _start;
     private readonly nuint _end;
     private nuint _current;
 
@@ -26,14 +27,17 @@ public sealed class HeapManager
         var heap = (nuint)PInvoke.VirtualAlloc(nint.Zero, MemoryUtils.HeapSize,
             AllocationType.COMMIT | AllocationType.RESERVE, MemoryProtection.READWRITE);
         _end = heap + MemoryUtils.HeapSize;
-        _current = heap;
+        _start = heap;
+        _current = _start;
         Logger.Log($"Allocated {MemoryUtils.HeapSize} bytes for the heap", LogLevel.Info);
     }
 
     public void FreeHeap()
     {
-        if (!PInvoke.VirtualFree((nint)_current, 0, FreeType.MEM_RELEASE))
+        if (!PInvoke.VirtualFree((nint)_start, 0, FreeType.MEM_RELEASE))
         {
+            var lastError = PInvoke.GetLastError();
+            Logger.Log($"Failed to free heap: {lastError}", LogLevel.Error);
             throw new FailedToFreeMemoryException();
         }
     }
