@@ -3,40 +3,22 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
+using Radon.Common;
 
-namespace Radon.Common;
+namespace Radon.Ide.Backend.Core;
 
-public static class Logger
+public static class IdeLogger
 {
     private static readonly TextWriter Writer;
     private static readonly List<string> WrittenLines;
 
-    static Logger()
+    static IdeLogger()
     {
-        if (File.Exists(RadonConstants.LogFile))
-        {
-            var directoryInfo = new DirectoryInfo(RadonConstants.LogPath).GetFiles()
-                .OrderByDescending(x => x.LastWriteTimeUtc).ToList();
-
-            var latestLog = directoryInfo.FirstOrDefault();
-            var oldestLog = directoryInfo.LastOrDefault();
-
-            if (directoryInfo.Count >= 10 &&
-                oldestLog != null)
-            {
-                oldestLog.Delete();
-            }
-
-            latestLog?.MoveTo(latestLog.FullName.Replace(".log",
-                $"-backup-{latestLog.LastWriteTimeUtc:yyyy.MM.dd-HH.mm.ss}.log"));
-        }
-
         WrittenLines = new List<string>();
-        Writer = File.CreateText(RadonConstants.LogFile);
-        Writer.WriteLine("# Runtime Log");
+        Writer = File.CreateText(IdeConstants.LogFile);
+        Writer.WriteLine("# Radon IDE Log");
         Writer.WriteLine("# Started on {0:yy-mm-dd-hh-mm-ss}", DateTime.Now);
-        Writer.WriteLine("# Runtime Version {0}", RadonConstants.RadonVersion);
+        Writer.WriteLine("# IDE Version {0}", IdeConstants.RadonIdeVersion);
         Writer.WriteLine(new string('-', 40));
         Writer.WriteLine();
         Writer.Flush();

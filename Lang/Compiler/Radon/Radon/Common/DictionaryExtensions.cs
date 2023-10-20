@@ -41,6 +41,16 @@ public static class DictionaryExtensions
         throw new IndexOutOfRangeException();
     }
     
+    public static void SetKey<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey oldKey, TKey newKey)
+        where TKey : notnull
+    {
+        if (dictionary.TryGetValue(oldKey, out var value))
+        {
+            dictionary.Remove(oldKey);
+            dictionary.Add(newKey, value);
+        }
+    }
+    
     public static TValue ValueAt<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, int index)
         where TKey : notnull
     {

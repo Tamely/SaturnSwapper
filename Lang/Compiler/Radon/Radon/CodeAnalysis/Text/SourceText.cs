@@ -14,6 +14,13 @@ public sealed class SourceText
         Lines = ParseLines(this, text);
     }
 
+    private SourceText(SourceText sourceText, ImmutableArray<TextLine> lines, string text)
+    {
+        FileName = sourceText.FileName;
+        Lines = lines;
+        _text = text;
+    }
+
     public static SourceText From(string text, string fileName = "")
     {
         return new SourceText(text, fileName);
@@ -22,37 +29,38 @@ public sealed class SourceText
     private static ImmutableArray<TextLine> ParseLines(SourceText sourceText, string text)
     {
         var result = ImmutableArray.CreateBuilder<TextLine>();
+        var lineIndex = 0;
         var position = 0;
         var lineStart = 0;
         while (position < text.Length)
         {
             var lineBreakWidth = GetLineBreakWidth(text, position);
-
             if (lineBreakWidth == 0)
             {
                 position++;
             }
             else
             {
-                AddLine(result, sourceText, position, lineStart, lineBreakWidth);
+                AddLine(result, sourceText, position, lineStart, lineIndex, lineBreakWidth);
                 position += lineBreakWidth;
                 lineStart = position;
+                lineIndex++;
             }
         }
 
         if (position >= lineStart)
         {
-            AddLine(result, sourceText, position, lineStart, 0);
+            AddLine(result, sourceText, position, lineStart, lineIndex, 0);
         }
 
         return result.ToImmutable();
     }
 
-    private static void AddLine(ImmutableArray<TextLine>.Builder result, SourceText sourceText, int position, int lineStart, int lineBreakWidth)
+    private static void AddLine(ImmutableArray<TextLine>.Builder result, SourceText sourceText, int position, int lineStart, int lineIndex, int lineBreakWidth)
     {
         var lineLength = position - lineStart;
         var lineLengthIncludingLineBreak = lineLength + lineBreakWidth;
-        var line = new TextLine(sourceText, lineStart, lineLength, lineLengthIncludingLineBreak);
+        var line = new TextLine(sourceText, lineStart, lineLength, lineIndex, lineLengthIncludingLineBreak);
         result.Add(line);
     }
 
@@ -106,6 +114,18 @@ public sealed class SourceText
         }
 
         return lower - 1;
+    }
+    
+    public int GetRelativePosition(int lineIndex, int position)
+    {
+        return position - Lines[lineIndex].Start;
+    }
+    
+    public SourceText RemoveLine(int lineIndex)
+    {
+        var lines = Lines.RemoveAt(lineIndex);
+        var text = lines.Length == 0 ? string.Empty : ToString(lines[0].Start, lines[^1].End);
+        return new SourceText(this, lines, text);
     }
 
     public override string ToString()
