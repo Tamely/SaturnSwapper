@@ -23,7 +23,7 @@ public class SaturnFileProvider : IDisposable
     public SaturnFileProvider(IFortniteCentralService fortniteCentralService)
     {
         _provider = new DefaultFileProvider(DataCollection.GetGamePath(), SearchOption.TopDirectoryOnly, true,
-            new VersionContainer(EGame.GAME_UE5_3));
+            new VersionContainer(EGame.GAME_UE5_4));
         
         _provider.Initialize();
 
