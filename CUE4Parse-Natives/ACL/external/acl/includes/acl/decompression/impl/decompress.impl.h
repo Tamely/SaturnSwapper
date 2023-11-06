@@ -30,6 +30,8 @@
 
 #include <type_traits>
 
+ACL_IMPL_FILE_PRAGMA_PUSH
+
 namespace acl
 {
 	ACL_IMPL_VERSION_NAMESPACE_BEGIN
@@ -48,12 +50,17 @@ namespace acl
 
 	template<class decompression_settings_type>
 	inline decompression_context<decompression_settings_type>::decompression_context()
-		: m_context()
 	{
 		m_context.reset();
 
 		// Deprecation checks
 		static_assert(decompression_settings_type::normalize_rotations(), "Override get_rotation_normalization_policy instead; to be removed in v3.0");
+	}
+
+	template<class decompression_settings_type>
+	inline decompression_context<decompression_settings_type>::~decompression_context()
+	{
+		reset();
 	}
 
 	template<class decompression_settings_type>
@@ -103,9 +110,83 @@ namespace acl
 	}
 
 	template<class decompression_settings_type>
+	inline void decompression_context<decompression_settings_type>::reset()
+	{
+		m_context.reset();
+	}
+
+	template<class decompression_settings_type>
+	inline bool decompression_context<decompression_settings_type>::relocated(const compressed_tracks& tracks)
+	{
+		if (!m_context.is_initialized())
+			return false;	// Not initialized, cannot be relocated
+
+		constexpr bool skip_safety_checks = decompression_settings_type::skip_initialize_safety_checks();
+
+		const bool is_valid = skip_safety_checks || tracks.is_valid(false).empty();
+		ACL_ASSERT(is_valid, "Invalid compressed tracks instance");
+		if (!is_valid)
+			return false;	// Invalid compressed tracks instance
+
+		const bool is_version_supported = skip_safety_checks || version_impl_type::is_version_supported(tracks.get_version());
+		ACL_ASSERT(is_version_supported, "Unsupported version");
+		if (!is_version_supported)
+			return false;
+
+		const database_context<db_settings_type>* database = nullptr;
+		return version_impl_type::template relocated<decompression_settings_type>(m_context, tracks, database);
+	}
+
+	template<class decompression_settings_type>
+	inline bool decompression_context<decompression_settings_type>::relocated(const compressed_tracks& tracks, const database_context<db_settings_type>& database)
+	{
+		if (!m_context.is_initialized())
+			return false;	// Not initialized, cannot be relocated
+
+		constexpr bool skip_safety_checks = decompression_settings_type::skip_initialize_safety_checks();
+
+		bool is_valid = skip_safety_checks || tracks.is_valid(false).empty();
+		ACL_ASSERT(is_valid, "Invalid compressed tracks instance");
+		if (!is_valid)
+			return false;	// Invalid compressed tracks instance
+
+		is_valid = skip_safety_checks || database.is_initialized();
+		ACL_ASSERT(is_valid, "Invalid compressed database instance");
+		if (!is_valid)
+			return false;	// Invalid compressed database instance
+
+		const bool is_version_supported = skip_safety_checks || version_impl_type::is_version_supported(tracks.get_version());
+		ACL_ASSERT(is_version_supported, "Unsupported version");
+		if (!is_version_supported)
+			return false;
+
+		const bool is_contained_in_db = skip_safety_checks || database.contains(tracks);
+		if (!is_contained_in_db)
+			return false;
+
+		return version_impl_type::template relocated<decompression_settings_type>(m_context, tracks, &database);
+	}
+
+	template<class decompression_settings_type>
 	inline bool decompression_context<decompression_settings_type>::is_dirty(const compressed_tracks& tracks) const
 	{
-		return version_impl_type::template is_dirty(m_context, tracks);
+		// We are dirty if we aren't bound to it
+		return !version_impl_type::template is_bound_to(m_context, tracks);
+	}
+
+	template<class decompression_settings_type>
+	inline bool decompression_context<decompression_settings_type>::is_bound_to(const compressed_tracks& tracks) const
+	{
+		return version_impl_type::template is_bound_to(m_context, tracks);
+	}
+
+	template<class decompression_settings_type>
+	inline bool decompression_context<decompression_settings_type>::is_bound_to(const compressed_database& database) const
+	{
+		if (!m_context.is_initialized())
+			return false;	// Not bound to anything when not initialized
+
+		return version_impl_type::template is_bound_to(m_context, database);
 	}
 
 	template<class decompression_settings_type>
@@ -163,3 +244,5 @@ namespace acl
 
 	ACL_IMPL_VERSION_NAMESPACE_END
 }
+
+ACL_IMPL_FILE_PRAGMA_POP

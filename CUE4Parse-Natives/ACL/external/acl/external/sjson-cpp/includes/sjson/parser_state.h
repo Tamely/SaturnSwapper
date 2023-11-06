@@ -37,11 +37,10 @@ namespace sjson
 	struct ParserState
 	{
 		ParserState(const char* input, size_t input_length)
-			: offset()
+			: offset(0)
 			, line(1)
 			, column(1)
 			, symbol(input_length > 0 ? input[0] : '\0')
-			, error()
 		{
 		}
 

@@ -73,7 +73,7 @@
 
 		namespace error_impl
 		{
-			inline void on_assert_abort(const char* expression, int line, const char* file, const char* format, ...)
+			[[noreturn]] inline void on_assert_abort(const char* expression, int line, const char* file, const char* format, ...)
 			{
 				(void)expression;
 				(void)line;
@@ -112,18 +112,20 @@
 
 		class runtime_assert final : public std::runtime_error
 		{
+			runtime_assert() = delete;					// Default constructor not needed
+
 			using std::runtime_error::runtime_error;	// Inherit constructors
 		};
 
 		namespace error_impl
 		{
-			inline void on_assert_throw(const char* expression, int line, const char* file, const char* format, ...)
+			[[noreturn]] inline void on_assert_throw(const char* expression, int line, const char* file, const char* format, ...)
 			{
 				(void)expression;
 				(void)line;
 				(void)file;
 
-				constexpr int buffer_size = 64 * 1024;
+				constexpr int buffer_size = 1 * 1024;
 				char buffer[buffer_size];
 
 				va_list args;
@@ -134,7 +136,7 @@
 				va_end(args);
 
 				if (count >= 0 && count < buffer_size)
-					throw runtime_assert(std::string(&buffer[0], count));
+					throw runtime_assert(std::string(&buffer[0], static_cast<std::string::size_type>(count)));
 				else
 					throw runtime_assert("Failed to format assert message!\n");
 			}

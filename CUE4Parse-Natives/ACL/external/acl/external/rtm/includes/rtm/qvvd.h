@@ -42,7 +42,7 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	// Casts a QVV transform float32 variant to a float64 variant.
 	//////////////////////////////////////////////////////////////////////////
-	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE qvvd qvv_cast(const qvvf& input) RTM_NO_EXCEPT
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE qvvd RTM_SIMD_CALL qvv_cast(qvvf_arg0 input) RTM_NO_EXCEPT
 	{
 		return qvvd{ quat_cast(input.rotation), vector_cast(input.translation), vector_cast(input.scale) };
 	}
@@ -115,11 +115,28 @@ namespace rtm
 
 	//////////////////////////////////////////////////////////////////////////
 	// Returns the inverse of the input QVV transform.
+	// If zero scale is contained, the result is undefined.
+	// For a safe alternative, supply a fallback scale value and a threshold.
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK inline qvvd qvv_inverse(const qvvd& input) RTM_NO_EXCEPT
 	{
 		const quatd inv_rotation = quat_conjugate(input.rotation);
 		const vector4d inv_scale = vector_reciprocal(input.scale);
+		const vector4d inv_translation = vector_neg(quat_mul_vector3(vector_mul(input.translation, inv_scale), inv_rotation));
+		return qvv_set(inv_rotation, inv_translation, inv_scale);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Returns the inverse of the input QVV transform.
+	// If the input scale has an absolute value below the supplied threshold, the
+	// fallback value is used instead.
+	//////////////////////////////////////////////////////////////////////////
+	RTM_DISABLE_SECURITY_COOKIE_CHECK inline qvvd qvv_inverse(const qvvd& input, const vector4d& fallback_scale, double threshold = 1.0E-8) RTM_NO_EXCEPT
+	{
+		const quatd inv_rotation = quat_conjugate(input.rotation);
+		const mask4d is_scale_zero = vector_less_equal(vector_abs(input.scale), vector_set(threshold));
+		const vector4d scale = vector_select(is_scale_zero, fallback_scale, input.scale);
+		const vector4d inv_scale = vector_reciprocal(scale);
 		const vector4d inv_translation = vector_neg(quat_mul_vector3(vector_mul(input.translation, inv_scale), inv_rotation));
 		return qvv_set(inv_rotation, inv_translation, inv_scale);
 	}

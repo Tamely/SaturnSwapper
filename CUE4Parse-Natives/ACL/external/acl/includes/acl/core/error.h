@@ -27,6 +27,9 @@
 #include "acl/version.h"
 #include "acl/core/impl/compiler_utils.h"
 
+#include <rtm/impl/detect_compiler.h>
+#include <rtm/impl/detect_cpp_version.h>
+
 ACL_IMPL_FILE_PRAGMA_PUSH
 
 //////////////////////////////////////////////////////////////////////////
@@ -59,10 +62,21 @@ ACL_IMPL_FILE_PRAGMA_PUSH
 //    #define ACL_ON_ASSERT_CUSTOM
 //    #define ACL_ASSERT(expression, format, ...) checkf(expression, ANSI_TO_TCHAR(format), #__VA_ARGS__)
 //
+//    [Custom String Format Specifier]
+//    Note that if you use a custom function, you may need to override the ACL_ASSERT_STRING_FORMAT_SPECIFIER
+//    to properly handle ANSI/Unicode support. The C++11 standard does not support a way to say that '%s'
+//    always means an ANSI string (with 'const char*' as type). MSVC does support '%hs' but other compilers
+//    do not.
+//
 // No checks:
 //    By default if no macro mentioned above is defined, all asserts will be stripped
 //    at compile time.
 //////////////////////////////////////////////////////////////////////////
+
+// See [Custom String Format Specifier] for details
+#if !defined(ACL_ASSERT_STRING_FORMAT_SPECIFIER)
+	#define ACL_ASSERT_STRING_FORMAT_SPECIFIER "%s"
+#endif
 
 #if defined(ACL_ON_ASSERT_ABORT)
 
@@ -78,7 +92,7 @@ ACL_IMPL_FILE_PRAGMA_PUSH
 
 		namespace error_impl
 		{
-			inline void on_assert_abort(const char* expression, int line, const char* file, const char* format, ...)
+			[[noreturn]] inline void on_assert_abort(const char* expression, int line, const char* file, const char* format, ...)
 			{
 				(void)expression;
 				(void)line;
@@ -118,12 +132,14 @@ ACL_IMPL_FILE_PRAGMA_PUSH
 
 		class runtime_assert final : public std::runtime_error
 		{
+			runtime_assert() = delete;					// Default constructor not needed
+
 			using std::runtime_error::runtime_error;	// Inherit constructors
 		};
 
 		namespace error_impl
 		{
-			inline void on_assert_throw(const char* expression, int line, const char* file, const char* format, ...)
+			[[noreturn]] inline void on_assert_throw(const char* expression, int line, const char* file, const char* format, ...)
 			{
 				(void)expression;
 				(void)line;
@@ -140,7 +156,7 @@ ACL_IMPL_FILE_PRAGMA_PUSH
 				va_end(args);
 
 				if (count >= 0 && count < buffer_size)
-					throw runtime_assert(std::string(&buffer[0], count));
+					throw runtime_assert(std::string(&buffer[0], static_cast<std::string::size_type>(count)));
 				else
 					throw runtime_assert("Failed to format assert message!\n");
 			}
@@ -172,16 +188,16 @@ ACL_IMPL_FILE_PRAGMA_PUSH
 //////////////////////////////////////////////////////////////////////////
 
 // Allow deprecation support
-#if defined(__has_cpp_attribute) && __cplusplus >= 201402L
+#if defined(__has_cpp_attribute) && RTM_CPP_VERSION >= RTM_CPP_VERSION_14
 	#if __has_cpp_attribute(deprecated)
 		#define ACL_DEPRECATED(msg) [[deprecated(msg)]]
 	#endif
 #endif
 
 #if !defined(ACL_DEPRECATED)
-	#if defined(__GNUC__) || defined(__clang__)
+	#if defined(RTM_COMPILER_GCC) || defined(RTM_COMPILER_CLANG)
 		#define ACL_DEPRECATED(msg) __attribute__((deprecated))
-	#elif defined(_MSC_VER)
+	#elif defined(RTM_COMPILER_MSVC)
 		#define ACL_DEPRECATED(msg) __declspec(deprecated)
 	#else
 		#define ACL_DEPRECATED(msg)

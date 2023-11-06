@@ -1,4 +1,4 @@
-version: 0.8.3.{build}
+version: 0.8.99.{build}
 
 environment:
   PYTHON: "C:\\Python36-x64\\python.exe"
@@ -9,7 +9,6 @@ environment:
 image:
   - Visual Studio 2015
   - Visual Studio 2017
-  - Visual Studio 2019
 
 configuration:
   - Debug
@@ -27,12 +26,6 @@ matrix:
     - image: Visual Studio 2015
       toolchain: clang
     - image: Visual Studio 2017
-      toolchain: clang
-    - image: Visual Studio 2019
-      platform: arm64
-      toolchain: clang
-    - image: Previous Visual Studio 2019
-      platform: arm64
       toolchain: clang
 
 

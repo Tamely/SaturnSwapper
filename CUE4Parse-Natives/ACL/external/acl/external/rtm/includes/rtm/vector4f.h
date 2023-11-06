@@ -29,10 +29,14 @@
 #include "rtm/math.h"
 #include "rtm/scalarf.h"
 #include "rtm/version.h"
+#include "rtm/impl/bit_cast.impl.h"
 #include "rtm/impl/compiler_utils.h"
 #include "rtm/impl/macros.mask4.impl.h"
 #include "rtm/impl/memory_utils.h"
 #include "rtm/impl/vector_common.h"
+
+#include <cstring>
+#include <limits>
 
 RTM_IMPL_FILE_PRAGMA_PUSH
 
@@ -78,7 +82,14 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_load2(const float* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return _mm_castpd_ps(_mm_load_sd(rtm_impl::bit_cast<const double*>(input)));
+#elif defined(RTM_NEON_INTRINSICS)
+		const float32x2_t xy = vld1_f32(input);
+		return vcombine_f32(xy, vdup_n_f32(0.0F));
+#else
 		return vector_set(input[0], input[1], 0.0F, 0.0F);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -86,7 +97,17 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_load3(const float* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128 xy = _mm_castpd_ps(_mm_load_sd(rtm_impl::bit_cast<const double*>(input)));
+		const __m128 z = _mm_load_ss(input + 2);
+		return _mm_movelh_ps(xy, z);
+#elif defined(RTM_NEON_INTRINSICS)
+		const float32x2_t xy = vld1_f32(input);
+		const float32x2_t z = vld1_lane_f32(input + 2, vdup_n_f32(0.0F), 0);
+		return vcombine_f32(xy, z);
+#else
 		return vector_set(input[0], input[1], input[2], 0.0F);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -108,7 +129,14 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_load2(const float2f* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		return _mm_castpd_ps(_mm_load_sd(rtm_impl::bit_cast<const double*>(&input->x)));
+#elif defined(RTM_NEON_INTRINSICS)
+		const float32x2_t xy = vld1_f32(&input->x);
+		return vcombine_f32(xy, vdup_n_f32(0.0F));
+#else
 		return vector_set(input->x, input->y, 0.0F, 0.0F);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -116,7 +144,17 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_load3(const float3f* input) RTM_NO_EXCEPT
 	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128 xy = _mm_castpd_ps(_mm_load_sd(rtm_impl::bit_cast<const double*>(&input->x)));
+		const __m128 z = _mm_load_ss(&input->z);
+		return _mm_movelh_ps(xy, z);
+#elif defined(RTM_NEON_INTRINSICS)
+		const float32x2_t xy = vld1_f32(&input->x);
+		const float32x2_t z = vld1_lane_f32(&input->z, vdup_n_f32(0.0F), 0);
+		return vcombine_f32(xy, z);
+#else
 		return vector_set(input->x, input->y, input->z, 0.0F);
+#endif
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -570,7 +608,7 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE const float* RTM_SIMD_CALL vector_to_pointer(const vector4f& input) RTM_NO_EXCEPT
 	{
-		return reinterpret_cast<const float*>(&input);
+		return rtm_impl::bit_cast<const float*>(&input);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -836,7 +874,7 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_neg(vector4f_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		constexpr __m128 signs = { -0.0F, -0.0F, -0.0F, -0.0F };
+		constexpr __m128 signs = RTM_VECTOR4F_MAKE(-0.0F, -0.0F, -0.0F, -0.0F);
 		return _mm_xor_ps(input, signs);
 #elif defined(RTM_NEON_INTRINSICS)
 		return vnegq_f32(input);
@@ -1079,7 +1117,7 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator float() const RTM_NO_EXCEPT
 			{
 #if defined(RTM_SSE4_INTRINSICS) && 0
-				// SSE4 dot product instruction isn't precise enough
+				// SSE4 dot product instruction appears slower on Zen2, is it the case elsewhere as well?
 				return _mm_cvtss_f32(_mm_dp_ps(lhs, rhs, 0xFF));
 #elif defined(RTM_SSE2_INTRINSICS)
 				__m128 x2_y2_z2_w2 = _mm_mul_ps(lhs, rhs);
@@ -1088,6 +1126,16 @@ namespace rtm
 				__m128 y2w2_0_0_0 = _mm_shuffle_ps(x2z2_y2w2_0_0, x2z2_y2w2_0_0, _MM_SHUFFLE(0, 0, 0, 1));
 				__m128 x2y2z2w2_0_0_0 = _mm_add_ps(x2z2_y2w2_0_0, y2w2_0_0_0);
 				return _mm_cvtss_f32(x2y2z2w2_0_0_0);
+#elif defined(RTM_NEON64_INTRINSICS) && defined(RTM_IMPL_VADDVQ_SUPPORTED)
+				float32x4_t x2_y2_z2_w2 = vmulq_f32(lhs, rhs);
+				return vaddvq_f32(x2_y2_z2_w2);
+#elif defined(RTM_NEON_INTRINSICS)
+				float32x4_t x2_y2_z2_w2 = vmulq_f32(lhs, rhs);
+				float32x2_t x2_y2 = vget_low_f32(x2_y2_z2_w2);
+				float32x2_t z2_w2 = vget_high_f32(x2_y2_z2_w2);
+				float32x2_t x2z2_y2w2 = vadd_f32(x2_y2, z2_w2);
+				float32x2_t x2y2z2w2 = vpadd_f32(x2z2_y2w2, x2z2_y2w2);
+				return vget_lane_f32(x2y2z2w2, 0);
 #else
 				return (vector_get_x(lhs) * vector_get_x(rhs)) + (vector_get_y(lhs) * vector_get_y(rhs)) + (vector_get_z(lhs) * vector_get_z(rhs)) + (vector_get_w(lhs) * vector_get_w(rhs));
 #endif
@@ -1097,7 +1145,7 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator scalarf() const RTM_NO_EXCEPT
 			{
 #if defined(RTM_SSE4_INTRINSICS) && 0
-				// SSE4 dot product instruction isn't precise enough
+				// SSE4 dot product instruction appears slower on Zen2, is it the case elsewhere as well?
 				return scalarf{ _mm_cvtss_f32(_mm_dp_ps(lhs, rhs, 0xFF)) };
 #else
 				__m128 x2_y2_z2_w2 = _mm_mul_ps(lhs, rhs);
@@ -1113,7 +1161,7 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator vector4f() const RTM_NO_EXCEPT
 			{
 #if defined(RTM_SSE4_INTRINSICS) && 0
-				// SSE4 dot product instruction isn't precise enough
+				// SSE4 dot product instruction appears slower on Zen2, is it the case elsewhere as well?
 				return _mm_dp_ps(lhs, rhs, 0xFF);
 #elif defined(RTM_SSE2_INTRINSICS)
 				__m128 x2_y2_z2_w2 = _mm_mul_ps(lhs, rhs);
@@ -1122,6 +1170,11 @@ namespace rtm
 				__m128 y2w2_0_0_0 = _mm_shuffle_ps(x2z2_y2w2_0_0, x2z2_y2w2_0_0, _MM_SHUFFLE(0, 0, 0, 1));
 				__m128 x2y2z2w2_0_0_0 = _mm_add_ps(x2z2_y2w2_0_0, y2w2_0_0_0);
 				return _mm_shuffle_ps(x2y2z2w2_0_0_0, x2y2z2w2_0_0_0, _MM_SHUFFLE(0, 0, 0, 0));
+#elif defined(RTM_NEON64_INTRINSICS)
+				float32x4_t x2_y2_z2_w2 = vmulq_f32(lhs, rhs);
+				float32x4_t x2y2_z2w2_x2y2_z2w2 = vpaddq_f32(x2_y2_z2_w2, x2_y2_z2_w2);
+				float32x4_t x2y2z2w2_x2y2z2w2_x2y2z2w2_x2y2z2w2 = vpaddq_f32(x2y2_z2w2_x2y2_z2w2, x2y2_z2w2_x2y2_z2w2);
+				return x2y2z2w2_x2y2z2w2_x2y2z2w2_x2y2z2w2;
 #elif defined(RTM_NEON_INTRINSICS)
 				float32x4_t x2_y2_z2_w2 = vmulq_f32(lhs, rhs);
 				float32x2_t x2_y2 = vget_low_f32(x2_y2_z2_w2);
@@ -1161,7 +1214,7 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator float() const RTM_NO_EXCEPT
 			{
 #if defined(RTM_SSE4_INTRINSICS) && 0
-				// SSE4 dot product instruction isn't precise enough
+				// SSE4 dot product instruction appears slower on Zen2, is it the case elsewhere as well?
 				return _mm_cvtss_f32(_mm_dp_ps(lhs, rhs, 0x7F));
 #elif defined(RTM_SSE2_INTRINSICS)
 				__m128 x2_y2_z2_w2 = _mm_mul_ps(lhs, rhs);
@@ -1197,7 +1250,7 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator vector4f() const RTM_NO_EXCEPT
 			{
 #if defined(RTM_SSE4_INTRINSICS) && 0
-				// SSE4 dot product instruction isn't precise enough
+				// SSE4 dot product instruction appears slower on Zen2, is it the case elsewhere as well?
 				return _mm_cvtss_f32(_mm_dp_ps(lhs, rhs, 0xFF));
 #elif defined(RTM_SSE2_INTRINSICS)
 				__m128 x2_y2_z2_w2 = _mm_mul_ps(lhs, rhs);
@@ -1206,6 +1259,12 @@ namespace rtm
 				__m128 z2_0_0_0 = _mm_shuffle_ps(x2_y2_z2_w2, x2_y2_z2_w2, _MM_SHUFFLE(0, 0, 0, 2));
 				__m128 x2y2z2_0_0_0 = _mm_add_ss(x2y2_0_0_0, z2_0_0_0);
 				return _mm_shuffle_ps(x2y2z2_0_0_0, x2y2z2_0_0_0, _MM_SHUFFLE(0, 0, 0, 0));
+#elif defined(RTM_NEON64_INTRINSICS)
+				float32x4_t x2_y2_z2_w2 = vmulq_f32(lhs, rhs);
+				float32x4_t x2_y2_z2 = vsetq_lane_f32(0.0F, x2_y2_z2_w2, 3);
+				float32x4_t x2y2_z2_x2y2_z2 = vpaddq_f32(x2_y2_z2, x2_y2_z2);
+				float32x4_t x2y2z2_x2y2z2_x2y2z2_x2y2z2 = vpaddq_f32(x2y2_z2_x2y2_z2, x2y2_z2_x2y2_z2);
+				return x2y2z2_x2y2z2_x2y2z2_x2y2z2;
 #elif defined(RTM_NEON_INTRINSICS)
 				float32x4_t x2_y2_z2_w2 = vmulq_f32(lhs, rhs);
 				float32x2_t x2_y2 = vget_low_f32(x2_y2_z2_w2);
@@ -1549,7 +1608,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return _mm_cmpeq_ps(lhs, rhs);
 #elif defined(RTM_NEON_INTRINSICS)
-		return vreinterpretq_f32_u32(vceqq_f32(lhs, rhs));
+		return vceqq_f32(lhs, rhs);
 #else
 		return mask4f{ rtm_impl::get_mask_value(lhs.x == rhs.x), rtm_impl::get_mask_value(lhs.y == rhs.y), rtm_impl::get_mask_value(lhs.z == rhs.z), rtm_impl::get_mask_value(lhs.w == rhs.w) };
 #endif
@@ -1563,7 +1622,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return _mm_cmplt_ps(lhs, rhs);
 #elif defined(RTM_NEON_INTRINSICS)
-		return vreinterpretq_f32_u32(vcltq_f32(lhs, rhs));
+		return vcltq_f32(lhs, rhs);
 #else
 		return mask4f{ rtm_impl::get_mask_value(lhs.x < rhs.x), rtm_impl::get_mask_value(lhs.y < rhs.y), rtm_impl::get_mask_value(lhs.z < rhs.z), rtm_impl::get_mask_value(lhs.w < rhs.w) };
 #endif
@@ -1577,7 +1636,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return _mm_cmple_ps(lhs, rhs);
 #elif defined(RTM_NEON_INTRINSICS)
-		return vreinterpretq_f32_u32(vcleq_f32(lhs, rhs));
+		return vcleq_f32(lhs, rhs);
 #else
 		return mask4f{ rtm_impl::get_mask_value(lhs.x <= rhs.x), rtm_impl::get_mask_value(lhs.y <= rhs.y), rtm_impl::get_mask_value(lhs.z <= rhs.z), rtm_impl::get_mask_value(lhs.w <= rhs.w) };
 #endif
@@ -1591,7 +1650,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return _mm_cmpgt_ps(lhs, rhs);
 #elif defined(RTM_NEON_INTRINSICS)
-		return vreinterpretq_f32_u32(vcgtq_f32(lhs, rhs));
+		return vcgtq_f32(lhs, rhs);
 #else
 		return mask4f{ rtm_impl::get_mask_value(lhs.x > rhs.x), rtm_impl::get_mask_value(lhs.y > rhs.y), rtm_impl::get_mask_value(lhs.z > rhs.z), rtm_impl::get_mask_value(lhs.w > rhs.w) };
 #endif
@@ -1605,7 +1664,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return _mm_cmpge_ps(lhs, rhs);
 #elif defined(RTM_NEON_INTRINSICS)
-		return vreinterpretq_f32_u32(vcgeq_f32(lhs, rhs));
+		return vcgeq_f32(lhs, rhs);
 #else
 		return mask4f{ rtm_impl::get_mask_value(lhs.x >= rhs.x), rtm_impl::get_mask_value(lhs.y >= rhs.y), rtm_impl::get_mask_value(lhs.z >= rhs.z), rtm_impl::get_mask_value(lhs.w >= rhs.w) };
 #endif
@@ -2320,6 +2379,39 @@ namespace rtm
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	// Returns per component ~0 if input is finite, otherwise 0: finite(input) ? ~0 : 0
+	//////////////////////////////////////////////////////////////////////////
+	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE mask4f RTM_SIMD_CALL vector_finite(vector4f_arg0 input) RTM_NO_EXCEPT
+	{
+#if defined(RTM_SSE2_INTRINSICS)
+		const __m128i abs_mask = _mm_set_epi32(0x7FFFFFFFULL, 0x7FFFFFFFULL, 0x7FFFFFFFULL, 0x7FFFFFFFULL);
+		__m128 abs_input = _mm_and_ps(input, _mm_castsi128_ps(abs_mask));
+
+		const __m128 infinity = _mm_set_ps1(std::numeric_limits<float>::infinity());
+		__m128 is_not_infinity = _mm_cmpneq_ps(abs_input, infinity);
+
+		__m128 is_nan = _mm_cmpneq_ps(input, input);
+
+		__m128 is_finite = _mm_andnot_ps(is_nan, is_not_infinity);
+		return is_finite;
+#elif defined(RTM_NEON_INTRINSICS)
+		const float32x4_t abs_input = vabsq_f32(input);
+		const float32x4_t infinity = vdupq_n_f32(std::numeric_limits<float>::infinity());
+		const uint32x4_t is_not_infinity = vmvnq_u32(vceqq_f32(abs_input, infinity));
+		const uint32x4_t is_not_nan = vceqq_f32(input, input);
+		const uint32x4_t is_finite = vandq_u32(is_not_infinity, is_not_nan);
+		return is_finite;
+#else
+		return mask4f{
+			rtm_impl::get_mask_value(scalar_is_finite(vector_get_x(input))),
+			rtm_impl::get_mask_value(scalar_is_finite(vector_get_y(input))),
+			rtm_impl::get_mask_value(scalar_is_finite(vector_get_z(input))),
+			rtm_impl::get_mask_value(scalar_is_finite(vector_get_w(input)))
+			};
+#endif
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	// Returns true if all 4 components are finite (not NaN/Inf), otherwise false: all(finite(input))
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE bool RTM_SIMD_CALL vector_is_finite(vector4f_arg0 input) RTM_NO_EXCEPT
@@ -2651,11 +2743,11 @@ namespace rtm
 	#pragma GCC diagnostic ignored "-Wuninitialized"
 #endif
 
-		const uint32_t* input0_ = reinterpret_cast<const uint32_t*>(&input0);
-		const uint32_t* input1_ = reinterpret_cast<const uint32_t*>(&input1);
+		const uint32_t* input0_ = rtm_impl::bit_cast<const uint32_t*>(&input0);
+		const uint32_t* input1_ = rtm_impl::bit_cast<const uint32_t*>(&input1);
 
 		vector4f result;
-		uint32_t* result_ = reinterpret_cast<uint32_t*>(&result);
+		uint32_t* result_ = rtm_impl::bit_cast<uint32_t*>(&result);
 
 		result_[0] = input0_[0] & input1_[0];
 		result_[1] = input0_[1] & input1_[1];
@@ -2687,11 +2779,11 @@ namespace rtm
 	#pragma GCC diagnostic ignored "-Wuninitialized"
 #endif
 
-		const uint32_t* input0_ = reinterpret_cast<const uint32_t*>(&input0);
-		const uint32_t* input1_ = reinterpret_cast<const uint32_t*>(&input1);
+		const uint32_t* input0_ = rtm_impl::bit_cast<const uint32_t*>(&input0);
+		const uint32_t* input1_ = rtm_impl::bit_cast<const uint32_t*>(&input1);
 
 		vector4f result;
-		uint32_t* result_ = reinterpret_cast<uint32_t*>(&result);
+		uint32_t* result_ = rtm_impl::bit_cast<uint32_t*>(&result);
 
 		result_[0] = input0_[0] | input1_[0];
 		result_[1] = input0_[1] | input1_[1];
@@ -2723,11 +2815,11 @@ namespace rtm
 	#pragma GCC diagnostic ignored "-Wuninitialized"
 #endif
 
-		const uint32_t* input0_ = reinterpret_cast<const uint32_t*>(&input0);
-		const uint32_t* input1_ = reinterpret_cast<const uint32_t*>(&input1);
+		const uint32_t* input0_ = rtm_impl::bit_cast<const uint32_t*>(&input0);
+		const uint32_t* input1_ = rtm_impl::bit_cast<const uint32_t*>(&input1);
 
 		vector4f result;
-		uint32_t* result_ = reinterpret_cast<uint32_t*>(&result);
+		uint32_t* result_ = rtm_impl::bit_cast<uint32_t*>(&result);
 
 		result_[0] = input0_[0] ^ input1_[0];
 		result_[1] = input0_[1] ^ input1_[1];
@@ -2754,8 +2846,8 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE vector4f RTM_SIMD_CALL vector_sign(vector4f_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		constexpr __m128 signs = { -0.0F, -0.0F, -0.0F, -0.0F };
-		constexpr __m128 one = { 1.0F, 1.0F, 1.0F, 1.0F };
+		constexpr __m128 signs = RTM_VECTOR4F_MAKE(-0.0F, -0.0F, -0.0F, -0.0F);
+		constexpr __m128 one = RTM_VECTOR4F_MAKE(1.0F, 1.0F, 1.0F, 1.0F);
 		const __m128 sign_bits = _mm_and_ps(input, signs);	// Mask out the sign bit
 		return _mm_or_ps(sign_bits, one);					// Copy the sign bit onto +-1.0f
 #else

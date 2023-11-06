@@ -56,7 +56,6 @@ namespace acl
 				, buffer_size(0)
 				, num_tracks(num_tracks_)
 				, type(type_)
-				, padding()
 			{
 				// Large enough to accommodate the largest type
 				buffer_size = sizeof(rtm::qvvf) * num_tracks_;
@@ -67,7 +66,11 @@ namespace acl
 			{
 				allocator.deallocate(tracks_typed.any, buffer_size);
 			}
-			
+
+			// Cannot copy or move
+			debug_track_writer(const debug_track_writer&) = delete;
+			debug_track_writer& operator=(const debug_track_writer&) = delete;
+
 			//////////////////////////////////////////////////////////////////////////
 			// For performance reasons, this writer skips all default sub-tracks.
 			// It is the responsibility of the caller to pre-populate them by calling initialize_with_defaults().
@@ -214,7 +217,7 @@ namespace acl
 			track_type8 type;
 
 			// Must pad to a multiple of 16 bytes for derived types
-			uint8_t padding[sizeof(void*) == 4 ? 15 : 3];
+			uint8_t padding[sizeof(void*) == 4 ? 15 : 3] = {0};
 		};
 
 		//////////////////////////////////////////////////////////////////////////
@@ -231,6 +234,10 @@ namespace acl
 			{
 				ACL_ASSERT(type_ == track_type8::qvvf, "Only qvvf tracks are supported");
 			}
+
+			// Cannot copy or move
+			debug_track_writer_constant_defaults(const debug_track_writer_constant_defaults&) = delete;
+			debug_track_writer_constant_defaults& operator=(const debug_track_writer_constant_defaults&) = delete;
 
 			static constexpr default_sub_track_mode get_default_rotation_mode() { return default_sub_track_mode::constant; }
 			static constexpr default_sub_track_mode get_default_translation_mode() { return default_sub_track_mode::constant; }
@@ -258,6 +265,10 @@ namespace acl
 				ACL_ASSERT(type_ == track_type8::qvvf, "Only qvvf tracks are supported");
 			}
 
+			// Cannot copy or move
+			debug_track_writer_variable_defaults(const debug_track_writer_variable_defaults&) = delete;
+			debug_track_writer_variable_defaults& operator=(const debug_track_writer_variable_defaults&) = delete;
+
 			static constexpr default_sub_track_mode get_default_rotation_mode() { return default_sub_track_mode::variable; }
 			static constexpr default_sub_track_mode get_default_translation_mode() { return default_sub_track_mode::variable; }
 			static constexpr default_sub_track_mode get_default_scale_mode() { return default_sub_track_mode::variable; }
@@ -279,6 +290,10 @@ namespace acl
 				, rounding_policy(sample_rounding_policy::per_track)
 			{
 			}
+
+			// Cannot copy or move
+			debug_track_writer_per_track_rounding(const debug_track_writer_per_track_rounding&) = delete;
+			debug_track_writer_per_track_rounding& operator=(const debug_track_writer_per_track_rounding&) = delete;
 
 			sample_rounding_policy get_rounding_policy(sample_rounding_policy /*seek_policy*/, uint32_t /*track_index*/) const { return rounding_policy; }
 

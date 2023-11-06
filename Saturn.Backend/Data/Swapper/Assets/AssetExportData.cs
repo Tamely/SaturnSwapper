@@ -24,7 +24,7 @@ public class AssetExportData : ExportDataBase
     public string? PrimaryFireAbility = null;
     public string? Mesh = null;
 
-    public static async Task<AssetExportData?> Create(UObject asset, EAssetType assetType, FStructFallback[] styles)
+    public static async Task<AssetExportData?> Create(UObject asset, EAssetType assetType, FStructFallback[] styles, bool emoteStyle = false)
     {
         var data = new AssetExportData();
         assetType = assetType is EAssetType.Gallery ? EAssetType.Prop : assetType;
@@ -36,17 +36,67 @@ public class AssetExportData : ExportDataBase
             {
                 case EAssetType.Outfit:
                 {
-                    var parts = asset.GetOrDefault("BaseCharacterParts", Array.Empty<UObject>());
-                    if (asset.TryGetValue(out UObject heroDefinition, "HeroDefinition"))
+                    if (emoteStyle)
                     {
-                        if (parts.Length == 0)
+                        var emotes = asset.GetOrDefault("BuiltInEmotes", Array.Empty<UObject>());
+                        if (emotes.Length == 0)
                         {
-                            var specializations = heroDefinition.Get<UObject[]>("Specializations").FirstOrDefault();
-                            parts = specializations?.GetOrDefault("CharacterParts", Array.Empty<UObject>()) ?? Array.Empty<UObject>();
+                            throw new Exception("Emotes length is 0! This shouldn't be possible!!!!");
+                        }
+                        var emote = emotes[0];
+                        
+                        var selectionGroups = emote.GetOrDefault("MotageSelectionGroups", Array.Empty<FStructFallback>());
+                        foreach (var group in selectionGroups)
+                        {
+                            var variantMetaTagRequired = group.Get<FGameplayTag>("VariantMetaTagRequired");
+
+                            foreach (var style in asset.GetOrDefault("ItemVariants", Array.Empty<UObject>()))
+                            {
+                                FStructFallback[] options = Array.Empty<FStructFallback>();
+                                options = style.GetOrDefault("PartOptions", options);
+                                options = style.GetOrDefault("ParticleOptions", options);
+
+                                foreach (var option in options)
+                                {
+                                    UObject[] characterParts = option.GetOrDefault("VariantParts", Array.Empty<UObject>());
+                                    if (characterParts.Length == 0) continue;
+
+                                    var tagContainer = option.Get<FStructFallback>("MetaTags");
+                                    var tags = tagContainer.Get<FGameplayTagContainer>("MetaTagsToApply");
+
+                                    var bWasfound = false;
+                                    foreach (var tag in tags)
+                                    {
+                                        if (tag.TagName.Text.Equals(variantMetaTagRequired.TagName.Text))
+                                        {
+                                            bWasfound = true;
+                                        }
+                                    }
+                                    if (!bWasfound) continue;
+                                    Logger.Log("Found tag: " + variantMetaTagRequired.TagName.Text);
+
+                                    if (option.GetOrDefault("VariantName", new FText("Unknown Style")).Text.ToLower() == "default") continue;
+                                    
+                                    data.ExportParts = ExportHelpers.CharacterParts(characterParts, data.Parts);
+                                }
+                            }
                         }
                     }
-
-                    data.ExportParts = ExportHelpers.CharacterParts(parts, data.Parts);
+                    else
+                    {
+                        var parts = asset.GetOrDefault("BaseCharacterParts", Array.Empty<UObject>());
+                        if (asset.TryGetValue(out UObject heroDefinition, "HeroDefinition"))
+                        {
+                            if (parts.Length == 0)
+                            {
+                                var specializations = heroDefinition.Get<UObject[]>("Specializations").FirstOrDefault();
+                                parts = specializations?.GetOrDefault("CharacterParts", Array.Empty<UObject>()) ?? Array.Empty<UObject>();
+                            }
+                        }
+                        
+                        data.ExportParts = ExportHelpers.CharacterParts(parts, data.Parts);
+                    }
+                    
                     break;
                 }
                 case EAssetType.Backpack:

@@ -25,6 +25,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "acl/version.h"
+#include "acl/core/impl/bit_cast.impl.h"
 #include "acl/core/impl/compiler_utils.h"
 #include "acl/core/impl/compressed_headers.h"
 #include "acl/core/impl/variable_bit_rates.h"
@@ -46,7 +47,7 @@ namespace acl
 		{
 			ACL_ASSERT(context.is_valid(), "Invalid context");
 
-			uint8_t* output_buffer = reinterpret_cast<uint8_t*>(per_track_metadata);
+			const uint8_t* output_buffer = bit_cast<uint8_t*>(per_track_metadata);
 			const uint8_t* output_buffer_start = output_buffer;
 
 			for (uint32_t output_index = 0; output_index < context.num_output_tracks; ++output_index)
@@ -54,7 +55,7 @@ namespace acl
 				const uint32_t track_index = context.track_output_indices[output_index];
 
 				if (per_track_metadata != nullptr)
-					per_track_metadata[output_index].bit_rate = context.is_constant(track_index) ? 0 : context.bit_rate_list[track_index].scalar.value;
+					per_track_metadata[output_index].bit_rate = context.is_constant(track_index) ? static_cast<uint8_t>(0) : context.bit_rate_list[track_index].scalar.value;
 
 				output_buffer += sizeof(track_metadata);
 			}
@@ -66,7 +67,7 @@ namespace acl
 		{
 			ACL_ASSERT(context.is_valid(), "Invalid context");
 
-			uint8_t* output_buffer = reinterpret_cast<uint8_t*>(constant_values);
+			uint8_t* output_buffer = bit_cast<uint8_t*>(constant_values);
 			const uint8_t* output_buffer_start = output_buffer;
 
 			for (uint32_t output_index = 0; output_index < context.num_output_tracks; ++output_index)
@@ -92,7 +93,7 @@ namespace acl
 		{
 			ACL_ASSERT(context.is_valid(), "Invalid context");
 
-			uint8_t* output_buffer = reinterpret_cast<uint8_t*>(range_values);
+			uint8_t* output_buffer = bit_cast<uint8_t*>(range_values);
 			const uint8_t* output_buffer_start = output_buffer;
 
 			for (uint32_t output_index = 0; output_index < context.num_output_tracks; ++output_index)

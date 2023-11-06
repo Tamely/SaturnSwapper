@@ -22,9 +22,10 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <catch2/catch.hpp>
+#include "catch2.impl.h"
 
 #include <sjson/writer.h>
+#include <sjson/impl/bit_cast.impl.h>
 
 #include <sstream>
 #include <string>
@@ -35,10 +36,12 @@ class StringStreamWriter final : public StreamWriter
 {
 public:
 	StringStreamWriter() = default;
+	StringStreamWriter(const StringStreamWriter&) = delete;
+	StringStreamWriter& operator=(const StringStreamWriter&) = delete;
 
 	virtual void write(const void* buffer, size_t buffer_size) override
 	{
-		m_buffer.sputn(reinterpret_cast<const char*>(buffer), buffer_size);
+		m_buffer.sputn(sjson_impl::bit_cast<const char*>(buffer), static_cast<std::streamsize>(buffer_size));
 	}
 
 	std::string str() const { return m_buffer.str(); }

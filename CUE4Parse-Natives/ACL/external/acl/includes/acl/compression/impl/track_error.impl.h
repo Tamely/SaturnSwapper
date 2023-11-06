@@ -42,6 +42,8 @@
 
 #include <cstdint>
 
+ACL_IMPL_FILE_PRAGMA_PUSH
+
 namespace acl
 {
 	ACL_IMPL_VERSION_NAMESPACE_BEGIN
@@ -90,6 +92,7 @@ namespace acl
 				error = rtm::vector_abs(rtm::vector_sub(raw_value, lossy_value));
 				break;
 			}
+			case track_type8::qvvf:
 			default:
 				ACL_ASSERT(false, "Unsupported track type");
 				error = rtm::vector_zero();
@@ -138,6 +141,10 @@ namespace acl
 				: adapter(adapter_)
 			{
 			}
+
+			// Cannot copy or move
+			calculate_track_error_args(const calculate_track_error_args&) = delete;
+			calculate_track_error_args& operator=(const calculate_track_error_args&) = delete;
 
 			// Scalar and transforms
 			ierror_calculation_adapter& adapter;
@@ -274,12 +281,17 @@ namespace acl
 			convert_transforms_args_raw.num_dirty_transforms = num_tracks;
 			convert_transforms_args_raw.transforms = tracks_writer0.tracks_typed.qvvf;
 			convert_transforms_args_raw.num_transforms = num_tracks;
+			convert_transforms_args_raw.sample_index = 0;
+			convert_transforms_args_raw.is_lossy = false;
+			convert_transforms_args_raw.is_additive_base = false;
 
 			itransform_error_metric::convert_transforms_args convert_transforms_args_base = convert_transforms_args_raw;
 			convert_transforms_args_base.transforms = tracks_writer_base.tracks_typed.qvvf;
+			convert_transforms_args_base.is_additive_base = true;
 
 			itransform_error_metric::convert_transforms_args convert_transforms_args_lossy = convert_transforms_args_raw;
 			convert_transforms_args_lossy.transforms = tracks_writer1_remapped.tracks_typed.qvvf;
+			convert_transforms_args_lossy.is_lossy = true;
 
 			itransform_error_metric::apply_additive_to_base_args apply_additive_to_base_args_raw;
 			apply_additive_to_base_args_raw.dirty_transform_indices = self_transform_indices;
@@ -317,6 +329,8 @@ namespace acl
 
 				if (needs_conversion)
 				{
+					convert_transforms_args_raw.sample_index = sample_index;
+					convert_transforms_args_lossy.sample_index = sample_index;
 					error_metric.convert_transforms(convert_transforms_args_raw, raw_local_pose_converted);
 					error_metric.convert_transforms(convert_transforms_args_lossy, lossy_local_pose_converted);
 				}
@@ -328,7 +342,11 @@ namespace acl
 					args.adapter.sample_tracks_base(additive_sample_time, rounding_policy, tracks_writer_base);
 
 					if (needs_conversion)
+					{
+						const uint32_t nearest_base_sample_index = static_cast<uint32_t>(rtm::scalar_round_bankers(normalized_sample_time * float(additive_num_samples)));
+						convert_transforms_args_base.sample_index = nearest_base_sample_index;
 						error_metric.convert_transforms(convert_transforms_args_base, base_local_pose_converted);
+					}
 
 					error_metric.apply_additive_to_base(apply_additive_to_base_args_raw, raw_local_pose_);
 					error_metric.apply_additive_to_base(apply_additive_to_base_args_lossy, lossy_local_pose_);
@@ -400,6 +418,10 @@ namespace acl
 			{
 			}
 
+			// Cannot copy or move
+			error_calculation_adapter(const error_calculation_adapter&) = delete;
+			error_calculation_adapter& operator=(const error_calculation_adapter&) = delete;
+
 			virtual void sample_tracks0(float sample_time, sample_rounding_policy rounding_policy, debug_track_writer& track_writer) override
 			{
 				raw_tracks_.sample_tracks(sample_time, rounding_policy, track_writer);
@@ -427,8 +449,14 @@ namespace acl
 		args.sample_rate = raw_tracks.get_sample_rate();
 		args.track_type = raw_tracks.get_track_type();
 
-		// We use the nearest sample to accurately measure the loss that happened, if any
-		args.rounding_policy = sample_rounding_policy::nearest;
+		// We use the nearest sample to accurately measure the loss that happened, if any but only if all data is loaded
+		// If we have a database with some data missing, we can't use the nearest samples, we have to interpolate
+		// TODO: Check if all the data is loaded, always interpolate for now
+		const compressed_tracks& tracks = *context.get_compressed_tracks();
+		if (tracks.has_database() || tracks.has_stripped_keyframes())
+			args.rounding_policy = sample_rounding_policy::none;
+		else
+			args.rounding_policy = sample_rounding_policy::nearest;
 
 		return calculate_scalar_track_error(allocator, args);
 	}
@@ -463,6 +491,7 @@ namespace acl
 				deallocate_type_array(allocator_, output_bone_mapping, num_output_bones);
 			}
 
+			// Cannot copy or move
 			error_calculation_adapter(const error_calculation_adapter&) = delete;
 			error_calculation_adapter& operator=(const error_calculation_adapter&) = delete;
 
@@ -525,14 +554,12 @@ namespace acl
 
 		// We use the nearest sample to accurately measure the loss that happened, if any but only if all data is loaded
 		// If we have a database with some data missing, we can't use the nearest samples, we have to interpolate
-		args.rounding_policy = sample_rounding_policy::nearest;
-
+		// TODO: Check if all the data is loaded, always interpolate for now
 		const compressed_tracks& tracks = *context.get_compressed_tracks();
-		if (tracks.has_database())
-		{
-			// TODO: Check if all the data is loaded, always interpolate for now
+		if (tracks.has_database() || tracks.has_stripped_keyframes())
 			args.rounding_policy = sample_rounding_policy::none;
-		}
+		else
+			args.rounding_policy = sample_rounding_policy::nearest;
 
 		if (raw_tracks.get_track_type() != track_type8::qvvf)
 			return calculate_scalar_track_error(allocator, args);
@@ -574,6 +601,7 @@ namespace acl
 				deallocate_type_array(allocator_, output_bone_mapping, num_output_bones);
 			}
 
+			// Cannot copy or move
 			error_calculation_adapter(const error_calculation_adapter&) = delete;
 			error_calculation_adapter& operator=(const error_calculation_adapter&) = delete;
 
@@ -642,14 +670,12 @@ namespace acl
 
 		// We use the nearest sample to accurately measure the loss that happened, if any but only if all data is loaded
 		// If we have a database with some data missing, we can't use the nearest samples, we have to interpolate
-		args.rounding_policy = sample_rounding_policy::nearest;
-
+		// TODO: Check if all the data is loaded, always interpolate for now
 		const compressed_tracks& tracks = *context.get_compressed_tracks();
-		if (tracks.has_database())
-		{
-			// TODO: Check if all the data is loaded, always interpolate for now
+		if (tracks.has_database() || tracks.has_stripped_keyframes())
 			args.rounding_policy = sample_rounding_policy::none;
-		}
+		else
+			args.rounding_policy = sample_rounding_policy::nearest;
 
 		args.error_metric = &error_metric;
 
@@ -686,6 +712,10 @@ namespace acl
 			{
 			}
 
+			// Cannot copy or move
+			error_calculation_adapter(const error_calculation_adapter&) = delete;
+			error_calculation_adapter& operator=(const error_calculation_adapter&) = delete;
+
 			virtual void sample_tracks0(float sample_time, sample_rounding_policy rounding_policy, debug_track_writer& track_writer) override
 			{
 				context0_.seek(sample_time, rounding_policy);
@@ -710,14 +740,12 @@ namespace acl
 
 		// We use the nearest sample to accurately measure the loss that happened, if any but only if all data is loaded
 		// If we have a database with some data missing, we can't use the nearest samples, we have to interpolate
-		args.rounding_policy = sample_rounding_policy::nearest;
-
+		// TODO: Check if all the data is loaded, always interpolate for now
 		const compressed_tracks* tracks1 = context1.get_compressed_tracks();
-		if (tracks0->has_database() || tracks1->has_database())
-		{
-			// TODO: Check if all the data is loaded, always interpolate for now
+		if (tracks0->has_database() || tracks1->has_database() || tracks0->has_stripped_keyframes() || tracks1->has_stripped_keyframes())
 			args.rounding_policy = sample_rounding_policy::none;
-		}
+		else
+			args.rounding_policy = sample_rounding_policy::nearest;
 
 		return calculate_scalar_track_error(allocator, args);
 	}
@@ -742,6 +770,10 @@ namespace acl
 				, raw_tracks1_(raw_tracks1__)
 			{
 			}
+
+			// Cannot copy or move
+			error_calculation_adapter(const error_calculation_adapter&) = delete;
+			error_calculation_adapter& operator=(const error_calculation_adapter&) = delete;
 
 			virtual void sample_tracks0(float sample_time, sample_rounding_policy rounding_policy, debug_track_writer& track_writer) override
 			{
@@ -786,6 +818,10 @@ namespace acl
 				, raw_tracks1_(raw_tracks1__)
 			{
 			}
+
+			// Cannot copy or move
+			error_calculation_adapter(const error_calculation_adapter&) = delete;
+			error_calculation_adapter& operator=(const error_calculation_adapter&) = delete;
 
 			virtual void sample_tracks0(float sample_time, sample_rounding_policy rounding_policy, debug_track_writer& track_writer) override
 			{
@@ -832,3 +868,5 @@ namespace acl
 
 	ACL_IMPL_VERSION_NAMESPACE_END
 }
+
+ACL_IMPL_FILE_PRAGMA_POP

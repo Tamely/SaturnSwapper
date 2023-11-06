@@ -6,13 +6,11 @@ namespace CUE4Parse;
 public struct AssetRegistrySwap
 {
     public byte[] DecompressedData;
-    public byte[] CompressedData;
     public FPakCompressedBlock CompressionBlock;
 }
 
 public class SaturnData
 {
-    public static bool IsPickaxe = false;
     public static uint CompressedSize = 0;
     public static uint TocIndex { get; set; } = 0;
     public static uint PartitionIndex { get; set; } = 0;
@@ -26,7 +24,6 @@ public class SaturnData
 
     public static void Clear()
     {
-        IsPickaxe = false;
         TocIndex = 0;
         CompressedSize = 0;
         PartitionIndex = 0;

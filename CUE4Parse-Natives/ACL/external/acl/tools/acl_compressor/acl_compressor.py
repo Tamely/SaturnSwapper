@@ -32,6 +32,8 @@ def parse_argv():
 	options['stat_detailed'] = False
 	options['stat_exhaustive'] = False
 	options['level'] = 'Medium'
+	options['strip_keyframe_proportion'] = None
+	options['strip_keyframe_threshold'] = None
 	options['print_help'] = False
 
 	for i in range(1, len(sys.argv)):
@@ -78,7 +80,13 @@ def parse_argv():
 			options['num_threads'] = int(value[len('-parallel='):].replace('"', ''))
 
 		if value.startswith('-level='):
-			options['level'] = value[len('-level='):].replace('"', '').capitalize()
+			options['level'] = value[len('-level='):].replace('"', '')
+
+		if value.startswith('-strip_keyframe_proportion='):
+			options['strip_keyframe_proportion'] = float(value[len('-strip_keyframe_proportion='):].replace('"', ''))
+
+		if value.startswith('-strip_keyframe_threshold='):
+			options['strip_keyframe_threshold'] = float(value[len('-strip_keyframe_threshold='):].replace('"', ''))
 
 		if value == '-help':
 			options['print_help'] = True
@@ -137,6 +145,8 @@ def print_help():
 	print('  -no_progress_bar: Suppresses the progress bar output')
 	print('  -stat_detailed: Enables detailed stat logging')
 	print('  -stat_exhaustive: Enables exhaustive stat logging')
+	print('  -strip_keyframe_proportion: Enables keyframe stripping and sets the desired strip proportion')
+	print('  -strip_keyframe_threshold: Enables keyframe stripping and sets the desired strip threshold')
 	print('  -help: Prints this help message.')
 
 def print_stat(stat):
@@ -166,7 +176,7 @@ def create_csv(options):
 		csv_data['stats_summary_csv_file'] = stats_summary_csv_file
 
 		print('Generating CSV file {} ...'.format(stats_summary_csv_filename))
-		print('Clip Name,Algorithm Name,Raw Size,Compressed Size,Compression Ratio,Compression Time,Clip Duration,Num Animated Tracks,Max Error,Num Transforms,Num Samples Per Track,Quantization Memory Usage,Is Looping', file = stats_summary_csv_file)
+		print('Clip Name,Algorithm Name,Raw Size,Compressed Size,Compression Ratio,Compression Time,Clip Duration,Num Animated Tracks,Max Error,Num Transforms,Num Samples Per Track,Quantization Memory Usage,Is Looping,Num Trivial Keyframes,Longest Transform Chain', file = stats_summary_csv_file)
 
 	if options['csv_bit_rate']:
 		stats_bit_rate_csv_filename = os.path.join(stat_dir, 'stats_bit_rate.csv')
@@ -174,7 +184,7 @@ def create_csv(options):
 		csv_data['stats_bit_rate_csv_file'] = stats_bit_rate_csv_file
 
 		print('Generating CSV file {} ...'.format(stats_bit_rate_csv_filename))
-		print('Algorithm Name,0,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,32', file = stats_bit_rate_csv_file)
+		print('Algorithm Name,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,32', file = stats_bit_rate_csv_file)
 
 	if options['csv_animated_size']:
 		stats_animated_size_csv_filename = os.path.join(stat_dir, 'stats_animated_size.csv')
@@ -216,11 +226,11 @@ def append_csv(csv_data, job_data):
 		for (clip_name, algo_name, \
 			raw_size, compressed_size, compression_ratio, compression_time, \
 			duration, num_animated_tracks, max_error, num_transforms, num_samples_per_track, \
-			quantization_memory_usage, is_looping) in data:
-			print('{},{},{},{},{},{},{},{},{},{},{},{},{}'.format(clip_name, algo_name, \
+			quantization_memory_usage, is_looping, num_trivial_keyframes, longest_chain_length) in data:
+			print('{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}'.format(clip_name, algo_name, \
 				raw_size, compressed_size, compression_ratio, compression_time, \
 				duration, num_animated_tracks, max_error, num_transforms, num_samples_per_track, \
-				quantization_memory_usage, is_looping), file = csv_data['stats_summary_csv_file'])
+				quantization_memory_usage, is_looping, num_trivial_keyframes, longest_chain_length), file = csv_data['stats_summary_csv_file'])
 
 	if 'stats_animated_size_csv_file' in csv_data:
 		size_data = job_data['stats_animated_size']
@@ -358,6 +368,12 @@ def compress_clips(options):
 			if options['stat_exhaustive']:
 				cmd = '{} -stat_exhaustive'.format(cmd)
 
+			if options['strip_keyframe_proportion']:
+				cmd = '{} -strip_keyframe_proportion={}'.format(cmd, options['strip_keyframe_proportion'])
+
+			if options['strip_keyframe_threshold']:
+				cmd = '{} -strip_keyframe_threshold={}'.format(cmd, options['strip_keyframe_threshold'])
+
 			if platform.system() == 'Windows':
 				cmd = cmd.replace('/', '\\')
 
@@ -457,7 +473,7 @@ def aggregate_stats(agg_run_stats, run_stats):
 		agg_data['total_duration'] = 0.0
 		agg_data['max_error'] = 0
 		agg_data['num_runs'] = 0
-		agg_data['bit_rates'] = [0] * 19
+		agg_data['bit_rates'] = [0] * 25
 		agg_data['compressed_size'] = []
 
 		# Detailed stats
@@ -504,7 +520,7 @@ def aggregate_stats(agg_run_stats, run_stats):
 	if 'segments' in run_stats and len(run_stats['segments']) > 0:
 		for segment in run_stats['segments']:
 			if 'bit_rate_counts' in segment:
-				for i in range(19):
+				for i in range(25):
 					agg_data['bit_rates'][i] += segment['bit_rate_counts'][i]
 
 	# Detailed stats
@@ -604,12 +620,8 @@ def run_stat_parsing(options, stat_queue, result_queue):
 						if isinstance(run_stats['duration'], str):
 							run_stats['duration'] = 0.0
 
-						if 'segmenting' in run_stats:
-							run_stats['desc'] = '{}|{}|{}'.format(run_stats['rotation_format'], run_stats['translation_format'], run_stats['scale_format'])
-							run_stats['csv_desc'] = '{}|{}|{}'.format(run_stats['rotation_format'], run_stats['translation_format'], run_stats['scale_format'])
-						else:
-							run_stats['desc'] = '{}|{}|{}'.format(run_stats['rotation_format'], run_stats['translation_format'], run_stats['scale_format'])
-							run_stats['csv_desc'] = '{}|{}|{}'.format(run_stats['rotation_format'], run_stats['translation_format'], run_stats['scale_format'])
+						run_stats['desc'] = '{}|{}|{}'.format(run_stats['rotation_format'], run_stats['translation_format'], run_stats['scale_format'])
+						run_stats['csv_desc'] = '{}|{}|{}'.format(run_stats['rotation_format'], run_stats['translation_format'], run_stats['scale_format'])
 
 						aggregate_stats(agg_run_stats, run_stats)
 						track_best_runs(best_runs, run_stats)
@@ -632,7 +644,8 @@ def run_stat_parsing(options, stat_queue, result_queue):
 							data = (run_stats['clip_name'], run_stats['csv_desc'], \
 								run_stats['raw_size'], run_stats['compressed_size'], run_stats['compression_ratio'], run_stats['compression_time'], \
 								run_stats['duration'], num_animated_tracks, run_stats['max_error'], num_transforms, num_samples_per_track, \
-								quantization_memory_usage, is_looping)
+								quantization_memory_usage, is_looping, run_stats['num_trivial_keyframes'],
+								run_stats['longest_chain_length'])
 							stats_summary_data.append(data)
 
 						if 'segments' in run_stats and len(run_stats['segments']) > 0:
@@ -659,6 +672,8 @@ def run_stat_parsing(options, stat_queue, result_queue):
 					result_queue.put(('progress', stat_filename))
 				except sjson.ParseException:
 					print('Failed to parse SJSON file: {}'.format(stat_filename.replace('\\\\?\\', '')))
+				except TypeError:
+					print('Failed to process SJSON file: {}'.format(stat_filename.replace('\\\\?\\', '')))
 
 		# Done
 		results = {}
@@ -712,7 +727,7 @@ def aggregate_job_stats(agg_job_results, job_results):
 				agg_job_results['agg_run_stats'][key]['max_error'] = max(agg_job_results['agg_run_stats'][key]['max_error'], job_results['agg_run_stats'][key]['max_error'])
 				agg_job_results['agg_run_stats'][key]['num_runs'] += job_results['agg_run_stats'][key]['num_runs']
 				agg_job_results['agg_run_stats'][key]['compressed_size'] += job_results['agg_run_stats'][key]['compressed_size']
-				for i in range(19):
+				for i in range(25):
 					agg_job_results['agg_run_stats'][key]['bit_rates'][i] += job_results['agg_run_stats'][key]['bit_rates'][i]
 
 				# Detailed stats

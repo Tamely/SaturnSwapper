@@ -30,9 +30,13 @@
 #include "acl/core/bitset.h"
 #include "acl/core/compressed_database.h"
 #include "acl/core/compressed_tracks_version.h"
+#include "acl/core/impl/atomic.impl.h"
+#include "acl/core/impl/bit_cast.impl.h"
 #include "acl/decompression/database/impl/database_context.h"
 
 #include <cstdint>
+
+ACL_IMPL_FILE_PRAGMA_PUSH
 
 namespace acl
 {
@@ -70,7 +74,6 @@ namespace acl
 
 	template<class database_settings_type>
 	inline database_context<database_settings_type>::database_context()
-		: m_context()
 	{
 		m_context.reset();
 
@@ -103,6 +106,7 @@ namespace acl
 			return false;
 
 		m_context.db = &database;
+		m_context.db_hash = database.get_hash();
 		m_context.allocator = &allocator;
 		m_context.bulk_data[0] = database.get_bulk_data(quality_tier::medium_importance);
 		m_context.bulk_data[1] = database.get_bulk_data(quality_tier::lowest_importance);
@@ -127,16 +131,16 @@ namespace acl
 		// Initialize everything to 0
 		std::memset(runtime_data_buffer, 0, runtime_data_size);
 
-		m_context.loaded_chunks[0] = reinterpret_cast<uint32_t*>(runtime_data_buffer);
+		m_context.loaded_chunks[0] = acl_impl::bit_cast<uint32_t*>(runtime_data_buffer);
 		runtime_data_buffer += medium_bitset_size;
 
-		m_context.streaming_chunks[0] = reinterpret_cast<uint32_t*>(runtime_data_buffer);
+		m_context.streaming_chunks[0] = acl_impl::bit_cast<uint32_t*>(runtime_data_buffer);
 		runtime_data_buffer += medium_bitset_size;
 
-		m_context.loaded_chunks[1] = reinterpret_cast<uint32_t*>(runtime_data_buffer);
+		m_context.loaded_chunks[1] = acl_impl::bit_cast<uint32_t*>(runtime_data_buffer);
 		runtime_data_buffer += low_bitset_size;
 
-		m_context.streaming_chunks[1] = reinterpret_cast<uint32_t*>(runtime_data_buffer);
+		m_context.streaming_chunks[1] = acl_impl::bit_cast<uint32_t*>(runtime_data_buffer);
 		runtime_data_buffer += low_bitset_size;
 
 		m_context.clip_segment_headers = align_to(runtime_data_buffer, 8);	// Align runtime headers
@@ -171,8 +175,8 @@ namespace acl
 #endif
 
 				acl_impl::database_runtime_segment_header* segment_header = chunk_segment_header.get_segment_header(m_context.clip_segment_headers);
-				ACL_ASSERT(segment_header->tier_metadata[0].load(std::memory_order::memory_order_relaxed) == 0, "Tier metadata should not be initialized");
-				segment_header->tier_metadata[0].store((uint64_t(chunk_segment_header.samples_offset) << 32) | chunk_segment_header.sample_indices, std::memory_order::memory_order_relaxed);
+				ACL_ASSERT(segment_header->tier_metadata[0].load(acl_impl::k_memory_order_relaxed) == 0, "Tier metadata should not be initialized");
+				segment_header->tier_metadata[0].store((uint64_t(chunk_segment_header.samples_offset) << 32) | chunk_segment_header.sample_indices, acl_impl::k_memory_order_relaxed);
 			}
 
 			bitset_set(m_context.loaded_chunks[0], medium_desc, chunk_index, true);
@@ -197,8 +201,8 @@ namespace acl
 #endif
 
 				acl_impl::database_runtime_segment_header* segment_header = chunk_segment_header.get_segment_header(m_context.clip_segment_headers);
-				ACL_ASSERT(segment_header->tier_metadata[1].load(std::memory_order::memory_order_relaxed) == 0, "Tier metadata should not be initialized");
-				segment_header->tier_metadata[1].store((uint64_t(chunk_segment_header.samples_offset) << 32) | chunk_segment_header.sample_indices, std::memory_order::memory_order_relaxed);
+				ACL_ASSERT(segment_header->tier_metadata[1].load(acl_impl::k_memory_order_relaxed) == 0, "Tier metadata should not be initialized");
+				segment_header->tier_metadata[1].store((uint64_t(chunk_segment_header.samples_offset) << 32) | chunk_segment_header.sample_indices, acl_impl::k_memory_order_relaxed);
 			}
 
 			bitset_set(m_context.loaded_chunks[1], low_desc, chunk_index, true);
@@ -228,6 +232,7 @@ namespace acl
 			return false;
 
 		m_context.db = &database;
+		m_context.db_hash = database.get_hash();
 		m_context.allocator = &allocator;
 		m_context.bulk_data[0] = m_context.bulk_data[1] = nullptr;	// Will be set during the first stream in request
 		m_context.streamers[0] = &medium_tier_streamer;
@@ -255,16 +260,16 @@ namespace acl
 		// Initialize everything to 0
 		std::memset(runtime_data_buffer, 0, runtime_data_size);
 
-		m_context.loaded_chunks[0] = reinterpret_cast<uint32_t*>(runtime_data_buffer);
+		m_context.loaded_chunks[0] = acl_impl::bit_cast<uint32_t*>(runtime_data_buffer);
 		runtime_data_buffer += medium_bitset_size;
 
-		m_context.streaming_chunks[0] = reinterpret_cast<uint32_t*>(runtime_data_buffer);
+		m_context.streaming_chunks[0] = acl_impl::bit_cast<uint32_t*>(runtime_data_buffer);
 		runtime_data_buffer += medium_bitset_size;
 
-		m_context.loaded_chunks[1] = reinterpret_cast<uint32_t*>(runtime_data_buffer);
+		m_context.loaded_chunks[1] = acl_impl::bit_cast<uint32_t*>(runtime_data_buffer);
 		runtime_data_buffer += low_bitset_size;
 
-		m_context.streaming_chunks[1] = reinterpret_cast<uint32_t*>(runtime_data_buffer);
+		m_context.streaming_chunks[1] = acl_impl::bit_cast<uint32_t*>(runtime_data_buffer);
 		runtime_data_buffer += low_bitset_size;
 
 		m_context.clip_segment_headers = align_to(runtime_data_buffer, 8);	// Align runtime headers
@@ -295,10 +300,70 @@ namespace acl
 		ACL_ASSERT(!is_streaming(quality_tier::lowest_importance), "Behavior is undefined if context is reset while streaming is in progress");
 
 		const uint32_t runtime_data_size = acl_impl::calculate_runtime_data_size(*m_context.db);
-		deallocate_type_array(*m_context.allocator, m_context.loaded_chunks[0], runtime_data_size);
+		deallocate_type_array(*m_context.allocator, acl_impl::bit_cast<uint8_t*>(m_context.loaded_chunks[0]), runtime_data_size);
 
 		// Just reset the DB pointer, this will mark us as no longer initialized indicating everything is stale
 		m_context.db = nullptr;
+	}
+
+	template<class database_settings_type>
+	inline bool database_context<database_settings_type>::relocated(const compressed_database& database)
+	{
+		if (!m_context.is_initialized())
+			return false;	// Not initialized, cannot be relocated
+
+		const bool is_valid = database.is_valid(false).empty();
+		ACL_ASSERT(is_valid, "Invalid compressed database instance");
+		if (!is_valid)
+			return false;
+
+		if (m_context.db_hash != database.get_hash())
+			return false;	// Hash is different, this instance did not relocate, it is different
+
+		// The instances are identical and might have relocated, update our metadata
+		m_context.db = &database;
+		m_context.bulk_data[0] = database.get_bulk_data(quality_tier::medium_importance);
+		m_context.bulk_data[1] = database.get_bulk_data(quality_tier::lowest_importance);
+
+		return true;
+	}
+
+	template<class database_settings_type>
+	inline bool database_context<database_settings_type>::relocated(const compressed_database& database, database_streamer& medium_tier_streamer, database_streamer& low_tier_streamer)
+	{
+		if (!m_context.is_initialized())
+			return false;	// Not initialized, cannot be relocated
+
+		const bool is_valid = database.is_valid(false).empty();
+		ACL_ASSERT(is_valid, "Invalid compressed database instance");
+		if (!is_valid)
+			return false;
+
+		if (m_context.db_hash != database.get_hash())
+			return false;	// Hash is different, this instance did not relocate, it is different
+
+		// The instances are identical and might have relocated, update our metadata
+		m_context.db = &database;
+		m_context.streamers[0] = &medium_tier_streamer;
+		m_context.streamers[1] = &low_tier_streamer;
+
+		medium_tier_streamer.bind(m_context);
+		low_tier_streamer.bind(m_context);
+
+		return true;
+	}
+
+	template<class database_settings_type>
+	inline bool database_context<database_settings_type>::is_bound_to(const compressed_database& database) const
+	{
+		if (m_context.db != &database)
+			return false;	// Different pointer, no guarantees
+
+		if (m_context.db_hash != database.get_hash())
+			return false;	// Different hash
+
+		// Must be bound to it!
+		return true;
 	}
 
 	template<class database_settings_type>
@@ -560,8 +625,8 @@ namespace acl
 
 				acl_impl::database_runtime_segment_header* segment_header = chunk_segment_header.get_segment_header(m_context.clip_segment_headers);
 				const uint64_t tier_metadata = (uint64_t(chunk_segment_header.samples_offset) << 32) | chunk_segment_header.sample_indices;
-				ACL_ASSERT(segment_header->tier_metadata[tier_index].load(std::memory_order::memory_order_relaxed) == tier_metadata, "Database tier metadata should have been initialized"); (void)tier_metadata;
-				segment_header->tier_metadata[tier_index].store(0, std::memory_order::memory_order_relaxed);
+				ACL_ASSERT(segment_header->tier_metadata[tier_index].load(acl_impl::k_memory_order_relaxed) == tier_metadata, "Database tier metadata should have been initialized"); (void)tier_metadata;
+				segment_header->tier_metadata[tier_index].store(0, acl_impl::k_memory_order_relaxed);
 			}
 		}
 
@@ -573,3 +638,5 @@ namespace acl
 
 	ACL_IMPL_VERSION_NAMESPACE_END
 }
+
+ACL_IMPL_FILE_PRAGMA_POP

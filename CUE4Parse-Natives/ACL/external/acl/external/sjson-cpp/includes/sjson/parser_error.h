@@ -63,6 +63,12 @@ namespace sjson
 		uint32_t line		= 0;
 		uint32_t column		= 0;
 
+		ParserError() = default;
+		ParserError(const ParserError&) = default;
+		ParserError& operator=(const ParserError&) = default;
+
+		virtual ~ParserError() = default;
+
 		virtual const char* get_description() const
 		{
 			switch (error)

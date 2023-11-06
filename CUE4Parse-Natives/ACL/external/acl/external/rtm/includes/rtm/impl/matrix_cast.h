@@ -48,6 +48,10 @@ namespace rtm
 		struct matrix_caster<matrix3x3f>
 		{
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr explicit matrix_caster(const matrix3x3f& mtx_) RTM_NO_EXCEPT : mtx(mtx_) {}
+			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr explicit matrix_caster(matrix3x3f&& mtx_) RTM_NO_EXCEPT : mtx(std::move(mtx_)) {}
+
+			matrix_caster(const matrix_caster&) = default;
+			matrix_caster& operator=(const matrix_caster&) = delete;
 
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr RTM_SIMD_CALL operator matrix3x3f() const RTM_NO_EXCEPT
 			{
@@ -61,7 +65,7 @@ namespace rtm
 
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator matrix3x4f() const RTM_NO_EXCEPT
 			{
-				return matrix3x4f{ mtx.x_axis, mtx.y_axis, mtx.z_axis, vector_zero() };
+				return matrix3x4f{ mtx.x_axis, mtx.y_axis, mtx.z_axis, (vector4f)vector_zero() };
 			}
 
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator matrix3x4d() const RTM_NO_EXCEPT
@@ -88,6 +92,10 @@ namespace rtm
 		struct matrix_caster<matrix3x3d>
 		{
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr explicit matrix_caster(const matrix3x3d& mtx_) RTM_NO_EXCEPT : mtx(mtx_) {}
+			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr explicit matrix_caster(matrix3x3d&& mtx_) RTM_NO_EXCEPT : mtx(std::move(mtx_)) {}
+
+			matrix_caster(const matrix_caster&) = default;
+			matrix_caster& operator=(const matrix_caster&) = delete;
 
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator matrix3x3f() const RTM_NO_EXCEPT
 			{
@@ -107,7 +115,7 @@ namespace rtm
 
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator matrix3x4d() const RTM_NO_EXCEPT
 			{
-				return matrix3x4d{ mtx.x_axis, mtx.y_axis, mtx.z_axis, vector_zero() };
+				return matrix3x4d{ mtx.x_axis, mtx.y_axis, mtx.z_axis, (vector4d)vector_zero() };
 			}
 
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator matrix4x4f() const RTM_NO_EXCEPT
@@ -128,6 +136,10 @@ namespace rtm
 		struct matrix_caster<matrix3x4f>
 		{
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr explicit matrix_caster(const matrix3x4f& mtx_) RTM_NO_EXCEPT : mtx(mtx_) {}
+			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr explicit matrix_caster(matrix3x4f&& mtx_) RTM_NO_EXCEPT : mtx(std::move(mtx_)) {}
+
+			matrix_caster(const matrix_caster&) = default;
+			matrix_caster& operator=(const matrix_caster&) = delete;
 
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr RTM_SIMD_CALL operator matrix3x3f() const RTM_NO_EXCEPT
 			{
@@ -170,6 +182,10 @@ namespace rtm
 		struct matrix_caster<matrix3x4d>
 		{
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr explicit matrix_caster(const matrix3x4d& mtx_) RTM_NO_EXCEPT : mtx(mtx_) {}
+			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr explicit matrix_caster(matrix3x4d&& mtx_) RTM_NO_EXCEPT : mtx(std::move(mtx_)) {}
+
+			matrix_caster(const matrix_caster&) = default;
+			matrix_caster& operator=(const matrix_caster&) = delete;
 
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator matrix3x3f() const RTM_NO_EXCEPT
 			{
@@ -212,6 +228,10 @@ namespace rtm
 		struct matrix_caster<matrix4x4f>
 		{
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr explicit matrix_caster(const matrix4x4f& mtx_) RTM_NO_EXCEPT : mtx(mtx_) {}
+			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr explicit matrix_caster(matrix4x4f&& mtx_) RTM_NO_EXCEPT : mtx(std::move(mtx_)) {}
+
+			matrix_caster(const matrix_caster&) = default;
+			matrix_caster& operator=(const matrix_caster&) = delete;
 
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr RTM_SIMD_CALL operator matrix3x3f() const RTM_NO_EXCEPT
 			{
@@ -250,6 +270,10 @@ namespace rtm
 		struct matrix_caster<matrix4x4d>
 		{
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr explicit matrix_caster(const matrix4x4d& mtx_) RTM_NO_EXCEPT : mtx(mtx_) {}
+			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE constexpr explicit matrix_caster(matrix4x4d&& mtx_) RTM_NO_EXCEPT : mtx(std::move(mtx_)) {}
+
+			matrix_caster(const matrix_caster&) = default;
+			matrix_caster& operator=(const matrix_caster&) = delete;
 
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator matrix3x3f() const RTM_NO_EXCEPT
 			{

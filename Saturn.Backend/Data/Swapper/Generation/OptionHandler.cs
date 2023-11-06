@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using Saturn.Backend.Data.Swapper.Assets;
 using Saturn.Backend.Data.Variables;
@@ -22,7 +23,7 @@ public class OptionHandler
         }
         else
         {
-            exportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>());
+            exportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>(), option.ID.EndsWith("EMOTE"));
             FixPartData(exportData);
             Constants.AssetCache.Add(option.ID, exportData);
         }
@@ -178,11 +179,64 @@ public class OptionHandler
             {
                 if (option.IsRandom) return;
                 bool isPerfect = true;
-            
+                bool optionIsDead = false;
+                
                 AssetExportData optionExportData;
-                if (Constants.AssetCache.TryGetValue(option.ID, out var value))
+                
+                var emotes = option.Asset.GetOrDefault("BuiltInEmotes", Array.Empty<UObject>());
+                if (emotes.Length != 0)
                 {
-                    optionExportData = value;
+                    if (Constants.AssetCache.TryGetValue(option.ID + "EMOTE", out var value))
+                    {
+                        optionExportData = value;
+                    }
+                    else
+                    {
+                        optionExportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>(), true);
+                        FixPartData(optionExportData);
+                        Constants.AssetCache.Add(option.ID + "EMOTE", optionExportData);
+                    }
+                    
+                    if (exportData.ExportParts.Any(part => optionExportData.ExportParts.All(optionPart => optionPart.Part != part.Part)))
+                    {
+                        optionIsDead = true;
+                    }
+
+                    if (!optionIsDead)
+                    {
+                        if (!exportData.ExportParts.First(x => x.Part == "Head").MeshPath.ToLower()
+                                .Contains("m_med_blk_sydney_01"))
+                        {
+                            foreach (var _ in from part in exportData.ExportParts 
+                                     let optionPart = optionExportData.ExportParts.First(optionPart => part.Part == optionPart.Part) 
+                                     where part.MorphName != "None" 
+                                     where part.MorphName != "None" && optionPart.MorphName == "None"
+                                     select optionPart)
+                            {
+                                isPerfect = false;
+                            }
+                        }
+
+                        if (isPerfect)
+                        {
+                            data.PerfectOptions.Add(option);
+                            data.PerfectOptions[^1].ID += "EMOTE";
+                        }
+
+                        data.Options.Add(option);
+                        if (!isPerfect)
+                        {
+                            data.Options[^1].ID += "EMOTE";
+                        }
+                    }
+                }
+                
+                isPerfect = true;
+                
+                
+                if (Constants.AssetCache.TryGetValue(option.ID, out var value2))
+                {
+                    optionExportData = value2;
                 }
                 else
                 {

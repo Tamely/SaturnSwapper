@@ -132,6 +132,71 @@ namespace acl
 	};
 
 	//////////////////////////////////////////////////////////////////////////
+	// Encapsulates all frame stripping compression settings.
+	// A keyframe represents all samples at a particular point in time.
+	// Keyframe stripping is a destructive process and visual fidelity can degrade
+	// considerably. If a keyframe is identified as a stripping candidate, it is
+	// entirely removed and reconstructed through linear interpolation of its
+	// remaining neighbors. This is destructive unless the keyframe can be reconstructed
+	// below the desired precision threshold, in which case it is a trivial keyframe.
+	//
+	// Removing whole keyframes ensures that decompression remains very fast.
+	// However, enabling keyframe stripping does add a fixed amount of overhead
+	// during decompression. This overhead should be below 200 instructions and
+	// be on the order of nanoseconds depending on the processor and its clock speed.
+	//
+	// Note that stripping is not always appropriate and it may yield unacceptable
+	// results. Here are known problematic scenarios:
+	//    - high velocity animations can lose a lot of momentum, yielding a swimming-
+	//      like motion
+	//    - synchronized animations can become out of sync if keyframes are unevenly
+	//      removed leading to missed contacts
+	//    - contacts and motion apex can be missed if key keyframes are removed
+	//
+	// Transform tracks only.
+	struct compression_keyframe_stripping_settings
+	{
+		//////////////////////////////////////////////////////////////////////////
+		// Returns whether or not keyframe stripping is enabled.
+		// Keyframe stripping is enabled when either 'proportion' or 'threshold'
+		// or both are enabled.
+		// See [compression_keyframe_stripping_settings] for details.
+		// Defaults to 'false'
+		bool is_enabled() const;
+
+		//////////////////////////////////////////////////////////////////////////
+		// The minimum proportion of keyframes that should be stripped.
+		// Proportion value must be between 0.0 and 1.0.
+		// Defaults to '0.0' (no stripping)
+		float proportion = 0.0F;
+
+		//////////////////////////////////////////////////////////////////////////
+		// The threshold error below which to strip keyframes.
+		// Keyframes that yield an error below or equal to this threshold will
+		// be removed. Keyframes that contribute more error than the threshold
+		// are retained.
+		// Defaults to '0.0' centimeters (no stripping)
+		float threshold = 0.0F;
+
+		//////////////////////////////////////////////////////////////////////////
+		// Whether or not to strip trivial keyframes.
+		// If the error introduced by removing a keyframe is below the precision
+		// threshold for every transform, it is trivial. It means that if we reconstruct
+		// the stripped keyframe, the error introduced is below our precision threshold.
+		// Defaults to 'false' (no stripping)
+		bool strip_trivial = false;
+
+		//////////////////////////////////////////////////////////////////////////
+		// Calculates a hash from the internal state to uniquely identify a configuration.
+		uint32_t get_hash() const;
+
+		//////////////////////////////////////////////////////////////////////////
+		// Checks if everything is valid and if it isn't, returns an error string.
+		// Returns nullptr if the settings are valid.
+		error_result is_valid() const;
+	};
+
+	//////////////////////////////////////////////////////////////////////////
 	// Encapsulates all the compression settings.
 	struct compression_settings
 	{
@@ -169,6 +234,11 @@ namespace acl
 		// otherwise we use the clamp policy and every sample is retained.
 		// See `sample_looping_policy` for details.
 		bool optimize_loops = false;
+
+		//////////////////////////////////////////////////////////////////////////
+		// Keyframe stripping related settings. See [compression_keyframe_stripping_settings].
+		// Transform tracks only.
+		compression_keyframe_stripping_settings keyframe_stripping;
 
 		//////////////////////////////////////////////////////////////////////////
 		// These are optional metadata that can be added to compressed clips.

@@ -35,17 +35,19 @@
 #include "acl/core/floating_point_exceptions.h"
 #include "acl/core/iallocator.h"
 #include "acl/core/scope_profiler.h"
+#include "acl/core/impl/bit_cast.impl.h"
 #include "acl/compression/compression_settings.h"
 #include "acl/compression/output_stats.h"
 #include "acl/compression/track_array.h"
 #include "acl/compression/impl/clip_context.h"
 #include "acl/compression/impl/track_stream.h"
-#include "acl/compression/impl/convert_rotation_streams.h"
-#include "acl/compression/impl/compact_constant_streams.h"
-#include "acl/compression/impl/normalize_streams.h"
-#include "acl/compression/impl/optimize_looping.h"
-#include "acl/compression/impl/quantize_streams.h"
-#include "acl/compression/impl/segment_streams.h"
+#include "acl/compression/impl/convert_rotation.transform.h"
+#include "acl/compression/impl/compact.transform.h"
+#include "acl/compression/impl/keyframe_stripping.h"
+#include "acl/compression/impl/normalize.transform.h"
+#include "acl/compression/impl/optimize_looping.transform.h"
+#include "acl/compression/impl/quantize.transform.h"
+#include "acl/compression/impl/segment.transform.h"
 #include "acl/compression/impl/write_segment_data.h"
 #include "acl/compression/impl/write_stats.h"
 #include "acl/compression/impl/write_stream_data.h"
@@ -60,6 +62,8 @@
 #endif
 
 #include <cstdint>
+
+ACL_IMPL_FILE_PRAGMA_PUSH
 
 namespace acl
 {
@@ -104,6 +108,32 @@ namespace acl
 			return true;
 		}
 
+		// These values are hard-coded
+		// They were selected based on empirical data
+		inline compression_level8 find_best_compression_level(const clip_context& lossy_clip_context)
+		{
+			// Very long clips stay need to be fast
+			if (lossy_clip_context.num_samples > 500)
+				return compression_level8::medium;
+
+			uint32_t longest_chain_length = 0;
+			const bitset_description transform_bitset_desc = bitset_description::make_from_num_bits(lossy_clip_context.num_bones);
+			for (uint32_t leaf_index = 0; leaf_index < lossy_clip_context.num_leaf_transforms; ++leaf_index)
+			{
+				const uint32_t* transform_chain = lossy_clip_context.leaf_transform_chains + (leaf_index * transform_bitset_desc.get_size());
+				const uint32_t num_chain_transforms = bitset_count_set_bits(transform_chain, transform_bitset_desc);
+				longest_chain_length = std::max<uint32_t>(longest_chain_length, num_chain_transforms);
+			}
+
+			// Clips with shorter transform chains are fast and can try harder
+			if (longest_chain_length < 18)
+				return compression_level8::highest;
+			else if (longest_chain_length < 25)
+				return compression_level8::high;
+			else
+				return compression_level8::medium;
+		}
+
 		inline error_result compress_transform_track_list(iallocator& allocator, const track_array_qvvf& track_list, compression_settings settings,
 			const track_array_qvvf* additive_base_track_list, additive_clip_format8 additive_format,
 			compressed_tracks*& out_compressed_tracks, output_stats& out_stats)
@@ -119,9 +149,16 @@ namespace acl
 			// Segmenting settings are an implementation detail
 			compression_segmenting_settings segmenting_settings;
 
-			// If we enable database support, include the metadata we need
+			// If we enable database support or keyframe stripping, include the metadata we need
+			bool remove_contributing_error = false;
 			if (settings.enable_database_support)
 				settings.metadata.include_contributing_error = true;
+			else if (settings.keyframe_stripping.is_enabled())
+			{
+				// If we only enable the contributing error for keyframe stripping, make sure to strip it afterwards
+				remove_contributing_error = !settings.metadata.include_contributing_error;
+				settings.metadata.include_contributing_error = true;
+			}
 
 			// If every track is retains full precision, we disable segmenting since it provides no benefit
 			if (!is_rotation_format_variable(settings.rotation_format) && !is_vector_format_variable(settings.translation_format) && !is_vector_format_variable(settings.scale_format))
@@ -171,8 +208,23 @@ namespace acl
 			if (is_additive && !initialize_clip_context(allocator, *additive_base_track_list, settings, additive_format, additive_base_clip_context))
 				return error_result("Some base samples are not finite");
 
+			if (settings.level == compression_level8::automatic)
+				settings.level = find_best_compression_level(lossy_clip_context);
+
+			// Topology dependent data, not specific to clip context
+			const uint32_t num_input_transforms = raw_clip_context.num_bones;
+			rigid_shell_metadata_t* clip_shell_metadata = compute_clip_shell_distances(
+				allocator,
+				transform_clip_context_adapter_t(raw_clip_context),
+				transform_clip_context_adapter_t(additive_base_clip_context));
+
+			raw_clip_context.clip_shell_metadata = clip_shell_metadata;
+			lossy_clip_context.clip_shell_metadata = clip_shell_metadata;
+			if (is_additive)
+				additive_base_clip_context.clip_shell_metadata = clip_shell_metadata;
+
 			// Wrap instead of clamp if we loop
-			optimize_looping(lossy_clip_context, track_list, settings);
+			optimize_looping(lossy_clip_context, additive_base_clip_context, settings);
 
 			// Convert our rotations if we need to
 			convert_rotation_streams(allocator, lossy_clip_context, settings.rotation_format);
@@ -181,7 +233,7 @@ namespace acl
 			extract_clip_bone_ranges(allocator, lossy_clip_context);
 
 			// Compact and collapse the constant streams
-			compact_constant_streams(allocator, lossy_clip_context, track_list, settings);
+			compact_constant_streams(allocator, lossy_clip_context, additive_base_clip_context, track_list, settings);
 
 			uint32_t clip_range_data_size = 0;
 			if (range_reduction != range_reduction_flags8::none)
@@ -206,19 +258,28 @@ namespace acl
 			// Find how many bits we need per sub-track and quantize everything
 			quantize_streams(allocator, lossy_clip_context, settings, raw_clip_context, additive_base_clip_context, out_stats);
 
-			const bool has_trivial_defaults = has_trivial_default_values(track_list, additive_format, lossy_clip_context);
-
 			uint32_t num_output_bones = 0;
 			uint32_t* output_bone_mapping = create_output_track_mapping(allocator, track_list, num_output_bones);
 
-			const uint32_t constant_data_size = get_constant_data_size(lossy_clip_context);
-
+			// Calculate the pose size, we need it to estimate savings when stripping keyframes
 			calculate_animated_data_size(lossy_clip_context, output_bone_mapping, num_output_bones);
+
+			// Remove whole keyframes as needed
+			strip_keyframes(lossy_clip_context, settings);
+
+			// Compression is done! Time to pack things.
+
+			if (remove_contributing_error)
+				settings.metadata.include_contributing_error = false;
+
+			const bool has_trivial_defaults = has_trivial_default_values(track_list, additive_format, lossy_clip_context);
+
+			const uint32_t constant_data_size = get_constant_data_size(lossy_clip_context);
 
 			uint32_t num_animated_variable_sub_tracks_padded = 0;
 			const uint32_t format_per_track_data_size = get_format_per_track_data_size(lossy_clip_context, settings.rotation_format, settings.translation_format, settings.scale_format, &num_animated_variable_sub_tracks_padded);
 
-			const uint32_t num_sub_tracks_per_bone = lossy_clip_context.has_scale ? 3 : 2;
+			const uint32_t num_sub_tracks_per_bone = lossy_clip_context.has_scale ? 3U : 2U;
 
 			// Calculate how many sub-track packed entries we have
 			// Each sub-track is 2 bits packed within a 32 bit entry
@@ -230,7 +291,8 @@ namespace acl
 
 			// Adding an extra index at the end to delimit things, the index is always invalid: 0xFFFFFFFF
 			const uint32_t segment_start_indices_size = lossy_clip_context.num_segments > 1 ? (uint32_t(sizeof(uint32_t)) * (lossy_clip_context.num_segments + 1)) : 0;
-			const uint32_t segment_headers_size = sizeof(segment_header) * lossy_clip_context.num_segments;
+			const uint32_t segment_header_type_size = lossy_clip_context.has_stripped_keyframes ? sizeof(stripped_segment_header_t) : sizeof(segment_header);
+			const uint32_t segment_headers_size = segment_header_type_size * lossy_clip_context.num_segments;
 
 			uint32_t buffer_size = 0;
 			// Per clip data
@@ -260,8 +322,8 @@ namespace acl
 			{
 				constexpr uint32_t k_cache_line_byte_size = 64;
 				lossy_clip_context.decomp_touched_bytes = clip_header_size + clip_data_size;
-				lossy_clip_context.decomp_touched_bytes += sizeof(uint32_t) * 4;		// We touch at most 4 segment start indices
-				lossy_clip_context.decomp_touched_bytes += sizeof(segment_header) * 2;	// We touch at most 2 segment headers
+				lossy_clip_context.decomp_touched_bytes += sizeof(uint32_t) * 4;			// We touch at most 4 segment start indices
+				lossy_clip_context.decomp_touched_bytes += segment_header_type_size * 2;	// We touch at most 2 segment headers
 				lossy_clip_context.decomp_touched_cache_lines = align_to(clip_header_size, k_cache_line_byte_size) / k_cache_line_byte_size;
 				lossy_clip_context.decomp_touched_cache_lines += align_to(clip_data_size, k_cache_line_byte_size) / k_cache_line_byte_size;
 				lossy_clip_context.decomp_touched_cache_lines += 1;						// All 4 segment start indices should fit in a cache line
@@ -325,7 +387,7 @@ namespace acl
 			std::memset(buffer, 0, buffer_size);
 
 			uint8_t* buffer_start = buffer;
-			out_compressed_tracks = reinterpret_cast<compressed_tracks*>(buffer);
+			out_compressed_tracks = bit_cast<compressed_tracks*>(buffer);
 
 			raw_buffer_header* buffer_header = safe_ptr_cast<raw_buffer_header>(buffer);
 			buffer += sizeof(raw_buffer_header);
@@ -346,9 +408,10 @@ namespace acl
 			header->set_scale_format(settings.scale_format);
 			header->set_has_scale(lossy_clip_context.has_scale);
 			// Our default scale is 1.0 if we have no additive base or if we don't use 'additive1', otherwise it is 0.0
-			header->set_default_scale(!is_additive || additive_format != additive_clip_format8::additive1 ? 1 : 0);
+			header->set_default_scale(!is_additive || additive_format != additive_clip_format8::additive1 ? 1U : 0U);
 			header->set_has_database(false);
 			header->set_has_trivial_default_values(has_trivial_defaults);
+			header->set_has_stripped_keyframes(lossy_clip_context.has_stripped_keyframes);
 			header->set_is_wrap_optimized(lossy_clip_context.looping_policy == sample_looping_policy::wrap);
 			header->set_has_metadata(metadata_size != 0);
 
@@ -397,7 +460,7 @@ namespace acl
 			uint32_t written_metadata_contributing_error_size = 0;
 			if (metadata_size != 0)
 			{
-				optional_metadata_header* metadata_header = reinterpret_cast<optional_metadata_header*>(buffer_start + buffer_size - sizeof(optional_metadata_header));
+				optional_metadata_header* metadata_header = bit_cast<optional_metadata_header*>(buffer_start + buffer_size - sizeof(optional_metadata_header));
 				uint32_t metadata_offset = metadata_start_offset;	// Relative to the start of our compressed_tracks
 
 				if (settings.metadata.include_track_list_name)
@@ -519,6 +582,7 @@ namespace acl
 #endif
 
 			deallocate_type_array(allocator, output_bone_mapping, num_output_bones);
+			deallocate_type_array(allocator, clip_shell_metadata, num_input_transforms);
 			destroy_clip_context(lossy_clip_context);
 			destroy_clip_context(raw_clip_context);
 			destroy_clip_context(additive_base_clip_context);
@@ -529,3 +593,5 @@ namespace acl
 
 	ACL_IMPL_VERSION_NAMESPACE_END
 }
+
+ACL_IMPL_FILE_PRAGMA_POP

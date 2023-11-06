@@ -27,6 +27,9 @@
 // Included only once from compressed_database.h
 
 #include "acl/version.h"
+#include "acl/core/impl/bit_cast.impl.h"
+
+ACL_IMPL_FILE_PRAGMA_PUSH
 
 namespace acl
 {
@@ -37,7 +40,7 @@ namespace acl
 		// Hide these implementations, they shouldn't be needed in user-space
 		inline const database_header& get_database_header(const compressed_database& db)
 		{
-			return *reinterpret_cast<const database_header*>(reinterpret_cast<const uint8_t*>(&db) + sizeof(raw_buffer_header));
+			return *bit_cast<const database_header*>(bit_cast<const uint8_t*>(&db) + sizeof(raw_buffer_header));
 		}
 	}
 
@@ -196,3 +199,5 @@ namespace acl
 
 	ACL_IMPL_VERSION_NAMESPACE_END
 }
+
+ACL_IMPL_FILE_PRAGMA_POP

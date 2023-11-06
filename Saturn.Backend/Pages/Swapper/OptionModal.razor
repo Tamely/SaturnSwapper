@@ -22,7 +22,7 @@
         @foreach (var item in (BaseItem.OptionHandler ?? new OptionHandler()).PerfectOptions ?? new List<AssetSelectorItem>())
         {
             <div id="@(item.ID + "-section")" class="section hoverable" onclick="@(async() => await SelectItem(item))">
-                <img src=@($"https://fortnite-api.com/images/cosmetics/br/{item.ID}/smallicon.png") alt="Icon"/>
+                <img src=@(item.GetHTMLImage()) alt="Icon"/>
                 <div class="name">
                     <h1>@item.DisplayName</h1>
                     <h3>@item.Description</h3>

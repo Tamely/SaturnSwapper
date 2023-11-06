@@ -51,6 +51,7 @@ namespace CUE4Parse.UE4.Versions
             GAME_DeadIsland2 = GAME_UE4_25 + 3,
             GAME_KenaBridgeofSpirits = GAME_UE4_25 + 4,
             GAME_CalabiYau = GAME_UE4_25 + 5,
+            GAME_SYNCED = GAME_UE4_25 + 6,
         GAME_UE4_26 = GameUtils.GameUe4Base + 26 << 4,
             GAME_GTATheTrilogyDefinitiveEdition = GAME_UE4_26 + 1,
             GAME_ReadyOrNot = GAME_UE4_26 + 2,
@@ -60,6 +61,7 @@ namespace CUE4Parse.UE4.Versions
             GAME_TheDivisionResurgence = GAME_UE4_26 + 6,
             GAME_StarWarsJediSurvivor = GAME_UE4_26 + 7,
             GAME_Snowbreak = GAME_UE4_26 + 8,
+            GAME_TorchlightInfinite = GAME_UE4_26 + 9,
         GAME_UE4_27 = GameUtils.GameUe4Base + 27 << 4,
             GAME_Splitgate = GAME_UE4_27 + 1,
             GAME_HYENAS = GAME_UE4_27 + 2,
@@ -109,6 +111,7 @@ namespace CUE4Parse.UE4.Versions
                 {
                     < EGame.GAME_UE5_1 => new FPackageFileVersion(522, 1004),
                     < EGame.GAME_UE5_2 => new FPackageFileVersion(522, 1008),
+                    < EGame.GAME_UE5_4 => new FPackageFileVersion(522, 1009),
                     _ => new FPackageFileVersion((int) EUnrealEngineObjectUE4Version.AUTOMATIC_VERSION, (int) EUnrealEngineObjectUE5Version.AUTOMATIC_VERSION)
                 };
             }

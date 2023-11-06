@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.2)
 project(sjson-cpp_unit_tests)
 
 # iOS cmake toolchain does not support CMAKE_CXX_STANDARD
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${CMAKE_CXX_STANDARD}")
 
 # Force enable debug symbols
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
@@ -17,6 +17,7 @@ set(MACOSX_BUNDLE_BUNDLE_NAME "sjson-cpp-unit-tests")
 
 include_directories("${PROJECT_SOURCE_DIR}/../../includes")
 include_directories("${PROJECT_SOURCE_DIR}/../../external/catch2/single_include")
+include_directories("${PROJECT_SOURCE_DIR}/../sources")
 
 # Grab all of our test source files
 file(GLOB_RECURSE ALL_TEST_SOURCE_FILES LIST_DIRECTORIES false

@@ -25,6 +25,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "acl/version.h"
+#include "acl/core/error.h"
 #include "acl/core/error_result.h"
 #include "acl/core/track_types.h"
 #include "acl/core/impl/compiler_utils.h"
@@ -69,6 +70,15 @@ namespace acl
 		//    - The precision is positive or zero and finite
 		error_result is_valid() const;
 	};
+
+	// Disable warning for implicit constructor using deprecated members
+#if defined(RTM_COMPILER_CLANG)
+	#pragma clang diagnostic push
+	#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(RTM_COMPILER_GCC)
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 	//////////////////////////////////////////////////////////////////////////
 	// This structure describes the various settings for transform tracks.
@@ -126,12 +136,14 @@ namespace acl
 		// was chosen. You will typically NEVER need to change this, the value has been
 		// selected to be as safe as possible and is independent of game engine units.
 		// Defaults to '0.00284714461' radians
+		ACL_DEPRECATED("Replaced by error metric, to be removed in v3.0")
 		float constant_rotation_threshold_angle = 0.00284714461F;
 
 		//////////////////////////////////////////////////////////////////////////
 		// Threshold value to use when detecting if translation tracks are constant or default.
 		// Note that you will need to change this value if your units are not in centimeters.
 		// Defaults to '0.001' centimeters.
+		ACL_DEPRECATED("Replaced by error metric, to be removed in v3.0")
 		float constant_translation_threshold = 0.001F;
 
 		//////////////////////////////////////////////////////////////////////////
@@ -139,6 +151,7 @@ namespace acl
 		// There are no units for scale as such a value that was deemed safe was selected
 		// as a default.
 		// Defaults to '0.00001'
+		ACL_DEPRECATED("Replaced by error metric, to be removed in v3.0")
 		float constant_scale_threshold = 0.00001F;
 
 		uint32_t padding = 0;
@@ -153,6 +166,12 @@ namespace acl
 		//    - The constant scale threshold is positive or zero and finite
 		error_result is_valid() const;
 	};
+
+#if defined(RTM_COMPILER_CLANG)
+	#pragma clang diagnostic pop
+#elif defined(RTM_COMPILER_GCC)
+	#pragma GCC diagnostic pop
+#endif
 
 	ACL_IMPL_VERSION_NAMESPACE_END
 }

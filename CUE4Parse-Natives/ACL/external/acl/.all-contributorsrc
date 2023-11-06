@@ -115,6 +115,34 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "Dreaming381",
+      "name": "Tyler",
+      "avatar_url": "https://avatars.githubusercontent.com/u/25555355?v=4",
+      "profile": "https://github.com/Dreaming381",
+      "contributions": [
+        "code",
+        "ideas"
+      ]
+    },
+    {
+      "login": "naetherm",
+      "name": "naetherm",
+      "avatar_url": "https://avatars.githubusercontent.com/u/16878712?v=4",
+      "profile": "https://github.com/naetherm",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "TetraSomia",
+      "name": "Arthur Josso",
+      "avatar_url": "https://avatars.githubusercontent.com/u/19408647?v=4",
+      "profile": "https://github.com/TetraSomia",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 7,
@@ -123,5 +151,6 @@
   "repoType": "github",
   "repoHost": "https://github.com",
   "skipCi": true,
-  "commitConvention": "angular"
+  "commitConvention": "angular",
+  "commitType": "docs"
 }

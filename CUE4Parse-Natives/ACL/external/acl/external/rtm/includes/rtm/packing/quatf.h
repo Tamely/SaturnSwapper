@@ -28,6 +28,7 @@
 #include "rtm/quatf.h"
 #include "rtm/vector4f.h"
 #include "rtm/version.h"
+#include "rtm/impl/bit_cast.impl.h"
 #include "rtm/impl/compiler_utils.h"
 
 RTM_IMPL_FILE_PRAGMA_PUSH
@@ -43,16 +44,22 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatf RTM_SIMD_CALL quat_ensure_positive_w(quatf_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		constexpr __m128 sign_bit = { -0.0F, -0.0F, -0.0F, -0.0F };
+		constexpr __m128 sign_bit = RTM_VECTOR4F_MAKE(-0.0F, -0.0F, -0.0F, -0.0F);
 		const __m128 input_sign = _mm_and_ps(input, sign_bit);
 		const __m128 bias = _mm_shuffle_ps(input_sign, input_sign, _MM_SHUFFLE(3, 3, 3, 3));
 		return _mm_xor_ps(input, bias);
 #elif defined(RTM_NEON_INTRINSICS)
 		alignas(16) constexpr uint32_t sign_bit_i[4] = { 0x80000000U, 0x80000000U, 0x80000000U, 0x80000000U };
-		const uint32x4_t sign_bit = *reinterpret_cast<const uint32x4_t*>(&sign_bit_i[0]);
+		const uint32x4_t sign_bit = *rtm_impl::bit_cast<const uint32x4_t*>(&sign_bit_i[0]);
 		const uint32x4_t input_u32 = vreinterpretq_u32_f32(input);
 		const uint32x4_t input_sign = vandq_u32(input_u32, sign_bit);
-		const uint32x4_t bias = vmovq_n_u32(vgetq_lane_u32(input_sign, 3));
+		const uint32_t input_sign_w = vgetq_lane_u32(input_sign, 3);
+#if defined(RTM_COMPILER_MSVC)
+		// MSVC's intrinsic is an alias to the unsigned variant
+		const uint32x4_t bias = vmovq_n_u32(static_cast<int32_t>(input_sign_w));
+#else
+		const uint32x4_t bias = vmovq_n_u32(input_sign_w);
+#endif
 		return vreinterpretq_f32_u32(veorq_u32(input_u32, bias));
 #else
 		return quat_get_w(input) >= 0.f ? input : quat_neg(input);
@@ -62,6 +69,10 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	// Returns a quaternion constructed from a vector3 representing the [xyz]
 	// components while reconstructing the [w] component by assuming it is positive.
+	// Note: When the squared length of [xyz] is very small, the square-root might not
+	// be very accurate when [w] is reconstructed. As such, the resulting quaternion
+	// might be near but not quite normalized. If high accuracy is required, make
+	// sure to normalize explicitly afterwards.
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatf RTM_SIMD_CALL quat_from_positive_w(vector4f_arg0 input) RTM_NO_EXCEPT
 	{

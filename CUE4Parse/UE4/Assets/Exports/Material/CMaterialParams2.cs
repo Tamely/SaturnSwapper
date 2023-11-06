@@ -292,6 +292,8 @@ namespace CUE4Parse.UE4.Assets.Exports.Material
                     "VectorParameterValues" or
                     "ScalarParameterValues" or
                     "StaticParameters" or
+                    "StaticParametersRuntime" or
+                    "CachedExpressionData" or
                     "CachedReferencedTextures" or
                     "TextureStreamingData" or
                     "BlendMode" or

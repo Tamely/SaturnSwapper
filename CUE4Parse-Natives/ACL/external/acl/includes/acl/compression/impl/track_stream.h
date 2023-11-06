@@ -31,6 +31,7 @@
 #include "acl/core/time_utils.h"
 #include "acl/core/track_formats.h"
 #include "acl/core/track_types.h"
+#include "acl/core/impl/bit_cast.impl.h"
 #include "acl/core/impl/variable_bit_rates.h"
 #include "acl/math/quat_packing.h"
 #include "acl/math/vector4_packing.h"
@@ -128,7 +129,7 @@ namespace acl
 
 			track_stream(iallocator& allocator, uint32_t num_samples, uint32_t sample_size, float sample_rate, animation_track_type8 type, track_format8 format, uint8_t bit_rate)
 				: m_allocator(&allocator)
-				, m_samples(reinterpret_cast<uint8_t*>(allocator.allocate(sample_size * size_t(num_samples) + k_padding, 16)))
+				, m_samples(bit_cast<uint8_t*>(allocator.allocate(sample_size * size_t(num_samples) + k_padding, 16)))
 				, m_num_samples_allocated(num_samples)
 				, m_num_samples(num_samples)
 				, m_sample_size(sample_size)
@@ -180,7 +181,7 @@ namespace acl
 				if (m_allocator != nullptr)
 				{
 					copy.m_allocator = m_allocator;
-					copy.m_samples = reinterpret_cast<uint8_t*>(m_allocator->allocate(m_sample_size * size_t(m_num_samples) + k_padding, 16));
+					copy.m_samples = bit_cast<uint8_t*>(m_allocator->allocate(m_sample_size * size_t(m_num_samples) + k_padding, 16));
 					copy.m_num_samples_allocated = m_num_samples;
 					copy.m_num_samples = m_num_samples;
 					copy.m_sample_size = m_sample_size;
@@ -205,7 +206,7 @@ namespace acl
 			animation_track_type8	m_type;
 			track_format8			m_format;
 			uint8_t					m_bit_rate;
-			};
+		};
 
 		class rotation_track_stream final : public track_stream
 		{
@@ -235,6 +236,30 @@ namespace acl
 			}
 
 			rotation_format8 get_rotation_format() const { return m_format.rotation; }
+
+			rtm::quatf RTM_SIMD_CALL get_sample(uint32_t sample_index) const
+			{
+				const rtm::vector4f rotation = get_raw_sample<rtm::vector4f>(sample_index);
+
+				switch (m_format.rotation)
+				{
+				case rotation_format8::quatf_full:
+					return rtm::vector_to_quat(rotation);
+				case rotation_format8::quatf_drop_w_full:
+				case rotation_format8::quatf_drop_w_variable:
+					// quat_from_positive_w might not yield an accurate quaternion because the square-root instruction
+					// isn't very accurate on small inputs, we need to normalize
+					return rtm::quat_normalize(rtm::quat_from_positive_w(rotation));
+				default:
+					ACL_ASSERT(false, "Invalid or unsupported rotation format: " ACL_ASSERT_STRING_FORMAT_SPECIFIER, get_rotation_format_name(m_format.rotation));
+					return rtm::vector_to_quat(rotation);
+				}
+			};
+
+			rtm::quatf RTM_SIMD_CALL get_sample_clamped(uint32_t sample_index) const
+			{
+				return get_sample(std::min(sample_index, m_num_samples - 1));
+			}
 		};
 
 		class translation_track_stream final : public track_stream
@@ -265,6 +290,16 @@ namespace acl
 			}
 
 			vector_format8 get_vector_format() const { return m_format.vector; }
+
+			rtm::vector4f RTM_SIMD_CALL get_sample(uint32_t sample_index) const
+			{
+				return get_raw_sample<rtm::vector4f>(sample_index);
+			}
+
+			rtm::vector4f RTM_SIMD_CALL get_sample_clamped(uint32_t sample_index) const
+			{
+				return get_sample(std::min(sample_index, m_num_samples - 1));
+			}
 		};
 
 		class scale_track_stream final : public track_stream
@@ -295,6 +330,16 @@ namespace acl
 			}
 
 			vector_format8 get_vector_format() const { return m_format.vector; }
+
+			rtm::vector4f RTM_SIMD_CALL get_sample(uint32_t sample_index) const
+			{
+				return get_raw_sample<rtm::vector4f>(sample_index);
+			}
+
+			rtm::vector4f RTM_SIMD_CALL get_sample_clamped(uint32_t sample_index) const
+			{
+				return get_sample(std::min(sample_index, m_num_samples - 1));
+			}
 		};
 
 		// For a rotation track, the extent only tells us if the track is constant or not
@@ -303,37 +348,20 @@ namespace acl
 		class track_stream_range
 		{
 		public:
-#if defined(ACL_IMPL_ENABLE_WEIGHTED_AVERAGE_CONSTANT_SUB_TRACKS)
-			static track_stream_range RTM_SIMD_CALL from_min_max(rtm::vector4f_arg0 min, rtm::vector4f_arg1 max, rtm::vector4f_arg2 weighted_average)
-			{
-				return track_stream_range(min, max, rtm::vector_sub(max, min), weighted_average);
-			}
-#else
 			static track_stream_range RTM_SIMD_CALL from_min_max(rtm::vector4f_arg0 min, rtm::vector4f_arg1 max)
 			{
 				return track_stream_range(min, max, rtm::vector_sub(max, min));
 			}
-#endif
 
-#if defined(ACL_IMPL_ENABLE_WEIGHTED_AVERAGE_CONSTANT_SUB_TRACKS)
-			static track_stream_range RTM_SIMD_CALL from_min_extent(rtm::vector4f_arg0 min, rtm::vector4f_arg1 extent, rtm::vector4f_arg2 weighted_average)
-			{
-				return track_stream_range(min, rtm::vector_add(min, extent), extent, weighted_average);
-			}
-#else
 			static track_stream_range RTM_SIMD_CALL from_min_extent(rtm::vector4f_arg0 min, rtm::vector4f_arg1 extent)
 			{
 				return track_stream_range(min, rtm::vector_add(min, extent), extent);
 			}
-#endif
 
 			track_stream_range()
 				: m_min(rtm::vector_zero())
 				, m_max(rtm::vector_zero())
 				, m_extent(rtm::vector_zero())
-#if defined(ACL_IMPL_ENABLE_WEIGHTED_AVERAGE_CONSTANT_SUB_TRACKS)
-				, m_weighted_average(rtm::vector_zero())
-#endif
 			{}
 
 			rtm::vector4f RTM_SIMD_CALL get_min() const { return m_min; }
@@ -352,23 +380,11 @@ namespace acl
 					return rtm::vector_all_less_equal(m_extent, rtm::vector_set(threshold));
 			}
 
-#if defined(ACL_IMPL_ENABLE_WEIGHTED_AVERAGE_CONSTANT_SUB_TRACKS)
-			rtm::vector4f RTM_SIMD_CALL get_weighted_average() const { return m_weighted_average; }
-#endif
-
 		private:
-#if defined(ACL_IMPL_ENABLE_WEIGHTED_AVERAGE_CONSTANT_SUB_TRACKS)
-			track_stream_range(rtm::vector4f_arg0 min, rtm::vector4f_arg1 max, rtm::vector4f_arg2 extent, rtm::vector4f_arg3 weighted_average)
-#else
 			track_stream_range(rtm::vector4f_arg0 min, rtm::vector4f_arg1 max, rtm::vector4f_arg2 extent)
-#endif
 				: m_min(min)
 				, m_max(max)
 				, m_extent(extent)
-
-#if defined(ACL_IMPL_ENABLE_WEIGHTED_AVERAGE_CONSTANT_SUB_TRACKS)
-				, m_weighted_average(weighted_average)
-#endif
 			{
 				ACL_ASSERT(rtm::vector_all_greater_equal(max, min), "Max must be greater or equal to min");
 				ACL_ASSERT(rtm::vector_all_greater_equal(extent, rtm::vector_zero()) && rtm::vector_is_finite(extent), "Extent must be positive and finite");
@@ -377,11 +393,6 @@ namespace acl
 			rtm::vector4f	m_min;
 			rtm::vector4f	m_max;
 			rtm::vector4f	m_extent;
-
-#if defined(ACL_IMPL_ENABLE_WEIGHTED_AVERAGE_CONSTANT_SUB_TRACKS)
-			rtm::vector4f	m_weighted_average;
-#endif
-
 		};
 
 		struct transform_range
@@ -395,7 +406,24 @@ namespace acl
 
 		struct transform_streams
 		{
+			transform_streams() = default;
+
+			// Can't copy
+			transform_streams(const transform_streams&) = delete;
+			transform_streams& operator=(const transform_streams&) = delete;
+
+			// Can move
+			transform_streams(transform_streams&&) = default;
+			transform_streams& operator=(transform_streams&&) = default;
+
 			rtm::qvvf default_value					= rtm::qvv_identity();
+
+			// Sample 0 before we normalize over the segment.
+			// This is used when a sub-track is constant over the segment.
+			// These values are normalized over the clip (but not over the segment).
+			rtm::vector4f constant_rotation			= rtm::vector_zero();
+			rtm::vector4f constant_translation		= rtm::vector_zero();
+			rtm::vector4f constant_scale			= rtm::vector_zero();
 
 			segment_context* segment				= nullptr;
 			uint32_t bone_index						= k_invalid_track_index;
@@ -421,6 +449,9 @@ namespace acl
 			{
 				transform_streams copy;
 				copy.default_value = default_value;
+				copy.constant_rotation = constant_rotation;
+				copy.constant_translation = constant_translation;
+				copy.constant_scale = constant_scale;
 				copy.segment = segment;
 				copy.bone_index = bone_index;
 				copy.parent_bone_index = parent_bone_index;

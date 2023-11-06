@@ -1,10 +1,9 @@
 cmake_minimum_required (VERSION 3.2)
 project(rtm_unit_tests CXX)
 
-set(CMAKE_CXX_STANDARD 11)
-
 include_directories("${PROJECT_SOURCE_DIR}/../../includes")
 include_directories("${PROJECT_SOURCE_DIR}/../../external/catch2/single_include")
+include_directories("${PROJECT_SOURCE_DIR}/../sources")
 
 # Grab all of our test source files
 file(GLOB_RECURSE ALL_TEST_SOURCE_FILES LIST_DIRECTORIES false
