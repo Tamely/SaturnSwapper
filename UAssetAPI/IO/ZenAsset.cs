@@ -283,6 +283,11 @@ namespace UAssetAPI.IO
         /// </summary>
         public List<FPackageObjectIndex> Imports;
 
+        /// <summary>
+        /// The padding above the BulkDataMap in assets newer than UE 5.3.
+        /// </summary>
+        public byte[] Padding;
+
         private Dictionary<ulong, string> CityHash64Map = new Dictionary<ulong, string>();
         private void AddCityHash64MapEntryRaw(string val)
         {
@@ -409,6 +414,12 @@ namespace UAssetAPI.IO
             ReadNameMap(reader);
             
             Name = new FName(this, MappedName);
+            
+            if (EngineVersion >= EngineVersion.VER_UE5_4)
+            {
+                var pad = reader.ReadUInt64();
+                Padding = reader.ReadArray<byte>((int)pad);
+            }
 
             // Bulk data map
             var bulkDataMapSize = reader.ReadUInt64();
@@ -585,6 +596,12 @@ namespace UAssetAPI.IO
             
             writer.Write(SerializeHeader());
             writer.Write(SerializeNameMap());
+            
+            if (EngineVersion >= EngineVersion.VER_UE5_4)
+            {
+                writer.Write((ulong)Padding.Length);
+                writer.Write(Padding);
+            }
             
             // Bulk data map
             writer.Write((ulong)BulkDataMap.Length * FBulkDataMapEntry.Size);
