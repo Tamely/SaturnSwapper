@@ -12,4 +12,8 @@ internal static partial class PInvoke
     [LibraryImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool VirtualFree(nint lpAddress, nuint dwSize, FreeType dwFreeType);
+    
+    // GetLastError
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    public static partial uint GetLastError();
 }

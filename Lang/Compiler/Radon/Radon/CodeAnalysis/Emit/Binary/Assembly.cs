@@ -14,7 +14,7 @@ public readonly struct Assembly
     
     public Assembly(Guid guid, AssemblyFlags flags, long encryptionKey, InstructionTable instructions, Metadata metadata)
     {
-        Header = new AssemblyHeader(6858187695197072735uL, guid, flags, encryptionKey, Constants.RadonVersionNumber);
+        Header = new AssemblyHeader(6858187695197072735uL, guid, flags, encryptionKey, RadonConstants.RadonVersionNumber);
         Instructions = instructions;
         Metadata = metadata;
     }
