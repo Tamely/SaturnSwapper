@@ -213,11 +213,7 @@ public class FileLogic
         }
 
         isLocked = false;
-        foreach (var swap in swapData)
-        {
-            File.WriteAllBytes(Constants.BasePath + (swapData.IndexOf(swap) + ".uasset"), swap.Data);
-        }
-        
+
         await Convert(swapData);
     }
     

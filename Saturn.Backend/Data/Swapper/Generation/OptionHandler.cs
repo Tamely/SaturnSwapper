@@ -32,10 +32,10 @@ public class OptionHandler
 
     private static void FixPartData(AssetExportData exportData)
     {
-        if (exportData.ExportParts.Any(part => Enum.Parse<EFortCustomPartType>(part.Part) == EFortCustomPartType.Face)
-            && exportData.ExportParts.All(part => Enum.Parse<EFortCustomPartType>(part.Part) != EFortCustomPartType.Hat))
+        if (exportData.ExportParts.Any(part => Enum.Parse<EFortCustomPartType>(part.Part) == EFortCustomPartType.Hat)
+            && exportData.ExportParts.All(part => Enum.Parse<EFortCustomPartType>(part.Part) != EFortCustomPartType.Face))
         {
-            exportData.ExportParts.First(part => Enum.Parse<EFortCustomPartType>(part.Part) == EFortCustomPartType.Face).Part = EFortCustomPartType.Hat.ToString();
+            exportData.ExportParts.First(part => Enum.Parse<EFortCustomPartType>(part.Part) == EFortCustomPartType.Hat).Part = EFortCustomPartType.Face.ToString();
         }
         
         if (exportData.ExportParts.Any(part => Enum.Parse<EFortCustomPartType>(part.Part) == EFortCustomPartType.Face)
@@ -189,6 +189,7 @@ public class OptionHandler
                     if (Constants.AssetCache.TryGetValue(option.ID + "EMOTE", out var value))
                     {
                         optionExportData = value;
+                        FixPartData(optionExportData);
                     }
                     else
                     {
@@ -207,6 +208,21 @@ public class OptionHandler
                         if (!exportData.ExportParts.First(x => x.Part == "Head").MeshPath.ToLower()
                                 .Contains("m_med_blk_sydney_01"))
                         {
+                            if (option.DisplayName.Contains("Lexa"))
+                            {
+                                foreach (var part in exportData.ExportParts)
+                                {
+                                    Logger.Log($"Morph: {part.MorphName} | Part: {part.Part}");
+                                    foreach (var oPart in optionExportData.ExportParts)
+                                    {
+                                        if (part.Part == oPart.Part)
+                                        {
+                                            Logger.Log($"Option: {oPart.MorphName} | Part: {oPart.Part}");
+                                        }
+                                    }
+                                }
+                            }
+                            
                             foreach (var _ in from part in exportData.ExportParts 
                                      let optionPart = optionExportData.ExportParts.First(optionPart => part.Part == optionPart.Part) 
                                      where part.MorphName != "None" 

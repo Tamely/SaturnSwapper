@@ -43,7 +43,7 @@
     {
         foreach (var item in Constants.Cosmetics)
         {
-            <div id="@(item.ID + "-section")" class="section hoverable" @onclick="@(async () => await AddPotentialOption(item))">
+            <div id="@(item.ID + "-section")" class="section hoverable" @onclick="@(async() => await AddPotentialOption(item))">
                 <img src=@(item.GetHTMLImage()) alt="Icon"/>
                 @if (FaultyIDs.Keys.Contains(item.ID))
                 {
@@ -67,7 +67,7 @@
                         </h3>
                     }
                 </div>
-                @if (Constants.PotentialOptions.Contains(item.ID.ToLower()))
+                @if (Constants.PotentialOptions.Contains(item.ID))
                 {
                     <div class="item-info">
                         <h3>@_localizationResourceService.GetString(83)</h3>
@@ -78,7 +78,7 @@
 
         if (Constants.ChunkIndex == 0 && Constants.ChunkIndex != Constants.ChunkCount - 1)
         {
-            <div id="@("next-section")" class="section hoverable" @onclick="@(async () => await IndexUp())">
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexUp())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/Character_HeadhunterStar/smallicon.png") alt="Icon"/>
                 <div class="name">
                     <h1>@_localizationResourceService.GetString(29)</h1>
@@ -88,7 +88,7 @@
         }
         else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex == Constants.ChunkCount - 1)
         {
-            <div id="@("next-section")" class="section hoverable" @onclick="@(async () => await IndexDown())">
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexDown())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>
                 <div class="name">
                     <h1>@_localizationResourceService.GetString(31)</h1>
@@ -98,7 +98,7 @@
         }
         else if (Constants.ChunkIndex != 0 && Constants.ChunkIndex != Constants.ChunkCount - 1)
         {
-            <div id="@("next-section")" class="section hoverable" @onclick="@(async () => await IndexDown())">
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexDown())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/CID_028_Athena_Commando_F/smallicon.png") alt="Icon"/>
                 <div class="name">
                     <h1>@_localizationResourceService.GetString(31)</h1>
@@ -106,7 +106,7 @@
                 </div>
             </div>
 
-            <div id="@("next-section")" class="section hoverable" @onclick="@(async () => await IndexUp())">
+            <div id="@("next-section")" class="section hoverable" @onclick="@(async() => await IndexUp())">
                 <img src=@($"https://fortnite-api.com/images/cosmetics/br/Character_HeadhunterStar/smallicon.png") alt="Icon"/>
                 <div class="name">
                     <h1>@_localizationResourceService.GetString(29)</h1>
