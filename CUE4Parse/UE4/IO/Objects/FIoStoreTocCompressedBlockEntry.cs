@@ -2,7 +2,7 @@
 
 namespace CUE4Parse.UE4.IO.Objects
 {
-    public readonly struct FIoStoreTocCompressedBlockEntry
+    public struct FIoStoreTocCompressedBlockEntry
     {
         private const int OffsetBits = 40;
         private const ulong OffsetMask = (1ul << OffsetBits) - 1ul;
@@ -10,11 +10,11 @@ namespace CUE4Parse.UE4.IO.Objects
         private const uint SizeMask = (1 << SizeBits) - 1;
         private const int SizeShift = 8;
 
-        public readonly long Position;
-        public readonly long Offset;
-        public readonly uint CompressedSize;
-        public readonly uint UncompressedSize;
-        public readonly byte CompressionMethodIndex;
+        public long Position;
+        public long Offset;
+        public uint CompressedSize;
+        public uint UncompressedSize;
+        public byte CompressionMethodIndex;
 
         public FIoStoreTocCompressedBlockEntry(FArchive Ar)
         {
@@ -28,6 +28,31 @@ namespace CUE4Parse.UE4.IO.Objects
                 UncompressedSize = *((uint*) data + 2) & SizeMask;
                 CompressionMethodIndex = (byte) (*((uint*) data + 2) >> SizeBits);
             }
+        }
+
+        public unsafe byte[] Serialize()
+        {
+            byte* Data = stackalloc byte[5 + 3 + 3 + 1];
+            
+            ulong* offset = (ulong*)Data;
+            *offset = (ulong)Offset & OffsetMask;
+
+            uint* size = (uint*)Data + 1;
+            *size |= CompressedSize << SizeShift;
+            
+            uint* uncompressedSize = (uint*)Data + 2;
+            *uncompressedSize |= UncompressedSize & SizeMask;
+
+            uint* index = (uint*)Data + 2;
+            *index |= (uint)CompressionMethodIndex << SizeBits;
+            
+            byte[] returnBytes = new byte[5 + 3 + 3 + 1];
+            for (int i = 0; i < 5 + 3 + 3 + 1; i++)
+            {
+                returnBytes[i] = Data[i];
+            }
+            
+            return returnBytes;
         }
 
         public override string ToString()
