@@ -220,12 +220,14 @@ public class OptionHandler
                         if (isPerfect)
                         {
                             data.PerfectOptions.Add(option);
+                            data.PerfectOptions[^1].DisplayName += " (Built In Emote)";
                             data.PerfectOptions[^1].ID += "EMOTE";
                         }
 
                         data.Options.Add(option);
                         if (!isPerfect)
                         {
+                            data.Options[^1].DisplayName += " (Built In Emote)";
                             data.Options[^1].ID += "EMOTE";
                         }
                     }
