@@ -26,7 +26,6 @@ public class AssetSelectorItem
 {
     public SKBitmap IconBitmap;
     public SKBitmap FullBitmap;
-    public FGameplayTagContainer GameplayTags;
 
     public UObject Asset { get; set; }
     public EAssetType Type { get; set; }
@@ -73,10 +72,6 @@ public class AssetSelectorItem
         Description = descriptionOverride ?? asset.GetOrDefault("Description", new FText("No Description.")).Text;
 
         Rarity = asset.GetOrDefault("Rarity", EFortRarity.Uncommon);
-        GameplayTags = asset.GetOrDefault<FGameplayTagContainer>("GameplayTags");
-
-        var seasonTag = GameplayTags.GetValueOrDefault("Cosmetics.Filter.Season.")?.Text.SubstringAfterLast(".");
-        SeasonNumber = int.TryParse(seasonTag, out var seasonNumber) ? seasonNumber : int.MaxValue;
         if (asset.TryGetValue<UObject>(out var series, "Series"))
         {
             Series = series.GetOrDefault<FText>("DisplayName").Text;

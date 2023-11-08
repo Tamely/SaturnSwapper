@@ -61,6 +61,30 @@
 
     private async Task CreatePreset()
     {
+        foreach (var swap in Constants.CurrentSwaps)
+        {
+            swap.ItemModel.IconBitmap = null;
+            swap.ItemModel.FullBitmap = null;
+            swap.OptionModel.IconBitmap = null;
+            swap.OptionModel.FullBitmap = null;
+
+            foreach (var option in swap.ItemModel.OptionHandler.Options)
+            {
+                option.IconBitmap = null;
+                option.FullBitmap = null;
+                option.IconBitmap = null;
+                option.FullBitmap = null;
+            }
+            
+            foreach (var option in swap.ItemModel.OptionHandler.PerfectOptions)
+            {
+                option.IconBitmap = null;
+                option.FullBitmap = null;
+                option.IconBitmap = null;
+                option.FullBitmap = null;
+            }
+        }
+        
         PresetModel preset = new()
         {
             PresetName = presetName,
