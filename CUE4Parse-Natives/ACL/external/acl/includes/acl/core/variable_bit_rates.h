@@ -38,7 +38,7 @@ namespace acl
 
 	// Bit rate 0 is reserved for tracks that are constant in a segment
 	ACL_DEPRECATED("Internal implementation detail; to be removed in v3.0")
-	constexpr uint8_t k_bit_rate_num_bits[] = { 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 32 };
+	constexpr uint8_t k_bit_rate_num_bits[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 32 };
 
 	ACL_DEPRECATED("Internal implementation detail; to be removed in v3.0")
 	constexpr uint8_t k_invalid_bit_rate = 0xFF;
@@ -47,16 +47,15 @@ namespace acl
 	constexpr uint8_t k_lowest_bit_rate = 1;
 
 	ACL_DEPRECATED("Internal implementation detail; to be removed in v3.0")
-	constexpr uint8_t k_highest_bit_rate = 18;
+	constexpr uint8_t k_highest_bit_rate = 24;
 
-	ACL_DEPRECATED("Internal implementation detail; to be removed in v3.0")
-	constexpr uint32_t k_num_bit_rates = 19;
+	static_assert(get_array_size(k_bit_rate_num_bits) == 25, "Expecting 25 bit rates");
 
 	ACL_DEPRECATED("Internal implementation detail; to be removed in v3.0")
 	inline uint32_t get_num_bits_at_bit_rate(uint32_t bit_rate)
 	{
-		ACL_ASSERT(bit_rate <= 18, "Invalid bit rate: %u", bit_rate);
-		constexpr uint8_t bit_rate_num_bits[] = { 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 32 };
+		ACL_ASSERT(bit_rate <= 24, "Invalid bit rate: %u", bit_rate);
+		constexpr uint8_t bit_rate_num_bits[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 32 };
 		return bit_rate_num_bits[bit_rate];
 	}
 
@@ -65,7 +64,7 @@ namespace acl
 	constexpr bool is_constant_bit_rate(uint32_t bit_rate) { return bit_rate == 0; }
 
 	ACL_DEPRECATED("Internal implementation detail; to be removed in v3.0")
-	constexpr bool is_raw_bit_rate(uint32_t bit_rate) { return bit_rate == 18; }
+	constexpr bool is_raw_bit_rate(uint32_t bit_rate) { return bit_rate == 24; }
 
 	ACL_DEPRECATED("Internal implementation detail; to be removed in v3.0")
 	struct BoneBitRate

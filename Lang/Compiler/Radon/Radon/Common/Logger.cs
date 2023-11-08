@@ -14,9 +14,9 @@ public static class Logger
 
     static Logger()
     {
-        if (File.Exists(Constants.LogFile))
+        if (File.Exists(RadonConstants.LogFile))
         {
-            var directoryInfo = new DirectoryInfo(Constants.LogPath).GetFiles()
+            var directoryInfo = new DirectoryInfo(RadonConstants.LogPath).GetFiles()
                 .OrderByDescending(x => x.LastWriteTimeUtc).ToList();
 
             var latestLog = directoryInfo.FirstOrDefault();
@@ -33,10 +33,10 @@ public static class Logger
         }
 
         WrittenLines = new List<string>();
-        Writer = File.CreateText(Constants.LogFile);
+        Writer = File.CreateText(RadonConstants.LogFile);
         Writer.WriteLine("# Runtime Log");
         Writer.WriteLine("# Started on {0:yy-mm-dd-hh-mm-ss}", DateTime.Now);
-        Writer.WriteLine("# Runtime Version {0}", Constants.RadonVersion);
+        Writer.WriteLine("# Runtime Version {0}", RadonConstants.RadonVersion);
         Writer.WriteLine(new string('-', 40));
         Writer.WriteLine();
         Writer.Flush();

@@ -28,6 +28,7 @@
 #include "acl/core/impl/compiler_utils.h"
 #include "acl/core/iallocator.h"
 #include "acl/core/track_formats.h"
+#include "acl/core/impl/bit_cast.impl.h"
 #include "acl/core/impl/variable_bit_rates.h"
 #include "acl/compression/impl/sample_streams.h"
 #include "acl/compression/impl/track_stream.h"
@@ -98,7 +99,6 @@ namespace acl
 			single_track_query()
 				: m_database(nullptr)
 				, m_track_index(0xFFFFFFFFU)
-				, m_bit_rates()
 				, m_rotation_cache_index(0xFFFFFFFFU)
 				, m_translation_cache_index(0xFFFFFFFFU)
 				, m_scale_cache_index(0xFFFFFFFFU)
@@ -116,7 +116,7 @@ namespace acl
 
 			track_bit_rate_database*		m_database;
 			uint32_t						m_track_index;
-			transform_bit_rates						m_bit_rates;
+			transform_bit_rates				m_bit_rates;
 
 			uint32_t						m_rotation_cache_index;
 			uint32_t						m_translation_cache_index;
@@ -157,7 +157,7 @@ namespace acl
 
 			iallocator&						m_allocator;
 			track_bit_rate_database*		m_database;
-			const transform_bit_rates*				m_bit_rates;
+			const transform_bit_rates*		m_bit_rates;
 			transform_indices*				m_indices;
 			uint32_t						m_num_transforms;
 
@@ -212,22 +212,13 @@ namespace acl
 				// We also keep a generation id to determine the least recently used bit rates to evict from the cache.
 
 				bit_rates_union		rotation_bit_rates;
-				uint32_t			rotation_generation_ids[4];
+				uint32_t			rotation_generation_ids[4] = { 0, 0, 0, 0 };
 
 				bit_rates_union		translation_bit_rates;
-				uint32_t			translation_generation_ids[4];
+				uint32_t			translation_generation_ids[4] = { 0, 0, 0, 0 };
 
 				bit_rates_union		scale_bit_rates;
-				uint32_t			scale_generation_ids[4];
-
-				transform_cache_entry()
-					: rotation_bit_rates()
-					, rotation_generation_ids{ 0, 0, 0, 0 }
-					, translation_bit_rates()
-					, translation_generation_ids{ 0, 0, 0, 0 }
-					, scale_bit_rates()
-					, scale_generation_ids{ 0, 0, 0, 0 }
-				{}
+				uint32_t			scale_generation_ids[4] = { 0, 0, 0, 0 };
 
 				static int32_t find_bit_rate_index(const bit_rates_union& bit_rates, uint32_t search_bit_rate);
 			};
@@ -365,7 +356,7 @@ namespace acl
 			const bool has_scale = raw_bone_steams->segment->clip->has_scale;
 			m_has_scale = has_scale;
 
-			const uint32_t num_tracks_per_transform = has_scale ? 3 : 2;
+			const uint32_t num_tracks_per_transform = has_scale ? 3U : 2U;
 			const uint32_t num_entries_per_transform = num_tracks_per_transform * k_num_bit_rates_cached_per_track;
 			m_num_entries_per_transform = num_entries_per_transform;
 
@@ -393,7 +384,7 @@ namespace acl
 			m_track_size = track_size;
 
 			const uint32_t data_size = track_size * num_cached_tracks;
-			m_data = reinterpret_cast<uint8_t*>(allocator.allocate(data_size, 64));
+			m_data = bit_cast<uint8_t*>(allocator.allocate(data_size, 64));
 			m_data_size = data_size;
 			m_num_cached_tracks = num_cached_tracks;
 		}

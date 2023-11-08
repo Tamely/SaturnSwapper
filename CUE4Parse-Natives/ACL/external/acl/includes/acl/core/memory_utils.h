@@ -25,6 +25,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "acl/version.h"
+#include "acl/core/impl/bit_cast.impl.h"
 #include "acl/core/impl/compiler_utils.h"
 #include "acl/core/error.h"
 
@@ -82,7 +83,7 @@ namespace acl
 	RTM_FORCE_INLINE bool is_aligned_to(PtrType* value, size_t alignment)
 	{
 		ACL_ASSERT(is_power_of_two(alignment), "Alignment value must be a power of two");
-		return (reinterpret_cast<intptr_t>(value) & (alignment - 1)) == 0;
+		return (acl_impl::bit_cast<intptr_t>(value) & (alignment - 1)) == 0;
 	}
 
 	template<typename IntegralType>
@@ -102,7 +103,7 @@ namespace acl
 	RTM_FORCE_INLINE PtrType* align_to(PtrType* value, size_t alignment)
 	{
 		ACL_ASSERT(is_power_of_two(alignment), "Alignment value must be a power of two");
-		return reinterpret_cast<PtrType*>((reinterpret_cast<intptr_t>(value) + (alignment - 1)) & ~(alignment - 1));
+		return acl_impl::bit_cast<PtrType*>((acl_impl::bit_cast<intptr_t>(value) + (alignment - 1)) & ~(alignment - 1));
 	}
 
 	template<typename IntegralType>
@@ -132,8 +133,8 @@ namespace acl
 		{
 			RTM_FORCE_INLINE static DestPtrType* cast(SrcType* input)
 			{
-				ACL_ASSERT(is_aligned_to(input, alignof(DestPtrType)), "reinterpret_cast would result in an unaligned pointer");
-				return reinterpret_cast<DestPtrType*>(input);
+				ACL_ASSERT(is_aligned_to(input, alignof(DestPtrType)), "bit_cast would result in an unaligned pointer");
+				return acl_impl::bit_cast<DestPtrType*>(input);
 			}
 		};
 
@@ -148,28 +149,30 @@ namespace acl
 		{
 			RTM_FORCE_INLINE static DestPtrType* cast(SrcType input)
 			{
-				ACL_ASSERT(is_aligned_to(input, alignof(DestPtrType)), "reinterpret_cast would result in an unaligned pointer");
-				return reinterpret_cast<DestPtrType*>(input);
+				ACL_ASSERT(is_aligned_to(input, alignof(DestPtrType)), "bit_cast would result in an unaligned pointer");
+				return acl_impl::bit_cast<DestPtrType*>(static_cast<uintptr_t>(input));
 			}
 		};
 
 		template<typename SrcType>
 		struct safe_int_to_ptr_cast_impl<void, SrcType>
 		{
-			RTM_FORCE_INLINE static constexpr void* cast(SrcType input) { return reinterpret_cast<void*>(input); }
+			RTM_FORCE_INLINE static constexpr void* cast(SrcType input) { return acl_impl::bit_cast<void*>(static_cast<uintptr_t>(input)); }
 		};
 	}
 
-	template<typename DestPtrType, typename SrcType>
-	RTM_FORCE_INLINE DestPtrType* safe_ptr_cast(SrcType* input)
+	// Casts a pointer type into a pointer of a different type with an alignment runtime check
+	template<typename dest_ptr_t, typename src_ptr_t>
+	RTM_FORCE_INLINE dest_ptr_t* safe_ptr_cast(src_ptr_t* input)
 	{
-		return memory_impl::safe_ptr_to_ptr_cast_impl<DestPtrType, SrcType>::cast(input);
+		return memory_impl::safe_ptr_to_ptr_cast_impl<dest_ptr_t, src_ptr_t>::cast(input);
 	}
 
-	template<typename DestPtrType, typename SrcType>
-	RTM_FORCE_INLINE DestPtrType* safe_ptr_cast(SrcType input)
+	// Casts an integral type into a pointer type with an alignment runtime check
+	template<typename dest_ptr_t, typename src_int_t>
+	RTM_FORCE_INLINE dest_ptr_t* safe_ptr_cast(src_int_t input)
 	{
-		return memory_impl::safe_int_to_ptr_cast_impl<DestPtrType, SrcType>::cast(input);
+		return memory_impl::safe_int_to_ptr_cast_impl<dest_ptr_t, src_int_t>::cast(input);
 	}
 
 #if defined(RTM_COMPILER_GCC)
@@ -194,9 +197,9 @@ namespace acl
 			{
 				using SrcRealType = typename safe_underlying_type<SrcType, std::is_enum<SrcType>::value>::type;
 
-				if (static_condition<(std::is_signed<DstType>::value == std::is_signed<SrcRealType>::value)>::test())
+				if (static_condition<std::is_signed<DstType>::value == std::is_signed<SrcRealType>::value>::test())
 					return SrcType(DstType(input)) == input;
-				else if (static_condition<(std::is_signed<SrcRealType>::value)>::test())
+				else if (static_condition<std::is_signed<SrcRealType>::value>::test())
 					return int64_t(input) >= 0 && SrcType(DstType(input)) == input;
 				else
 					return uint64_t(input) <= uint64_t(std::numeric_limits<DstType>::max());
@@ -241,7 +244,7 @@ namespace acl
 	template<typename OutputPtrType, typename InputPtrType, typename offset_type>
 	RTM_FORCE_INLINE OutputPtrType* add_offset_to_ptr(InputPtrType* ptr, offset_type offset)
 	{
-		return safe_ptr_cast<OutputPtrType>(reinterpret_cast<uintptr_t>(ptr) + offset);
+		return safe_ptr_cast<OutputPtrType>(acl_impl::bit_cast<uintptr_t>(ptr) + offset);
 	}
 
 	RTM_FORCE_INLINE uint16_t byte_swap(uint16_t value)
@@ -297,30 +300,30 @@ namespace acl
 		while (true)
 		{
 			uint64_t src_byte_offset = src_bit_offset / 8;
-			uint8_t src_byte_bit_offset = safe_static_cast<uint8_t>(src_bit_offset % 8);
+			uint32_t src_byte_bit_offset = safe_static_cast<uint32_t>(src_bit_offset % 8);
 			uint64_t dest_byte_offset = dest_bit_offset / 8;
-			uint8_t dest_byte_bit_offset = safe_static_cast<uint8_t>(dest_bit_offset % 8);
+			uint32_t dest_byte_bit_offset = safe_static_cast<uint32_t>(dest_bit_offset % 8);
 
 			const uint8_t* src_bytes = add_offset_to_ptr<const uint8_t>(src, src_byte_offset);
 			uint8_t* dest_byte = add_offset_to_ptr<uint8_t>(dest, dest_byte_offset);
 
 			// We'll copy only as many bits as there fits within 'dest' or as there are left
-			uint8_t num_bits_dest_remain_in_byte = 8 - dest_byte_bit_offset;
-			uint8_t num_bits_src_remain_in_byte = 8 - src_byte_bit_offset;
-			uint64_t num_bits_copied = std::min<uint64_t>(std::min<uint8_t>(num_bits_dest_remain_in_byte, num_bits_src_remain_in_byte), num_bits_to_copy);
-			uint8_t num_bits_copied_u8 = safe_static_cast<uint8_t>(num_bits_copied);
+			uint32_t num_bits_dest_remain_in_byte = 8 - dest_byte_bit_offset;
+			uint32_t num_bits_src_remain_in_byte = 8 - src_byte_bit_offset;
+			uint64_t num_bits_copied = std::min<uint64_t>(std::min<uint32_t>(num_bits_dest_remain_in_byte, num_bits_src_remain_in_byte), num_bits_to_copy);
+			uint32_t num_bits_copied_u32 = safe_static_cast<uint32_t>(num_bits_copied);
 
 			// We'll shift and mask to retain the 'dest' bits prior to our offset and whatever remains after the copy
-			uint8_t dest_shift_offset = dest_byte_bit_offset;
-			uint8_t dest_byte_mask = ~(0xFF >> dest_shift_offset) | ~(0xFF << (8 - num_bits_copied_u8 - dest_byte_bit_offset));
+			uint32_t dest_shift_offset = dest_byte_bit_offset;
+			uint32_t dest_byte_mask = ~(0xFFU >> dest_shift_offset) | ~(0xFFU << (8 - num_bits_copied_u32 - dest_byte_bit_offset));
 
-			uint8_t src_shift_offset = 8 - src_byte_bit_offset - num_bits_copied_u8;
-			uint8_t src_byte_mask = 0xFF >> (8 - num_bits_copied_u8);
-			uint8_t src_insert_shift_offset = 8 - num_bits_copied_u8 - dest_byte_bit_offset;
+			uint32_t src_shift_offset = 8 - src_byte_bit_offset - num_bits_copied_u32;
+			uint32_t src_byte_mask = 0xFFU >> (8 - num_bits_copied_u32);
+			uint32_t src_insert_shift_offset = 8 - num_bits_copied_u32 - dest_byte_bit_offset;
 
-			uint8_t partial_dest_value = *dest_byte & dest_byte_mask;
-			uint8_t partial_src_value = (*src_bytes >> src_shift_offset) & src_byte_mask;
-			*dest_byte = partial_dest_value | (partial_src_value << src_insert_shift_offset);
+			uint32_t partial_dest_value = *dest_byte & dest_byte_mask;
+			uint32_t partial_src_value = (*src_bytes >> src_shift_offset) & src_byte_mask;
+			*dest_byte = safe_static_cast<uint8_t>(partial_dest_value | (partial_src_value << src_insert_shift_offset));
 
 			if (num_bits_to_copy <= num_bits_copied)
 				break;	// Done
@@ -342,7 +345,7 @@ namespace acl
 	template<typename data_type>
 	RTM_FORCE_INLINE data_type aligned_load(const void* input)
 	{
-		return *safe_ptr_cast<const data_type, const void*>(input);
+		return *safe_ptr_cast<const data_type>(input);
 	}
 
 	template<typename data_type>
@@ -355,7 +358,7 @@ namespace acl
 	RTM_FORCE_INLINE void memory_prefetch(const void* ptr)
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		_mm_prefetch(reinterpret_cast<const char*>(ptr), _MM_HINT_T0);
+		_mm_prefetch(acl_impl::bit_cast<const char*>(ptr), _MM_HINT_T0);
 #elif defined(RTM_COMPILER_GCC) || defined(RTM_COMPILER_CLANG)
 		__builtin_prefetch(ptr, 0, 3);
 #elif defined(RTM_NEON64_INTRINSICS) && defined(RTM_COMPILER_MSVC)

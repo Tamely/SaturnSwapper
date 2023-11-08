@@ -34,14 +34,15 @@
 #include "acl/core/error_result.h"
 #include "acl/core/iallocator.h"
 #include "acl/core/scope_profiler.h"
+#include "acl/core/impl/bit_cast.impl.h"
 #include "acl/compression/compression_settings.h"
 #include "acl/compression/output_stats.h"
 #include "acl/compression/track_array.h"
 #include "acl/compression/impl/track_list_context.h"
-#include "acl/compression/impl/constant_track_impl.h"
-#include "acl/compression/impl/normalize_track_impl.h"
-#include "acl/compression/impl/optimize_looping.h"
-#include "acl/compression/impl/quantize_track_impl.h"
+#include "acl/compression/impl/compact.scalar.h"
+#include "acl/compression/impl/normalize.scalar.h"
+#include "acl/compression/impl/optimize_looping.scalar.h"
+#include "acl/compression/impl/quantize.scalar.h"
 #include "acl/compression/impl/track_range_impl.h"
 #include "acl/compression/impl/write_compression_stats_impl.h"
 #include "acl/compression/impl/write_track_data_impl.h"
@@ -52,6 +53,8 @@
 #endif
 
 #include <cstdint>
+
+ACL_IMPL_FILE_PRAGMA_PUSH
 
 namespace acl
 {
@@ -135,7 +138,7 @@ namespace acl
 			std::memset(buffer, 0, buffer_size);
 
 			uint8_t* buffer_start = buffer;
-			out_compressed_tracks = reinterpret_cast<compressed_tracks*>(buffer);
+			out_compressed_tracks = bit_cast<compressed_tracks*>(buffer);
 
 			raw_buffer_header* buffer_header = safe_ptr_cast<raw_buffer_header>(buffer);
 			buffer += sizeof(raw_buffer_header);
@@ -204,7 +207,7 @@ namespace acl
 			uint32_t written_metadata_track_descriptions_size = 0;
 			if (metadata_size != 0)
 			{
-				optional_metadata_header* metadada_header = reinterpret_cast<optional_metadata_header*>(buffer_start + buffer_size - sizeof(optional_metadata_header));
+				optional_metadata_header* metadada_header = bit_cast<optional_metadata_header*>(buffer_start + buffer_size - sizeof(optional_metadata_header));
 				uint32_t metadata_offset = metadata_start_offset;
 
 				if (settings.metadata.include_track_list_name)
@@ -268,3 +271,5 @@ namespace acl
 
 	ACL_IMPL_VERSION_NAMESPACE_END
 }
+
+ACL_IMPL_FILE_PRAGMA_POP

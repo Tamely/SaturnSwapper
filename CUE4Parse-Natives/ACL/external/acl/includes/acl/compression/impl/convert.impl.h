@@ -33,10 +33,13 @@
 #include "acl/core/error_result.h"
 #include "acl/core/iallocator.h"
 #include "acl/core/track_formats.h"
+#include "acl/core/impl/bit_cast.impl.h"
 #include "acl/core/impl/debug_track_writer.h"
 #include "acl/decompression/decompress.h"
 
 #include <cstdint>
+
+ACL_IMPL_FILE_PRAGMA_PUSH
 
 namespace acl
 {
@@ -171,22 +174,22 @@ namespace acl
 					switch (track_type)
 					{
 					case track_type8::float1f:
-						*reinterpret_cast<float*>(track_[sample_index]) = writer.read_float1(track_index);
+						*acl_impl::bit_cast<float*>(track_[sample_index]) = writer.read_float1(track_index);
 						break;
 					case track_type8::float2f:
-						rtm::vector_store2(writer.read_float2(track_index), reinterpret_cast<rtm::float2f*>(track_[sample_index]));
+						rtm::vector_store2(writer.read_float2(track_index), acl_impl::bit_cast<rtm::float2f*>(track_[sample_index]));
 						break;
 					case track_type8::float3f:
-						rtm::vector_store3(writer.read_float3(track_index), reinterpret_cast<rtm::float3f*>(track_[sample_index]));
+						rtm::vector_store3(writer.read_float3(track_index), acl_impl::bit_cast<rtm::float3f*>(track_[sample_index]));
 						break;
 					case track_type8::float4f:
-						rtm::vector_store(writer.read_float4(track_index), reinterpret_cast<rtm::float4f*>(track_[sample_index]));
+						rtm::vector_store(writer.read_float4(track_index), acl_impl::bit_cast<rtm::float4f*>(track_[sample_index]));
 						break;
 					case track_type8::vector4f:
-						*reinterpret_cast<rtm::vector4f*>(track_[sample_index]) = writer.read_vector4(track_index);
+						*acl_impl::bit_cast<rtm::vector4f*>(track_[sample_index]) = writer.read_vector4(track_index);
 						break;
 					case track_type8::qvvf:
-						*reinterpret_cast<rtm::qvvf*>(track_[sample_index]) = writer.read_qvv(track_index);
+						*acl_impl::bit_cast<rtm::qvvf*>(track_[sample_index]) = writer.read_qvv(track_index);
 						break;
 					default:
 						ACL_ASSERT(false, "Unexpected track type");
@@ -221,22 +224,22 @@ namespace acl
 					switch (track_type)
 					{
 					case track_type8::float1f:
-						*reinterpret_cast<float*>(track_[sample_index]) = writer.read_float1(track_index);
+						*acl_impl::bit_cast<float*>(track_[sample_index]) = writer.read_float1(track_index);
 						break;
 					case track_type8::float2f:
-						rtm::vector_store2(writer.read_float2(track_index), reinterpret_cast<rtm::float2f*>(track_[sample_index]));
+						rtm::vector_store2(writer.read_float2(track_index), acl_impl::bit_cast<rtm::float2f*>(track_[sample_index]));
 						break;
 					case track_type8::float3f:
-						rtm::vector_store3(writer.read_float3(track_index), reinterpret_cast<rtm::float3f*>(track_[sample_index]));
+						rtm::vector_store3(writer.read_float3(track_index), acl_impl::bit_cast<rtm::float3f*>(track_[sample_index]));
 						break;
 					case track_type8::float4f:
-						rtm::vector_store(writer.read_float4(track_index), reinterpret_cast<rtm::float4f*>(track_[sample_index]));
+						rtm::vector_store(writer.read_float4(track_index), acl_impl::bit_cast<rtm::float4f*>(track_[sample_index]));
 						break;
 					case track_type8::vector4f:
-						*reinterpret_cast<rtm::vector4f*>(track_[sample_index]) = writer.read_vector4(track_index);
+						*acl_impl::bit_cast<rtm::vector4f*>(track_[sample_index]) = writer.read_vector4(track_index);
 						break;
 					case track_type8::qvvf:
-						*reinterpret_cast<rtm::qvvf*>(track_[sample_index]) = writer.read_qvv(track_index);
+						*acl_impl::bit_cast<rtm::qvvf*>(track_[sample_index]) = writer.read_qvv(track_index);
 						break;
 					default:
 						ACL_ASSERT(false, "Unexpected track type");
@@ -252,3 +255,5 @@ namespace acl
 
 	ACL_IMPL_VERSION_NAMESPACE_END
 }
+
+ACL_IMPL_FILE_PRAGMA_POP

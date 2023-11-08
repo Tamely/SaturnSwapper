@@ -67,7 +67,7 @@ namespace rtm
 			result_mtx = matrix_remove_scale(result_mtx);
 
 #if defined(RTM_SSE2_INTRINSICS)
-			constexpr __m128 signs = { -0.0F, -0.0F, -0.0F, -0.0F };
+			constexpr __m128 signs = RTM_VECTOR4F_MAKE(-0.0F, -0.0F, -0.0F, -0.0F);
 			const __m128 sign_bits = _mm_and_ps(scale, signs);	// Mask out the sign bit
 
 			result_mtx.x_axis = _mm_xor_ps(result_mtx.x_axis, _mm_shuffle_ps(sign_bits, sign_bits, _MM_SHUFFLE(0, 0, 0, 0)));
@@ -124,11 +124,28 @@ namespace rtm
 
 	//////////////////////////////////////////////////////////////////////////
 	// Returns the inverse of the input QVV transform.
+	// If zero scale is contained, the result is undefined.
+	// For a safe alternative, supply a fallback scale value and a threshold.
 	//////////////////////////////////////////////////////////////////////////
 	RTM_DISABLE_SECURITY_COOKIE_CHECK inline qvvf RTM_SIMD_CALL qvv_inverse(qvvf_arg0 input) RTM_NO_EXCEPT
 	{
 		const quatf inv_rotation = quat_conjugate(input.rotation);
 		const vector4f inv_scale = vector_reciprocal(input.scale);
+		const vector4f inv_translation = vector_neg(quat_mul_vector3(vector_mul(input.translation, inv_scale), inv_rotation));
+		return qvv_set(inv_rotation, inv_translation, inv_scale);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Returns the inverse of the input QVV transform.
+	// If the input scale has an absolute value below the supplied threshold, the
+	// fallback value is used instead.
+	//////////////////////////////////////////////////////////////////////////
+	RTM_DISABLE_SECURITY_COOKIE_CHECK inline qvvf RTM_SIMD_CALL qvv_inverse(qvvf_arg0 input, vector4f_arg3 fallback_scale, float threshold = 1.0E-8F) RTM_NO_EXCEPT
+	{
+		const quatf inv_rotation = quat_conjugate(input.rotation);
+		const mask4f is_scale_zero = vector_less_equal(vector_abs(input.scale), vector_set(threshold));
+		const vector4f scale = vector_select(is_scale_zero, fallback_scale, input.scale);
+		const vector4f inv_scale = vector_reciprocal(scale);
 		const vector4f inv_translation = vector_neg(quat_mul_vector3(vector_mul(input.translation, inv_scale), inv_rotation));
 		return qvv_set(inv_rotation, inv_translation, inv_scale);
 	}

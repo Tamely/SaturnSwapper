@@ -402,7 +402,7 @@ namespace sjson
 		bool read_opening_bracket()	{ return read_symbol('[', ParserError::OpeningBracketExpected); }
 		bool read_closing_bracket()	{ return read_symbol(']', ParserError::ClosingBracketExpected); }
 
-		bool read_symbol(char expected, int32_t reason_if_other_found)
+		bool read_symbol(char expected, uint32_t reason_if_other_found)
 		{
 			if (!skip_comments_and_whitespace_fail_if_eof())
 				return false;
@@ -1005,7 +1005,7 @@ namespace sjson
 			return true;
 		}
 
-		void set_error(int32_t error)
+		void set_error(uint32_t error)
 		{
 			m_state.error.error = error;
 			m_state.error.line = m_state.line;

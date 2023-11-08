@@ -25,6 +25,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "acl/version.h"
+#include "acl/core/compressed_database.h"
 #include "acl/core/compressed_tracks.h"
 #include "acl/core/compressed_tracks_version.h"
 #include "acl/core/error.h"
@@ -39,9 +40,9 @@
 #include "acl/decompression/database/database.h"
 #include "acl/decompression/impl/decompression_context_selector.h"
 #include "acl/decompression/impl/decompression_version_selector.h"
-#include "acl/decompression/impl/scalar_track_decompression.h"
-#include "acl/decompression/impl/transform_track_decompression.h"
-#include "acl/decompression/impl/universal_track_decompression.h"
+#include "acl/decompression/impl/decompression.scalar.h"
+#include "acl/decompression/impl/decompression.transform.h"
+#include "acl/decompression/impl/decompression.universal.h"
 #include "acl/math/vector4_packing.h"
 
 #include <rtm/types.h>
@@ -89,6 +90,10 @@ namespace acl
 		decompression_context();
 
 		//////////////////////////////////////////////////////////////////////////
+		// Destructs a context instance.
+		~decompression_context();
+
+		//////////////////////////////////////////////////////////////////////////
 		// Returns the compressed tracks bound to this context instance.
 		const compressed_tracks* get_compressed_tracks() const { return m_context.get_compressed_tracks(); }
 
@@ -107,8 +112,34 @@ namespace acl
 		bool is_initialized() const { return m_context.is_initialized(); }
 
 		//////////////////////////////////////////////////////////////////////////
+		// Resets the context instance to its default constructed state. If the context was
+		// currently bound to a compressed tracks instance (and database), it will no longer be bound to anything.
+		void reset();
+
+		//////////////////////////////////////////////////////////////////////////
+		// If the bound compressed tracks instance has relocated elsewhere in memory, this function
+		// rebinds the context to it, avoiding the need to re-initialize it entirely.
+		// Returns whether rebinding was successful or not.
+		bool relocated(const compressed_tracks& tracks);
+
+		//////////////////////////////////////////////////////////////////////////
+		// If the bound compressed tracks and database instances have relocated elsewhere in memory, this function
+		// rebinds the context to them, avoiding the need to re-initialize it entirely.
+		// Returns whether rebinding was successful or not.
+		bool relocated(const compressed_tracks& tracks, const database_context<db_settings_type>& database);
+
+		//////////////////////////////////////////////////////////////////////////
 		// Returns true if this context instance is bound to the specified compressed tracks instance, false otherwise.
+		ACL_DEPRECATED("Renamed to is_bound_to, to be removed in v3.0")
 		bool is_dirty(const compressed_tracks& tracks) const;
+
+		//////////////////////////////////////////////////////////////////////////
+		// Returns true if this context instance is bound to the specified compressed tracks instance, false otherwise.
+		bool is_bound_to(const compressed_tracks& tracks) const;
+
+		//////////////////////////////////////////////////////////////////////////
+		// Returns true if this context instance is bound to the specified database instance, false otherwise.
+		bool is_bound_to(const compressed_database& database) const;
 
 		//////////////////////////////////////////////////////////////////////////
 		// Sets the looping policy.

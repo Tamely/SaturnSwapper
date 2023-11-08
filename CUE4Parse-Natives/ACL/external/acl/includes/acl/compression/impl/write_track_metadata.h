@@ -27,6 +27,7 @@
 #include "acl/version.h"
 #include "acl/core/memory_utils.h"
 #include "acl/core/track_desc.h"
+#include "acl/core/impl/bit_cast.impl.h"
 #include "acl/core/impl/compiler_utils.h"
 #include "acl/compression/track_array.h"
 #include "acl/compression/impl/clip_context.h"
@@ -46,7 +47,7 @@ namespace acl
 		{
 			ACL_ASSERT(out_track_list_name == nullptr || out_track_list_name[0] == 0, "Buffer overrun detected");
 
-			uint8_t* output_buffer = reinterpret_cast<uint8_t*>(out_track_list_name);
+			const uint8_t* output_buffer = bit_cast<uint8_t*>(out_track_list_name);
 			const uint8_t* output_buffer_start = output_buffer;
 
 			const string& name = tracks.get_name();
@@ -64,7 +65,7 @@ namespace acl
 		{
 			ACL_ASSERT(out_track_names == nullptr || out_track_names[0] == 0 || num_output_tracks == 0, "Buffer overrun detected");
 
-			uint8_t* output_buffer = reinterpret_cast<uint8_t*>(out_track_names);
+			uint8_t* output_buffer = bit_cast<uint8_t*>(out_track_names);
 			const uint8_t* output_buffer_start = output_buffer;
 
 			// Write offsets first
@@ -120,7 +121,7 @@ namespace acl
 				return k_invalid_track_index;
 			};
 
-			uint8_t* output_buffer = reinterpret_cast<uint8_t*>(out_parent_track_indices);
+			const uint8_t* output_buffer = bit_cast<uint8_t*>(out_parent_track_indices);
 			const uint8_t* output_buffer_start = output_buffer;
 
 			for (uint32_t output_index = 0; output_index < num_output_tracks; ++output_index)
@@ -161,7 +162,7 @@ namespace acl
 					{
 						// We don't write out the output index since the track has already been properly sorted or stripped
 
-						float* data = reinterpret_cast<float*>(output_buffer);
+						float* data = bit_cast<float*>(output_buffer);
 						data[0] = desc.precision;
 					}
 
@@ -176,45 +177,37 @@ namespace acl
 						// We don't write out the output index since the track has already been properly sorted or stripped
 						// We don't write out the parent index since it has already been included separately
 
-						float* data = reinterpret_cast<float*>(output_buffer);
+						float* data = bit_cast<float*>(output_buffer);
 						data[0] = desc.precision;
 						data[1] = desc.shell_distance;
-						data[2] = desc.constant_rotation_threshold_angle;
-						data[3] = desc.constant_translation_threshold;
-						data[4] = desc.constant_scale_threshold;
 
-						rtm::quat_store(desc.default_value.rotation, data + 5);
-						rtm::vector_store3(desc.default_value.translation, data + 9);
-						rtm::vector_store3(desc.default_value.scale, data + 12);
+						rtm::quat_store(desc.default_value.rotation, data + 2);
+						rtm::vector_store3(desc.default_value.translation, data + 6);
+						rtm::vector_store3(desc.default_value.scale, data + 9);
 					}
 
-					output_buffer += sizeof(float) * 15;
+					output_buffer += sizeof(float) * 12;
 				}
 			}
 
 			return safe_static_cast<uint32_t>(output_buffer - output_buffer_start);
 		}
 
-		inline uint32_t write_contributing_error(const clip_context& clip, frame_contributing_error* out_contributing_error)
+		inline uint32_t write_contributing_error(const clip_context& clip, uint8_t* out_contributing_error)
 		{
-			ACL_ASSERT(out_contributing_error == nullptr || clip.num_samples == 0 || out_contributing_error[0].index == 0, "Buffer overrun detected");
+			ACL_ASSERT(out_contributing_error == nullptr || clip.num_samples == 0 || out_contributing_error[0] == 0, "Buffer overrun detected");
 
-			const uint8_t* output_buffer = reinterpret_cast<const uint8_t*>(out_contributing_error);
+			const uint8_t* output_buffer = out_contributing_error;
 			const uint8_t* output_buffer_start = output_buffer;
-			frame_contributing_error* contributing_error = out_contributing_error;
+			keyframe_stripping_metadata_t* contributing_error = bit_cast<keyframe_stripping_metadata_t*>(out_contributing_error);
 
-			// Write the contributing error for each frame by iterating over our segments to retrieve it
-			// Values are thus sorted per segment
-			for (const segment_context& segment : clip.segment_iterator())
+			for (uint32_t frame_index = 0; frame_index < clip.num_samples; ++frame_index)
 			{
-				for (uint32_t frame_index = 0; frame_index < segment.num_samples; ++frame_index)
-				{
-					if (out_contributing_error != nullptr)
-						*contributing_error = segment.contributing_error[frame_index];
+				if (out_contributing_error != nullptr)
+					*contributing_error = clip.contributing_error[frame_index];
 
-					contributing_error++;
-					output_buffer += sizeof(frame_contributing_error);
-				}
+				contributing_error++;
+				output_buffer += sizeof(keyframe_stripping_metadata_t);
 			}
 
 			return safe_static_cast<uint32_t>(output_buffer - output_buffer_start);

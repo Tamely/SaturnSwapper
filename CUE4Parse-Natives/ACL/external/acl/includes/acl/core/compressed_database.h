@@ -130,9 +130,14 @@ namespace acl
 		// Hide everything
 		compressed_database() = delete;
 		compressed_database(const compressed_database&) = delete;
-		compressed_database(compressed_database&&) = delete;
 		compressed_database* operator=(const compressed_database&) = delete;
-		compressed_database* operator=(compressed_database&&) = delete;
+
+		// Do not use 'delete' or an equivalent allocator function as it won't know
+		// the correct allocated size. Deallocating an instance must match how it has
+		// been allocated.
+		// See iallocator::deallocate
+		// e.g: allocator->deallocate(database, database->get_size());
+		~compressed_database() = delete;
 
 		////////////////////////////////////////////////////////////////////////////////
 		// Raw buffer header that isn't included in the hash.

@@ -44,7 +44,7 @@ namespace sjson
     // Parser
     struct ParserError;
     struct ParserState;
-    struct Parser;
+    class Parser;
 
     // Writer
     class StreamWriter;

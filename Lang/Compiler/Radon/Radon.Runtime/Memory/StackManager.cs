@@ -32,6 +32,8 @@ public sealed class StackManager
     {
         if (!PInvoke.VirtualFree((nint)_stack, 0, FreeType.MEM_RELEASE))
         {
+            var lastError = PInvoke.GetLastError();
+            Logger.Log($"Failed to free heap: {lastError}", LogLevel.Error);
             throw new FailedToFreeMemoryException();
         }
     }

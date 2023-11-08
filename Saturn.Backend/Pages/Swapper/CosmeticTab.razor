@@ -267,6 +267,8 @@
         Constants.SelectedItem.Description = $"Swapping from {Constants.SelectedOption.DisplayName} to {Constants.SelectedItem.DisplayName}";
         StateHasChanged();
         
+        await Task.Delay(500);
+        
         Constants.CurrentSwaps.Add(new()
         {
             OptionModel = Constants.SelectedOption,
@@ -285,8 +287,11 @@
             {
                 await Task.Delay(500);
             }
-            
-            await FileLogic.ConvertLobby(Constants.SelectedOption, Constants.SelectedItem);
+
+            if (!Constants.SelectedOption.ID.EndsWith("EMOTE"))
+            {
+                await FileLogic.ConvertLobby(Constants.SelectedOption, Constants.SelectedItem);
+            }
         }
 
         while (FileLogic.isLocked)

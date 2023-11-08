@@ -34,6 +34,8 @@
 #include "rtm/impl/memory_utils.h"
 #include "rtm/impl/quat_common.h"
 
+#include <limits>
+
 RTM_IMPL_FILE_PRAGMA_PUSH
 
 namespace rtm
@@ -428,7 +430,7 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatf RTM_SIMD_CALL quat_conjugate(quatf_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		constexpr __m128 signs = { -0.0F, -0.0F, -0.0F, 0.0F };
+		constexpr __m128 signs = RTM_VECTOR4F_MAKE(-0.0F, -0.0F, -0.0F, 0.0F);
 		return _mm_xor_ps(input, signs);
 #else
 		// On ARMv7 the scalar version performs best or among the best while on ARM64 it beats the others.
@@ -445,10 +447,10 @@ namespace rtm
 	{
 #if defined(RTM_SSE4_INTRINSICS) && 0
 		// TODO: Profile this, the accuracy is the same as with SSE2, should be binary exact
-		constexpr __m128 signs_x = { 1.0F,  1.0F,  1.0F, -1.0F };
-		constexpr __m128 signs_y = { 1.0F, -1.0F,  1.0F,  1.0F };
-		constexpr __m128 signs_z = { 1.0F,  1.0F, -1.0F,  1.0F };
-		constexpr __m128 signs_w = { 1.0F, -1.0F, -1.0F, -1.0F };
+		constexpr __m128 signs_x = RTM_VECTOR4F_MAKE(1.0F,  1.0F,  1.0F, -1.0F);
+		constexpr __m128 signs_y = RTM_VECTOR4F_MAKE(1.0F, -1.0F,  1.0F,  1.0F);
+		constexpr __m128 signs_z = RTM_VECTOR4F_MAKE(1.0F,  1.0F, -1.0F,  1.0F);
+		constexpr __m128 signs_w = RTM_VECTOR4F_MAKE(1.0F, -1.0F, -1.0F, -1.0F);
 		// x = dot(rhs.wxyz, lhs.xwzy * signs_x)
 		// y = dot(rhs.wxyz, lhs.yzwx * signs_y)
 		// z = dot(rhs.wxyz, lhs.zyxw * signs_z)
@@ -466,9 +468,9 @@ namespace rtm
 		__m128 zzww = _mm_shuffle_ps(z, w, _MM_SHUFFLE(0, 0, 0, 0));
 		return _mm_shuffle_ps(xxyy, zzww, _MM_SHUFFLE(2, 0, 2, 0));
 #elif defined(RTM_SSE2_INTRINSICS)
-		constexpr __m128 control_wzyx = {  0.0F, -0.0F,  0.0F, -0.0F };
-		constexpr __m128 control_zwxy = {  0.0F,  0.0F, -0.0F, -0.0F };
-		constexpr __m128 control_yxwz = { -0.0F,  0.0F,  0.0F, -0.0F };
+		constexpr __m128 control_wzyx = RTM_VECTOR4F_MAKE(0.0F, -0.0F,  0.0F, -0.0F);
+		constexpr __m128 control_zwxy = RTM_VECTOR4F_MAKE(0.0F,  0.0F, -0.0F, -0.0F);
+		constexpr __m128 control_yxwz = RTM_VECTOR4F_MAKE(-0.0F,  0.0F,  0.0F, -0.0F);
 
 		const __m128 r_xxxx = _mm_shuffle_ps(rhs, rhs, _MM_SHUFFLE(0, 0, 0, 0));
 		const __m128 r_yyyy = _mm_shuffle_ps(rhs, rhs, _MM_SHUFFLE(1, 1, 1, 1));
@@ -680,7 +682,7 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator float() const RTM_NO_EXCEPT
 			{
 #if defined(RTM_SSE4_INTRINSICS) && 0
-				// SSE4 dot product instruction isn't precise enough
+				// SSE4 dot product instruction appears slower on Zen2, is it the case elsewhere as well?
 				return _mm_cvtss_f32(_mm_dp_ps(lhs, rhs, 0xFF));
 #elif defined(RTM_SSE2_INTRINSICS)
 				__m128 x2_y2_z2_w2 = _mm_mul_ps(lhs, rhs);
@@ -698,7 +700,7 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator scalarf() const RTM_NO_EXCEPT
 			{
 #if defined(RTM_SSE4_INTRINSICS) && 0
-				// SSE4 dot product instruction isn't precise enough
+				// SSE4 dot product instruction appears slower on Zen2, is it the case elsewhere as well?
 				return scalarf{ _mm_cvtss_f32(_mm_dp_ps(lhs, rhs, 0xFF)) };
 #else
 				__m128 x2_y2_z2_w2 = _mm_mul_ps(lhs, rhs);
@@ -904,8 +906,7 @@ namespace rtm
 		// Calculate the vector4 dot product: dot(start, end)
 		__m128 dot;
 #if defined(RTM_SSE4_INTRINSICS)
-		// The dpps instruction isn't as accurate but we don't care here, we only need the sign of the
-		// dot product. If both rotations are on opposite ends of the hypersphere, the result will be
+		// If both rotations are on opposite ends of the hypersphere, the result will be
 		// very negative. If we are on the edge, the rotations are nearly opposite but not quite which
 		// means that the linear interpolation here will have terrible accuracy to begin with. It is designed
 		// for interpolating rotations that are reasonably close together. The bias check is mainly necessary
@@ -1039,8 +1040,7 @@ namespace rtm
 		// Calculate the vector4 dot product: dot(start, end)
 		__m128 dot;
 #if defined(RTM_SSE4_INTRINSICS)
-		// The dpps instruction isn't as accurate but we don't care here, we only need the sign of the
-		// dot product. If both rotations are on opposite ends of the hypersphere, the result will be
+		// If both rotations are on opposite ends of the hypersphere, the result will be
 		// very negative. If we are on the edge, the rotations are nearly opposite but not quite which
 		// means that the linear interpolation here will have terrible accuracy to begin with. It is designed
 		// for interpolating rotations that are reasonably close together. The bias check is mainly necessary
@@ -1188,7 +1188,7 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE quatf RTM_SIMD_CALL quat_neg(quatf_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		constexpr __m128 signs = { -0.0F, -0.0F, -0.0F, -0.0F };
+		constexpr __m128 signs = RTM_VECTOR4F_MAKE(-0.0F, -0.0F, -0.0F, -0.0F);
 		return _mm_xor_ps(input, signs);
 #elif defined(RTM_NEON_INTRINSICS)
 		return vnegq_f32(input);

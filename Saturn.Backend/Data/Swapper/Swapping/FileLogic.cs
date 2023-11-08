@@ -26,32 +26,6 @@ namespace Saturn.Backend.Data.Swapper.Swapping;
 
 public class FileLogic
 {
-    private static string[] Scripts = new string[]
-    {
-        "CustomCharacterBodyPartData",
-        "FaceCustomCharacterHatData",
-        "CustomCharacterHatData",
-        "CustomCharacterHeadData"
-    };
-    
-    public static byte[] RemoveClassNames(byte[] data)
-    {
-        List<byte> asset = new(data);
-        foreach (var script in Scripts)
-        {
-            byte[] search = Encoding.UTF8.GetBytes(script);
-
-            int offset = Utilities.IndexOfSequence(asset.ToArray(), search);
-            if (offset > 0)
-            {
-                asset.RemoveRange(offset, search.Length);
-                asset.InsertRange(offset, Enumerable.Repeat((byte)0x00, search.Length));
-            }
-        }
-
-        return asset.ToArray();
-    }
-    
     private static List<byte[]> ChunkData(byte[] data)
     {
         List<byte[]> result = new();
@@ -239,6 +213,7 @@ public class FileLogic
         }
 
         isLocked = false;
+
         await Convert(swapData);
     }
     
@@ -273,7 +248,7 @@ public class FileLogic
         else
             item.Name = Constants.SelectedOption.DisplayName + " to " + Constants.SelectedItem.DisplayName + (isLobbySwap ? " - HID" : string.Empty);
         
-        item.Swaps = new Swap[swapData.Sum(x => ChunkData(x.Data).Count * 6 + 1)];
+        item.Swaps = new Swap[swapData.Sum(x => ChunkData(x.Data).Count * 2 + 1)];
         int swapIndex = 0;
             
         foreach (var swap in swapData)
@@ -284,8 +259,7 @@ public class FileLogic
 
             long totalDataCount = chunkedData.Sum(x => compression.Compress(x).Length);
             var (file, offset) = OffsetsInFile.Allocate(swap.SaturnData.Path, totalDataCount);
-            Logger.Log("Allocated space at offset: " + offset + " in file: " + file);
-            
+
             byte partitionIndex = 0;
             if (file.Contains("Client_s"))
             {
@@ -305,51 +279,29 @@ public class FileLogic
                     File = file,
                     Data = compressedChunk
                 };
-                
+
+                swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Offset = offset + written + (long)(partitionIndex * swap.SaturnData.Reader.TocResource.Header.PartitionSize);
+                swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].CompressedSize = (uint)compressedChunk.Length;
+                swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].UncompressedSize = (uint)chunk.Length;
+                swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].CompressionMethodIndex = 1;
+
                 item.Swaps[swapIndex++] = new Swap()
                 {
                     File = swap.SaturnData.Path,
                     Offset = swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Position,
-                    Data = BitConverter.GetBytes((uint)offset + (uint)written)
-                };
-                
-                item.Swaps[swapIndex++] = new Swap()
-                {
-                    File = swap.SaturnData.Path,
-                    Offset = swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Position + 4,
-                    Data = new byte[] { partitionIndex }
-                };
-                
-                item.Swaps[swapIndex++] = new Swap()
-                {
-                    File = swap.SaturnData.Path,
-                    Offset = swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Position + 5,
-                    Data = BitConverter.GetBytes((ushort)compressedChunk.Length)
-                };
-                
-                item.Swaps[swapIndex++] = new Swap()
-                {
-                    File = swap.SaturnData.Path,
-                    Offset = swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Position + 8,
-                    Data = BitConverter.GetBytes((ushort)chunk.Length)
-                };
-                
-                item.Swaps[swapIndex++] = new Swap()
-                {
-                    File = swap.SaturnData.Path,
-                    Offset = swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Position + 11,
-                    Data = new byte[] { 0x01 }
+                    Data = swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Serialize()
                 };
 
-                written += chunkedData.Count;
+                written += compressedChunk.Length + 10;
             }
+
             
-            
+            swap.SaturnData.Reader.TocResource.ChunkOffsetLengths[swap.SaturnData.TocIndex].SetLength((ulong)swap.Data.Length);
             item.Swaps[swapIndex++] = new Swap()
             {
                 File = swap.SaturnData.Path,
-                Offset = swap.SaturnData.Reader.TocResource.ChunkOffsetLengths[swap.SaturnData.TocIndex].Position + 6,
-                Data = BitConverter.GetBytes(swap.Data.Length).Reverse().ToArray()
+                Offset = swap.SaturnData.Reader.TocResource.ChunkOffsetLengths[swap.SaturnData.TocIndex].Position,
+                Data = swap.SaturnData.Reader.TocResource.ChunkOffsetLengths[swap.SaturnData.TocIndex].Serialize()
             };
         }
         

@@ -32,9 +32,9 @@
 #include "acl/core/range_reduction_types.h"
 #include "acl/core/track_formats.h"
 #include "acl/core/track_types.h"
+#include "acl/core/impl/atomic.impl.h"
 #include "acl/core/impl/compiler_utils.h"
 
-#include <atomic>
 #include <cstdint>
 
 ACL_IMPL_FILE_PRAGMA_PUSH
@@ -100,14 +100,15 @@ namespace acl
 			// Bits [4, 8): rotation format (4 bits)
 			// Bit 8: has database?
 			// Bit 9: has trivial default values? Non-trivial default values indicate that extra data beyond the clip will be needed at decompression (e.g. bind pose)
-			// Bits [10, 30): unused (20 bits)
+			// Bit 10: has stripped keyframes?
+			// Bits [11, 30): unused (19 bits)
 			// Bit 30: is wrap optimized? See sample_looping_policy for details.
 			// Bit 31: has metadata?
 
 			// Transform only
 			bool get_has_scale() const { ACL_ASSERT(track_type == track_type8::qvvf, "Transform tracks only"); return (misc_packed & 1) != 0; }
 			void set_has_scale(bool has_scale) { ACL_ASSERT(track_type == track_type8::qvvf, "Transform tracks only"); misc_packed = (misc_packed & ~1) | static_cast<uint32_t>(has_scale); }
-			int32_t get_default_scale() const { ACL_ASSERT(track_type == track_type8::qvvf, "Transform tracks only"); return (misc_packed >> 1) & 1; }
+			int32_t get_default_scale() const { ACL_ASSERT(track_type == track_type8::qvvf, "Transform tracks only"); return static_cast<int32_t>((misc_packed >> 1) & 1); }
 			void set_default_scale(uint32_t scale) { ACL_ASSERT(track_type == track_type8::qvvf, "Transform tracks only"); ACL_ASSERT(scale == 0 || scale == 1, "Invalid default scale"); misc_packed = (misc_packed & ~(1 << 1)) | (scale << 1); }
 			vector_format8 get_scale_format() const { ACL_ASSERT(track_type == track_type8::qvvf, "Transform tracks only"); return static_cast<vector_format8>((misc_packed >> 2) & 1); }
 			void set_scale_format(vector_format8 format) { ACL_ASSERT(track_type == track_type8::qvvf, "Transform tracks only"); misc_packed = (misc_packed & ~(1 << 2)) | (static_cast<uint32_t>(format) << 2); }
@@ -119,6 +120,8 @@ namespace acl
 			void set_has_database(bool has_database) { ACL_ASSERT(track_type == track_type8::qvvf, "Transform tracks only"); misc_packed = (misc_packed & ~(1 << 8)) | (static_cast<uint32_t>(has_database) << 8); }
 			bool get_has_trivial_default_values() const { ACL_ASSERT(track_type == track_type8::qvvf, "Transform tracks only"); return (misc_packed & (1 << 9)) != 0; }
 			void set_has_trivial_default_values(bool has_trivial_default_values) { ACL_ASSERT(track_type == track_type8::qvvf, "Transform tracks only"); misc_packed = (misc_packed & ~(1 << 9)) | (static_cast<uint32_t>(has_trivial_default_values) << 9); }
+			bool get_has_stripped_keyframes() const { ACL_ASSERT(track_type == track_type8::qvvf, "Transform tracks only"); return (misc_packed & (1 << 10)) != 0; }
+			void set_has_stripped_keyframes(bool has_stripped_keyframes) { ACL_ASSERT(track_type == track_type8::qvvf, "Transform tracks only"); misc_packed = (misc_packed & ~(1 << 10)) | (static_cast<uint32_t>(has_stripped_keyframes) << 10); }
 
 			// Common
 			bool get_is_wrap_optimized() const { return (misc_packed & (1 << 30)) != 0; }
@@ -185,46 +188,12 @@ namespace acl
 		////////////////////////////////////////////////////////////////////////////////
 		// A compressed clip segment header. Each segment is built from a uniform number
 		// of samples per track. A clip is split into one or more segments.
-		// Only valid when a clip is split into a database.
+		// Only valid when a clip is split into a database or when keyframe stripping is enabled.
 		////////////////////////////////////////////////////////////////////////////////
-		struct segment_tier0_header
+		struct stripped_segment_header_t : segment_header
 		{
-			// Same layout as segment_header with new data at the end to allow safe usage under the segment_header type
-
-			// Number of bits used by a fully animated pose (excludes default/constant tracks).
-			uint32_t						animated_pose_bit_size;
-
-			// Number of bits used by a fully animated pose per sub-track type (excludes default/constant tracks).
-			uint32_t						animated_rotation_bit_size;
-			uint32_t						animated_translation_bit_size;
-
-			// Offset to the animated segment data, relative to the start of the transform_tracks_header
-			// Segment data is partitioned as follows:
-			//    - format per variable track (no alignment)
-			//    - range data per variable track (only when more than one segment) (2 byte alignment)
-			//    - track data sorted per sample then per track (4 byte alignment)
-			ptr_offset32<uint8_t>			segment_data;
-
-			// Bit set of which sample indices are stored in this clip (tier 0).
+			// Bit set of which sample indices are stored in this clip (database tier 0).
 			uint32_t						sample_indices;
-		};
-
-		//////////////////////////////////////////////////////////////////////////
-		// A packed structure with metadata for animated groups.
-		//////////////////////////////////////////////////////////////////////////
-		struct animated_group_metadata
-		{
-			// Bits [0, 14): the group size
-			// Bits [14, 16): the group type
-			uint16_t						metadata;
-
-			bool							is_valid() const { return metadata != 0xFFFF; }
-
-			animation_track_type8			get_type() const { return static_cast<animation_track_type8>(metadata >> 6); }
-			void							set_type(animation_track_type8 type) { metadata = (metadata & ~(3 << 6)) | static_cast<uint16_t>(type) << 6; }
-
-			uint32_t						get_size() const { return static_cast<uint32_t>(metadata) & ((1 << 14) - 1); }
-			void							set_size(uint32_t size) { ACL_ASSERT(size < (1 << 14), "Group size too large"); metadata = (metadata & ~((1 << 14) - 1)) | static_cast<uint16_t>(size); }
 		};
 
 		struct database_runtime_clip_header;	// Forward declare
@@ -257,6 +226,8 @@ namespace acl
 		// Header for transform 'compressed_tracks'
 		struct transform_tracks_header
 		{
+			transform_tracks_header() = delete;	// Not needed
+
 			// The number of segments contained.
 			uint32_t						num_segments;
 
@@ -274,11 +245,11 @@ namespace acl
 			// Offset to the database metadata header.
 			ptr_offset32<tracks_database_header>	database_header_offset;
 
-			// Offset to the segment headers data (tier 0 if split into database).
+			// Offset to the segment headers data.
 			union
 			{
-				ptr_offset32<segment_header>		segment_headers_offset;
-				ptr_offset32<segment_tier0_header>	segment_tier0_headers_offset;
+				ptr_offset32<segment_header>			segment_headers_offset;
+				ptr_offset32<stripped_segment_header_t>	stripped_segment_headers_offset;
 			};
 
 			// Offset to the packed sub-track types.
@@ -306,8 +277,8 @@ namespace acl
 			segment_header*					get_segment_headers() { return segment_headers_offset.add_to(this); }
 			const segment_header*			get_segment_headers() const { return segment_headers_offset.add_to(this); }
 
-			segment_tier0_header*			get_segment_tier0_headers() { return segment_tier0_headers_offset.add_to(this); }
-			const segment_tier0_header*		get_segment_tier0_headers() const { return segment_tier0_headers_offset.add_to(this); }
+			stripped_segment_header_t*			get_stripped_segment_headers() { return stripped_segment_headers_offset.add_to(this); }
+			const stripped_segment_header_t*	get_stripped_segment_headers() const { return stripped_segment_headers_offset.add_to(this); }
 
 			packed_sub_track_types*			get_sub_track_types() { return sub_track_types_offset.add_to(this); }
 			const packed_sub_track_types*	get_sub_track_types() const { return sub_track_types_offset.add_to(this); }
@@ -356,10 +327,40 @@ namespace acl
 		//////////////////////////////////////////////////////////////////////////
 		// How much error each frame contributes to at most
 		// Frames that cannot be removed have infinite error (e.g. first and last frame of the clip)
+		// Note: old structure used prior to ACL 2.1
 		struct frame_contributing_error
 		{
 			uint32_t index;		// Segment relative frame index
 			float error;		// Contributing error
+		};
+
+		//////////////////////////////////////////////////////////////////////////
+		// Keyframe stripping related metadata information for each keyframe
+		struct keyframe_stripping_metadata_t
+		{
+			// Clip relative keyframe index, from 0 to num clip keyframes
+			uint32_t keyframe_index = 0;
+
+			// Segment index this keyframe belongs to, from 0 to num clip segments
+			uint32_t segment_index = 0;
+
+			// In which order to strip keyframes, from 0 to num clip keyframes, ~0 if we cannot strip this keyframe
+			uint32_t stripping_index = 0;
+
+			// How much error remains if this keyframe is removed, inf if we cannot strip this keyframe
+			float stripping_error = 0.0F;
+
+			// Whether or not the error at every track is below its precision threshold if this keyframe is removed
+			uint8_t is_keyframe_trivial = false;
+
+			keyframe_stripping_metadata_t() = default;
+			keyframe_stripping_metadata_t(uint32_t keyframe_index_, uint32_t segment_index_, uint32_t stripping_index_, float stripping_error_, bool is_keyframe_trivial_)
+				: keyframe_index(keyframe_index_)
+				, segment_index(segment_index_)
+				, stripping_index(stripping_index_)
+				, stripping_error(stripping_error_)
+				, is_keyframe_trivial(is_keyframe_trivial_)
+			{}
 		};
 
 		// Header for optional track metadata, must be at least 15 bytes
@@ -369,7 +370,12 @@ namespace acl
 			ptr_offset32<uint32_t>					track_name_offsets;
 			ptr_offset32<uint32_t>					parent_track_indices;
 			ptr_offset32<uint8_t>					track_descriptions;
-			ptr_offset32<frame_contributing_error>	contributing_error;
+
+			// In ACL 2.0, the contributing error is of type frame_contributing_error and is sorted by segment
+			// Each keyframe of segment 0, followed by segment 1, etc and each segment is sorted by the stripping error
+			// In ACL 2.1, the contributing error is of type keyframe_stripping_metadata_t and is sorted in
+			// stripping order
+			ptr_offset32<uint8_t>					contributing_error;
 
 			//////////////////////////////////////////////////////////////////////////
 			// Utility functions that return pointers from their respective offsets.
@@ -382,8 +388,8 @@ namespace acl
 			const uint32_t*							get_parent_track_indices(const compressed_tracks& tracks) const { return parent_track_indices.safe_add_to(&tracks); }
 			uint8_t*								get_track_descriptions(compressed_tracks& tracks) { return track_descriptions.safe_add_to(&tracks); }
 			const uint8_t*							get_track_descriptions(const compressed_tracks& tracks) const { return track_descriptions.safe_add_to(&tracks); }
-			frame_contributing_error*				get_contributing_error(compressed_tracks& tracks) { return contributing_error.safe_add_to(&tracks); }
-			const frame_contributing_error*			get_contributing_error(const compressed_tracks& tracks) const { return contributing_error.safe_add_to(&tracks); }
+			uint8_t*								get_contributing_error(compressed_tracks& tracks) { return contributing_error.safe_add_to(&tracks); }
+			const uint8_t*							get_contributing_error(const compressed_tracks& tracks) const { return contributing_error.safe_add_to(&tracks); }
 		};
 
 		static_assert(sizeof(optional_metadata_header) >= 15, "Optional metadata must be at least 15 bytes");
@@ -397,6 +403,10 @@ namespace acl
 		// Header for runtime database segments
 		struct database_runtime_segment_header
 		{
+			// Can't copy or move due to atomic
+			database_runtime_segment_header(const database_runtime_segment_header&) = delete;
+			database_runtime_segment_header& operator=(const database_runtime_segment_header&) = delete;
+
 			// Each segment can be split into at most 3 tiers with tier 0 being in the compressed clip itself.
 			// As such, each segment can be split into at most 2 tiers within the database, each with it's own
 			// chunk. Each segment contains at most 32 samples. Tiers are sorted in order from most important
@@ -572,7 +582,7 @@ namespace acl
 			// Bits [1, 16): unused (15 bits)
 
 			bool get_is_bulk_data_inline() const { return (misc_packed & (1 << 0)) != 0; }
-			void set_is_bulk_data_inline(bool is_inline) { misc_packed = (misc_packed & ~(1 << 0)) | (static_cast<uint16_t>(is_inline) << 0); }
+			void set_is_bulk_data_inline(bool is_inline) { misc_packed = static_cast<uint16_t>((misc_packed & ~(static_cast<uint16_t>(1) << 0)) | (static_cast<uint16_t>(is_inline) << 0)); }
 
 			//////////////////////////////////////////////////////////////////////////
 			// Utility functions that return pointers from their respective offsets.

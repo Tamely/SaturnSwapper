@@ -27,6 +27,7 @@
 #include "acl/core/compressed_tracks.h"
 #include "acl/core/floating_point_exceptions.h"
 #include "acl/core/iallocator.h"
+#include "acl/core/impl/bit_cast.impl.h"
 #include "acl/compression/compress.h"
 #include "acl/compression/convert.h"
 #include "acl/compression/track_array.h"
@@ -124,6 +125,9 @@ void validate_accuracy(
 	const bool initialized = context.initialize(compressed_tracks_);
 	ACL_ASSERT(initialized, "Failed to initialize decompression context"); (void)initialized;
 
+	const bool is_bound_to_tracks = context.is_bound_to(compressed_tracks_);
+	ACL_ASSERT(is_bound_to_tracks, "Failed to bind to correct compressed tracks instance"); (void)is_bound_to_tracks;
+
 	const track_error error = calculate_compression_error(allocator, raw_tracks, context, error_metric, additive_base_tracks);
 	ACL_ASSERT(rtm::scalar_is_finite(error.error), "Returned error is not a finite value"); (void)error;
 	ACL_ASSERT(error.error < regression_error_threshold, "Error too high for bone %u: %f at time %f", error.index, error.error, error.sample_time);
@@ -190,6 +194,11 @@ void validate_accuracy(
 		{
 			for (sample_rounding_policy policy : make_iterator(rounding_policies))
 			{
+				// When we have stripped keyframes or a partially streamed database, the floor/ceil/nearest do not behave the same way with per-track
+				// The values reconstructed may not match, no need to validate
+				if (compressed_tracks_.has_stripped_keyframes() && policy != sample_rounding_policy::none)
+					continue;
+
 				context.seek(sample_time, policy);
 				context.decompress_tracks(track_writer);
 
@@ -262,9 +271,8 @@ void RTM_SIMD_CALL validate_scalar_tracks(const track_array& raw_tracks, const a
 		if (output_index == k_invalid_track_index)
 			continue;	// Track is being stripped, ignore it
 
-		rtm::vector4f error = zero;
+		rtm::vector4f error;
 
-		//switch (track_type)
 		switch (reference.type)
 		{
 		case track_type8::float1f:
@@ -304,8 +312,10 @@ void RTM_SIMD_CALL validate_scalar_tracks(const track_array& raw_tracks, const a
 			error = rtm::vector_abs(rtm::vector_sub(raw_value, lossy_value));
 			break;
 		}
+		case track_type8::qvvf:
 		default:
 			ACL_ASSERT(false, "Unsupported track type");
+			error = zero;
 			break;
 		}
 
@@ -347,7 +357,12 @@ void validate_accuracy(
 	ACL_ASSERT(num_tracks <= raw_tracks.get_num_tracks(), "Num tracks mismatch");
 
 	decompression_context<debug_scalar_decompression_settings> context;
-	context.initialize(tracks);
+
+	const bool initialized = context.initialize(tracks);
+	ACL_ASSERT(initialized, "Failed to initialize decompression context"); (void)initialized;
+
+	const bool is_bound_to_tracks = context.is_bound_to(tracks);
+	ACL_ASSERT(is_bound_to_tracks, "Failed to bind to correct compressed tracks instance"); (void)is_bound_to_tracks;
 
 	debug_track_writer raw_tracks_writer(allocator, track_type, num_tracks);
 	debug_track_writer raw_track_writer(allocator, track_type, num_tracks);
@@ -486,6 +501,7 @@ void validate_accuracy(
 				ACL_ASSERT(rtm::vector_all_near_equal(lossy_value_, lossy_value, 0.00001F), "Failed to sample track %u at time %f", track_index, sample_time);
 				break;
 			}
+			case track_type8::qvvf:
 			default:
 				ACL_ASSERT(false, "Unsupported track type");
 				break;
@@ -542,9 +558,6 @@ void validate_metadata(const track_array& raw_tracks, const compressed_tracks& t
 			ACL_ASSERT(parent_track_output_index == compressed_desc.parent_index, "Unexpected parent track index");
 			ACL_ASSERT(raw_desc.precision == compressed_desc.precision, "Unexpected precision");
 			ACL_ASSERT(raw_desc.shell_distance == compressed_desc.shell_distance, "Unexpected shell_distance");
-			ACL_ASSERT(raw_desc.constant_rotation_threshold_angle == compressed_desc.constant_rotation_threshold_angle, "Unexpected constant_rotation_threshold_angle");
-			ACL_ASSERT(raw_desc.constant_translation_threshold == compressed_desc.constant_translation_threshold, "Unexpected constant_translation_threshold");
-			ACL_ASSERT(raw_desc.constant_scale_threshold == compressed_desc.constant_scale_threshold, "Unexpected constant_scale_threshold");
 
 			ACL_ASSERT(rtm::quat_near_equal(raw_desc.default_value.rotation, compressed_desc.default_value.rotation, 0.0F), "Unexpected default_value.rotation");
 			ACL_ASSERT(rtm::vector_all_near_equal3(raw_desc.default_value.translation, compressed_desc.default_value.translation, 0.0F), "Unexpected default_value.translation");
@@ -621,9 +634,6 @@ static void compare_raw_with_compressed(iallocator& allocator, const track_array
 			ACL_ASSERT(raw_desc.parent_index == desc.parent_index, "Unexpected parent index");
 			ACL_ASSERT(raw_desc.precision == desc.precision, "Unexpected precision");
 			ACL_ASSERT(raw_desc.shell_distance == desc.shell_distance, "Unexpected shell_distance");
-			ACL_ASSERT(raw_desc.constant_rotation_threshold_angle == desc.constant_rotation_threshold_angle, "Unexpected constant_rotation_threshold_angle");
-			ACL_ASSERT(raw_desc.constant_translation_threshold == desc.constant_translation_threshold, "Unexpected constant_translation_threshold");
-			ACL_ASSERT(raw_desc.constant_scale_threshold == desc.constant_scale_threshold, "Unexpected constant_scale_threshold");
 			ACL_ASSERT(rtm::quat_near_equal(raw_desc.default_value.rotation, desc.default_value.rotation, 0.0F), "Unexpected default_value.rotation");
 			ACL_ASSERT(rtm::vector_all_near_equal3(raw_desc.default_value.translation, desc.default_value.translation, 0.0F), "Unexpected default_value.translation");
 			ACL_ASSERT(rtm::vector_all_near_equal3(raw_desc.default_value.scale, desc.default_value.scale, 0.0F), "Unexpected default_value.scale");
@@ -634,7 +644,12 @@ static void compare_raw_with_compressed(iallocator& allocator, const track_array
 	scope_disable_fp_exceptions fp_off;
 
 	acl::decompression_context<acl_impl::raw_sampling_decompression_settings> context;
-	context.initialize(compressed_tracks_);
+
+	const bool initialized = context.initialize(compressed_tracks_);
+	ACL_ASSERT(initialized, "Failed to initialize decompression context"); (void)initialized;
+
+	const bool is_bound_to_tracks = context.is_bound_to(compressed_tracks_);
+	ACL_ASSERT(is_bound_to_tracks, "Failed to bind to correct compressed tracks instance"); (void)is_bound_to_tracks;
 
 	const track_type8 track_type = raw_tracks.get_track_type();
 	acl_impl::debug_track_writer writer(allocator, track_type, num_tracks);
@@ -664,42 +679,42 @@ static void compare_raw_with_compressed(iallocator& allocator, const track_array
 			{
 			case track_type8::float1f:
 			{
-				const float raw_sample = *reinterpret_cast<const float*>(raw_track[sample_index]);
+				const float raw_sample = *acl_impl::bit_cast<const float*>(raw_track[sample_index]);
 				const float compressed_sample = writer.read_float1(track_index);
 				ACL_ASSERT(raw_sample == compressed_sample, "Unexpected sample");
 				break;
 			}
 			case track_type8::float2f:
 			{
-				const rtm::vector4f raw_sample = rtm::vector_load2(reinterpret_cast<const rtm::float2f*>(raw_track[sample_index]));
+				const rtm::vector4f raw_sample = rtm::vector_load2(acl_impl::bit_cast<const rtm::float2f*>(raw_track[sample_index]));
 				const rtm::vector4f compressed_sample = writer.read_float2(track_index);
 				ACL_ASSERT(rtm::vector_all_near_equal2(raw_sample, compressed_sample, 0.0F), "Unexpected sample");
 				break;
 			}
 			case track_type8::float3f:
 			{
-				const rtm::vector4f raw_sample = rtm::vector_load3(reinterpret_cast<const rtm::float3f*>(raw_track[sample_index]));
+				const rtm::vector4f raw_sample = rtm::vector_load3(acl_impl::bit_cast<const rtm::float3f*>(raw_track[sample_index]));
 				const rtm::vector4f compressed_sample = writer.read_float3(track_index);
 				ACL_ASSERT(rtm::vector_all_near_equal3(raw_sample, compressed_sample, 0.0F), "Unexpected sample");
 				break;
 			}
 			case track_type8::float4f:
 			{
-				const rtm::vector4f raw_sample = rtm::vector_load(reinterpret_cast<const rtm::float4f*>(raw_track[sample_index]));
+				const rtm::vector4f raw_sample = rtm::vector_load(acl_impl::bit_cast<const rtm::float4f*>(raw_track[sample_index]));
 				const rtm::vector4f compressed_sample = writer.read_float4(track_index);
 				ACL_ASSERT(rtm::vector_all_near_equal(raw_sample, compressed_sample, 0.0F), "Unexpected sample");
 				break;
 			}
 			case track_type8::vector4f:
 			{
-				const rtm::vector4f raw_sample = *reinterpret_cast<const rtm::vector4f*>(raw_track[sample_index]);
+				const rtm::vector4f raw_sample = *acl_impl::bit_cast<const rtm::vector4f*>(raw_track[sample_index]);
 				const rtm::vector4f compressed_sample = writer.read_vector4(track_index);
 				ACL_ASSERT(rtm::vector_all_near_equal(raw_sample, compressed_sample, 0.0F), "Unexpected sample");
 				break;
 			}
 			case track_type8::qvvf:
 			{
-				const rtm::qvvf raw_sample = *reinterpret_cast<const rtm::qvvf*>(raw_track[sample_index]);
+				const rtm::qvvf raw_sample = *acl_impl::bit_cast<const rtm::qvvf*>(raw_track[sample_index]);
 				const rtm::qvvf compressed_sample = writer.read_qvv(track_index);
 
 				// Rotations can differ a bit due to how we normalize during interpolation

@@ -440,7 +440,6 @@ internal sealed class MethodRuntime
                     {
                         var searchObject = _stackFrame.GetArgument(0);
                         var replaceObject = _stackFrame.GetArgument(1);
-
                         if (_instance is not ManagedArchive archive)
                         {
                             ThrowUnexpectedValue();
@@ -448,7 +447,6 @@ internal sealed class MethodRuntime
                         }
 
                         FactoryUtils.ASSET = archive.Archive;
-                        
                         if (searchObject is ManagedArrayObject searchArray && replaceObject is ManagedArrayObject replaceArray)
                         {
                             archive.Archive.Swap(searchArray.ArrayPropertyData, replaceArray.ArrayPropertyData);
@@ -465,7 +463,6 @@ internal sealed class MethodRuntime
                     {
                         var searchObject = _stackFrame.GetArgument(0);
                         var replaceObject = _stackFrame.GetArgument(1);
-
                         if (_instance is not ManagedArchive archive)
                         {
                             ThrowUnexpectedValue();
@@ -473,7 +470,6 @@ internal sealed class MethodRuntime
                         }
 
                         FactoryUtils.ASSET = archive.Archive;
-                        
                         if (searchObject is ManagedSoftObject searchSoftObject && replaceObject is ManagedSoftObject replaceSoftObject)
                         {
                             archive.Archive.Swap(searchSoftObject.SoftObjectPropertyData, replaceSoftObject.SoftObjectPropertyData);
@@ -490,7 +486,6 @@ internal sealed class MethodRuntime
                     {
                         var searchObject = _stackFrame.GetArgument(0);
                         var replaceObject = _stackFrame.GetArgument(1);
-
                         if (_instance is not ManagedArchive archive)
                         {
                             ThrowUnexpectedValue();
@@ -498,7 +493,6 @@ internal sealed class MethodRuntime
                         }
 
                         FactoryUtils.ASSET = archive.Archive;
-                        
                         if (searchObject is ManagedLinearColorObject searchColor && replaceObject is ManagedLinearColorObject replaceColor)
                         {
                             archive.Archive.Swap(searchColor.LinearColorPropertyData, replaceColor.LinearColorPropertyData);
@@ -515,7 +509,6 @@ internal sealed class MethodRuntime
                     {
                         var searchObject = _stackFrame.GetArgument(0);
                         var replaceObject = _stackFrame.GetArgument(1);
-
                         if (_instance is not ManagedArchive archive)
                         {
                             ThrowUnexpectedValue();
@@ -523,7 +516,6 @@ internal sealed class MethodRuntime
                         }
 
                         FactoryUtils.ASSET = archive.Archive;
-                        
                         if (searchObject is ManagedIntProperty search && replaceObject is ManagedIntProperty replace)
                         {
                             archive.Archive.Swap(search.IntPropertyData, replace.IntPropertyData);
@@ -540,7 +532,6 @@ internal sealed class MethodRuntime
                     {
                         var searchObject = _stackFrame.GetArgument(0);
                         var replaceObject = _stackFrame.GetArgument(1);
-
                         if (_instance is not ManagedArchive archive)
                         {
                             ThrowUnexpectedValue();
@@ -548,7 +539,6 @@ internal sealed class MethodRuntime
                         }
 
                         FactoryUtils.ASSET = archive.Archive;
-                        
                         if (searchObject is ManagedFloatProperty search && replaceObject is ManagedFloatProperty replace)
                         {
                             archive.Archive.Swap(search.FloatPropertyData, replace.FloatPropertyData);
@@ -565,7 +555,6 @@ internal sealed class MethodRuntime
                     {
                         var searchObject = _stackFrame.GetArgument(0);
                         var replaceObject = _stackFrame.GetArgument(1);
-
                         if (_instance is not ManagedArchive archive)
                         {
                             ThrowUnexpectedValue();
@@ -573,7 +562,6 @@ internal sealed class MethodRuntime
                         }
 
                         FactoryUtils.ASSET = archive.Archive;
-                        
                         if (searchObject is ManagedDoubleProperty search && replaceObject is ManagedDoubleProperty replace)
                         {
                             archive.Archive.Swap(search.DoublePropertyData, replace.DoublePropertyData);
@@ -590,7 +578,6 @@ internal sealed class MethodRuntime
                     {
                         var searchObject = _stackFrame.GetArgument(0);
                         var replaceObject = _stackFrame.GetArgument(1);
-
                         if (_instance is not ManagedArchive archive)
                         {
                             ThrowUnexpectedValue();
@@ -598,7 +585,6 @@ internal sealed class MethodRuntime
                         }
 
                         FactoryUtils.ASSET = archive.Archive;
-                        
                         if (searchObject is ManagedByteArrayProperty search && replaceObject is ManagedByteArrayProperty replace)
                         {
                             archive.Archive.Swap(search.ByteArrayPropertyData, replace.ByteArrayPropertyData);
@@ -628,13 +614,13 @@ internal sealed class MethodRuntime
 
                         var managedSoftObjectList = managedArray.Elements.Cast<ManagedSoftObject>();
                         var softObjectList = managedSoftObjectList.Select(obj => obj.SoftObjectPropertyData).ToList();
-
                         FactoryUtils.ASSET = archive.Archive;
+                        
+                        // Create return object
                         var stackPtr = _stackFrame.Allocate(archiveSize);
                         var data = ArrayFactory.Create(softObjectList);
                         var managedArrayObject = new ManagedArrayObject(data, stackPtr);
                         _stackFrame.Push(managedArrayObject);
-
                         break;
                     }
                     case "CreateLinearColorProperty":
@@ -643,7 +629,6 @@ internal sealed class MethodRuntime
                         var greenObject = _stackFrame.GetArgument(1);
                         var blueObject = _stackFrame.GetArgument(2);
                         var alphaObject = _stackFrame.GetArgument(3);
-
                         if (redObject is not ManagedObject redManagedObject ||
                             greenObject is not ManagedObject greenManagedObject ||
                             blueObject is not ManagedObject blueManagedObject ||
@@ -659,17 +644,15 @@ internal sealed class MethodRuntime
                             return _stackFrame;
                         }
 
+                        FactoryUtils.ASSET = archive.Archive;
+                        var stackPtr = _stackFrame.Allocate(archiveSize);
                         var red = MemoryUtils.GetValue<float>(redManagedObject.Address);
                         var green = MemoryUtils.GetValue<float>(greenManagedObject.Address);
                         var blue = MemoryUtils.GetValue<float>(blueManagedObject.Address);
                         var alpha = MemoryUtils.GetValue<float>(alphaManagedObject.Address);
-                        FactoryUtils.ASSET = archive.Archive;
-
-                        var stackPtr = _stackFrame.Allocate(archiveSize);
                         var data = ColorFactory.Create(red, green, blue, alpha);
                         var managedLinearColorObject = new ManagedLinearColorObject(data, stackPtr);
                         _stackFrame.Push(managedLinearColorObject);
-
                         break;
                     }
                     case "CreateSoftObjectProperty":
@@ -704,13 +687,11 @@ internal sealed class MethodRuntime
                         var data = SoftObjectFactory.Create(softObjectStr.ToString(), substring);
                         var managedSoftObject = new ManagedSoftObject(data, stackPtr);
                         _stackFrame.Push(managedSoftObject);
-
                         break;
                     }
                     case "CreateIntProperty":
                     {
                         var intObject = _stackFrame.GetArgument(0);
-
                         if (intObject is not ManagedObject intManagedObject)
                         {
                             ThrowUnexpectedValue();
@@ -723,20 +704,17 @@ internal sealed class MethodRuntime
                             return _stackFrame;
                         }
 
-                        var Int = MemoryUtils.GetValue<int>(intManagedObject.Address);
                         FactoryUtils.ASSET = archive.Archive;
-
                         var stackPtr = _stackFrame.Allocate(archiveSize);
-                        var data = IntFactory.Create(Int);
+                        var intValue = MemoryUtils.GetValue<int>(intManagedObject.Address);
+                        var data = IntFactory.Create(intValue);
                         var managedIntPropertyObject = new ManagedIntProperty(data, stackPtr);
                         _stackFrame.Push(managedIntPropertyObject);
-
                         break;
                     }
                     case "CreateFloatProperty":
                     {
                         var floatObject = _stackFrame.GetArgument(0);
-
                         if (floatObject is not ManagedObject floatManagedObject)
                         {
                             ThrowUnexpectedValue();
@@ -749,20 +727,17 @@ internal sealed class MethodRuntime
                             return _stackFrame;
                         }
 
-                        var Float = MemoryUtils.GetValue<float>(floatManagedObject.Address);
                         FactoryUtils.ASSET = archive.Archive;
-
                         var stackPtr = _stackFrame.Allocate(archiveSize);
-                        var data = FloatFactory.Create(Float);
+                        var floatValue = MemoryUtils.GetValue<float>(floatManagedObject.Address);
+                        var data = FloatFactory.Create(floatValue);
                         var managedFloatPropertyObject = new ManagedFloatProperty(data, stackPtr);
                         _stackFrame.Push(managedFloatPropertyObject);
-
                         break;
                     }
                     case "CreateDoubleProperty":
                     {
                         var doubleObject = _stackFrame.GetArgument(0);
-
                         if (doubleObject is not ManagedObject doubleManagedObject)
                         {
                             ThrowUnexpectedValue();
@@ -775,28 +750,24 @@ internal sealed class MethodRuntime
                             return _stackFrame;
                         }
 
-                        var Double = MemoryUtils.GetValue<float>(doubleManagedObject.Address);
                         FactoryUtils.ASSET = archive.Archive;
-
                         var stackPtr = _stackFrame.Allocate(archiveSize);
-                        var data = DoubleFactory.Create(Double);
+                        var doubleValue = MemoryUtils.GetValue<float>(doubleManagedObject.Address);
+                        var data = DoubleFactory.Create(doubleValue);
                         var managedDoublePropertyObject = new ManagedDoubleProperty(data, stackPtr);
                         _stackFrame.Push(managedDoublePropertyObject);
-
                         break;
                     }
                     case "CreateByteArrayProperty":
                     {
                         var byteArrayObject = _stackFrame.GetArgument(0);
-
                         if (byteArrayObject is not ManagedString byteArrayManagedObject)
                         {
                             ThrowUnexpectedValue();
                             return _stackFrame;
                         }
 
-                        byte[] value = Convert.FromBase64String(byteArrayManagedObject.ToString());
-                        
+                        var value = Convert.FromBase64String(byteArrayManagedObject.ToString());
                         if (_instance is not ManagedArchive archive)
                         {
                             ThrowUnexpectedValue();
@@ -804,12 +775,10 @@ internal sealed class MethodRuntime
                         }
                         
                         FactoryUtils.ASSET = archive.Archive;
-
                         var stackPtr = _stackFrame.Allocate(archiveSize);
                         var data = ByteArrayFactory.Create(value);
                         var managedByteArrayPropertyObject = new ManagedByteArrayProperty(data, stackPtr);
                         _stackFrame.Push(managedByteArrayPropertyObject);
-
                         break;
                     }
                     case "Save":
@@ -873,7 +842,6 @@ internal sealed class MethodRuntime
                         var archive = new ZenAsset(new AssetBinaryReader(byteData), EngineVersion.VER_LATEST, Usmap.CachedMappings);
                         var managedArchive = new ManagedArchive(archive, SaturnData.ToNonStatic(), stackPtr);
                         _stackFrame.Push(managedArchive);
-
                         break;
                     }
                 }
@@ -902,7 +870,6 @@ internal sealed class MethodRuntime
                     case "Print":
                     {
                         var valueObject = _stackFrame.GetArgument(0);
-                        
                         if (valueObject is ManagedString str)
                         {
                             Shared.LogItems.Add(str.ToString());
@@ -919,13 +886,12 @@ internal sealed class MethodRuntime
                     {
                         var urlObject = _stackFrame.GetArgument(0);
                         var typeObject = _stackFrame.GetArgument(1);
-
-                        WebClient wc = new WebClient();
-                        
+#pragma warning disable SYSLIB0014
+                        var wc = new WebClient();
+#pragma warning restore SYSLIB0014
                         if (urlObject is ManagedString url && typeObject is ManagedString type)
                         {
-                            string file = Shared.AllowedFiles.Where(file => !File.Exists(Shared.PakPath + file + ".sig")).ToArray()[0];
-                            
+                            var file = Shared.AllowedFiles.Where(file => !File.Exists(Shared.PakPath + file + ".sig")).ToArray()[0];
                             if (type.ToString().Equals("ucas", StringComparison.InvariantCultureIgnoreCase))
                             {
                                 wc.DownloadFile(url.ToString(), Shared.PakPath + file + ".ucas");

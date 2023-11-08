@@ -13,6 +13,7 @@ set(USE_SIMD_INSTRUCTIONS true CACHE BOOL "Use SIMD instructions")
 set(USE_SJSON true CACHE BOOL "Use SJSON")
 set(CPU_INSTRUCTION_SET false CACHE STRING "CPU instruction set")
 set(BUILD_BENCHMARK_EXE false CACHE BOOL "Enable the benchmark projects")
+set(ENABLE_ALL_WARNINGS false CACHE BOOL "Enable all warnings")
 
 set(TEST_DATA_DIR "" CACHE STRING "The full path of the regression test data directory")
 set(DECOMP_DATA_DIR "" CACHE STRING "The full path of the decompression data directory")
@@ -39,6 +40,7 @@ file(GLOB_RECURSE ACL_INCLUDE_FILES LIST_DIRECTORIES false
 	${PROJECT_SOURCE_DIR}/includes/*.h
 	${PROJECT_SOURCE_DIR}/docs/*.md
 	${PROJECT_SOURCE_DIR}/cmake/*.cmake
+	${PROJECT_SOURCE_DIR}/test_data/configs/*.sjson
 	${PROJECT_SOURCE_DIR}/tools/release_scripts/*.py
 	)
 

@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
+    ndkVersion "20.1.5948944"
     compileSdkVersion 28
     defaultConfig {
         applicationId "com.sjson.unit_tests"
@@ -11,6 +12,7 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
+                arguments '-DCMAKE_CXX_STANDARD=@CMAKE_CXX_STANDARD@'
             }
         }
         ndk {

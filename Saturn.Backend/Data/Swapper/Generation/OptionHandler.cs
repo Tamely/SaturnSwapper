@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using Saturn.Backend.Data.Swapper.Assets;
 using Saturn.Backend.Data.Variables;
@@ -22,7 +23,7 @@ public class OptionHandler
         }
         else
         {
-            exportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>());
+            exportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>(), option.ID.EndsWith("EMOTE"));
             FixPartData(exportData);
             Constants.AssetCache.Add(option.ID, exportData);
         }
@@ -31,10 +32,10 @@ public class OptionHandler
 
     private static void FixPartData(AssetExportData exportData)
     {
-        if (exportData.ExportParts.Any(part => Enum.Parse<EFortCustomPartType>(part.Part) == EFortCustomPartType.Face)
-            && exportData.ExportParts.All(part => Enum.Parse<EFortCustomPartType>(part.Part) != EFortCustomPartType.Hat))
+        if (exportData.ExportParts.Any(part => Enum.Parse<EFortCustomPartType>(part.Part) == EFortCustomPartType.Hat)
+            && exportData.ExportParts.All(part => Enum.Parse<EFortCustomPartType>(part.Part) != EFortCustomPartType.Face))
         {
-            exportData.ExportParts.First(part => Enum.Parse<EFortCustomPartType>(part.Part) == EFortCustomPartType.Face).Part = EFortCustomPartType.Hat.ToString();
+            exportData.ExportParts.First(part => Enum.Parse<EFortCustomPartType>(part.Part) == EFortCustomPartType.Hat).Part = EFortCustomPartType.Face.ToString();
         }
         
         if (exportData.ExportParts.Any(part => Enum.Parse<EFortCustomPartType>(part.Part) == EFortCustomPartType.Face)
@@ -92,13 +93,16 @@ public class OptionHandler
                 data.PerfectOptions.Add(option);
                 data.Options.Add(option);
             });
+
+            if (data.PerfectOptions.Any(x => x.IsRandom))
+            {
+                var random = data.PerfectOptions.First(x => x.IsRandom);
+                data.PerfectOptions.RemoveAll(x => x.IsRandom);
+                data.Options.RemoveAll(x => x.IsRandom);
             
-            var random = data.PerfectOptions.First(x => x.IsRandom);
-            data.PerfectOptions.RemoveAll(x => x.IsRandom);
-            data.Options.RemoveAll(x => x.IsRandom);
-            
-            data.PerfectOptions.Insert(0, random);
-            data.Options.Insert(0, random);
+                data.PerfectOptions.Insert(0, random);
+                data.Options.Insert(0, random);
+            }
         }
         else
         {
@@ -178,11 +182,82 @@ public class OptionHandler
             {
                 if (option.IsRandom) return;
                 bool isPerfect = true;
-            
+                bool optionIsDead = false;
+                
                 AssetExportData optionExportData;
-                if (Constants.AssetCache.TryGetValue(option.ID, out var value))
+                
+                var emotes = option.Asset.GetOrDefault("BuiltInEmotes", Array.Empty<UObject>());
+                if (emotes.Length != 0)
                 {
-                    optionExportData = value;
+                    if (Constants.AssetCache.TryGetValue(option.ID + "EMOTE", out var value))
+                    {
+                        optionExportData = value;
+                        FixPartData(optionExportData);
+                    }
+                    else
+                    {
+                        optionExportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>(), true);
+                        FixPartData(optionExportData);
+                        Constants.AssetCache.Add(option.ID + "EMOTE", optionExportData);
+                    }
+                    
+                    if (exportData.ExportParts.Any(part => optionExportData.ExportParts.All(optionPart => optionPart.Part != part.Part)))
+                    {
+                        optionIsDead = true;
+                    }
+
+                    if (!optionIsDead)
+                    {
+                        if (!exportData.ExportParts.First(x => x.Part == "Head").MeshPath.ToLower()
+                                .Contains("m_med_blk_sydney_01"))
+                        {
+                            if (option.DisplayName.Contains("Lexa"))
+                            {
+                                foreach (var part in exportData.ExportParts)
+                                {
+                                    Logger.Log($"Morph: {part.MorphName} | Part: {part.Part}");
+                                    foreach (var oPart in optionExportData.ExportParts)
+                                    {
+                                        if (part.Part == oPart.Part)
+                                        {
+                                            Logger.Log($"Option: {oPart.MorphName} | Part: {oPart.Part}");
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            foreach (var _ in from part in exportData.ExportParts 
+                                     let optionPart = optionExportData.ExportParts.First(optionPart => part.Part == optionPart.Part) 
+                                     where part.MorphName != "None" 
+                                     where part.MorphName != "None" && optionPart.MorphName == "None"
+                                     select optionPart)
+                            {
+                                isPerfect = false;
+                            }
+                        }
+
+                        if (isPerfect)
+                        {
+                            data.PerfectOptions.Add(option);
+                            data.PerfectOptions[^1].DisplayName += " (Built In Emote)";
+                            data.PerfectOptions[^1].ID += "EMOTE";
+                        }
+
+                        data.Options.Add(option);
+                        if (!isPerfect)
+                        {
+                            data.Options[^1].DisplayName += " (Built In Emote)";
+                            data.Options[^1].ID += "EMOTE";
+                        }
+                    }
+                }
+                
+                isPerfect = true;
+                
+                
+                if (Constants.AssetCache.TryGetValue(option.ID, out var value2))
+                {
+                    optionExportData = value2;
                 }
                 else
                 {

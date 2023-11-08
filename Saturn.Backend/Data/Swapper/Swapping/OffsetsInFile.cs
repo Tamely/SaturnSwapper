@@ -50,11 +50,11 @@ namespace Saturn.Backend.Data.Swapper.Swapping
             if (BytesWritten.ContainsKey(parentFile))
             {
                 offset += BytesWritten[parentFile];
-                BytesWritten[parentFile] += length;
+                BytesWritten[parentFile] += length + 10;
             }
             else
             {
-                BytesWritten.Add(parentFile, length);
+                BytesWritten.Add(parentFile, length + 10);
             }
 
             return (parentFile, offset);

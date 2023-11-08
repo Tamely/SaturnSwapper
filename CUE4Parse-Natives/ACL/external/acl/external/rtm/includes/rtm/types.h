@@ -130,7 +130,7 @@ namespace rtm
 	//////////////////////////////////////////////////////////////////////////
 	// A 4x32 bit vector comparison mask for 32 bit floats: ~0 if true, 0 otherwise.
 	//////////////////////////////////////////////////////////////////////////
-	using mask4f = float32x4_t;
+	using mask4f = uint32x4_t;
 
 	//////////////////////////////////////////////////////////////////////////
 	// A 4x64 bit vector comparison mask for 64 bit floats: ~0 if true, 0 otherwise.
@@ -143,12 +143,12 @@ namespace rtm
 		uint64_t w;
 	};
 
-#if defined(RTM_COMPILER_MSVC)
 	// MSVC uses a simple typedef to an identical underlying type for uint32x4_t and float32x4_t
-	// To avoid issues of duplicate symbols, we introduce a concrete type
+	// We also want two different types for mask4f and mask4i and mask4f is more commonly used
+	// To avoid issues of duplicate symbols, we introduce a concrete type for mask4i
 
 	//////////////////////////////////////////////////////////////////////////
-	// A 4x32 bit vector comparison mask: ~0 if true, 0 otherwise.
+	// A 4x32 bit vector comparison mask for 32 bit integers: ~0 if true, 0 otherwise.
 	//////////////////////////////////////////////////////////////////////////
 	struct alignas(16) mask4i
 	{
@@ -158,19 +158,9 @@ namespace rtm
 	// Helper macros to simplify usage
 	#define RTM_IMPL_MASK4i_GET(mask) mask.value
 	#define RTM_IMPL_MASK4i_SET(mask) mask4i{ mask }
-#else
-	//////////////////////////////////////////////////////////////////////////
-	// A 4x32 bit vector comparison mask: ~0 if true, 0 otherwise.
-	//////////////////////////////////////////////////////////////////////////
-	using mask4i = uint32x4_t;
-
-	// Helper macros to simplify usage
-	#define RTM_IMPL_MASK4i_GET(mask) mask
-	#define RTM_IMPL_MASK4i_SET(mask) mask
-#endif
 
 	//////////////////////////////////////////////////////////////////////////
-	// A 4x64 bit vector comparison mask: ~0 if true, 0 otherwise.
+	// A 4x64 bit vector comparison mask for 64 bit integers: ~0 if true, 0 otherwise.
 	//////////////////////////////////////////////////////////////////////////
 	struct alignas(16) mask4q
 	{
@@ -351,7 +341,45 @@ namespace rtm
 #endif
 
 	//////////////////////////////////////////////////////////////////////////
-	// A QVV transform represents a 3D rotation (quaternion), 3D translation (vector), and 3D scale (vector).
+	// A QV transform represents a 3D rotation (quaternion) and a 3D translation (vector).
+	//////////////////////////////////////////////////////////////////////////
+	struct qvf
+	{
+		quatf		rotation;
+		vector4f	translation;	// [w] is undefined
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+	// A QV transform represents a 3D rotation (quaternion) and a 3D translation (vector).
+	//////////////////////////////////////////////////////////////////////////
+	struct qvd
+	{
+		quatd		rotation;
+		vector4d	translation;	// [w] is undefined
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+	// A QVS transform represents a 3D rotation (quaternion), a 3D translation (vector),
+	// and a single scalar uniform scale value.
+	//////////////////////////////////////////////////////////////////////////
+	struct qvsf
+	{
+		quatf		rotation;
+		vector4f	translation_scale;	// [xyz] for translation, [w] for scale
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+	// A QVS transform represents a 3D rotation (quaternion), a 3D translation (vector),
+	// and a single scalar uniform scale value.
+	//////////////////////////////////////////////////////////////////////////
+	struct qvsd
+	{
+		quatd		rotation;
+		vector4d	translation_scale;	// [xyz] for translation, [w] for scale
+	};
+
+	//////////////////////////////////////////////////////////////////////////
+	// A QVV transform represents a 3D rotation (quaternion), 3D translation (vector), and 3D non-uniform scale (vector).
 	// It properly handles positive scaling but negative scaling is a bit more problematic.
 	// A best effort is made by converting the quaternion to a matrix during those operations.
 	// If scale fidelity is important, consider using an affine matrix 3x4 instead.
@@ -359,12 +387,12 @@ namespace rtm
 	struct qvvf
 	{
 		quatf		rotation;
-		vector4f	translation;
-		vector4f	scale;
+		vector4f	translation;	// [w] is undefined
+		vector4f	scale;			// [w] is undefined
 	};
 
 	//////////////////////////////////////////////////////////////////////////
-	// A QVV transform represents a 3D rotation (quaternion), 3D translation (vector), and 3D scale (vector).
+	// A QVV transform represents a 3D rotation (quaternion), 3D translation (vector), and 3D non-uniform scale (vector).
 	// It properly handles positive scaling but negative scaling is a bit more problematic.
 	// A best effort is made by converting the quaternion to a matrix during those operations.
 	// If scale fidelity is important, consider using an affine matrix 3x4 instead.
@@ -372,8 +400,8 @@ namespace rtm
 	struct qvvd
 	{
 		quatd		rotation;
-		vector4d	translation;
-		vector4d	scale;
+		vector4d	translation;	// [w] is undefined
+		vector4d	scale;			// [w] is undefined
 	};
 
 	//////////////////////////////////////////////////////////////////////////

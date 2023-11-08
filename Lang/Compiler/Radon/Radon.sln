@@ -10,6 +10,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radon.Repl", "Radon.Repl\Ra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILViewer", "ILViewer\ILViewer.csproj", "{72970DF3-0C6E-4086-ABCC-8315DC11DE20}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radon.Ide.Backend", "Radon.Ide.Backend\Radon.Ide.Backend.csproj", "{8E4B5D5C-3EC1-458B-B49F-8C90946B569E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radon.Ide", "Radon.Ide\Radon.Ide.csproj", "{EFD2E2F2-D84F-4A41-8640-30F4D6E97147}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +40,13 @@ Global
 		{72970DF3-0C6E-4086-ABCC-8315DC11DE20}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{72970DF3-0C6E-4086-ABCC-8315DC11DE20}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{72970DF3-0C6E-4086-ABCC-8315DC11DE20}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E4B5D5C-3EC1-458B-B49F-8C90946B569E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E4B5D5C-3EC1-458B-B49F-8C90946B569E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E4B5D5C-3EC1-458B-B49F-8C90946B569E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E4B5D5C-3EC1-458B-B49F-8C90946B569E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFD2E2F2-D84F-4A41-8640-30F4D6E97147}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFD2E2F2-D84F-4A41-8640-30F4D6E97147}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFD2E2F2-D84F-4A41-8640-30F4D6E97147}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFD2E2F2-D84F-4A41-8640-30F4D6E97147}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

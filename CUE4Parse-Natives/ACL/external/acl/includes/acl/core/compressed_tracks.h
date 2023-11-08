@@ -127,6 +127,11 @@ namespace acl
 		bool has_trivial_default_values() const;
 
 		//////////////////////////////////////////////////////////////////////////
+		// Returns whether or not this clip has had keyframes stripped.
+		// Only supported with qvv transform tracks.
+		bool has_stripped_keyframes() const;
+
+		//////////////////////////////////////////////////////////////////////////
 		// Returns the default scale value used during compression.
 		// Depending on the additive type, this value will either be 0 or 1.
 		// Only supported with qvv transform tracks.
@@ -168,9 +173,14 @@ namespace acl
 		// Hide everything
 		compressed_tracks() = delete;
 		compressed_tracks(const compressed_tracks&) = delete;
-		compressed_tracks(compressed_tracks&&) = delete;
 		compressed_tracks* operator=(const compressed_tracks&) = delete;
-		compressed_tracks* operator=(compressed_tracks&&) = delete;
+
+		// Do not use 'delete' or an equivalent allocator function as it won't know
+		// the correct allocated size. Deallocating an instance must match how it has
+		// been allocated.
+		// See iallocator::deallocate
+		// e.g: allocator->deallocate(tracks, tracks->get_size());
+		~compressed_tracks() = delete;
 
 		////////////////////////////////////////////////////////////////////////////////
 		// Raw buffer header that isn't included in the hash.

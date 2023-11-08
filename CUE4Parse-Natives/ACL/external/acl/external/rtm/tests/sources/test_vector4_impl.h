@@ -25,7 +25,7 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <catch2/catch.hpp>
+#include "catch2.impl.h"
 
 #include <rtm/type_traits.h>
 #include <rtm/scalarf.h>
@@ -527,8 +527,9 @@ void test_vector4_arithmetic_impl(const FloatType threshold)
 	CHECK(scalar_near_equal(vector_get_z(vector_vdot_result), scalar_dot_result, threshold));
 	CHECK(scalar_near_equal(vector_get_w(vector_vdot_result), scalar_dot_result, threshold));
 
-	CHECK(scalar_near_equal(scalar_dot<Vector4Type, FloatType>(test_value0, test_value0), vector_length_squared(test_value0), threshold));
-	CHECK(scalar_near_equal(scalar_dot<Vector4Type, FloatType>(test_value0, test_value0), scalar_cast(vector_length_squared(test_value0)), threshold));
+	const FloatType length_squared_threshold = FloatType(30.0);	// Input W has large values
+	CHECK(scalar_near_equal(scalar_dot<Vector4Type, FloatType>(test_value0, test_value0), vector_length_squared(test_value0), length_squared_threshold));
+	CHECK(scalar_near_equal(scalar_dot<Vector4Type, FloatType>(test_value0, test_value0), scalar_cast(vector_length_squared(test_value0)), length_squared_threshold));
 	const FloatType vector_length_squared3_ref = scalar_dot3<Vector4Type, FloatType>(test_value0, test_value0);
 	const FloatType vector_length_squared3_result = vector_length_squared3(test_value0);
 	CHECK(scalar_near_equal(vector_length_squared3_ref, vector_length_squared3_result, threshold));
@@ -1114,8 +1115,15 @@ void test_vector4_impl(const FloatType threshold)
 
 	const FloatType inf = std::numeric_limits<FloatType>::infinity();
 	const FloatType nan = std::numeric_limits<FloatType>::quiet_NaN();
+
+	CHECK((mask_get_x(vector_finite(vector_set(FloatType(1.0), inf, nan, -inf))) != 0) == scalar_is_finite(FloatType(1.0)));
+	CHECK((mask_get_y(vector_finite(vector_set(FloatType(1.0), inf, nan, -inf))) != 0) == scalar_is_finite(inf));
+	CHECK((mask_get_z(vector_finite(vector_set(FloatType(1.0), inf, nan, -inf))) != 0) == scalar_is_finite(nan));
+	CHECK((mask_get_w(vector_finite(vector_set(FloatType(1.0), inf, nan, -inf))) != 0) == scalar_is_finite(-inf));
+
 	CHECK(vector_is_finite(zero) == true);
 	CHECK(vector_is_finite(vector_set(inf, inf, inf, inf)) == false);
+	CHECK(vector_is_finite(vector_set(-inf, -inf, -inf, -inf)) == false);
 	CHECK(vector_is_finite(vector_set(inf, FloatType(1.0), FloatType(1.0), FloatType(1.0))) == false);
 	CHECK(vector_is_finite(vector_set(FloatType(1.0), FloatType(inf), FloatType(1.0), FloatType(1.0))) == false);
 	CHECK(vector_is_finite(vector_set(FloatType(1.0), FloatType(1.0), FloatType(inf), FloatType(1.0))) == false);
@@ -1128,6 +1136,7 @@ void test_vector4_impl(const FloatType threshold)
 
 	CHECK(vector_is_finite2(zero) == true);
 	CHECK(vector_is_finite2(vector_set(inf, inf, inf, inf)) == false);
+	CHECK(vector_is_finite2(vector_set(-inf, -inf, -inf, -inf)) == false);
 	CHECK(vector_is_finite2(vector_set(inf, FloatType(1.0), FloatType(1.0), FloatType(1.0))) == false);
 	CHECK(vector_is_finite2(vector_set(FloatType(1.0), FloatType(inf), FloatType(1.0), FloatType(1.0))) == false);
 	CHECK(vector_is_finite2(vector_set(FloatType(1.0), FloatType(1.0), FloatType(inf), FloatType(1.0))) == true);
@@ -1140,6 +1149,7 @@ void test_vector4_impl(const FloatType threshold)
 
 	CHECK(vector_is_finite3(zero) == true);
 	CHECK(vector_is_finite3(vector_set(inf, inf, inf, inf)) == false);
+	CHECK(vector_is_finite3(vector_set(-inf, -inf, -inf, -inf)) == false);
 	CHECK(vector_is_finite3(vector_set(inf, FloatType(1.0), FloatType(1.0), FloatType(1.0))) == false);
 	CHECK(vector_is_finite3(vector_set(FloatType(1.0), FloatType(inf), FloatType(1.0), FloatType(1.0))) == false);
 	CHECK(vector_is_finite3(vector_set(FloatType(1.0), FloatType(1.0), FloatType(inf), FloatType(1.0))) == false);

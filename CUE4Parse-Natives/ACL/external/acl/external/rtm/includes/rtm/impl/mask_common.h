@@ -52,7 +52,7 @@ namespace rtm
 				const uint64_t z_mask = z ? 0xFFFFFFFFFFFFFFFFULL : 0;
 				const uint64_t w_mask = w ? 0xFFFFFFFFFFFFFFFFULL : 0;
 
-				return mask4d{ _mm_castsi128_pd(_mm_set_epi64x(y_mask, x_mask)), _mm_castsi128_pd(_mm_set_epi64x(w_mask, z_mask)) };
+				return mask4d{ _mm_castsi128_pd(_mm_set_epi64x(static_cast<int64_t>(y_mask), static_cast<int64_t>(x_mask))), _mm_castsi128_pd(_mm_set_epi64x(static_cast<int64_t>(w_mask), static_cast<int64_t>(z_mask))) };
 #else
 				const uint64_t x_mask = x ? 0xFFFFFFFFFFFFFFFFULL : 0;
 				const uint64_t y_mask = y ? 0xFFFFFFFFFFFFFFFFULL : 0;
@@ -71,7 +71,7 @@ namespace rtm
 				const uint64_t z_mask = z ? 0xFFFFFFFFFFFFFFFFULL : 0;
 				const uint64_t w_mask = w ? 0xFFFFFFFFFFFFFFFFULL : 0;
 
-				return mask4q{ _mm_set_epi64x(y_mask, x_mask), _mm_set_epi64x(w_mask, z_mask) };
+				return mask4q{ _mm_set_epi64x(static_cast<int64_t>(y_mask), static_cast<int64_t>(x_mask)), _mm_set_epi64x(static_cast<int64_t>(w_mask), static_cast<int64_t>(z_mask)) };
 #else
 				const uint64_t x_mask = x ? 0xFFFFFFFFFFFFFFFFULL : 0;
 				const uint64_t y_mask = y ? 0xFFFFFFFFFFFFFFFFULL : 0;
@@ -90,11 +90,11 @@ namespace rtm
 				const uint32_t w_mask = w ? 0xFFFFFFFFU : 0;
 
 #if defined(RTM_SSE2_INTRINSICS)
-				return _mm_castsi128_ps(_mm_set_epi32(w_mask, z_mask, y_mask, x_mask));
+				return _mm_castsi128_ps(_mm_set_epi32(static_cast<int32_t>(w_mask), static_cast<int32_t>(z_mask), static_cast<int32_t>(y_mask), static_cast<int32_t>(x_mask)));
 #elif defined(RTM_NEON_INTRINSICS)
-				float32x2_t V0 = vcreate_f32(((uint64_t)x_mask) | ((uint64_t)(y_mask) << 32));
-				float32x2_t V1 = vcreate_f32(((uint64_t)z_mask) | ((uint64_t)(w_mask) << 32));
-				return vcombine_f32(V0, V1);
+				uint32x2_t V0 = vcreate_u32(((uint64_t)x_mask) | ((uint64_t)(y_mask) << 32));
+				uint32x2_t V1 = vcreate_u32(((uint64_t)z_mask) | ((uint64_t)(w_mask) << 32));
+				return vcombine_u32(V0, V1);
 #else
 				return mask4f{ x_mask, y_mask, z_mask, w_mask };
 #endif
@@ -108,7 +108,7 @@ namespace rtm
 				const uint32_t w_mask = w ? 0xFFFFFFFFU : 0;
 
 #if defined(RTM_SSE2_INTRINSICS)
-				return _mm_set_epi32(w_mask, z_mask, y_mask, x_mask);
+				return _mm_set_epi32(static_cast<int32_t>(w_mask), static_cast<int32_t>(z_mask), static_cast<int32_t>(y_mask), static_cast<int32_t>(x_mask));
 #elif defined(RTM_NEON_INTRINSICS)
 				uint32x2_t V0 = vcreate_u32(((uint64_t)x_mask) | ((uint64_t)(y_mask) << 32));
 				uint32x2_t V1 = vcreate_u32(((uint64_t)z_mask) | ((uint64_t)(w_mask) << 32));
@@ -146,11 +146,11 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator mask4f() const RTM_NO_EXCEPT
 			{
 #if defined(RTM_SSE2_INTRINSICS)
-				return _mm_castsi128_ps(_mm_set_epi32(w, z, y, x));
+				return _mm_castsi128_ps(_mm_set_epi32(static_cast<int32_t>(w), static_cast<int32_t>(z), static_cast<int32_t>(y), static_cast<int32_t>(x)));
 #elif defined(RTM_NEON_INTRINSICS)
-				float32x2_t V0 = vcreate_f32(((uint64_t)x) | ((uint64_t)(y) << 32));
-				float32x2_t V1 = vcreate_f32(((uint64_t)z) | ((uint64_t)(w) << 32));
-				return vcombine_f32(V0, V1);
+				uint32x2_t V0 = vcreate_u32(((uint64_t)x) | ((uint64_t)(y) << 32));
+				uint32x2_t V1 = vcreate_u32(((uint64_t)z) | ((uint64_t)(w) << 32));
+				return vcombine_u32(V0, V1);
 #else
 				return mask4f{ x, y, z, w };
 #endif
@@ -159,7 +159,7 @@ namespace rtm
 			RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE RTM_SIMD_CALL operator mask4i() const RTM_NO_EXCEPT
 			{
 #if defined(RTM_SSE2_INTRINSICS)
-				return _mm_set_epi32(w, z, y, x);
+				return _mm_set_epi32(static_cast<int32_t>(w), static_cast<int32_t>(z), static_cast<int32_t>(y), static_cast<int32_t>(x));
 #elif defined(RTM_NEON_INTRINSICS)
 				uint32x2_t V0 = vcreate_u32(((uint64_t)x) | ((uint64_t)(y) << 32));
 				uint32x2_t V1 = vcreate_u32(((uint64_t)z) | ((uint64_t)(w) << 32));
@@ -199,20 +199,20 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 	//////////////////////////////////////////////////////////////////////////
 	// HACK ALERT!
-	// VS2015, VS2017, and VS2019 crash when compiling with _mm_set_epi64x() here.
+	// VS2015 and VS2017 crash when compiling with _mm_set_epi64x() here.
 	// To work around this, we use alternative code. We assume that the high and low words
 	// are identical in the mask, which should be true.
 	// See: https://github.com/nfrechette/rtm/issues/84
 	//////////////////////////////////////////////////////////////////////////
-	#if defined(RTM_COMPILER_MSVC) && defined(RTM_ARCH_X86) && !defined(NDEBUG)
+	#if defined(RTM_COMPILER_MSVC) && RTM_COMPILER_MSVC < RTM_COMPILER_MSVC_2019 && defined(RTM_ARCH_X86) && !defined(NDEBUG)
 				const uint32_t x_mask = x ? 0xFFFFFFFFU : 0;
 				const uint32_t y_mask = y ? 0xFFFFFFFFU : 0;
 				const uint32_t z_mask = z ? 0xFFFFFFFFU : 0;
 				const uint32_t w_mask = w ? 0xFFFFFFFFU : 0;
 
-				return mask4d{ _mm_castsi128_pd(_mm_set_epi32(y_mask, y_mask, x_mask, x_mask)), _mm_castsi128_pd(_mm_set_epi32(w_mask, w_mask, z_mask, z_mask)) };
+				return mask4d{ _mm_castsi128_pd(_mm_set_epi32(static_cast<int32_t>(y_mask), static_cast<int32_t>(y_mask), static_cast<int32_t>(x_mask), static_cast<int32_t>(x_mask))), _mm_castsi128_pd(_mm_set_epi32(static_cast<int32_t>(w_mask), static_cast<int32_t>(w_mask), static_cast<int32_t>(z_mask), static_cast<int32_t>(z_mask))) };
 	#else
-				return mask4d{ _mm_castsi128_pd(_mm_set_epi64x(y, x)), _mm_castsi128_pd(_mm_set_epi64x(w, z)) };
+				return mask4d{ _mm_castsi128_pd(_mm_set_epi64x(static_cast<int64_t>(y), static_cast<int64_t>(x))), _mm_castsi128_pd(_mm_set_epi64x(static_cast<int64_t>(w), static_cast<int64_t>(z))) };
 	#endif
 #else
 				return mask4d{ x, y, z, w };
@@ -224,20 +224,20 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 	//////////////////////////////////////////////////////////////////////////
 	// HACK ALERT!
-	// VS2015, VS2017, and VS2019 crash when compiling with _mm_set_epi64x() here.
+	// VS2015 and VS2017 crash when compiling with _mm_set_epi64x() here.
 	// To work around this, we use alternative code. We assume that the high and low words
 	// are identical in the mask, which should be true.
 	// See: https://github.com/nfrechette/rtm/issues/84
 	//////////////////////////////////////////////////////////////////////////
-	#if defined(RTM_COMPILER_MSVC) && defined(RTM_ARCH_X86) && !defined(NDEBUG)
+	#if defined(RTM_COMPILER_MSVC) && RTM_COMPILER_MSVC < RTM_COMPILER_MSVC_2019 && defined(RTM_ARCH_X86) && !defined(NDEBUG)
 				const uint32_t x_mask = x ? 0xFFFFFFFFU : 0;
 				const uint32_t y_mask = y ? 0xFFFFFFFFU : 0;
 				const uint32_t z_mask = z ? 0xFFFFFFFFU : 0;
 				const uint32_t w_mask = w ? 0xFFFFFFFFU : 0;
 
-				return mask4q{ _mm_set_epi32(y_mask, y_mask, x_mask, x_mask), _mm_set_epi32(w_mask, w_mask, z_mask, z_mask) };
+				return mask4q{ _mm_set_epi32(static_cast<int32_t>(y_mask), static_cast<int32_t>(y_mask), static_cast<int32_t>(x_mask), static_cast<int32_t>(x_mask)), _mm_set_epi32(static_cast<int32_t>(w_mask), static_cast<int32_t>(w_mask), static_cast<int32_t>(z_mask), static_cast<int32_t>(z_mask)) };
 	#else
-				return mask4q{ _mm_set_epi64x(y, x), _mm_set_epi64x(w, z) };
+				return mask4q{ _mm_set_epi64x(static_cast<int64_t>(y), static_cast<int64_t>(x)), _mm_set_epi64x(static_cast<int64_t>(w), static_cast<int64_t>(z)) };
 	#endif
 #else
 				return mask4q{ x, y, z, w };

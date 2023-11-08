@@ -60,37 +60,7 @@ namespace Saturn.Backend.Data
             
             foreach (var swapItem in preset.PresetSwaps)
             {
-                List<SwapData> swapData = new();
-                AssetExportData selectedOption = await swapItem.ItemModel.OptionHandler.GenerateOptionDataWithFix(swapItem.OptionModel);
-
-                foreach (var characterPart in selectedOption.ExportParts)
-                {
-                    var pkg = await Constants.Provider.SavePackageAsync(characterPart.Path.Split('.')[0]);
-                    AssetBinaryReader oldReader = new AssetBinaryReader(pkg.Values.First());
-                    ZenAsset oldAsset = new ZenAsset(oldReader, EngineVersion.VER_LATEST, Usmap.CachedMappings);
-
-                    var data = SaturnData.ToNonStatic();
-                    SaturnData.Clear();
-                    
-                    AssetExportData item = await swapItem.ItemModel.OptionHandler.GenerateOptionDataWithFix(swapItem.ItemModel);
-                    var swapPart = item.ExportParts.FirstOrDefault(part => part.Part == characterPart.Part);
-
-                    pkg = await Constants.Provider.SavePackageAsync(swapPart == null ? Constants.EmptyParts[characterPart.Part].Path : swapPart.Path.Split('.')[0]);
-                    AssetBinaryReader newReader = new AssetBinaryReader(pkg.Values.First());
-                    ZenAsset newAsset = new ZenAsset(newReader, EngineVersion.VER_LATEST, Usmap.CachedMappings);
-
-                    var asset = oldAsset.Swap(newAsset);
-
-                    swapData.Add(new SwapData()
-                    {
-                        SaturnData = data,
-                        Data = asset.WriteData().ToArray()
-                    });
-            
-                    SaturnData.Clear();
-                }
-                
-                await FileLogic.Convert(swapData);
+                await FileLogic.Convert(swapItem.OptionModel, swapItem.ItemModel);
                 await FileLogic.ConvertLobby(swapItem.OptionModel, swapItem.ItemModel);
             }
             

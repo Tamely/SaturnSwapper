@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.2)
 project(acl_unit_tests)
 
 # iOS cmake toolchain does not support CMAKE_CXX_STANDARD
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${CMAKE_CXX_STANDARD}")
 
 # Force enable debug symbols
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
@@ -18,6 +18,7 @@ set(MACOSX_BUNDLE_BUNDLE_NAME "acl-unit-tests")
 include_directories("${PROJECT_SOURCE_DIR}/../../includes")
 include_directories("${PROJECT_SOURCE_DIR}/../../external/rtm/includes")
 include_directories("${PROJECT_SOURCE_DIR}/../../external/catch2/single_include")
+include_directories("${PROJECT_SOURCE_DIR}/../sources")
 
 if(USE_SJSON)
 	include_directories("${PROJECT_SOURCE_DIR}/../../external/sjson-cpp/includes")

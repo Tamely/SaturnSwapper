@@ -23,6 +23,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "acl_compressor.h"
+#include "acl/core/impl/bit_cast.impl.h"
 
 #define DEBUG_MEGA_LARGE_CLIP 0
 
@@ -51,6 +52,7 @@
 #include "acl/core/impl/debug_track_writer.h"
 #include "acl/compression/compress.h"
 #include "acl/compression/convert.h"
+#include "acl/compression/pre_process.h"
 #include "acl/compression/transform_pose_utils.h"	// Just to test compilation
 #include "acl/decompression/decompress.h"
 #include "acl/io/clip_reader.h"
@@ -89,7 +91,9 @@
 	#define NOMB                    // MB_* and MessageBox()
 	#define NOMEMMGR                // GMEM_*, LMEM_*, GHND, LHND, associated routines
 	#define NOMETAFILE                // typedef METAFILEPICT
+#if !defined(NOMINMAX)
 	#define NOMINMAX                // Macros min(a,b) and max(a,b)
+#endif
 	#define NOMSG                    // typedef MSG and associated routines
 	#define NOOPENFILE                // OpenFile(), OemToAnsi, AnsiToOem, and OF_*
 	#define NOSCROLL                // SB_* and scrolling routines
@@ -110,8 +114,17 @@
 	#define NOPROXYSTUB
 	#define NORPC
 
+	#if defined(_MSC_VER) && !defined(__clang__)
+		#pragma warning(push)
+		#pragma warning(disable : 5039)	// Pointer to function without noexcept passed to extern "C"
+	#endif
+
 	#include <windows.h>
 	#include <conio.h>
+
+	#if defined(_MSC_VER) && !defined(__clang__)
+		#pragma warning(pop)
+	#endif
 
 #endif    // _WIN32
 
@@ -150,6 +163,9 @@ struct Options
 	bool			is_bind_pose_additive1			= false;
 
 	bool			split_into_database				= false;
+
+	float			strip_keyframe_proportion		= 0.0F;
+	float			strip_keyframe_threshold		= 0.0F;
 
 	bool			stat_detailed_output			= false;
 	bool			stat_exhaustive_output			= false;
@@ -198,6 +214,8 @@ static constexpr const char* k_bind_pose_additive0_option = "-bind_add0";
 static constexpr const char* k_bind_pose_additive1_option = "-bind_add1";
 static constexpr const char* k_matrix_error_metric_option = "-error_mtx";
 static constexpr const char* k_split_into_database_option = "-db";
+static constexpr const char* k_strip_keyframe_proportion_option = "-strip_keyframe_proportion=";
+static constexpr const char* k_strip_keyframe_threshold_option = "-strip_keyframe_threshold=";
 static constexpr const char* k_stat_detailed_output_option = "-stat_detailed";
 static constexpr const char* k_stat_exhaustive_output_option = "-stat_exhaustive";
 
@@ -365,6 +383,20 @@ static bool parse_options(int argc, char** argv, Options& options)
 			continue;
 		}
 
+		option_length = std::strlen(k_strip_keyframe_proportion_option);
+		if (std::strncmp(argument, k_strip_keyframe_proportion_option, option_length) == 0)
+		{
+			options.strip_keyframe_proportion = static_cast<float>(std::atof(argument + option_length));
+			continue;
+		}
+
+		option_length = std::strlen(k_strip_keyframe_threshold_option);
+		if (std::strncmp(argument, k_strip_keyframe_threshold_option, option_length) == 0)
+		{
+			options.strip_keyframe_threshold = static_cast<float>(std::atof(argument + option_length));
+			continue;
+		}
+
 		option_length = std::strlen(k_stat_detailed_output_option);
 		if (std::strncmp(argument, k_stat_detailed_output_option, option_length) == 0)
 		{
@@ -417,8 +449,6 @@ static void try_algorithm(const Options& options, iallocator& allocator, const t
 			settings.metadata.include_track_descriptions = true;
 		}
 
-		settings.enable_database_support = options.split_into_database;
-
 		output_stats stats;
 		stats.logging = logging;
 		stats.writer = stats_writer;
@@ -456,7 +486,7 @@ static void try_algorithm(const Options& options, iallocator& allocator, const t
 			validate_metadata(transform_tracks, *compressed_tracks_);
 			validate_convert(allocator, transform_tracks);
 
-			if (options.split_into_database)
+			if (settings.enable_database_support)
 			{
 				// Drop all the metadata and make a second copy for testing
 				// This will ensure we have two clips with different hashes
@@ -494,7 +524,7 @@ static void try_algorithm(const Options& options, iallocator& allocator, const t
 
 			std::ofstream output_file_stream(output_bin_filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
 			if (output_file_stream.is_open())
-				output_file_stream.write(reinterpret_cast<const char*>(compressed_tracks_), compressed_tracks_->get_size());
+				output_file_stream.write(acl::acl_impl::bit_cast<const char*>(compressed_tracks_), compressed_tracks_->get_size());
 		}
 
 		// TODO
@@ -503,7 +533,7 @@ static void try_algorithm(const Options& options, iallocator& allocator, const t
 		{
 			std::ofstream output_file_stream(options.output_db_filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
 			if (output_file_stream.is_open())
-				output_file_stream.write(reinterpret_cast<const char*>(db), db->get_size());
+				output_file_stream.write(acl::acl_impl::bit_cast<const char*>(db), db->get_size());
 		}
 #endif
 
@@ -584,7 +614,7 @@ static void try_algorithm(const Options& options, iallocator& allocator, const t
 
 			std::ofstream output_file_stream(output_bin_filename, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
 			if (output_file_stream.is_open())
-				output_file_stream.write(reinterpret_cast<const char*>(compressed_tracks_), compressed_tracks_->get_size());
+				output_file_stream.write(acl::acl_impl::bit_cast<const char*>(compressed_tracks_), compressed_tracks_->get_size());
 		}
 
 		allocator.deallocate(compressed_tracks_, compressed_tracks_->get_size());
@@ -678,7 +708,7 @@ static bool read_acl_bin_file(iallocator& allocator, const Options& options, acl
 		return false;
 #endif
 
-	out_tracks = reinterpret_cast<acl::compressed_tracks*>(tracks_data);
+	out_tracks = acl::acl_impl::bit_cast<acl::compressed_tracks*>(tracks_data);
 	if (file_size != out_tracks->get_size() || out_tracks->is_valid(true).any())
 	{
 		printf("Invalid binary ACL file provided\n");
@@ -835,8 +865,8 @@ static bool read_config(iallocator& allocator, Options& options, compression_set
 		options.use_matrix_error_metric = use_matrix_error_metric;
 
 	bool split_into_database;
-	if (parser.try_read("split_into_database", split_into_database, false))
-		options.split_into_database = split_into_database;
+	if (parser.try_read("split_into_database", split_into_database, default_settings.enable_database_support))
+		out_settings.enable_database_support = split_into_database;
 
 	compression_database_settings default_database_settings;
 
@@ -851,6 +881,14 @@ static bool read_config(iallocator& allocator, Options& options, compression_set
 	float low_importance_tier;
 	if (parser.try_read("low_importance_tier", low_importance_tier, default_database_settings.low_importance_tier_proportion))
 		out_database_settings.low_importance_tier_proportion = low_importance_tier;
+
+	float keyframe_stripping_proportion;
+	if (parser.try_read("keyframe_stripping_proportion", keyframe_stripping_proportion, default_settings.keyframe_stripping.proportion))
+		out_settings.keyframe_stripping.proportion = keyframe_stripping_proportion;
+
+	float keyframe_stripping_threshold;
+	if (parser.try_read("keyframe_stripping_threshold", keyframe_stripping_threshold, default_settings.keyframe_stripping.threshold))
+		out_settings.keyframe_stripping.threshold = keyframe_stripping_threshold;
 
 	if (!parser.is_valid() || !parser.remainder_is_comments_and_whitespace())
 	{
@@ -875,13 +913,17 @@ static itransform_error_metric* create_additive_error_metric(iallocator& allocat
 		return allocate_type<additive_qvvf_transform_error_metric<additive_clip_format8::additive0>>(allocator);
 	case additive_clip_format8::additive1:
 		return allocate_type<additive_qvvf_transform_error_metric<additive_clip_format8::additive1>>(allocator);
+	case additive_clip_format8::none:
 	default:
 		return nullptr;
 	}
 }
 
-static void create_additive_base_clip(const Options& options, track_array_qvvf& clip, const track_qvvf& bind_pose, track_array_qvvf& out_base_clip, additive_clip_format8& out_additive_format)
+static void create_additive_base_clip(const Options& options, track_array_qvvf& clip, track_array_qvvf& out_base_clip, additive_clip_format8& out_additive_format)
 {
+	// Disable floating point exceptions since conversion requires it
+	scope_disable_fp_exceptions fp_off;
+
 	// Convert the animation clip to be relative to the bind pose
 	const uint32_t num_bones = clip.get_num_tracks();
 	const uint32_t num_samples = clip.get_num_samples_per_track();
@@ -901,11 +943,14 @@ static void create_additive_base_clip(const Options& options, track_array_qvvf& 
 
 	for (uint32_t bone_index = 0; bone_index < num_bones; ++bone_index)
 	{
-		// Get the bind transform and make sure it has no scale
-		rtm::qvvf bind_transform = bind_pose[bone_index];
-		bind_transform.scale = rtm::vector_set(1.0F);
-
 		track_qvvf& track = clip[bone_index];
+
+		const rtm::qvvf bind_transform = track.get_description().default_value;
+
+		// Reset our default value to the additive identity
+		track.get_description().default_value = rtm::qvv_identity();
+		if (options.is_bind_pose_additive1)
+			track.get_description().default_value.scale = rtm::vector_set(0.0F);
 
 		for (uint32_t sample_index = 0; sample_index < num_samples; ++sample_index)
 		{
@@ -936,6 +981,12 @@ static compression_settings make_settings(rotation_format8 rotation_format, vect
 }
 #endif	// defined(ACL_USE_SJSON)
 
+// Disable warning for implicit constructor using deprecated members in sjson_raw_clip and sjson_raw_track_list
+#if defined(RTM_COMPILER_MSVC_2015)
+	#pragma warning(push)
+	#pragma warning(disable : 4996)
+#endif
+
 static int safe_main_impl(int argc, char* argv[])
 {
 	Options options;
@@ -948,7 +999,6 @@ static int safe_main_impl(int argc, char* argv[])
 	track_array_qvvf transform_tracks;
 	track_array_qvvf base_clip;
 	additive_clip_format8 additive_format = additive_clip_format8::none;
-	track_qvvf bind_pose;
 	track_array scalar_tracks;
 
 #if defined(__ANDROID__)
@@ -977,7 +1027,7 @@ static int safe_main_impl(int argc, char* argv[])
 			if (result.any())
 			{
 				printf("Failed to convert input binary track list\n");
-				deallocate_type_array(allocator, bin_tracks, bin_tracks->get_size());
+				deallocate_type_array(allocator, acl::acl_impl::bit_cast<char*>(bin_tracks), bin_tracks->get_size());
 				return -1;
 			}
 
@@ -989,27 +1039,36 @@ static int safe_main_impl(int argc, char* argv[])
 			if (result.any())
 			{
 				printf("Failed to convert input binary track list\n");
-				deallocate_type_array(allocator, bin_tracks, bin_tracks->get_size());
+				deallocate_type_array(allocator, acl::acl_impl::bit_cast<char*>(bin_tracks), bin_tracks->get_size());
 				return -1;
 			}
 
 			sjson_type = sjson_file_type::raw_track_list;
 		}
 
-		deallocate_type_array(allocator, bin_tracks, bin_tracks->get_size());
+		deallocate_type_array(allocator, acl::acl_impl::bit_cast<char*>(bin_tracks), bin_tracks->get_size());
 	}
 	else
 	{
 		if (!read_acl_sjson_file(allocator, options, sjson_type, sjson_clip, sjson_track_list))
 			return -1;
 
-		transform_tracks = std::move(sjson_clip.track_list);
-		base_clip = std::move(sjson_clip.additive_base_track_list);
-		additive_format = sjson_clip.additive_format;
-		bind_pose = std::move(sjson_clip.bind_pose);
-		use_external_config = sjson_clip.has_settings;
-		settings = sjson_clip.settings;
-		scalar_tracks = std::move(sjson_track_list.track_list);
+		use_external_config = sjson_track_list.has_settings;
+		settings = sjson_track_list.settings;
+
+		if (sjson_type == sjson_file_type::raw_track_list && sjson_track_list.track_list.get_track_type() == track_type8::qvvf)
+		{
+			// Re-interpret things as a raw clip
+			transform_tracks = std::move(track_array_cast<track_array_qvvf>(sjson_track_list.track_list));
+			sjson_type = sjson_file_type::raw_clip;
+		}
+		else
+		{
+			transform_tracks = std::move(sjson_clip.track_list);
+			base_clip = std::move(sjson_clip.additive_base_track_list);
+			additive_format = sjson_clip.additive_format;
+			scalar_tracks = std::move(sjson_track_list.track_list);
+		}
 	}
 
 #if DEBUG_MEGA_LARGE_CLIP
@@ -1061,11 +1120,10 @@ static int safe_main_impl(int argc, char* argv[])
 
 	if (sjson_type == sjson_file_type::raw_clip)
 	{
-		// Grab whatever clip we might have read from the sjson file and cast the const away so we can manage the memory
-		if (base_clip.is_empty() && !bind_pose.is_empty())
+		if (base_clip.is_empty())
 		{
 			if (options.is_bind_pose_relative || options.is_bind_pose_additive0 || options.is_bind_pose_additive1)
-				create_additive_base_clip(options, transform_tracks, bind_pose, base_clip, additive_format);
+				create_additive_base_clip(options, transform_tracks, base_clip, additive_format);
 		}
 
 		// First try to create an additive error metric
@@ -1078,6 +1136,22 @@ static int safe_main_impl(int argc, char* argv[])
 			else
 				settings.error_metric = allocate_type<qvvf_transform_error_metric>(allocator);
 		}
+	}
+
+	// Pre-process
+	{
+		pre_process_settings_t pre_process_settings;
+		pre_process_settings.actions = pre_process_actions::recommended;
+		pre_process_settings.precision_policy = pre_process_precision_policy::lossy;
+
+		if (sjson_type == sjson_file_type::raw_clip)
+		{
+			pre_process_settings.error_metric = settings.error_metric;
+			pre_process_settings.additive_base = &base_clip;
+			pre_process_settings.additive_format = additive_format;
+		}
+
+		pre_process_track_list(allocator, pre_process_settings, transform_tracks);
 	}
 
 	// Compress & Decompress
@@ -1149,6 +1223,11 @@ static int safe_main_impl(int argc, char* argv[])
 				if (options.compression_level_specified)
 					default_settings.level = options.compression_level;
 
+				default_settings.enable_database_support = options.split_into_database;
+
+				default_settings.keyframe_stripping.proportion = options.strip_keyframe_proportion;
+				default_settings.keyframe_stripping.threshold = options.strip_keyframe_threshold;
+
 				compression_database_settings default_database_settings;
 
 				try_algorithm(options, allocator, transform_tracks, base_clip, additive_format, default_settings, default_database_settings, logging, runs_writer, regression_error_threshold);
@@ -1178,8 +1257,12 @@ static int safe_main_impl(int argc, char* argv[])
 	return 0;
 }
 
+#if defined(RTM_COMPILER_MSVC_2015)
+	#pragma warning(pop)
+#endif
+
 #ifdef _WIN32
-static LONG WINAPI unhandled_exception_filter(EXCEPTION_POINTERS *info)
+static LONG WINAPI unhandled_exception_filter(EXCEPTION_POINTERS *info) noexcept
 {
 	(void)info;
 

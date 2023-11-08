@@ -1,14 +1,13 @@
 cmake_minimum_required(VERSION 3.2)
 project(acl_unit_tests CXX)
 
-set(CMAKE_CXX_STANDARD 11)
-
 # Project root is <acl-dir>\tests\main_android
 set(PROJECT_ROOT_DIR "${PROJECT_SOURCE_DIR}/../../../..")
 
 include_directories("${PROJECT_ROOT_DIR}/../../includes")
 include_directories("${PROJECT_ROOT_DIR}/../../external/rtm/includes")
 include_directories("${PROJECT_ROOT_DIR}/../../external/catch2/single_include")
+include_directories("${PROJECT_ROOT_DIR}/../sources")
 
 if(USE_SJSON)
 	include_directories("${PROJECT_ROOT_DIR}/../../external/sjson-cpp/includes")

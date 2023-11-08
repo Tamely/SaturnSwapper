@@ -22,7 +22,7 @@
 // SOFTWARE.
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <catch2/catch.hpp>
+#include "catch2.impl.h"
 
 #include <sjson/parser.h>
 
@@ -30,7 +30,7 @@ using namespace sjson;
 
 static Parser parser_from_c_str(const char* c_str)
 {
-	return Parser(c_str, std::strlen(c_str));
+	return Parser(c_str, c_str != nullptr ? std::strlen(c_str) : 0);
 }
 
 TEST_CASE("Parser Misc", "[parser]")

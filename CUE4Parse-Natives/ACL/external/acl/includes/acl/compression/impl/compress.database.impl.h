@@ -32,8 +32,11 @@
 #include "acl/core/error_result.h"
 #include "acl/core/hash.h"
 #include "acl/core/iallocator.h"
+#include "acl/core/impl/bit_cast.impl.h"
 
 #include <cstdint>
+
+ACL_IMPL_FILE_PRAGMA_PUSH
 
 namespace acl
 {
@@ -64,20 +67,12 @@ namespace acl
 			bool is_empty() const { return num_frames == 0; }
 		};
 
-		struct segment_contriguting_error
+		struct clip_contributing_error_t
 		{
-			const frame_contributing_error* errors;	// List of frame contributing errors for this segment, sorted lowest first
-			uint32_t num_frames;					// Total number of frames in this segment
-			uint32_t num_movable;					// Number of frames that can be moved
-			uint32_t num_assigned;					// Number of frames already assigned
-		};
+			const keyframe_stripping_metadata_t* keyframe_metadata = nullptr;	// List of keyframe stripping metadata, sorted in stripping order
 
-		struct clip_contributing_error
-		{
-			segment_contriguting_error* segments;
-			uint32_t num_segments;
-			uint32_t num_frames;					// Number of frames
-			uint32_t num_assigned;					// Number of frames already assigned
+			uint32_t num_assigned = 0;				// Number of keyframes already assigned
+			uint32_t num_frames = 0;				// Number of keyframes in clip
 		};
 
 		struct frame_assignment_context
@@ -90,14 +85,14 @@ namespace acl
 			database_tier_mapping mappings[k_num_quality_tiers];		// 0 = high importance, 1 = medium importance, 2 = low importance
 			uint32_t num_movable_frames;
 
-			clip_contributing_error* contributing_error_per_clip;
+			clip_contributing_error_t* contributing_error_per_clip;		// One instance per clip
 
 			frame_assignment_context(iallocator& allocator_, const compressed_tracks* const* compressed_tracks_list_, uint32_t num_compressed_tracks_, uint32_t num_movable_frames_)
 				: allocator(allocator_)
 				, compressed_tracks_list(compressed_tracks_list_)
 				, num_compressed_tracks(num_compressed_tracks_)
 				, num_movable_frames(num_movable_frames_)
-				, contributing_error_per_clip(allocate_type_array<clip_contributing_error>(allocator_, num_compressed_tracks_))
+				, contributing_error_per_clip(allocate_type_array<clip_contributing_error_t>(allocator_, num_compressed_tracks_))
 			{
 				mappings[0].tier = quality_tier::highest_importance;
 				mappings[1].tier = quality_tier::medium_importance;
@@ -109,40 +104,57 @@ namespace acl
 					const compressed_tracks* tracks = compressed_tracks_list_[list_index];
 					const tracks_header& header = get_tracks_header(*tracks);
 					const transform_tracks_header& transform_header = get_transform_tracks_header(*tracks);
-					const bool has_multiple_segments = transform_header.has_multiple_segments();
-					const uint32_t* segment_start_indices = has_multiple_segments ? transform_header.get_segment_start_indices() : nullptr;
 					const optional_metadata_header& metadata_header = get_optional_metadata_header(*tracks);
-					const frame_contributing_error* contributing_errors = metadata_header.get_contributing_error(*tracks);
 
-					const uint32_t num_segments = has_multiple_segments ? transform_header.num_segments : 1;	// HACK to avoid static analysis warning
+					clip_contributing_error_t& clip_error = contributing_error_per_clip[list_index];
+					clip_error.num_frames = header.num_samples;
 
-					clip_contributing_error& clip_error = contributing_error_per_clip[list_index];
-					clip_error.segments = allocate_type_array<segment_contriguting_error>(allocator_, num_segments);
-					clip_error.num_segments = num_segments;
-					clip_error.num_frames = 0;
-					clip_error.num_assigned = 0;
-
-					for (uint32_t segment_index = 0; segment_index < num_segments; ++segment_index)
+					if (tracks->get_version() >= compressed_tracks_version16::v02_01_99_2)
 					{
-						const uint32_t segment_start_frame_index = has_multiple_segments ? segment_start_indices[segment_index] : 0;
+						clip_error.keyframe_metadata = bit_cast<const keyframe_stripping_metadata_t*>(metadata_header.get_contributing_error(*tracks));
+					}
+					else
+					{
+						// Allocate and populate
+						keyframe_stripping_metadata_t* keyframe_metadata = allocate_type_array<keyframe_stripping_metadata_t>(allocator_, header.num_samples);
 
-						uint32_t num_segment_frames;
-						if (num_segments == 1)
-							num_segment_frames = header.num_samples;	// Only one segment, it has every frame
-						else if (segment_index + 1 == num_segments)
-							num_segment_frames = header.num_samples - segment_start_indices[segment_index];	// Last segment has the remaining frames
-						else
-							num_segment_frames = segment_start_indices[segment_index + 1] - segment_start_indices[segment_index];
+						const bool has_multiple_segments = transform_header.has_multiple_segments();
+						const uint32_t* segment_start_indices = has_multiple_segments ? transform_header.get_segment_start_indices() : nullptr;
+						const uint32_t num_segments = has_multiple_segments ? transform_header.num_segments : 1;	// HACK to avoid static analysis warning
 
-						const uint32_t num_movable = num_segment_frames >= 2 ? (num_segment_frames - 2) : 0;
+						const frame_contributing_error* contributing_errors = bit_cast<const frame_contributing_error*>(metadata_header.get_contributing_error(*tracks));
 
-						segment_contriguting_error& segment_error = clip_error.segments[segment_index];
-						segment_error.errors = contributing_errors + segment_start_frame_index;
-						segment_error.num_frames = num_segment_frames;
-						segment_error.num_movable = num_movable;
-						segment_error.num_assigned = 0;
+						for (uint32_t segment_index = 0; segment_index < num_segments; ++segment_index)
+						{
+							const uint32_t segment_start_frame_index = has_multiple_segments ? segment_start_indices[segment_index] : 0;
 
-						clip_error.num_frames += num_segment_frames;
+							uint32_t num_segment_frames;
+							if (num_segments == 1)
+								num_segment_frames = header.num_samples;	// Only one segment, it has every frame
+							else if (segment_index + 1 == num_segments)
+								num_segment_frames = header.num_samples - segment_start_indices[segment_index];	// Last segment has the remaining frames
+							else
+								num_segment_frames = segment_start_indices[segment_index + 1] - segment_start_indices[segment_index];
+
+							for (uint32_t segment_keyframe_index = 0; segment_keyframe_index < num_segment_frames; ++segment_keyframe_index)
+							{
+								const uint32_t clip_keyframe_index = segment_start_frame_index + segment_keyframe_index;
+
+								keyframe_metadata[clip_keyframe_index].keyframe_index = segment_start_frame_index + contributing_errors[clip_keyframe_index].index;
+								keyframe_metadata[clip_keyframe_index].stripping_index = 0;			// Calculated below
+								keyframe_metadata[clip_keyframe_index].stripping_error = contributing_errors[clip_keyframe_index].error;
+								keyframe_metadata[clip_keyframe_index].is_keyframe_trivial = false;	// Not supported
+							}
+						}
+
+						// Sort by contributing error
+						// It isn't fully accurate but the original sort order has been lost and we cannot recover it
+						auto sort_predicate = [](const keyframe_stripping_metadata_t& lhs, const keyframe_stripping_metadata_t& rhs) { return lhs.stripping_error < rhs.stripping_error; };
+						std::sort(keyframe_metadata, keyframe_metadata + header.num_samples, sort_predicate);
+
+						// Populate our stripping order
+						for (uint32_t clip_keyframe_index = 0; clip_keyframe_index < header.num_samples; ++clip_keyframe_index)
+							keyframe_metadata[clip_keyframe_index].stripping_index = clip_keyframe_index;
 					}
 				}
 			}
@@ -153,7 +165,16 @@ namespace acl
 					deallocate_type_array(allocator, mappings[tier_index].frames, mappings[tier_index].num_frames);
 
 				for (uint32_t list_index = 0; list_index < num_compressed_tracks; ++list_index)
-					deallocate_type_array(allocator, contributing_error_per_clip[list_index].segments, contributing_error_per_clip[list_index].num_segments);
+				{
+					const compressed_tracks* tracks = compressed_tracks_list[list_index];
+					if (tracks->get_version() < compressed_tracks_version16::v02_01_99_2)
+					{
+						// Old versions copied the data manually
+						keyframe_stripping_metadata_t* keyframe_metadata = const_cast<keyframe_stripping_metadata_t*>(contributing_error_per_clip[list_index].keyframe_metadata);
+						deallocate_type_array(allocator, keyframe_metadata, contributing_error_per_clip[list_index].num_frames);
+					}
+				}
+
 				deallocate_type_array(allocator, contributing_error_per_clip, num_compressed_tracks);
 			}
 
@@ -235,7 +256,7 @@ namespace acl
 				frame_tier_mapping best_mapping{};
 				best_mapping.contributing_error = std::numeric_limits<float>::infinity();
 
-				// Iterate over every segment and find the one with the frame that has the lowest contributing error to assign to this tier
+				// Iterate over every clip and find the one with the frame that has the lowest contributing error to assign to this tier
 				for (uint32_t list_index = 0; list_index < context.num_compressed_tracks; ++list_index)
 				{
 					const compressed_tracks* tracks = context.compressed_tracks_list[list_index];
@@ -244,38 +265,37 @@ namespace acl
 					const uint32_t* segment_start_indices = has_multiple_segments ? transforms_header.get_segment_start_indices() : nullptr;
 					const segment_header* segment_headers = transforms_header.get_segment_headers();
 
-					const clip_contributing_error& clip_error = context.contributing_error_per_clip[list_index];
+					const clip_contributing_error_t& clip_error = context.contributing_error_per_clip[list_index];
 
-					for (uint32_t segment_index = 0; segment_index < transforms_header.num_segments; ++segment_index)
+					if (clip_error.num_assigned >= clip_error.num_frames)
+						continue;	// Every keyframe has been stripped from this clip
+
+					const keyframe_stripping_metadata_t& next_keyframe_to_strip = clip_error.keyframe_metadata[clip_error.num_assigned];
+
+					// TODO: When we populate our tiers, we should strip and ignore the trivial keyframes
+					// that come first in the strip order
+
+					// High importance frames can always be moved since they end up in our compressed tracks
+					if (next_keyframe_to_strip.stripping_error < best_mapping.contributing_error ||
+						tier_mapping.tier == quality_tier::highest_importance)
 					{
-						const segment_contriguting_error& segment_error = clip_error.segments[segment_index];
+						// This frame has a lower error, use it
+						const uint32_t segment_index = next_keyframe_to_strip.segment_index;
 
-						// High importance frames can always be moved since they end up in our compressed tracks
-						const uint32_t num_movable = tier_mapping.tier == quality_tier::highest_importance ? segment_error.num_frames : segment_error.num_movable;
-						if (segment_error.num_assigned >= num_movable)
-							continue;	// No more movable data in this segment, skip it
+						const uint8_t* format_per_track_data;
+						const uint8_t* range_data;
+						const uint8_t* animated_data;
+						transforms_header.get_segment_data(segment_headers[segment_index], format_per_track_data, range_data, animated_data);
 
-						const frame_contributing_error& contributing_error = segment_error.errors[segment_error.num_assigned];
-						ACL_ASSERT(tier_mapping.tier == quality_tier::highest_importance || rtm::scalar_is_finite(contributing_error.error), "Error should be finite");
+						const uint32_t segment_start_frame_index = has_multiple_segments ? segment_start_indices[segment_index] : 0;
 
-						if (contributing_error.error <= best_mapping.contributing_error)
-						{
-							// This frame has a lower error, use it
-							const uint8_t* format_per_track_data;
-							const uint8_t* range_data;
-							const uint8_t* animated_data;
-							transforms_header.get_segment_data(segment_headers[segment_index], format_per_track_data, range_data, animated_data);
-
-							const uint32_t segment_start_frame_index = has_multiple_segments ? segment_start_indices[segment_index] : 0;
-
-							best_mapping.animated_data = animated_data;
-							best_mapping.tracks_index = list_index;
-							best_mapping.segment_index = segment_index;
-							best_mapping.frame_bit_size = segment_headers[segment_index].animated_pose_bit_size;
-							best_mapping.clip_frame_index = segment_start_frame_index + contributing_error.index;
-							best_mapping.segment_frame_index = contributing_error.index;
-							best_mapping.contributing_error = contributing_error.error;
-						}
+						best_mapping.animated_data = animated_data;
+						best_mapping.tracks_index = list_index;
+						best_mapping.segment_index = segment_index;
+						best_mapping.frame_bit_size = segment_headers[segment_index].animated_pose_bit_size;
+						best_mapping.clip_frame_index = next_keyframe_to_strip.keyframe_index;
+						best_mapping.segment_frame_index = next_keyframe_to_strip.keyframe_index - segment_start_frame_index;
+						best_mapping.contributing_error = next_keyframe_to_strip.stripping_error;
 					}
 				}
 
@@ -285,7 +305,6 @@ namespace acl
 				tier_mapping.frames[assigned_frame_count] = best_mapping;
 
 				// Mark it as being assigned so we don't try to use it again
-				context.contributing_error_per_clip[best_mapping.tracks_index].segments[best_mapping.segment_index].num_assigned++;
 				context.contributing_error_per_clip[best_mapping.tracks_index].num_assigned++;
 			}
 
@@ -329,7 +348,7 @@ namespace acl
 #if defined(ACL_HAS_ASSERT_CHECKS)
 			for (uint32_t list_index = 0; list_index < context.num_compressed_tracks; ++list_index)
 			{
-				const clip_contributing_error& clip_error = context.contributing_error_per_clip[list_index];
+				const clip_contributing_error_t& clip_error = context.contributing_error_per_clip[list_index];
 				ACL_ASSERT(clip_error.num_assigned == clip_error.num_frames, "Every frame should have been assigned");
 			}
 #endif
@@ -444,7 +463,7 @@ namespace acl
 			return sample_indices;
 		}
 
-		inline void rewrite_segment_headers(const database_tier_mapping& tier_mapping, uint32_t tracks_index, const transform_tracks_header& input_transforms_header, const segment_header* headers, uint32_t segment_data_base_offset, segment_tier0_header* out_headers)
+		inline void rewrite_segment_headers(const database_tier_mapping& tier_mapping, uint32_t tracks_index, const transform_tracks_header& input_transforms_header, const segment_header* headers, uint32_t segment_data_base_offset, stripped_segment_header_t* out_headers)
 		{
 			const bitset_description desc = bitset_description::make_from_num_bits<32>();
 
@@ -488,7 +507,7 @@ namespace acl
 
 		inline void rewrite_segment_data(const database_tier_mapping& tier_mapping, uint32_t tracks_index,
 			const transform_tracks_header& input_transforms_header, const segment_header* input_headers,
-			transform_tracks_header& output_transforms_header, const segment_tier0_header* output_headers)
+			transform_tracks_header& output_transforms_header, const stripped_segment_header_t* output_headers)
 		{
 			for (uint32_t segment_index = 0; segment_index < input_transforms_header.num_segments; ++segment_index)
 			{
@@ -543,14 +562,13 @@ namespace acl
 			for (uint32_t list_index = 0; list_index < context.num_compressed_tracks; ++list_index)
 			{
 				const compressed_tracks* input_tracks = context.compressed_tracks_list[list_index];
-				const clip_contributing_error& clip_error = context.contributing_error_per_clip[list_index];
 
 				const tracks_header& input_header = get_tracks_header(*input_tracks);
 				const transform_tracks_header& input_transforms_header = get_transform_tracks_header(*input_tracks);
 				const segment_header* input_segment_headers = input_transforms_header.get_segment_headers();
 				const optional_metadata_header& input_metadata_header = get_optional_metadata_header(*input_tracks);
 
-				const uint32_t num_sub_tracks_per_bone = input_header.get_has_scale() ? 3 : 2;
+				const uint32_t num_sub_tracks_per_bone = input_header.get_has_scale() ? 3U : 2U;
 
 				// Calculate how many sub-track packed entries we have
 				// Each sub-track is 2 bits packed within a 32 bit entry
@@ -561,8 +579,8 @@ namespace acl
 				const uint32_t packed_sub_track_buffer_size = num_sub_track_entries * sizeof(packed_sub_track_types);
 
 				// Adding an extra index at the end to delimit things, the index is always invalid: 0xFFFFFFFF
-				const uint32_t segment_start_indices_size = clip_error.num_segments > 1 ? (uint32_t(sizeof(uint32_t)) * (clip_error.num_segments + 1)) : 0;
-				const uint32_t segment_headers_size = sizeof(segment_tier0_header) * clip_error.num_segments;
+				const uint32_t segment_start_indices_size = input_transforms_header.num_segments > 1 ? (uint32_t(sizeof(uint32_t)) * (input_transforms_header.num_segments + 1)) : 0;
+				const uint32_t segment_headers_size = sizeof(stripped_segment_header_t) * input_transforms_header.num_segments;
 
 				// Range data follows constant data, use that to calculate our size
 				const uint32_t constant_data_size = (uint32_t)input_transforms_header.clip_range_data_offset - (uint32_t)input_transforms_header.constant_track_data_offset;
@@ -593,6 +611,8 @@ namespace acl
 				buffer_size = align_to(buffer_size, 4);								// Align range data
 				buffer_size += clip_range_data_size;								// Range data
 
+				uint32_t num_remaining_keyframes = 0;
+
 				// Per segment data
 				for (uint32_t segment_index = 0; segment_index < input_transforms_header.num_segments; ++segment_index)
 				{
@@ -618,10 +638,14 @@ namespace acl
 					const uint32_t num_animated_frames = bitset_count_set_bits(&sample_indices, desc);
 					const uint32_t animated_data_size = ((num_animated_frames * input_segment_headers[segment_index].animated_pose_bit_size) + 7) / 8;
 
+					num_remaining_keyframes += num_animated_frames;
+
 					// TODO: Variable bit rate doesn't need alignment
 					buffer_size = align_to(buffer_size, 4);					// Align animated data
 					buffer_size += animated_data_size;						// Animated track data
 				}
+
+				const uint32_t num_stripped_keyframes = input_header.num_samples - num_remaining_keyframes;
 
 				// Optional metadata
 				const uint32_t metadata_start_offset = align_to(buffer_size, 4);
@@ -658,7 +682,7 @@ namespace acl
 				std::memset(buffer, 0, buffer_size);
 
 				uint8_t* buffer_start = buffer;
-				out_compressed_tracks[list_index] = reinterpret_cast<compressed_tracks*>(buffer);
+				out_compressed_tracks[list_index] = bit_cast<compressed_tracks*>(buffer);
 
 				raw_buffer_header* buffer_header = safe_ptr_cast<raw_buffer_header>(buffer);
 				buffer += sizeof(raw_buffer_header);
@@ -670,6 +694,7 @@ namespace acl
 				std::memcpy(header, &input_header, sizeof(tracks_header));
 
 				header->set_has_database(true);
+				header->set_has_stripped_keyframes(num_stripped_keyframes != 0);
 				header->set_has_metadata(metadata_size != 0);
 
 				transform_tracks_header* transforms_header = safe_ptr_cast<transform_tracks_header>(buffer);
@@ -699,7 +724,7 @@ namespace acl
 
 				// Write our new segment headers
 				const uint32_t segment_data_base_offset = transforms_header->clip_range_data_offset + clip_range_data_size;
-				rewrite_segment_headers(tier_mapping, list_index, input_transforms_header, input_segment_headers, segment_data_base_offset, transforms_header->get_segment_tier0_headers());
+				rewrite_segment_headers(tier_mapping, list_index, input_transforms_header, input_segment_headers, segment_data_base_offset, transforms_header->get_stripped_segment_headers());
 
 				// Copy our sub-track types, they do not change
 				std::memcpy(transforms_header->get_sub_track_types(), input_transforms_header.get_sub_track_types(), packed_sub_track_buffer_size);
@@ -711,11 +736,11 @@ namespace acl
 				std::memcpy(transforms_header->get_clip_range_data(), input_transforms_header.get_clip_range_data(), clip_range_data_size);
 
 				// Write our new segment data
-				rewrite_segment_data(tier_mapping, list_index, input_transforms_header, input_segment_headers, *transforms_header, transforms_header->get_segment_tier0_headers());
+				rewrite_segment_data(tier_mapping, list_index, input_transforms_header, input_segment_headers, *transforms_header, transforms_header->get_stripped_segment_headers());
 
 				if (metadata_size != 0)
 				{
-					optional_metadata_header* metadata_header = reinterpret_cast<optional_metadata_header*>(buffer_start + buffer_size - sizeof(optional_metadata_header));
+					optional_metadata_header* metadata_header = bit_cast<optional_metadata_header*>(buffer_start + buffer_size - sizeof(optional_metadata_header));
 					uint32_t metadata_offset = metadata_start_offset;	// Relative to the start of our compressed_tracks
 
 					// Setup our metadata offsets
@@ -1083,7 +1108,7 @@ namespace acl
 						}
 
 						// Calculate the finale offset for our chunk's data relative to the bulk data start and the final header size
-						const uint32_t chunk_data_offset = static_cast<uint32_t>(reinterpret_cast<uint8_t*>(chunk_header) - bulk_data);
+						const uint32_t chunk_data_offset = static_cast<uint32_t>(bit_cast<uint8_t*>(chunk_header) - bulk_data);
 						const uint32_t chunk_header_size = sizeof(database_chunk_header) + chunk_header->num_segments * sizeof(database_chunk_segment_header);
 
 						// Update the sample offset from being relative to the start of the sample data to the start of the bulk data
@@ -1137,7 +1162,7 @@ namespace acl
 			uint8_t* database_buffer = allocate_type_array_aligned<uint8_t>(context.allocator, database_buffer_size, alignof(compressed_database));
 			std::memset(database_buffer, 0, database_buffer_size);
 
-			compressed_database* database = reinterpret_cast<compressed_database*>(database_buffer);
+			compressed_database* database = bit_cast<compressed_database*>(database_buffer);
 
 			const uint8_t* database_buffer_start = database_buffer;
 
@@ -1256,6 +1281,9 @@ namespace acl
 			if (tracks->has_database())
 				return error_result("Compressed track instance is already bound to a database");
 
+			if (tracks->has_stripped_keyframes())
+				return error_result("Compressed track instance has keyframes stripped");
+
 			const tracks_header& header = get_tracks_header(*tracks);
 			if (!header.get_has_metadata())
 				return error_result("Compressed track instance does not contain any metadata");
@@ -1317,7 +1345,7 @@ namespace acl
 
 		// Allocate and setup our new database
 		uint8_t* database_buffer = allocate_type_array_aligned<uint8_t>(allocator, db_size, alignof(compressed_database));
-		out_split_database = reinterpret_cast<compressed_database*>(database_buffer);
+		out_split_database = bit_cast<compressed_database*>(database_buffer);
 
 		std::memcpy(database_buffer, &database, db_size);
 
@@ -1402,7 +1430,7 @@ namespace acl
 		// Allocate and setup our new database
 		uint8_t* database_buffer = allocate_type_array_aligned<uint8_t>(allocator, database_buffer_size, alignof(compressed_database));
 		std::memset(database_buffer, 0, database_buffer_size);
-		out_stripped_database = reinterpret_cast<compressed_database*>(database_buffer);
+		out_stripped_database = bit_cast<compressed_database*>(database_buffer);
 
 		raw_buffer_header* database_buffer_header = safe_ptr_cast<raw_buffer_header>(database_buffer);
 		database_buffer += sizeof(raw_buffer_header);
@@ -1499,3 +1527,5 @@ namespace acl
 
 	ACL_IMPL_VERSION_NAMESPACE_END
 }
+
+ACL_IMPL_FILE_PRAGMA_POP

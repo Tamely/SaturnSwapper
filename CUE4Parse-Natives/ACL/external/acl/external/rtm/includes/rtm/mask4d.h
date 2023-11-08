@@ -26,6 +26,7 @@
 
 #include "rtm/math.h"
 #include "rtm/version.h"
+#include "rtm/impl/bit_cast.impl.h"
 #include "rtm/impl/compiler_utils.h"
 #include "rtm/impl/mask_common.h"
 
@@ -46,10 +47,10 @@ namespace rtm
 	{
 #if defined(RTM_SSE2_INTRINSICS)
 #if defined(RTM_ARCH_X64)
-		return _mm_cvtsi128_si64(_mm_castpd_si128(input.xy));
+		return static_cast<uint64_t>(_mm_cvtsi128_si64(_mm_castpd_si128(input.xy)));
 #else
 		// Just sign extend on 32bit systems
-		return (uint64_t)_mm_cvtsi128_si32(_mm_castpd_si128(input.xy));
+		return static_cast<uint64_t>(_mm_cvtsi128_si32(_mm_castpd_si128(input.xy)));
 #endif
 #else
 		return input.x;
@@ -63,10 +64,10 @@ namespace rtm
 	{
 #if defined(RTM_SSE2_INTRINSICS)
 #if defined(RTM_ARCH_X64)
-		return _mm_cvtsi128_si64(_mm_castpd_si128(_mm_shuffle_pd(input.xy, input.xy, 1)));
+		return static_cast<uint64_t>(_mm_cvtsi128_si64(_mm_castpd_si128(_mm_shuffle_pd(input.xy, input.xy, 1))));
 #else
 		// Just sign extend on 32bit systems
-		return (uint64_t)_mm_cvtsi128_si32(_mm_castpd_si128(_mm_shuffle_pd(input.xy, input.xy, 1)));
+		return static_cast<uint64_t>(_mm_cvtsi128_si32(_mm_castpd_si128(_mm_shuffle_pd(input.xy, input.xy, 1))));
 #endif
 #else
 		return input.y;
@@ -80,10 +81,10 @@ namespace rtm
 	{
 #if defined(RTM_SSE2_INTRINSICS)
 #if defined(RTM_ARCH_X64)
-		return _mm_cvtsi128_si64(_mm_castpd_si128(input.zw));
+		return static_cast<uint64_t>(_mm_cvtsi128_si64(_mm_castpd_si128(input.zw)));
 #else
 		// Just sign extend on 32bit systems
-		return (uint64_t)_mm_cvtsi128_si32(_mm_castpd_si128(input.zw));
+		return static_cast<uint64_t>(_mm_cvtsi128_si32(_mm_castpd_si128(input.zw)));
 #endif
 #else
 		return input.z;
@@ -97,10 +98,10 @@ namespace rtm
 	{
 #if defined(RTM_SSE2_INTRINSICS)
 #if defined(RTM_ARCH_X64)
-		return _mm_cvtsi128_si64(_mm_castpd_si128(_mm_shuffle_pd(input.zw, input.zw, 1)));
+		return static_cast<uint64_t>(_mm_cvtsi128_si64(_mm_castpd_si128(_mm_shuffle_pd(input.zw, input.zw, 1))));
 #else
 		// Just sign extend on 32bit systems
-		return (uint64_t)_mm_cvtsi128_si32(_mm_castpd_si128(_mm_shuffle_pd(input.zw, input.zw, 1)));
+		return static_cast<uint64_t>(_mm_cvtsi128_si32(_mm_castpd_si128(_mm_shuffle_pd(input.zw, input.zw, 1))));
 #endif
 #else
 		return input.w;
@@ -325,8 +326,8 @@ namespace rtm
 		__m128d zw = _mm_and_pd(lhs.zw, rhs.zw);
 		return mask4d{ xy, zw };
 #else
-		const uint64_t* lhs_ = reinterpret_cast<const uint64_t*>(&lhs);
-		const uint64_t* rhs_ = reinterpret_cast<const uint64_t*>(&rhs);
+		const uint64_t* lhs_ = rtm_impl::bit_cast<const uint64_t*>(&lhs);
+		const uint64_t* rhs_ = rtm_impl::bit_cast<const uint64_t*>(&rhs);
 
 		union
 		{
@@ -353,8 +354,8 @@ namespace rtm
 		__m128d zw = _mm_or_pd(lhs.zw, rhs.zw);
 		return mask4d{ xy, zw };
 #else
-		const uint64_t* lhs_ = reinterpret_cast<const uint64_t*>(&lhs);
-		const uint64_t* rhs_ = reinterpret_cast<const uint64_t*>(&rhs);
+		const uint64_t* lhs_ = rtm_impl::bit_cast<const uint64_t*>(&lhs);
+		const uint64_t* rhs_ = rtm_impl::bit_cast<const uint64_t*>(&rhs);
 
 		union
 		{
@@ -381,8 +382,8 @@ namespace rtm
 		__m128d zw = _mm_xor_pd(lhs.zw, rhs.zw);
 		return mask4d{ xy, zw };
 #else
-		const uint64_t* lhs_ = reinterpret_cast<const uint64_t*>(&lhs);
-		const uint64_t* rhs_ = reinterpret_cast<const uint64_t*>(&rhs);
+		const uint64_t* lhs_ = rtm_impl::bit_cast<const uint64_t*>(&lhs);
+		const uint64_t* rhs_ = rtm_impl::bit_cast<const uint64_t*>(&rhs);
 
 		union
 		{

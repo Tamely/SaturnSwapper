@@ -39,6 +39,8 @@
 
 #include <cstdint>
 
+ACL_IMPL_FILE_PRAGMA_PUSH
+
 namespace acl
 {
 	ACL_IMPL_VERSION_NAMESPACE_BEGIN
@@ -48,7 +50,6 @@ namespace acl
 		, m_tracks(nullptr)
 		, m_num_tracks(0)
 		, m_looping_policy(sample_looping_policy::non_looping)
-		, m_name()
 	{}
 
 	inline track_array::track_array(iallocator& allocator, uint32_t num_tracks)
@@ -56,14 +57,13 @@ namespace acl
 		, m_tracks(allocate_type_array<track>(allocator, num_tracks))
 		, m_num_tracks(num_tracks)
 		, m_looping_policy(sample_looping_policy::non_looping)
-		, m_name()
 	{}
 
 	inline track_array::track_array(track_array&& other) noexcept
 		: m_allocator(other.m_allocator)
 		, m_tracks(other.m_tracks)
 		, m_num_tracks(other.m_num_tracks)
-		, m_looping_policy(sample_looping_policy::non_looping)
+		, m_looping_policy(other.m_looping_policy)
 		, m_name(std::move(other.m_name))
 	{
 		other.m_allocator = nullptr;	// Make sure we don't free our data since we no longer own it
@@ -80,6 +80,7 @@ namespace acl
 		std::swap(m_allocator, other.m_allocator);
 		std::swap(m_tracks, other.m_tracks);
 		std::swap(m_num_tracks, other.m_num_tracks);
+		std::swap(m_looping_policy, other.m_looping_policy);
 		std::swap(m_name, other.m_name);
 		return *this;
 	}
@@ -503,3 +504,5 @@ namespace acl
 
 	ACL_IMPL_VERSION_NAMESPACE_END
 }
+
+ACL_IMPL_FILE_PRAGMA_POP

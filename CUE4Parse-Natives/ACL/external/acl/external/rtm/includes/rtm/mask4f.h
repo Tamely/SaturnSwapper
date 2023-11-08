@@ -26,6 +26,7 @@
 
 #include "rtm/math.h"
 #include "rtm/version.h"
+#include "rtm/impl/bit_cast.impl.h"
 #include "rtm/impl/compiler_utils.h"
 #include "rtm/impl/macros.mask4.impl.h"
 #include "rtm/impl/mask_common.h"
@@ -46,9 +47,9 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE uint32_t RTM_SIMD_CALL mask_get_x(mask4f_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		return _mm_cvtsi128_si32(_mm_castps_si128(input));
+		return static_cast<uint32_t>(_mm_cvtsi128_si32(_mm_castps_si128(input)));
 #elif defined(RTM_NEON_INTRINSICS)
-		return vgetq_lane_u32(vreinterpretq_u32_f32(input), 0);
+		return vgetq_lane_u32(input, 0);
 #else
 		return input.x;
 #endif
@@ -60,9 +61,9 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE uint32_t RTM_SIMD_CALL mask_get_y(mask4f_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		return _mm_cvtsi128_si32(_mm_castps_si128(_mm_shuffle_ps(input, input, _MM_SHUFFLE(1, 1, 1, 1))));
+		return static_cast<uint32_t>(_mm_cvtsi128_si32(_mm_castps_si128(_mm_shuffle_ps(input, input, _MM_SHUFFLE(1, 1, 1, 1)))));
 #elif defined(RTM_NEON_INTRINSICS)
-		return vgetq_lane_u32(vreinterpretq_u32_f32(input), 1);
+		return vgetq_lane_u32(input, 1);
 #else
 		return input.y;
 #endif
@@ -74,9 +75,9 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE uint32_t RTM_SIMD_CALL mask_get_z(mask4f_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		return _mm_cvtsi128_si32(_mm_castps_si128(_mm_shuffle_ps(input, input, _MM_SHUFFLE(2, 2, 2, 2))));
+		return static_cast<uint32_t>(_mm_cvtsi128_si32(_mm_castps_si128(_mm_shuffle_ps(input, input, _MM_SHUFFLE(2, 2, 2, 2)))));
 #elif defined(RTM_NEON_INTRINSICS)
-		return vgetq_lane_u32(vreinterpretq_u32_f32(input), 2);
+		return vgetq_lane_u32(input, 2);
 #else
 		return input.z;
 #endif
@@ -88,9 +89,9 @@ namespace rtm
 	RTM_DISABLE_SECURITY_COOKIE_CHECK RTM_FORCE_INLINE uint32_t RTM_SIMD_CALL mask_get_w(mask4f_arg0 input) RTM_NO_EXCEPT
 	{
 #if defined(RTM_SSE2_INTRINSICS)
-		return _mm_cvtsi128_si32(_mm_castps_si128(_mm_shuffle_ps(input, input, _MM_SHUFFLE(3, 3, 3, 3))));
+		return static_cast<uint32_t>(_mm_cvtsi128_si32(_mm_castps_si128(_mm_shuffle_ps(input, input, _MM_SHUFFLE(3, 3, 3, 3)))));
 #elif defined(RTM_NEON_INTRINSICS)
-		return vgetq_lane_u32(vreinterpretq_u32_f32(input), 3);
+		return vgetq_lane_u32(input, 3);
 #else
 		return input.w;
 #endif
@@ -167,7 +168,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return _mm_movemask_ps(_mm_xor_ps(lhs, rhs)) == 0;
 #elif defined(RTM_NEON_INTRINSICS)
-		uint32x4_t mask = veorq_u32(vreinterpretq_u32_f32(lhs), vreinterpretq_u32_f32(rhs));
+		uint32x4_t mask = veorq_u32(lhs, rhs);
 		uint16x4_t truncated_mask = vmovn_u32(mask);
 		return vget_lane_u64(vreinterpret_u64_u16(truncated_mask), 0) == 0;
 #else
@@ -186,7 +187,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return (_mm_movemask_ps(_mm_xor_ps(lhs, rhs)) & 0x03) == 0;
 #elif defined(RTM_NEON_INTRINSICS)
-		uint32x2_t mask = veor_u32(vget_low_u32(vreinterpretq_u32_f32(lhs)), vget_low_u32(vreinterpretq_u32_f32(rhs)));
+		uint32x2_t mask = veor_u32(vget_low_u32(lhs), vget_low_u32(rhs));
 		return vget_lane_u64(vreinterpret_u64_u32(mask), 0) == 0;
 #else
 		return std::memcmp(&lhs, &rhs, sizeof(uint32_t) * 2) == 0;
@@ -204,7 +205,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return (_mm_movemask_ps(_mm_xor_ps(lhs, rhs)) & 0x07) == 0;
 #elif defined(RTM_NEON_INTRINSICS)
-		uint32x4_t mask = veorq_u32(vreinterpretq_u32_f32(lhs), vreinterpretq_u32_f32(rhs));
+		uint32x4_t mask = veorq_u32(lhs, rhs);
 		uint16x4_t truncated_mask = vmovn_u32(mask);
 		return (vget_lane_u64(vreinterpret_u64_u16(truncated_mask), 0) & 0x0000FFFFFFFFFFFFULL) == 0;
 #else
@@ -223,7 +224,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return _mm_movemask_ps(_mm_xor_ps(lhs, rhs)) != 0x0F;
 #elif defined(RTM_NEON_INTRINSICS)
-		uint32x4_t mask = veorq_u32(vreinterpretq_u32_f32(lhs), vreinterpretq_u32_f32(rhs));
+		uint32x4_t mask = veorq_u32(lhs, rhs);
 		uint16x4_t truncated_mask = vmovn_u32(mask);
 		return vget_lane_u64(vreinterpret_u64_u16(truncated_mask), 0) != 0xFFFFFFFFFFFFFFFFULL;
 #else
@@ -245,7 +246,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return (_mm_movemask_ps(_mm_xor_ps(lhs, rhs)) & 0x03) != 0x03;
 #elif defined(RTM_NEON_INTRINSICS)
-		uint32x2_t mask = veor_u32(vget_low_u32(vreinterpretq_u32_f32(lhs)), vget_low_u32(vreinterpretq_u32_f32(rhs)));
+		uint32x2_t mask = veor_u32(vget_low_u32(lhs), vget_low_u32(rhs));
 		return vget_lane_u64(vreinterpret_u64_u32(mask), 0) != 0xFFFFFFFFFFFFFFFFULL;
 #else
 		return std::memcmp(&lhs.x, &rhs.x, sizeof(uint32_t)) == 0
@@ -264,7 +265,7 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return (_mm_movemask_ps(_mm_xor_ps(lhs, rhs)) & 0x07) != 0x07;
 #elif defined(RTM_NEON_INTRINSICS)
-		uint32x4_t mask = veorq_u32(vreinterpretq_u32_f32(lhs), vreinterpretq_u32_f32(rhs));
+		uint32x4_t mask = veorq_u32(lhs, rhs);
 		uint16x4_t truncated_mask = vmovn_u32(mask);
 		return (vget_lane_u64(vreinterpret_u64_u16(truncated_mask), 0) & 0x0000FFFFFFFFFFFFULL) != 0x0000FFFFFFFFFFFFULL;
 #else
@@ -282,10 +283,10 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return _mm_and_ps(lhs, rhs);
 #elif defined(RTM_NEON_INTRINSICS)
-		return vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(lhs), vreinterpretq_u32_f32(rhs)));
+		return vandq_u32(lhs, rhs);
 #else
-		const uint32_t* lhs_ = reinterpret_cast<const uint32_t*>(&lhs);
-		const uint32_t* rhs_ = reinterpret_cast<const uint32_t*>(&rhs);
+		const uint32_t* lhs_ = rtm_impl::bit_cast<const uint32_t*>(&lhs);
+		const uint32_t* rhs_ = rtm_impl::bit_cast<const uint32_t*>(&rhs);
 
 		union
 		{
@@ -310,10 +311,10 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return _mm_or_ps(lhs, rhs);
 #elif defined(RTM_NEON_INTRINSICS)
-		return vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(lhs), vreinterpretq_u32_f32(rhs)));
+		return vorrq_u32(lhs, rhs);
 #else
-		const uint32_t* lhs_ = reinterpret_cast<const uint32_t*>(&lhs);
-		const uint32_t* rhs_ = reinterpret_cast<const uint32_t*>(&rhs);
+		const uint32_t* lhs_ = rtm_impl::bit_cast<const uint32_t*>(&lhs);
+		const uint32_t* rhs_ = rtm_impl::bit_cast<const uint32_t*>(&rhs);
 
 		union
 		{
@@ -338,10 +339,10 @@ namespace rtm
 #if defined(RTM_SSE2_INTRINSICS)
 		return _mm_xor_ps(lhs, rhs);
 #elif defined(RTM_NEON_INTRINSICS)
-		return vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(lhs), vreinterpretq_u32_f32(rhs)));
+		return veorq_u32(lhs, rhs);
 #else
-		const uint32_t* lhs_ = reinterpret_cast<const uint32_t*>(&lhs);
-		const uint32_t* rhs_ = reinterpret_cast<const uint32_t*>(&rhs);
+		const uint32_t* lhs_ = rtm_impl::bit_cast<const uint32_t*>(&lhs);
+		const uint32_t* rhs_ = rtm_impl::bit_cast<const uint32_t*>(&rhs);
 
 		union
 		{
