@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 using Saturn.Backend.Data.SaturnConfig.Models;
@@ -27,7 +28,16 @@ namespace Saturn.Backend.Data.SaturnConfig
             }
             else
             {
-                _config = JsonConvert.DeserializeObject<ConfigModel>(File.ReadAllText(Constants.ConfigPath));
+                try
+                {
+                    _config = JsonConvert.DeserializeObject<ConfigModel>(File.ReadAllText(Constants.ConfigPath));
+                }
+                catch (Exception e)
+                {
+                    Logger.Log($"Failed to load config: {e.Message}");
+                    _config = new ConfigModel();
+                    File.WriteAllText(Constants.ConfigPath, JsonConvert.SerializeObject(_config));
+                }
             }
         }
 
