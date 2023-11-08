@@ -67,7 +67,7 @@
                         </h3>
                     }
                 </div>
-                @if (Constants.PotentialOptions.Contains(item.ID))
+                @if (Constants.PotentialOptions.Contains(item.ID.ToLower()))
                 {
                     <div class="item-info">
                         <h3>@_localizationResourceService.GetString(83)</h3>

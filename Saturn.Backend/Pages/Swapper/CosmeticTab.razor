@@ -267,6 +267,8 @@
         Constants.SelectedItem.Description = $"Swapping from {Constants.SelectedOption.DisplayName} to {Constants.SelectedItem.DisplayName}";
         StateHasChanged();
         
+        await Task.Delay(500);
+        
         Constants.CurrentSwaps.Add(new()
         {
             OptionModel = Constants.SelectedOption,
