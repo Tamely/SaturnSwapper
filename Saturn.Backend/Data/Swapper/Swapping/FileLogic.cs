@@ -292,7 +292,7 @@ public class FileLogic
                     Data = swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Serialize()
                 };
 
-                written += compressedChunk.Length;
+                written += compressedChunk.Length + 10;
             }
 
             
