@@ -28,14 +28,11 @@ public static class ExportHelpers
         FLinearColor? skinColor = null;
         foreach (var part in inputParts)
         {
-            var skeletalMesh = part.GetOrDefault<USkeletalMesh?>("SkeletalMesh");
-            if (skeletalMesh is null) continue;
+            var skeletalMesh = part.GetOrDefault<FSoftObjectPath>("SkeletalMesh");
 
             var exportPart = new ExportPart();
             exportPart.Path = part.GetPathName();
-            exportPart.MeshPath = skeletalMesh.GetPathName();
-
-            exportPart.NumLods = (skeletalMesh.LODModels ?? Array.Empty<FStaticLODModel>()).Length;
+            exportPart.MeshPath = skeletalMesh.AssetPathName.Text;
 
             var characterPartType = part.GetOrDefault<EFortCustomPartType>("CharacterPartType");
             exportPart.Part = characterPartType.ToString();
@@ -76,17 +73,6 @@ public static class ExportHelpers
                         if (skinColorPair is not null) skinColor = skinColorPair.Get<FLinearColor>("ColorValue");
                     }
                 }
-            }
-
-            foreach (var mat in skeletalMesh.Materials)
-            {
-                if (mat is null) continue;
-                
-                if (!mat.TryLoad(out var materialObject)) continue;
-                if (materialObject is not UMaterialInterface material) continue;
-                
-                var exportMaterial = CreateExportMaterial(material);
-                exportPart.Materials.Add(exportMaterial);
             }
 
             if (part.TryGetValue(out FStructFallback[] materialOverrides, "MaterialOverrides"))

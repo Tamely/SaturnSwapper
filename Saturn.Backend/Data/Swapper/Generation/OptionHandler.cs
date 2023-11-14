@@ -177,7 +177,8 @@ public class OptionHandler
             Constants.AssetCache[item.ID] = exportData;
 
             await Constants.Handler.Reset();
-            List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(Constants.PotentialOptions);
+            //List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(Constants.PotentialOptions);
+            List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(new List<string>());
             await Parallel.ForEachAsync(options, async (option, token) =>
             {
                 if (option.IsRandom) return;

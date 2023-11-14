@@ -89,8 +89,12 @@ public class AssetExportData : ExportDataBase
                         {
                             if (parts.Length == 0)
                             {
-                                var specializations = heroDefinition.Get<UObject[]>("Specializations").FirstOrDefault();
-                                parts = specializations?.GetOrDefault("CharacterParts", Array.Empty<UObject>()) ?? Array.Empty<UObject>();
+                                var specializations = heroDefinition.GetOrDefault("Specializations", Array.Empty<UObject>());
+                                if (specializations.Length > 0)
+                                {
+                                    var spec = specializations.FirstOrDefault();
+                                    parts = spec?.GetOrDefault("CharacterParts", Array.Empty<UObject>()) ?? Array.Empty<UObject>();
+                                }
                             }
                         }
                         

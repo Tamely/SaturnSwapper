@@ -196,7 +196,9 @@ public class AssetHandlerData : ICloneable
         
         var items = Constants.AssetDataBuffers.Where(x => ClassNames.Any(y => x.AssetClass.Text.Equals(y, StringComparison.OrdinalIgnoreCase))).ToList();
 
-        items.RemoveAll(i => !AllowedFileNames.Any(x => i.ObjectPath.ToLower().Contains(x) || i.ObjectPath.ToLower().Contains("_random")));
+        var allowedFileNames = AllowedFileNames as string[] ?? AllowedFileNames.ToArray();
+        if (allowedFileNames.Count() > 1)
+            items.RemoveAll(i => !allowedFileNames.Any(x => i.ObjectPath.ToLower().Contains(x) || i.ObjectPath.ToLower().Contains("_random")));
 
         foreach (var item in items)
         {
