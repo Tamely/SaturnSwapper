@@ -210,8 +210,8 @@ public class OptionHandler
 
                     if (!optionIsDead)
                     {
-                        if (!exportData.ExportParts.First(x => x.Part == "Head").MeshPath.ToLower()
-                                .Contains("m_med_blk_sydney_01"))
+                        if (exportData.ExportParts.Any(x => x.Part == "Head") 
+                            && !exportData.ExportParts.First(x => x.Part == "Head").MeshPath.ToLower().Contains("m_med_blk_sydney_01"))
                         {
                             foreach (var _ in from part in exportData.ExportParts 
                                      let optionPart = optionExportData.ExportParts.First(optionPart => part.Part == optionPart.Part) 
