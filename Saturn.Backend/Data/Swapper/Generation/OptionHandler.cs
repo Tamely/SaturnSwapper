@@ -179,7 +179,7 @@ public class OptionHandler
             Constants.AssetCache[item.ID] = exportData;
 
             await Constants.Handler.Reset();
-            List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(Constants.ShouldCreativeSwap ? Constants.PotentialOptions : new List<string>());
+            List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias((Constants.ShouldCreativeSwap || Constants.CosmeticState == SaturnState.S_Pickaxe || Constants.CosmeticState == SaturnState.S_Emote) ? Constants.PotentialOptions : new List<string>());
             await Parallel.ForEachAsync(options, async (option, token) =>
             {
                 if (option.IsRandom) return;
