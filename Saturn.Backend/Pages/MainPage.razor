@@ -26,7 +26,6 @@
 @inherits LayoutComponentBase
 
 @inject IJSRuntime _jsRuntime
-@inject OobeService _oobeService
 @inject ISaturnAPIService _saturnAPIService
 @inject IFortniteCentralService _fortniteCentralService
 @inject LocalizationResourceService _localizationResourceService
@@ -225,8 +224,6 @@
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(82));
 
         await _jsRuntime.InvokeVoidAsync("saturn.anims.installerWelcomeOut");
-
-        await _oobeService.ConfigureOobe();
 
         Constants.State = SaturnState.S_Dash;
 

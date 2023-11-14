@@ -213,21 +213,6 @@ public class OptionHandler
                         if (!exportData.ExportParts.First(x => x.Part == "Head").MeshPath.ToLower()
                                 .Contains("m_med_blk_sydney_01"))
                         {
-                            if (option.DisplayName.Contains("Lexa"))
-                            {
-                                foreach (var part in exportData.ExportParts)
-                                {
-                                    Logger.Log($"Morph: {part.MorphName} | Part: {part.Part}");
-                                    foreach (var oPart in optionExportData.ExportParts)
-                                    {
-                                        if (part.Part == oPart.Part)
-                                        {
-                                            Logger.Log($"Option: {oPart.MorphName} | Part: {oPart.Part}");
-                                        }
-                                    }
-                                }
-                            }
-                            
                             foreach (var _ in from part in exportData.ExportParts 
                                      let optionPart = optionExportData.ExportParts.First(optionPart => part.Part == optionPart.Part) 
                                      where part.MorphName != "None" 

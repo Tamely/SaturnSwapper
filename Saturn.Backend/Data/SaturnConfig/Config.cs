@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 using Saturn.Backend.Data.SaturnConfig.Models;
-using Saturn.Backend.Data.Services.OobeServiceUtils;
 using Saturn.Backend.Data.Swapper.Swapping.Models;
 using Saturn.Backend.Data.Variables;
 
@@ -64,16 +63,6 @@ namespace Saturn.Backend.Data.SaturnConfig
         public string GetFortniteVersion()
         {
             return _config.FortniteVersion;
-        }
-
-        public OobeType GetOobeType()
-        {
-            return _config.OobeType;
-        }
-        
-        public void SetOobeType(OobeType oobeType)
-        {
-            _config.OobeType = oobeType;
         }
 
         public List<PresetModel> GetPresets()
