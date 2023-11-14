@@ -36,6 +36,12 @@ namespace UAssetAPI
         /// </summary>
         [JsonIgnore]
         public Usmap Mappings;
+        
+        /// <summary>
+        /// The corresponding global data.
+        /// </summary>
+        [JsonIgnore]
+        public IOGlobalData GlobalData;
 
         /// <summary>
         /// Should the asset be split into separate .uasset, .uexp, and .ubulk files, as opposed to one single .uasset file?
