@@ -178,6 +178,9 @@ public class FileLogic
     public static async Task Convert(AssetSelectorItem search, AssetSelectorItem replace)
     {
         if (isLocked) return;
+
+        if (search == null || replace == null || replace.OptionHandler == null) return;
+        
         isLocked = true;
         
         List<SwapData> swapData = new();
