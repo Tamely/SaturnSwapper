@@ -40,7 +40,7 @@
         <h4>@_localizationResourceService.GetString(16)</h4>
     </div>
     
-    @if (Constants.PotentialOptions.Count == 0)
+    @if (Constants.PotentialOptions.Count == 0 && Constants.ShouldCreativeSwap)
     {
         <div class="tab-message">
             <div class="text">
