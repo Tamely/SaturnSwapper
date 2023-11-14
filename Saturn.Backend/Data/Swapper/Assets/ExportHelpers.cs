@@ -75,10 +75,11 @@ public static class ExportHelpers
                 }
             }
 
+            /*
             if (part.TryGetValue(out FStructFallback[] materialOverrides, "MaterialOverrides"))
             {
                 OverrideMaterials(materialOverrides, ref exportPart);
-            }
+            }*/
             
             exportParts.Add(exportPart);
         }

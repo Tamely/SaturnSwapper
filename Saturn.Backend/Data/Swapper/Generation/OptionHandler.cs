@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CUE4Parse_Conversion.Textures;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using Saturn.Backend.Data.Swapper.Assets;
 using Saturn.Backend.Data.Variables;
+using SkiaSharp;
 
 namespace Saturn.Backend.Data.Swapper.Generation;
 
@@ -177,8 +179,7 @@ public class OptionHandler
             Constants.AssetCache[item.ID] = exportData;
 
             await Constants.Handler.Reset();
-            //List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(Constants.PotentialOptions);
-            List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(new List<string>());
+            List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(Constants.ShouldCreativeSwap ? Constants.PotentialOptions : new List<string>());
             await Parallel.ForEachAsync(options, async (option, token) =>
             {
                 if (option.IsRandom) return;
