@@ -32,7 +32,7 @@ public class OptionHandler
         return exportData;
     }
 
-    private static void FixPartData(AssetExportData exportData)
+    public static void FixPartData(AssetExportData exportData)
     {
         if (exportData.ExportParts.Any(part => Enum.Parse<EFortCustomPartType>(part.Part) == EFortCustomPartType.Hat)
             && exportData.ExportParts.All(part => Enum.Parse<EFortCustomPartType>(part.Part) != EFortCustomPartType.Face))
@@ -242,16 +242,8 @@ public class OptionHandler
                 isPerfect = true;
                 
                 
-                if (Constants.AssetCache.TryGetValue(option.ID, out var value2))
-                {
-                    optionExportData = value2;
-                }
-                else
-                {
-                    optionExportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>());
-                    FixPartData(optionExportData);
-                    Constants.AssetCache.Add(option.ID, optionExportData);
-                }
+                optionExportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>());
+                FixPartData(optionExportData);
 
                 if (exportData.ExportParts.Any(part => optionExportData.ExportParts.All(optionPart => optionPart.Part != part.Part)))
                 {

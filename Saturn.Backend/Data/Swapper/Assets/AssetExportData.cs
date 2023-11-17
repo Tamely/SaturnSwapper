@@ -73,7 +73,6 @@ public class AssetExportData : ExportDataBase
                                         }
                                     }
                                     if (!bWasfound) continue;
-                                    Logger.Log("Found tag: " + variantMetaTagRequired.TagName.Text);
 
                                     if (option.GetOrDefault("VariantName", new FText("Unknown Style")).Text.ToLower() == "default") continue;
                                     
