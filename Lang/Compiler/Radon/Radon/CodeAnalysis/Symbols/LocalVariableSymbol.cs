@@ -5,7 +5,7 @@ public sealed class LocalVariableSymbol : VariableSymbol
     public override SymbolKind Kind => SymbolKind.LocalVariable;
     public override string Name { get; }
     public override TypeSymbol Type { get; }
-    public bool HasBeenAssigned { get; set; }
+    public bool IsInitialized { get; set; }
 
     internal LocalVariableSymbol(string name, TypeSymbol type)
     {

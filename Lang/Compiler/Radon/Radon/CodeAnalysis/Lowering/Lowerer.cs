@@ -22,7 +22,7 @@ internal sealed class Lowerer
     public BoundAssembly Lower()
     {
         var loweredTypes = LowerTypes();
-        return new BoundAssembly(_assembly.Syntax, _assembly.Assembly, loweredTypes, _diagnostics.ToImmutableArray(), _assembly.Scope);
+        return new BoundAssembly(_assembly.Syntax, _assembly.Assembly, loweredTypes, _diagnostics.ToImmutableArray(), _assembly.AssemblyScopes);
     }
     
     private ImmutableArray<BoundType> LowerTypes()

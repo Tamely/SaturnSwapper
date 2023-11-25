@@ -95,5 +95,6 @@ public enum ErrorCode
     CannotConstructType,
     CannotReturnVoid,
     ArrayElementTypeCannotBeType,
-    VariableUseBeforeAssignment
+    VariableUseBeforeAssignment,
+    VariableNotInitialized
 }

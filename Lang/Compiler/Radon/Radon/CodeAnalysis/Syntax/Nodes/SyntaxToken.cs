@@ -7,6 +7,8 @@ namespace Radon.CodeAnalysis.Syntax.Nodes;
 
 public sealed class SyntaxToken : SyntaxNode
 {
+    public new static SyntaxToken Empty { get; } = new(null!, SyntaxKind.BadToken, 0, string.Empty, null, ImmutableArray<SyntaxTrivia>.Empty, ImmutableArray<SyntaxTrivia>.Empty);
+    
     public override string SyntaxName => Kind.Name;
     public override SyntaxKind Kind { get; }
     public override int Position { get; }

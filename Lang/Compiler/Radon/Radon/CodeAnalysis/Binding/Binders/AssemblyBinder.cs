@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Formats.Asn1;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Radon.CodeAnalysis.Binding.Semantics;
@@ -12,19 +14,22 @@ using Radon.CodeAnalysis.Syntax;
 using Radon.CodeAnalysis.Syntax.Nodes;
 using Radon.CodeAnalysis.Syntax.Nodes.Members;
 using Radon.CodeAnalysis.Syntax.Nodes.TypeDeclarations;
+using Radon.CodeAnalysis.Text;
 
 namespace Radon.CodeAnalysis.Binding.Binders;
 
 internal sealed class AssemblyBinder : Binder
 {
     private readonly List<TemplateBinder> _templateBinders;
+    private readonly Dictionary<string, Scope> _assemblyScopes;
     public static AssemblyBinder Current { get; private set; } = null!;
     public AssemblySymbol Assembly { get; }
 
     internal AssemblyBinder() 
-        : base((Scope?)null)
+        : base((Scope?)null, TextLocation.Empty)
     {
         _templateBinders = new List<TemplateBinder>();
+        _assemblyScopes = new Dictionary<string, Scope>();
         Assembly = new AssemblySymbol(string.Empty);
         Current = this;
     }
@@ -33,15 +38,13 @@ internal sealed class AssemblyBinder : Binder
     {
         var context = SemanticContext.CreateEmpty(this, Diagnostics);
         // Args will be a list of syntax trees
-        if (args.Length != 1)
+        if (args is not [ImmutableArray<SyntaxTree> syntaxTrees])
         {
             return new BoundErrorNode(node, context);
         }
 
         // Get the syntax trees
-        var syntaxTrees = (ImmutableArray<SyntaxTree>)args[0];
         var codeUnits = new List<CodeCompilationUnitSyntax>();
-        var boundTypes = new List<BoundType>();
         TopLevelStatementCompilationUnitSyntax? topLevelUnit = null;
         // Separate top-level-statement files from normal files
         foreach (var syntaxTree in syntaxTrees)
@@ -63,54 +66,14 @@ internal sealed class AssemblyBinder : Binder
             }
         }
 
-        // Register all primitive types
-        var primitiveTypes = TypeSymbol.GetPrimitiveTypes();
-        Register(context, new ArrayTypeSymbol(TypeSymbol.Char));
-        foreach (var type in primitiveTypes)
-        {
-            Register(context, type);
-        }
-        
-        // Initialize a binder for each primitive type
         var primitiveBinders = new List<TypeSymbolBinder>();
-        foreach (var type in primitiveTypes)
-        {
-            var primitiveBinder = new TypeSymbolBinder(this, type);
-            primitiveBinders.Add(primitiveBinder);
-        }
-        
-        // Bind the members of each primitive type
-        foreach (var primitiveBinder in primitiveBinders)
-        {
-            primitiveBinder.BindMembers();
-        }
+        RegisterPrimitives(context, primitiveBinders);
 
         // Register all types
         var typeBinders = new List<NamedTypeBinder>();
-        foreach (var codeUnit in codeUnits)
-        {
-            foreach (var typeDecl in codeUnit.DeclaredTypes)
-            {
-                var typeBinder = new NamedTypeBinder(this, typeDecl);
-                var type = typeBinder.CreateType();
-                var typeRegContext = new SemanticContext(typeDecl.Location, typeBinder, typeDecl, Diagnostics);
-                typeBinders.Add(typeBinder);
-                Register(typeRegContext, type);
-            }
-        }
-        
-        // Resolve all members of each type
-        foreach (var typeBinder in typeBinders)
-        {
-            typeBinder.ResolveMembers();
-        }
+        RegisterTypes(codeUnits, typeBinders);
 
-        // Bind all members of each type
-        foreach (var typeBinder in typeBinders)
-        {
-            typeBinder.BindMembers();
-        }
-
+        var boundTypes = new List<BoundType>();
         // If there is a top-level-statement file, it will be the last file to be bound
         if (topLevelUnit is not null)
         {
@@ -120,158 +83,21 @@ internal sealed class AssemblyBinder : Binder
             Diagnostics.AddRange(programBinder.Diagnostics);
         }
 
-        // ReSharper disable once ForCanBeConvertedToForeach
-        // We do a for loop because we modify the list while iterating over it
-        for (var i = 0; i < _templateBinders.Count; i++)
-        {
-            // Check if the bound template is incomplete
-            // This means that there are still unresolved type parameters
-            var templateBinder = _templateBinders[i];
-            if (CheckForIncompleteTemplate(templateBinder))
-            {
-                continue;
-            }
-            
-            var binder = templateBinder.GetBinder();
-            switch (binder)
-            {
-                case NamedTypeBinder namedTypeBinder:
-                    namedTypeBinder.BindMembers();
-                    break;
-                case TypeSymbolBinder primitiveTypeBinder:
-                    primitiveTypeBinder.BindMembers();
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+        // Process all templates
+        ProcessTemplates(boundTypes);
 
-            // Bind the template
-            var boundType = (BoundType)templateBinder.Bind(null);
-            if (templateBinder.GetTypeArguments().Any(x => x is TypeParameterSymbol))
-            {
-                continue; // We do this because it's not a completed template
-            }
-
-            if (boundType is not BoundTemplate)
-            {
-                boundTypes.Add(boundType);
-            }
-
-            Diagnostics.AddRange(binder.Diagnostics);
-        }
-
-        // Bind all primitive types
-        foreach (var primitiveBinder in primitiveBinders)
-        {
-            var boundType = (BoundType)primitiveBinder.Bind(null);
-            if (boundType is not BoundTemplate)
-            {
-                boundTypes.Add(boundType);
-            }
-            
-            Diagnostics.AddRange(primitiveBinder.Diagnostics);
-        }
-        
         // Bind all types
-        foreach (var typeBinder in typeBinders)
-        {
-            var boundType = (BoundType)typeBinder.Bind(null);
-            if (boundType is BoundTemplate)
-            {
-                continue;
-            }
-            
-            if (boundType is not BoundTemplate)
-            {
-                boundTypes.Add(boundType);
-            }
-            
-            Diagnostics.AddRange(typeBinder.Diagnostics);
-        }
+        BindTypes(primitiveBinders, boundTypes, typeBinders);
+
+        // Check for incomplete arrays
+        CheckForIncompleteArrays(boundTypes);
         
-        // Get all array type symbols
-        var symbols = Scope?.GetAllSymbols<ArrayTypeSymbol>();
-        if (symbols is not null)
-        {
-            foreach (var symbol in symbols)
-            {
-                if (HasUnresolvedTypeParameters(symbol))
-                {
-                    continue;
-                }
-                
-                var arrayBinder = new TypeSymbolBinder(this, symbol);
-                arrayBinder.BindMembers();
-                var boundType = (BoundType)arrayBinder.Bind(null);
-                boundTypes.Add(boundType);
-                Diagnostics.AddRange(arrayBinder.Diagnostics);
-                continue;
-                
-                bool HasUnresolvedTypeParameters(TypeSymbol type)
-                {
-                    switch (type)
-                    {
-                        case TemplateSymbol or TypeParameterSymbol:
-                            return true;
-                        case ArrayTypeSymbol array:
-                            return HasUnresolvedTypeParameters(array.ElementType);
-                    }
+        // Check for multiple entry points
+        CheckForMultipleEntries(boundTypes);
 
-                    if (type.TemplateBinder is { } binder)
-                    {
-                        return CheckForIncompleteTemplate(binder);
-                    }
-
-                    return false;
-                }
-            }
-        }
-
-        // The following code is used to check for multiple entry points
-        // This is necessary because having multiple entry points would lead to undefined behavior
-        var foundEntryType = false;
-        var foundEntryMethod = false;
-        foreach (var boundType in boundTypes)
-        {
-            // Check if the type is an entry type
-            if (boundType is not BoundStruct boundStruct || 
-                !boundType.TypeSymbol.HasModifier(SyntaxKind.EntryKeyword) ||
-                boundType.Syntax is not StructDeclarationSyntax syntax)
-            {
-                continue;
-            }
-
-            // Check if we already found an entry type
-            if (foundEntryType)
-            {
-                Diagnostics.ReportMultipleEntryTypes(syntax.Modifiers
-                    .First(x => x.Kind == SyntaxKind.EntryKeyword).Location);
-            }
-            
-            // We found an entry type
-            foundEntryType = true;
-            // Find the entry method
-            foreach (var member in boundStruct.Members)
-            {
-                if (member is not BoundMethod method ||
-                    !method.Symbol.HasModifier(SyntaxKind.EntryKeyword) ||
-                    member.Syntax is not MethodDeclarationSyntax methodSyntax)
-                {
-                    continue;
-                }
-                
-                if (foundEntryMethod)
-                {
-                    Diagnostics.ReportMultipleEntryMethods(methodSyntax.Modifiers
-                        .First(x => x.Kind == SyntaxKind.EntryKeyword).Location);
-                }
-                
-                foundEntryMethod = true;
-            }
-        }
-
+        // Create the assembly
         var diagnostics = Diagnostics.ToImmutableArray();
-        var assembly = new BoundAssembly(SyntaxNode.Empty, Assembly, boundTypes.ToImmutableArray(), diagnostics, Scope);
+        var assembly = new BoundAssembly(SyntaxNode.Empty, Assembly, boundTypes.ToImmutableArray(), diagnostics, _assemblyScopes.ToImmutableDictionary());
         var lowerer = new Lowerer(assembly);
         var loweredAssembly = lowerer.Lower();
         return loweredAssembly;
@@ -337,5 +163,222 @@ internal sealed class AssemblyBinder : Binder
         }
 
         return false;
+    }
+
+    private void RegisterPrimitives(SemanticContext context, List<TypeSymbolBinder> primitiveBinders)
+    {
+        // Register all primitive types
+        var primitiveTypes = TypeSymbol.GetPrimitiveTypes();
+        Register(context, new ArrayTypeSymbol(TypeSymbol.Char));
+        foreach (var type in primitiveTypes)
+        {
+            Register(context, type);
+        }
+        
+        // Initialize a binder for each primitive type
+        foreach (var type in primitiveTypes)
+        {
+            var primitiveBinder = new TypeSymbolBinder(this, type);
+            primitiveBinders.Add(primitiveBinder);
+        }
+        
+        // Bind the members of each primitive type
+        foreach (var primitiveBinder in primitiveBinders)
+        {
+            primitiveBinder.BindMembers();
+        }
+    }
+
+    private void RegisterTypes(List<CodeCompilationUnitSyntax> codeUnits, List<NamedTypeBinder> typeBinders)
+    {
+        foreach (var codeUnit in codeUnits)
+        {
+            var scope = Scope?.CreateChild(codeUnit.Location);
+            foreach (var typeDecl in codeUnit.DeclaredTypes)
+            {
+                var typeBinder = new NamedTypeBinder(this, typeDecl);
+                var type = typeBinder.CreateType();
+                var typeRegContext = new SemanticContext(typeDecl.Location, typeBinder, typeDecl, Diagnostics);
+                typeBinders.Add(typeBinder);
+                Register(typeRegContext, type);
+            }
+            
+            var fileName = Path.GetFileName(codeUnit.SyntaxTree.Text.FileName);
+            _assemblyScopes.Add(fileName, scope!);
+        }
+        
+        // Resolve all members of each type
+        foreach (var typeBinder in typeBinders)
+        {
+            typeBinder.ResolveMembers();
+        }
+
+        // Bind all members of each type
+        foreach (var typeBinder in typeBinders)
+        {
+            typeBinder.BindMembers();
+        }
+    }
+
+    private void ProcessTemplates(List<BoundType> boundTypes)
+    {
+        // ReSharper disable once ForCanBeConvertedToForeach
+        // We do a for loop because we modify the list while iterating over it
+        for (var i = 0; i < _templateBinders.Count; i++)
+        {
+            // Check if the bound template is incomplete
+            // This means that there are still unresolved type parameters
+            var templateBinder = _templateBinders[i];
+            if (CheckForIncompleteTemplate(templateBinder))
+            {
+                continue;
+            }
+            
+            var binder = templateBinder.GetBinder();
+            switch (binder)
+            {
+                case NamedTypeBinder namedTypeBinder:
+                    namedTypeBinder.BindMembers();
+                    break;
+                case TypeSymbolBinder primitiveTypeBinder:
+                    primitiveTypeBinder.BindMembers();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            // Bind the template
+            var boundType = (BoundType)templateBinder.Bind(null);
+            if (templateBinder.GetTypeArguments().Any(x => x is TypeParameterSymbol))
+            {
+                continue; // We do this because it's not a completed template
+            }
+
+            if (boundType is not BoundTemplate)
+            {
+                boundTypes.Add(boundType);
+            }
+
+            Diagnostics.AddRange(binder.Diagnostics);
+        }
+    }
+    
+    private void CheckForIncompleteArrays(List<BoundType> boundTypes)
+    {
+        // Get all array type symbols
+        var symbols = Scope?.GetAllSymbols<ArrayTypeSymbol>();
+        if (symbols is not null)
+        {
+            foreach (var symbol in symbols)
+            {
+                if (HasUnresolvedTypeParameters(symbol))
+                {
+                    continue;
+                }
+                
+                var arrayBinder = new TypeSymbolBinder(this, symbol);
+                arrayBinder.BindMembers();
+                var boundType = (BoundType)arrayBinder.Bind(null);
+                boundTypes.Add(boundType);
+                Diagnostics.AddRange(arrayBinder.Diagnostics);
+                continue;
+                
+                bool HasUnresolvedTypeParameters(TypeSymbol type)
+                {
+                    switch (type)
+                    {
+                        case TemplateSymbol or TypeParameterSymbol:
+                            return true;
+                        case ArrayTypeSymbol array:
+                            return HasUnresolvedTypeParameters(array.ElementType);
+                    }
+
+                    if (type.TemplateBinder is { } binder)
+                    {
+                        return CheckForIncompleteTemplate(binder);
+                    }
+
+                    return false;
+                }
+            }
+        }
+    }
+    
+    private void BindTypes(List<TypeSymbolBinder> primitiveBinders, List<BoundType> boundTypes, List<NamedTypeBinder> typeBinders)
+    {
+        // Bind all primitive types
+        foreach (var primitiveBinder in primitiveBinders)
+        {
+            var boundType = (BoundType)primitiveBinder.Bind(null);
+            if (boundType is not BoundTemplate)
+            {
+                boundTypes.Add(boundType);
+            }
+
+            Diagnostics.AddRange(primitiveBinder.Diagnostics);
+        }
+
+        // Bind all types
+        foreach (var typeBinder in typeBinders)
+        {
+            var boundType = (BoundType)typeBinder.Bind(null);
+            if (boundType is BoundTemplate)
+            {
+                continue;
+            }
+
+            if (boundType is not BoundTemplate)
+            {
+                boundTypes.Add(boundType);
+            }
+
+            Diagnostics.AddRange(typeBinder.Diagnostics);
+        }
+    }
+
+    private void CheckForMultipleEntries(IEnumerable<BoundType> boundTypes)
+    {
+        // The following code is used to check for multiple entry points
+        // This is necessary because having multiple entry points would lead to undefined behavior
+        var foundEntryType = false;
+        var foundEntryMethod = false;
+        foreach (var boundType in boundTypes)
+        {
+            // Check if the type is an entry type
+            if (boundType is not BoundStruct boundStruct || 
+                !boundType.TypeSymbol.HasModifier(SyntaxKind.EntryKeyword) ||
+                boundType.Syntax is not StructDeclarationSyntax syntax)
+            {
+                continue;
+            }
+
+            // Check if we already found an entry type
+            if (foundEntryType)
+            {
+                Diagnostics.ReportMultipleEntryTypes(syntax.Modifiers
+                    .First(x => x.Kind == SyntaxKind.EntryKeyword).Location);
+            }
+            
+            // We found an entry type
+            foundEntryType = true;
+            // Find the entry method
+            foreach (var member in boundStruct.Members)
+            {
+                if (member is not BoundMethod method ||
+                    !method.Symbol.HasModifier(SyntaxKind.EntryKeyword) ||
+                    member.Syntax is not MethodDeclarationSyntax methodSyntax)
+                {
+                    continue;
+                }
+                
+                if (foundEntryMethod)
+                {
+                    Diagnostics.ReportMultipleEntryMethods(methodSyntax.Modifiers
+                        .First(x => x.Kind == SyntaxKind.EntryKeyword).Location);
+                }
+                
+                foundEntryMethod = true;
+            }
+        }
     }
 }

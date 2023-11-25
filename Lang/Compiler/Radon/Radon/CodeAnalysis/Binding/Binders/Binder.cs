@@ -6,28 +6,34 @@ using Radon.CodeAnalysis.Binding.Semantics.Expressions;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax.Nodes;
 using Radon.CodeAnalysis.Syntax.Nodes.Clauses;
+using Radon.CodeAnalysis.Text;
 
 namespace Radon.CodeAnalysis.Binding.Binders;
 
 internal abstract class Binder
 {
-    private static readonly object Lock = new();
     protected Scope? Scope { get; set; }
-    internal DiagnosticBag Diagnostics { get; }
+    public DiagnosticBag Diagnostics { get; }
+    public TextLocation Location { get; }
 
-    private protected Binder(Scope? scope)
+    private protected Binder(Scope? scope, TextLocation location)
     {
-        Scope = scope is null ? new Scope(null) : scope.CreateChild();
+        Scope = scope is null ? new Scope(null, location) : scope.CreateChild(location);
         Diagnostics = new DiagnosticBag();
     }
 
-    private protected Binder(Binder binder)
+    private protected Binder(Binder binder, TextLocation location)
     {
-        Scope = binder.Scope is null ? new Scope(null) : binder.Scope.CreateChild();
+        Scope = binder.Scope is null ? new Scope(null, location) : binder.Scope.CreateChild(location);
         Diagnostics = new DiagnosticBag();
     }
     
     public abstract BoundNode Bind(SyntaxNode node, params object[] args);
+
+    public TextLocation GetDeclaration(Symbol symbol)
+    {
+        return Scope!.GetSymbolDeclaration(symbol);
+    }
 
     /// <summary>
     /// Registers a symbol in the current scope.

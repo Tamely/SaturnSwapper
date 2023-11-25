@@ -18,7 +18,7 @@ internal sealed class ProgramBinder : Binder
     private readonly TopLevelStatementCompilationUnitSyntax _syntax;
     private readonly AssemblySymbol _assembly;
     internal ProgramBinder(AssemblyBinder binder, TopLevelStatementCompilationUnitSyntax syntax) 
-        : base(binder)
+        : base(binder, syntax.Location)
     {
         _syntax = syntax;
         _assembly = binder.Assembly;
@@ -40,7 +40,7 @@ internal sealed class ProgramBinder : Binder
         programTypeSymbol = (StructSymbol)programTypeSymbol.WithMembers(ImmutableArray.Create<MemberSymbol>(mainMethodSymbol));
         var statements = _syntax.Statements;
         var boundStatements = new List<BoundStatement>();
-        var statementBinder = new StatementBinder(this);
+        var statementBinder = new StatementBinder(this, node.Location);
         foreach (var statement in statements)
         {
             var boundStatement = (BoundStatement)statementBinder.Bind(statement, mainMethodSymbol);

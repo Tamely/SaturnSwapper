@@ -30,6 +30,6 @@ public sealed partial class UnaryExpressionSyntax : ExpressionSyntax
             return PostfixOperator;
         }
 
-        throw new InvalidOperationException("Unary expression has no operator.");
+        return SyntaxToken.Empty;
     }
 }
