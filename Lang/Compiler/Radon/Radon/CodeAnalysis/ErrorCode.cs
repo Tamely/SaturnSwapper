@@ -96,5 +96,7 @@ public enum ErrorCode
     CannotReturnVoid,
     ArrayElementTypeCannotBeType,
     VariableUseBeforeAssignment,
-    VariableNotInitialized
+    VariableNotInitialized,
+    CannotUseVarAsTypeName,
+    CannotInferTypeFromNoInitializer
 }
