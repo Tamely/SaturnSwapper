@@ -12,7 +12,6 @@ public sealed class ArrayTypeSymbol : TypeSymbol
     public override SymbolKind Kind => SymbolKind.Array;
     public override ImmutableArray<MemberSymbol> Members { get; private protected set; }
     public override AssemblySymbol? ParentAssembly { get; }
-
     public override int Size
     {
         get => 8;

@@ -7,7 +7,7 @@ namespace Radon.CodeAnalysis.Binding.Binders;
 internal abstract class TypeBinder : Binder
 {
     protected TypeBinder(Binder binder) 
-        : base(binder)
+        : base(binder, binder.Location)
     {
     }
 

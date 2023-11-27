@@ -120,6 +120,12 @@ public sealed class SourceText
     {
         return position - Lines[lineIndex].Start;
     }
+
+    public int GetAbsolutePosition(int line, int charachter)
+    {
+        var lineStart = Lines[line].Start;
+        return lineStart + charachter;
+    }
     
     public SourceText RemoveLine(int lineIndex)
     {

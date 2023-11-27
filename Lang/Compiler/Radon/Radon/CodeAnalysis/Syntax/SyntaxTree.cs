@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Radon.CodeAnalysis.Syntax.Nodes;
 using Radon.CodeAnalysis.Syntax.Nodes.Directives;
 using Radon.CodeAnalysis.Syntax.Nodes.Statements;
@@ -21,6 +22,7 @@ public sealed class SyntaxTree
                                        out ImmutableArray<Diagnostic> diagnostics);
 
     public SourceText Text { get; }
+    public TextLocation Location => new(Text, TextSpan.FromBounds(0, Text.Length));
     public ImmutableArray<Diagnostic> Diagnostics { get; }
     public ImmutableArray<SyntaxTree> Included { get; }
     public CompilationUnitSyntax Root { get; }
@@ -145,10 +147,20 @@ public sealed class SyntaxTree
             diagnostics = diagnosticBag.ToImmutableArray();
         }
     }
-
+    
     private static SyntaxTree Parse(SourceText text, IEnumerable<IncludePath> included)
     {
         return new SyntaxTree(text, Parse, included);
+    }
+    
+    public static Task<SyntaxTree> ParseAsync(string text)
+    {
+        return ParseAsync(SourceText.From(text));
+    }
+    
+    public static async Task<SyntaxTree> ParseAsync(SourceText text)
+    {
+        return await Task.Run(() => Parse(text));
     }
     
     public static SyntaxTree Parse(SourceText text)

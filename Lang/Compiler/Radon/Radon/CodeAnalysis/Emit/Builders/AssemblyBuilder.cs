@@ -19,12 +19,6 @@ namespace Radon.CodeAnalysis.Emit.Builders;
 
 internal sealed class AssemblyBuilder
 {
-    // Comparers
-    private readonly TypeDefinitionComparer _typeDefinitionComparer;
-    private readonly MethodComparer _methodComparer;
-    private readonly FieldComparer _fieldComparer;
-    private readonly LocalComparer _localComparer;
-    private readonly ParameterComparer _parameterComparer;
     private readonly TypeSymbolComparer _typeSymbolComparer;
     
     // Assembly
@@ -71,11 +65,6 @@ internal sealed class AssemblyBuilder
     public AssemblyBuilder(BoundAssembly assembly)
     {
         // Comparers
-        _typeDefinitionComparer = new TypeDefinitionComparer();
-        _methodComparer = new MethodComparer();
-        _fieldComparer = new FieldComparer();
-        _localComparer = new LocalComparer();
-        _parameterComparer = new ParameterComparer();
         _typeSymbolComparer = new TypeSymbolComparer();
         
         // Assembly
@@ -127,6 +116,14 @@ internal sealed class AssemblyBuilder
             else if (type is BoundArray boundArray)
             {
                 members = boundArray.Members;
+            }
+            else if (type is BoundEnum e)
+            {
+                continue;
+            }
+            else
+            {
+                throw new Exception($"Unknown type {type.GetType()}");
             }
             
             var methodMap = new Dictionary<MethodSymbol, BoundMethod>();

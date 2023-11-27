@@ -10,6 +10,7 @@ using Radon.CodeAnalysis.Emit.Builders;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
 using Radon.CodeAnalysis.Syntax.Nodes;
+using Radon.CodeAnalysis.Text;
 
 namespace Radon.CodeAnalysis;
 
@@ -19,7 +20,7 @@ public sealed class Compilation
     private readonly bool _proceedWithCompilation = true;
     public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
     public ImmutableArray<Diagnostic> Diagnostics { get; }
-    public Scope AssemblyScope => _boundTree.Scope ?? new Scope(null);
+    public ImmutableDictionary<string, Scope> AssemblyScopes => _boundTree.AssemblyScopes;
     public AssemblySymbol Assembly => _boundTree.Assembly ?? throw new Exception("Assembly is null.");
     public Compilation(SyntaxTree syntaxTree)
     {

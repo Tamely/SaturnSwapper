@@ -835,4 +835,16 @@ internal sealed class DiagnosticBag : IEnumerable<Diagnostic>
         var message = $"Variable '{name}' is used before it is assigned.";
         ReportError(location, message, ErrorCode.VariableUseBeforeAssignment);
     }
+
+    public void ReportVariableNotInitialized(TextLocation location, LocalVariableSymbol local)
+    {
+        var message = $"Local variable '{local.Name}' of type '{local.Type}' is not initialized.";
+        ReportError(location, message, ErrorCode.VariableNotInitialized);
+    }
+
+    public void ReportCannotInferTypeFromNoInitializer(TextLocation location)
+    {
+        const string message = "Cannot infer type from no initializer.";
+        ReportError(location, message, ErrorCode.CannotInferTypeFromNoInitializer);
+    }
 }

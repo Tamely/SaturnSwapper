@@ -24,6 +24,11 @@ public readonly struct TextSpan
     {
         return span.Start < End && Start < span.End;
     }
+    
+    public bool Contains(int position)
+    {
+        return Start <= position && position < End;
+    }
 
     public override string ToString()
     {
