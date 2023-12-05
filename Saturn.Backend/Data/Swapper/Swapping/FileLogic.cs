@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CUE4Parse;
 using CUE4Parse.UE4.AssetRegistry;
+using CUE4Parse.UE4.Assets.Objects;
 using Newtonsoft.Json;
 using Saturn.Backend.Data.Compression;
 using Saturn.Backend.Data.Fortnite;
@@ -13,6 +14,7 @@ using Saturn.Backend.Data.FortniteCentral;
 using Saturn.Backend.Data.SaturnAPI.Models;
 using Saturn.Backend.Data.Swapper.Assets;
 using Saturn.Backend.Data.Swapper.Core.Models;
+using Saturn.Backend.Data.Swapper.Generation;
 using Saturn.Backend.Data.Swapper.Swapping.Models;
 using Saturn.Backend.Data.Variables;
 using UAssetAPI;
@@ -178,6 +180,9 @@ public class FileLogic
     public static async Task Convert(AssetSelectorItem search, AssetSelectorItem replace)
     {
         if (isLocked) return;
+
+        if (search == null || replace == null || replace.OptionHandler == null) return;
+        
         isLocked = true;
         
         List<SwapData> swapData = new();
@@ -194,7 +199,9 @@ public class FileLogic
             var data = SaturnData.ToNonStatic();
             SaturnData.Clear();
 
-            var item = Constants.AssetCache[replace.ID];
+            var item = await AssetExportData.Create(replace.Asset, replace.Type, Array.Empty<FStructFallback>());
+            OptionHandler.FixPartData(item);
+            
             var swapPart = item.ExportParts.FirstOrDefault(part => part.Part == characterPart.Part);
 
             pkg = await Constants.Provider.SaveAssetAsync(swapPart == null ? Constants.EmptyParts[characterPart.Part].Path : swapPart.Path.Split('.')[0]);
@@ -257,7 +264,7 @@ public class FileLogic
             
             var chunkedData = ChunkData(swap.Data);
 
-            long totalDataCount = chunkedData.Sum(x => compression.Compress(x).Length);
+            long totalDataCount = chunkedData.Sum(x => x.Length);
             var (file, offset) = OffsetsInFile.Allocate(swap.SaturnData.Path, totalDataCount);
 
             byte partitionIndex = 0;
@@ -272,18 +279,17 @@ public class FileLogic
             for (var index = 0; index < chunkedData.Count; index++)
             {
                 var chunk = chunkedData[index];
-                var compressedChunk = compression.Compress(chunk);
 
                 item.Swaps[swapIndex++] = new Swap()
                 {
                     File = file,
-                    Data = compressedChunk
+                    Data = chunk
                 };
 
                 swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Offset = offset + written + (long)(partitionIndex * swap.SaturnData.Reader.TocResource.Header.PartitionSize);
-                swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].CompressedSize = (uint)compressedChunk.Length;
+                swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].CompressedSize = (uint)chunk.Length;
                 swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].UncompressedSize = (uint)chunk.Length;
-                swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].CompressionMethodIndex = 1;
+                swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].CompressionMethodIndex = 0;
 
                 item.Swaps[swapIndex++] = new Swap()
                 {
@@ -292,7 +298,7 @@ public class FileLogic
                     Data = swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Serialize()
                 };
 
-                written += compressedChunk.Length + 10;
+                written += chunk.Length + 10;
             }
 
             

@@ -8,6 +8,7 @@ using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
 using Radon.CodeAnalysis.Syntax.Nodes;
 using Radon.CodeAnalysis.Syntax.Nodes.Expressions;
+using Radon.CodeAnalysis.Text;
 
 namespace Radon.CodeAnalysis.Binding.Binders;
 
@@ -21,7 +22,7 @@ internal sealed class ExpressionBinder : Binder
     private ImmutableArray<TypeSymbol> _typeArguments;
 
     internal ExpressionBinder(Binder binder) 
-        : base(binder)
+        : base(binder, binder.Location)
     {
         _isBindingInvocation = false;
         _arguments = ImmutableArray<BoundExpression>.Empty;
@@ -187,7 +188,7 @@ internal sealed class ExpressionBinder : Binder
         var symbol = GetSymbol(boundLeft);
         if (symbol is LocalVariableSymbol local)
         {
-            local.HasBeenAssigned = true;
+            local.IsInitialized = true;
         }
         
         var boundRight = BindExpression(syntax.Right);
@@ -285,7 +286,7 @@ internal sealed class ExpressionBinder : Binder
             var argument = syntax.ArgumentList.Arguments[i];
             var boundArgument = BindExpression(argument);
             var symbol = GetSymbol(boundArgument);
-            if (symbol is LocalVariableSymbol { HasBeenAssigned: false })
+            if (symbol is LocalVariableSymbol { IsInitialized: false })
             {
                 Diagnostics.ReportVariableUseBeforeAssignment(argument.Location, symbol.Name);
             }
@@ -383,7 +384,7 @@ internal sealed class ExpressionBinder : Binder
         }
         
         var symbol = GetSymbol(boundExpression);
-        if (symbol is LocalVariableSymbol { HasBeenAssigned: false })
+        if (symbol is LocalVariableSymbol { IsInitialized: false })
         {
             Diagnostics.ReportVariableUseBeforeAssignment(syntax.Name.Location, symbol.Name);
         }
@@ -527,7 +528,7 @@ internal sealed class ExpressionBinder : Binder
             var parameter = constructor.Parameters[i];
             var argument = arguments[i];
             var symbol = GetSymbol(argument);
-            if (symbol is LocalVariableSymbol { HasBeenAssigned: false })
+            if (symbol is LocalVariableSymbol { IsInitialized: false })
             {
                 Diagnostics.ReportVariableUseBeforeAssignment(argument.Syntax.Location, symbol.Name);
             }

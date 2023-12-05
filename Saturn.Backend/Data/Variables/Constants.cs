@@ -17,7 +17,7 @@ namespace Saturn.Backend.Data.Variables
 {
     public class Constants
     {
-        public const string USER_VERSION = "2.2.6";
+        public const string USER_VERSION = "2.2.7";
 
         public static readonly Changelog Changelog = new Changelog()
         {

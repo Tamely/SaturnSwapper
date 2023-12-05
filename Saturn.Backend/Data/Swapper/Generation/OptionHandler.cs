@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CUE4Parse_Conversion.Textures;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects;
 using Saturn.Backend.Data.Swapper.Assets;
 using Saturn.Backend.Data.Variables;
+using SkiaSharp;
 
 namespace Saturn.Backend.Data.Swapper.Generation;
 
@@ -30,7 +32,7 @@ public class OptionHandler
         return exportData;
     }
 
-    private static void FixPartData(AssetExportData exportData)
+    public static void FixPartData(AssetExportData exportData)
     {
         if (exportData.ExportParts.Any(part => Enum.Parse<EFortCustomPartType>(part.Part) == EFortCustomPartType.Hat)
             && exportData.ExportParts.All(part => Enum.Parse<EFortCustomPartType>(part.Part) != EFortCustomPartType.Face))
@@ -177,7 +179,7 @@ public class OptionHandler
             Constants.AssetCache[item.ID] = exportData;
 
             await Constants.Handler.Reset();
-            List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias(Constants.PotentialOptions);
+            List<AssetSelectorItem> options = await Constants.Handler.Handler.ExecuteWithFileBias((Constants.ShouldCreativeSwap || Constants.CosmeticState == SaturnState.S_Pickaxe || Constants.CosmeticState == SaturnState.S_Emote) ? Constants.PotentialOptions : new List<string>());
             await Parallel.ForEachAsync(options, async (option, token) =>
             {
                 if (option.IsRandom) return;
@@ -208,24 +210,9 @@ public class OptionHandler
 
                     if (!optionIsDead)
                     {
-                        if (!exportData.ExportParts.First(x => x.Part == "Head").MeshPath.ToLower()
-                                .Contains("m_med_blk_sydney_01"))
+                        if (exportData.ExportParts.Any(x => x.Part == "Head") 
+                            && !exportData.ExportParts.First(x => x.Part == "Head").MeshPath.ToLower().Contains("m_med_blk_sydney_01"))
                         {
-                            if (option.DisplayName.Contains("Lexa"))
-                            {
-                                foreach (var part in exportData.ExportParts)
-                                {
-                                    Logger.Log($"Morph: {part.MorphName} | Part: {part.Part}");
-                                    foreach (var oPart in optionExportData.ExportParts)
-                                    {
-                                        if (part.Part == oPart.Part)
-                                        {
-                                            Logger.Log($"Option: {oPart.MorphName} | Part: {oPart.Part}");
-                                        }
-                                    }
-                                }
-                            }
-                            
                             foreach (var _ in from part in exportData.ExportParts 
                                      let optionPart = optionExportData.ExportParts.First(optionPart => part.Part == optionPart.Part) 
                                      where part.MorphName != "None" 
@@ -255,16 +242,8 @@ public class OptionHandler
                 isPerfect = true;
                 
                 
-                if (Constants.AssetCache.TryGetValue(option.ID, out var value2))
-                {
-                    optionExportData = value2;
-                }
-                else
-                {
-                    optionExportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>());
-                    FixPartData(optionExportData);
-                    Constants.AssetCache.Add(option.ID, optionExportData);
-                }
+                optionExportData = await AssetExportData.Create(option.Asset, option.Type, Array.Empty<FStructFallback>());
+                FixPartData(optionExportData);
 
                 if (exportData.ExportParts.Any(part => optionExportData.ExportParts.All(optionPart => optionPart.Part != part.Part)))
                 {

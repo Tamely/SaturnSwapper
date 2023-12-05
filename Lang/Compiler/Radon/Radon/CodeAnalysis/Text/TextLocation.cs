@@ -10,9 +10,9 @@ public readonly record struct TextLocation(SourceText Text, TextSpan Span)
     public int EndLine => Text.GetLineIndex(Span.End);
     public int EndCharacter => Span.End - Text.Lines[EndLine].Start;
 
-    public bool OverlapsWith(TextLocation location)
+    public bool Contains(TextLocation location)
     {
-        return Span.OverlapsWith(location.Span);
+        return location.Span.Start >= Span.Start && location.Span.End <= Span.End;
     }
 
     public override string ToString()

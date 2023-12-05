@@ -505,7 +505,7 @@ internal sealed class NamedTypeBinder : TypeBinder
 
     private TemplateMethodSymbol ResolveTemplateMethod(TemplateMethodDeclarationSyntax method)
     {
-        Scope = Scope?.CreateChild();
+        Scope = Scope?.CreateChild(method.Body.Location);
         for (var i = 0; i < method.TypeParameterList.Parameters.Count; i++)
         {
             var typeParameter = method.TypeParameterList.Parameters[i];
@@ -571,7 +571,7 @@ internal sealed class NamedTypeBinder : TypeBinder
     
     private BoundConstructor BindConstructor(ConstructorDeclarationSyntax syntax)
     {
-        var methodBinder = new MethodBinder(this);
+        var methodBinder = new MethodBinder(this, syntax.Body.Location);
         var constructorSymbol = _members[syntax];
         var method = methodBinder.Bind(syntax, constructorSymbol);
         Diagnostics.AddRange(methodBinder.Diagnostics);
@@ -595,7 +595,7 @@ internal sealed class NamedTypeBinder : TypeBinder
     
     private BoundMethod BindMethod(MethodDeclarationSyntax syntax)
     {
-        var methodBinder = new MethodBinder(this);
+        var methodBinder = new MethodBinder(this, syntax.Body.Location);
         var methodSymbol = _members[syntax];
         var method = methodBinder.Bind(syntax, methodSymbol);
         Diagnostics.AddRange(methodBinder.Diagnostics);
@@ -604,7 +604,7 @@ internal sealed class NamedTypeBinder : TypeBinder
 
     private BoundTemplateMethod BindTemplateMethod(TemplateMethodDeclarationSyntax syntax)
     {
-        var methodBinder = new MethodBinder(this);
+        var methodBinder = new MethodBinder(this, syntax.Body.Location);
         var methodSymbol = _members[syntax];
         var method = methodBinder.Bind(syntax, methodSymbol);
         Diagnostics.AddRange(methodBinder.Diagnostics);

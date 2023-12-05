@@ -726,4 +726,23 @@ namespace CUE4Parse.UE4.Objects.UObject
     public class FUInt32Property : FNumericProperty { }
 
     public class FUInt64Property : FNumericProperty { }
+
+    public class FOptionalProperty : FProperty
+    {
+	    public FProperty? ValueProperty;
+
+	    public override void Deserialize(FAssetArchive Ar)
+	    {
+		    base.Deserialize(Ar);
+		    ValueProperty = (FProperty?) SerializeSingleField(Ar);
+	    }
+
+	    protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)
+	    {
+		    base.WriteJson(writer, serializer);
+
+		    writer.WritePropertyName("ValueProperty");
+		    serializer.Serialize(writer, ValueProperty);
+	    }
+    }
 }

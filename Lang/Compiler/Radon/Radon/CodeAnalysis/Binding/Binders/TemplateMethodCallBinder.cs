@@ -7,13 +7,14 @@ using Radon.CodeAnalysis.Binding.Semantics.Statements;
 using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax.Nodes;
 using Radon.CodeAnalysis.Syntax.Nodes.Members;
+using Radon.CodeAnalysis.Text;
 
 namespace Radon.CodeAnalysis.Binding.Binders;
 
 internal sealed class TemplateMethodCallBinder : Binder
 {
     internal TemplateMethodCallBinder(Binder binder) 
-        : base(binder)
+        : base(binder, binder.Location)
     {
     }
 
@@ -72,7 +73,7 @@ internal sealed class TemplateMethodCallBinder : Binder
         {
             var body = templateMethodDeclaration.Body;
             var statements = body.Statements;
-            var statementBinder = new StatementBinder(this);
+            var statementBinder = new StatementBinder(this, node.Location);
             var boundStatements = new List<BoundStatement>();
             foreach (var statement in statements)
             {

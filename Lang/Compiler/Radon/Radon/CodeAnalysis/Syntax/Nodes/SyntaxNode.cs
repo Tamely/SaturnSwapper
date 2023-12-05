@@ -242,8 +242,6 @@ public abstract class SyntaxNode
     
     public override string ToString()
     {
-        using var writer = new StringWriter();
-        WriteTo(writer);
-        return writer.ToString();
+        return Text;
     }
 }

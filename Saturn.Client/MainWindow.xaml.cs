@@ -14,7 +14,6 @@ using Saturn.Backend.Data.Fortnite;
 using Saturn.Backend.Data.FortniteCentral;
 using Saturn.Backend.Data.SaturnAPI;
 using Saturn.Backend.Data.Services;
-using Saturn.Backend.Data.Services.OobeServiceUtils;
 using Saturn.Backend.Data.Variables;
 
 namespace Saturn.Client
@@ -41,7 +40,6 @@ namespace Saturn.Client
             services.AddScoped<ISaturnAPIService, SaturnAPIService>();
             services.AddScoped<IFortniteCentralService, FortniteCentralService>();
             services.AddScoped<LocalizationResourceService>();
-            services.AddScoped<OobeService>();
             services.AddScoped<DiscordService>();
 
             var serviceProvider = services.BuildServiceProvider();
@@ -49,16 +47,11 @@ namespace Saturn.Client
 
             Loaded += OnLoaded;
             
-            OobeService? oobeService = serviceProvider.GetService<OobeService>();
-            if (oobeService != null)
-            {
-                await oobeService.ConfigureOobe();
-                base.Width = 1179.0;
-                base.Height = 660.0;
-                base.MinWidth = 939.0;
-                base.MinHeight = 517.0;
-                base.ResizeMode = ResizeMode.CanResize;
-            }
+            base.Width = 1179.0;
+            base.Height = 660.0;
+            base.MinWidth = 939.0;
+            base.MinHeight = 517.0;
+            base.ResizeMode = ResizeMode.CanResize;
         }
         
         private async void OnLoaded(object _, RoutedEventArgs e)

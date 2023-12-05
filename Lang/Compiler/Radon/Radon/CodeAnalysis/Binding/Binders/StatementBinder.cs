@@ -7,6 +7,7 @@ using Radon.CodeAnalysis.Symbols;
 using Radon.CodeAnalysis.Syntax;
 using Radon.CodeAnalysis.Syntax.Nodes;
 using Radon.CodeAnalysis.Syntax.Nodes.Statements;
+using Radon.CodeAnalysis.Text;
 
 namespace Radon.CodeAnalysis.Binding.Binders;
 
@@ -18,8 +19,8 @@ internal sealed class StatementBinder : Binder
     internal bool IsStaticMethod;
     internal AbstractMethodSymbol MethodSymbol;
     private bool _hasRun;
-    internal StatementBinder(Binder binder) 
-        : base(binder)
+    internal StatementBinder(Binder binder, TextLocation location) 
+        : base(binder, location)
     {
         _loopStack = new Stack<LoopConditions>();
         _locals = new List<LocalVariableSymbol>();
@@ -62,7 +63,7 @@ internal sealed class StatementBinder : Binder
     
     private BoundStatement BindBlockStatement(BlockStatementSyntax syntax)
     {
-        Scope = Scope?.CreateChild();
+        Scope = Scope.CreateChild(syntax.Location);
         var statements = syntax.Statements;
         var boundStatements = new List<BoundStatement>();
         foreach (var statement in statements)
@@ -113,8 +114,7 @@ internal sealed class StatementBinder : Binder
 
         var key = boundKey.ConstantValue.Value.ToString();
         var value = boundValue.ConstantValue.Value.ToString();
-        if (key is null ||
-            value is null)
+        if (key is null || value is null)
         {
             Diagnostics.ReportNullConstantValue(syntax.Location);
             return new BoundErrorStatement(syntax, new SemanticContext(this, syntax, Diagnostics));
@@ -125,12 +125,34 @@ internal sealed class StatementBinder : Binder
     
     private BoundStatement BindVariableDeclaration(VariableDeclarationSyntax syntax)
     {
-        var type = BindTypeSyntax(syntax.Type);
+        ExpressionBinder expressionBinder;
+        BoundExpression boundInitializer;
+
+        TypeSymbol type;
+        if (syntax.Type.Identifier.Text == "var")
+        {
+            if (syntax.Declarator.Initializer == null)
+            {
+                Diagnostics.ReportCannotInferTypeFromNoInitializer(syntax.Type.Location);
+                type = TypeSymbol.Error;
+            }
+            else
+            {
+                expressionBinder = new ExpressionBinder(this);
+                boundInitializer = (BoundExpression)expressionBinder.Bind(syntax.Declarator.Initializer);
+                type = boundInitializer.Type;
+            }
+        }
+        else
+        {
+            type = BindTypeSyntax(syntax.Type);
+        }
+
         if (type == TypeSymbol.Void)
         {
             Diagnostics.ReportVariableCannotBeVoid(syntax.Type.Location);
         }
-        
+
         var declarator = syntax.Declarator;
         var variable = declarator.Identifier.Text;
         var initializer = declarator.Initializer;
@@ -141,16 +163,16 @@ internal sealed class StatementBinder : Binder
             var context = new SemanticContext(this, syntax, Diagnostics);
             return new BoundErrorStatement(syntax, context);
         }
-        
+
         _locals.Add(variableSymbol);
         if (initializer == null)
         {
             return new BoundVariableDeclarationStatement(syntax, variableSymbol, null);
         }
-        
-        variableSymbol.HasBeenAssigned = true;
-        var expressionBinder = new ExpressionBinder(this);
-        var boundInitializer = (BoundExpression)expressionBinder.Bind(initializer);
+
+        variableSymbol.IsInitialized = true;
+        expressionBinder = new ExpressionBinder(this);
+        boundInitializer = (BoundExpression)expressionBinder.Bind(initializer);
         var boundConversion = expressionBinder.BindConversion(boundInitializer, type, ImmutableArray<TypeSymbol>.Empty);
         Diagnostics.AddRange(expressionBinder.Diagnostics);
         return new BoundVariableDeclarationStatement(syntax, variableSymbol, boundConversion);
@@ -204,13 +226,13 @@ internal sealed class StatementBinder : Binder
         var boundCondition = (BoundExpression)expressionBinder.Bind(syntax.Condition);
         var boundConversion = expressionBinder.BindConversion(boundCondition, TypeSymbol.Bool, ImmutableArray<TypeSymbol>.Empty);
         Diagnostics.AddRange(expressionBinder.Diagnostics);
-        Scope = Scope?.CreateChild();
+        Scope = Scope?.CreateChild(syntax.ThenStatement.Location);
         var boundThenStatement = (BoundStatement)Bind(syntax.ThenStatement);
         Scope = Scope?.Parent!;
         BoundStatement? boundElseStatement = null;
         if (syntax.ElseClause is not null)
         {
-            Scope = Scope?.CreateChild();
+            Scope = Scope?.CreateChild(syntax.ElseClause.ElseStatement.Location);
             boundElseStatement = (BoundStatement)Bind(syntax.ElseClause.ElseStatement);
             Scope = Scope?.Parent!;
         }
@@ -230,7 +252,7 @@ internal sealed class StatementBinder : Binder
 
     private BoundStatement BindForStatement(ForStatementSyntax syntax)
     {
-        Scope = Scope?.CreateChild();
+        Scope = Scope?.CreateChild(syntax.Body.Location);
         var boundInitializer = (BoundStatement)Bind(syntax.Initializer);
         var expressionBinder = new ExpressionBinder(this);
         var boundCondition = (BoundExpression)expressionBinder.Bind(syntax.Condition);

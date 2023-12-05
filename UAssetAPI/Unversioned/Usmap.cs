@@ -80,6 +80,7 @@ namespace UAssetAPI.Unversioned
         SetProperty,
         EnumProperty,
         FieldPathProperty,
+        OptionalProperty,
 
         Unknown = 0xFF
     };
@@ -662,6 +663,7 @@ namespace UAssetAPI.Unversioned
                     break;
                 case EPropertyType.SetProperty:
                 case EPropertyType.ArrayProperty:
+                case EPropertyType.OptionalProperty:
                     ((UsmapArrayData)res).InnerType = DeserializePropData(reader);
                     break;
                 case EPropertyType.MapProperty:

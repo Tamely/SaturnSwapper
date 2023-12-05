@@ -42,60 +42,16 @@ namespace UAssetAPI.IO
         /// </summary>
         internal Dictionary<string, int> nameMapLookup = new Dictionary<string, int>();
         public FScriptObjectEntry[] ScriptObjectEntries;
-        public Dictionary<FPackageObjectIndex, FScriptObjectEntry> ScriptObjectEntriesMap;
+        public Dictionary<ulong, FScriptObjectEntry> ScriptObjectEntriesMap;
+
+        public string GetScriptName(ulong index)
+        {
+            return nameMapIndexList[ScriptObjectEntriesMap[index].ObjectName.Index].Value;
+        }
 
         public IOGlobalData(IOStoreContainer container, EngineVersion engineVersion)
         {
             ClearNameIndexList();
-            container.BeginRead();
-            try
-            {
-                IOStoreBinaryReader LoaderInitialLoadMetaReader;
-                if (engineVersion >= EngineVersion.VER_UE5_0)
-                {
-                    var soChunk = container.ReadChunk(new FIoChunkId(0, 0, EIoChunkType5.ScriptObjects));
-                    if (soChunk.Length == 0) throw new FormatException("Failed to find ScriptObjects chunk");
-                    LoaderInitialLoadMetaReader = new IOStoreBinaryReader(new MemoryStream(soChunk), container);
-                    LoaderInitialLoadMetaReader.ReadNameBatch(true, out _, out List<FString> tempMap);
-                    foreach (var entry in tempMap) AddNameReference(entry, true);
-                }
-                else
-                {
-                    var hashesChunk = container.ReadChunk(new FIoChunkId(0, 0, EIoChunkType4.LoaderGlobalNameHashes)); // i don't actually really care about these, but it'll tell us how many names there are
-                    if (hashesChunk.Length == 0) throw new FormatException("Failed to find LoaderGlobalNameHashes chunk");
-                    int numNames = (hashesChunk.Length / sizeof(ulong)) - 1;
-
-                    var namesChunk = container.ReadChunk(new FIoChunkId(0, 0, EIoChunkType4.LoaderGlobalNames));
-                    if (namesChunk.Length == 0) throw new FormatException("Failed to find LoaderGlobalNames chunk");
-                    var LoaderGlobalNamesReader = new IOStoreBinaryReader(new MemoryStream(namesChunk), container);
-                    for (int i = 0; i < numNames; i++)
-                    {
-                        AddNameReference(LoaderGlobalNamesReader.ReadFString(), true);
-                    }
-
-                    var lilmChunk = container.ReadChunk(new FIoChunkId(0, 0, EIoChunkType4.LoaderInitialLoadMeta));
-                    if (lilmChunk.Length == 0) throw new FormatException("Failed to find LoaderInitialLoadMeta chunk");
-                    LoaderInitialLoadMetaReader = new IOStoreBinaryReader(new MemoryStream(lilmChunk), container);
-                }
-
-                int numObjects = LoaderInitialLoadMetaReader.ReadInt32();
-                ScriptObjectEntries = new FScriptObjectEntry[numObjects];
-                ScriptObjectEntriesMap = new Dictionary<FPackageObjectIndex, FScriptObjectEntry>();
-                for (int i = 0; i < numObjects; i++)
-                {
-                    var res = new FScriptObjectEntry();
-                    res.ObjectName = LoaderInitialLoadMetaReader.ReadFName(this);
-                    res.GlobalIndex = FPackageObjectIndex.Read(LoaderInitialLoadMetaReader);
-                    res.OuterIndex = FPackageObjectIndex.Read(LoaderInitialLoadMetaReader);
-                    res.GlobalIndex = FPackageObjectIndex.Read(LoaderInitialLoadMetaReader);
-                    ScriptObjectEntries[i] = res;
-                    ScriptObjectEntriesMap[res.GlobalIndex] = res;
-                }
-            }
-            finally
-            {
-                container.EndRead();
-            }
         }
 
         internal void FixNameMapLookupIfNeeded()

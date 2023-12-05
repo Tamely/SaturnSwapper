@@ -13,26 +13,47 @@ public sealed class Scope
     private readonly List<Scope> _children;
     
     public Scope? Parent { get; }
+    public TextLocation Location { get; }
     public ImmutableArray<Symbol> Symbols => _symbols.ToImmutableArray();
     public ImmutableArray<TextLocation> SymbolDeclarations => _symbolDeclarations.Values.ToImmutableArray();
     public ImmutableArray<Scope> Children => _children.ToImmutableArray();
 
-    public Scope(Scope? parent)
+    public Scope(Scope? parent, TextLocation location)
     {
         Parent = parent;
+        Location = location;
         _symbols = new List<Symbol>();
         _symbolDeclarations = new Dictionary<Symbol, TextLocation>();
         _symbolReferences = new Dictionary<Symbol, List<TextLocation>>();
         _children = new List<Scope>();
     }
 
-    public Scope CreateChild()
+    public Scope CreateChild(TextLocation location)
     {
-        var child = new Scope(this);
+        var child = new Scope(this, location);
         _children.Add(child);
         return child;
     }
 
+    public Scope? GetSmallestScopeAtLocation(TextLocation location)
+    {
+        if (!Location.Contains(location))
+        {
+            return null;
+        }
+        
+        foreach (var child in _children)
+        {
+            var result = child.GetSmallestScopeAtLocation(location);
+            if (result is not null)
+            {
+                return result;
+            }
+        }
+        
+        return this;
+    }
+    
     public void AddSymbolReference(Symbol symbol, TextLocation location)
     {
         // Check if this symbol belongs to this scope.

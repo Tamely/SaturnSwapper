@@ -6,11 +6,11 @@
 
 /* colors */
 :root {
-    --background-primary: #1d1f21;
-    --background-secondary: #403f53;
-    --interactive: #403f53;
-    --interactive-focus: #49485a;
-    --foreground: #fafafa;
+    --background-primary: #0c0d10;
+    --background-secondary: #14151b;
+    --interactive: #20212b;
+    --interactive-focus: #2c2d3b;
+    --foreground: #f1f1f1;
     --border: #ffffff26;
 }
 

@@ -52,14 +52,14 @@ namespace UAssetAPI.ExportTypes
 
             // Find an ObjectProperty named RowStruct
             FName decidedStructType = FName.DefineDummy(reader.Asset, "Generic");
-            foreach (PropertyData thisData in Data)
-            {
-                if (thisData.Name.Value.Value == "RowStruct" && thisData is ObjectPropertyData thisObjData && thisObjData.Value.IsImport())
-                {
-                    decidedStructType = thisObjData.ToImport(reader.Asset).ObjectName;
-                    break;
-                }
-            }
+            //foreach (PropertyData thisData in Data)
+            //{
+            //    if (thisData.Name.Value.Value == "RowStruct" && thisData is ObjectPropertyData thisObjData && thisObjData.Value.IsImport())
+            //    {
+            //        decidedStructType = thisObjData.ToImport(reader.Asset).ObjectName;
+            //        break;
+            //    }
+            //}
 
             reader.ReadInt32();
 
@@ -88,7 +88,7 @@ namespace UAssetAPI.ExportTypes
 
             if (Data != null)
             {
-                for (int i = 0; i < Data.Count; i++) Data[i]?.ResolveAncestries(asset, ancestryNew);
+                //for (int i = 0; i < Data.Count; i++) Data[i]?.ResolveAncestries(asset, ancestryNew);
             }
             if (Table?.Data != null)
             {
@@ -103,14 +103,14 @@ namespace UAssetAPI.ExportTypes
 
             // Find an ObjectProperty named RowStruct
             FName decidedStructType = FName.DefineDummy(writer.Asset, "Generic");
-            foreach (PropertyData thisData in Data)
-            {
-                if (thisData.Name.Value.Value == "RowStruct" && thisData is ObjectPropertyData thisObjData)
-                {
-                    decidedStructType = thisObjData.ToImport(writer.Asset).ObjectName;
-                    break;
-                }
-            }
+            //foreach (PropertyData thisData in Data)
+            //{
+            //    if (thisData.Name.Value.Value == "RowStruct" && thisData is ObjectPropertyData thisObjData)
+            //    {
+            //        decidedStructType = thisObjData.ToImport(writer.Asset).ObjectName;
+            //        break;
+             //   }
+            //}
 
             writer.Write((int)0);
 
