@@ -12,11 +12,11 @@
         <NeutralLanguage>en</NeutralLanguage>
         <Product>Saturn</Product>
         <AssemblyName>Saturn</AssemblyName>
-        <PackageVersion>2.2.0</PackageVersion>
+        <PackageVersion>2.2.7</PackageVersion>
         <Title>Saturn</Title>
         <Description>The most advanced fortnite skin swapper</Description>
         <AssemblyVersion>2.2</AssemblyVersion>
-        <FileVersion>2.2.0</FileVersion>
+        <FileVersion>2.2.7</FileVersion>
         <TargetFramework>net7.0-windows</TargetFramework>
     </PropertyGroup>
 

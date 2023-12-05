@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
         <LangVersion>11</LangVersion>
         <TargetFramework>net7.0-windows</TargetFramework>
+        <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
