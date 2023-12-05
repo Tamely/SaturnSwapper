@@ -5,7 +5,7 @@
         <RootNamespace>Radon</RootNamespace>
         <LangVersion>latest</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net7.0-windows</TargetFramework>
     </PropertyGroup>
     <ItemGroup>
         <ProjectReference Include="..\Radon.Generator\Radon.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

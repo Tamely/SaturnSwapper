@@ -288,7 +288,7 @@
                 await Task.Delay(500);
             }
 
-            if (!Constants.SelectedOption.ID.EndsWith("EMOTE"))
+            if (Constants.SelectedOption != null && !string.IsNullOrWhiteSpace(Constants.SelectedOption.ID) && !Constants.SelectedOption.ID.EndsWith("EMOTE"))
             {
                 await FileLogic.ConvertLobby(Constants.SelectedOption, Constants.SelectedItem);
             }
