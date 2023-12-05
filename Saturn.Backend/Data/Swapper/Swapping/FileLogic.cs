@@ -264,7 +264,7 @@ public class FileLogic
             
             var chunkedData = ChunkData(swap.Data);
 
-            long totalDataCount = chunkedData.Sum(x => compression.Compress(x).Length);
+            long totalDataCount = chunkedData.Sum(x => x.Length);
             var (file, offset) = OffsetsInFile.Allocate(swap.SaturnData.Path, totalDataCount);
 
             byte partitionIndex = 0;
@@ -279,18 +279,17 @@ public class FileLogic
             for (var index = 0; index < chunkedData.Count; index++)
             {
                 var chunk = chunkedData[index];
-                var compressedChunk = compression.Compress(chunk);
 
                 item.Swaps[swapIndex++] = new Swap()
                 {
                     File = file,
-                    Data = compressedChunk
+                    Data = chunk
                 };
 
                 swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Offset = offset + written + (long)(partitionIndex * swap.SaturnData.Reader.TocResource.Header.PartitionSize);
-                swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].CompressedSize = (uint)compressedChunk.Length;
+                swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].CompressedSize = (uint)chunk.Length;
                 swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].UncompressedSize = (uint)chunk.Length;
-                swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].CompressionMethodIndex = 1;
+                swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].CompressionMethodIndex = 0;
 
                 item.Swaps[swapIndex++] = new Swap()
                 {
@@ -299,7 +298,7 @@ public class FileLogic
                     Data = swap.SaturnData.Reader.TocResource.CompressionBlocks[swap.SaturnData.FirstBlockIndex + index].Serialize()
                 };
 
-                written += compressedChunk.Length + 10;
+                written += chunk.Length + 10;
             }
 
             
