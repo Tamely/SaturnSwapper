@@ -1,4 +1,6 @@
-﻿using CUE4Parse.UE4.Readers;
+﻿using System;
+using System.Runtime.InteropServices;
+using CUE4Parse.UE4.Readers;
 
 namespace CUE4Parse.UE4.IO.Objects
 {
@@ -47,10 +49,7 @@ namespace CUE4Parse.UE4.IO.Objects
             *index |= (uint)CompressionMethodIndex << SizeBits;
             
             byte[] returnBytes = new byte[5 + 3 + 3 + 1];
-            for (int i = 0; i < 5 + 3 + 3 + 1; i++)
-            {
-                returnBytes[i] = Data[i];
-            }
+            Marshal.Copy((IntPtr)Data, returnBytes, 0, 5 + 3 + 3 + 1);
             
             return returnBytes;
         }

@@ -95,16 +95,6 @@ public class OptionHandler
                 data.PerfectOptions.Add(option);
                 data.Options.Add(option);
             });
-
-            if (data.PerfectOptions.Any(x => x.IsRandom))
-            {
-                var random = data.PerfectOptions.First(x => x.IsRandom);
-                data.PerfectOptions.RemoveAll(x => x.IsRandom);
-                data.Options.RemoveAll(x => x.IsRandom);
-            
-                data.PerfectOptions.Insert(0, random);
-                data.Options.Insert(0, random);
-            }
         }
         else
         {
@@ -164,12 +154,15 @@ public class OptionHandler
                 data.Options.Add(option);
             });
             
-            var random = data.PerfectOptions.First(x => x.IsRandom);
-            data.PerfectOptions.RemoveAll(x => x.IsRandom);
-            data.Options.RemoveAll(x => x.IsRandom);
+            if (data.PerfectOptions.Any(x =>  x is { IsRandom: true }))
+            {
+                var random = data.PerfectOptions.First(x => x.IsRandom);
+                data.PerfectOptions.RemoveAll(x => x.IsRandom);
+                data.Options.RemoveAll(x => x.IsRandom);
             
-            data.PerfectOptions.Insert(0, random);
-            data.Options.Insert(0, random);
+                data.PerfectOptions.Insert(0, random);
+                data.Options.Insert(0, random);
+            }
         }
         else
         {
