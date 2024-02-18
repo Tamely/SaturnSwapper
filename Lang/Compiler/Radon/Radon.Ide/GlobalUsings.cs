@@ -1,1 +1,0 @@
-﻿global using Logger = Radon.Ide.Backend.Core.IdeLogger;
