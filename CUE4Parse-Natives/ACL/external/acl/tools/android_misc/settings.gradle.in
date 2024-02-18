@@ -1,2 +1,0 @@
-include ':app'
-rootProject.name='@ACL_ANDROID_PROJECT_NAME@'
