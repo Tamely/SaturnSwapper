@@ -1,0 +1,75 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "CodyDWJones",
+      "name": "CodyDWJones",
+      "avatar_url": "https://avatars.githubusercontent.com/u/28773740?v=4",
+      "profile": "https://github.com/CodyDWJones",
+      "contributions": [
+        "code",
+        "platform",
+        "infra"
+      ]
+    },
+    {
+      "login": "mwerschy",
+      "name": "Malte Werschy",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6616804?v=4",
+      "profile": "https://github.com/mwerschy",
+      "contributions": [
+        "code",
+        "platform"
+      ]
+    },
+    {
+      "login": "intelligide",
+      "name": "Yoann Potinet",
+      "avatar_url": "https://avatars.githubusercontent.com/u/12529837?v=4",
+      "profile": "https://gitlab.com/intelligide",
+      "contributions": [
+        "infra"
+      ]
+    },
+    {
+      "login": "operasfantom",
+      "name": "Pavel Iatchenii",
+      "avatar_url": "https://avatars.githubusercontent.com/u/31903947?v=4",
+      "profile": "https://github.com/operasfantom",
+      "contributions": [
+        "code",
+        "maintenance"
+      ]
+    },
+    {
+      "login": "GermanAizek",
+      "name": "Herman Semenov",
+      "avatar_url": "https://avatars.githubusercontent.com/u/21138600?v=4",
+      "profile": "https://github.com/GermanAizek",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "valgur",
+      "name": "Martin Valgur",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1778160?v=4",
+      "profile": "https://github.com/valgur",
+      "contributions": [
+        "code"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "rtm",
+  "projectOwner": "nfrechette",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true,
+  "commitConvention": "angular",
+  "commitType": "docs"
+}

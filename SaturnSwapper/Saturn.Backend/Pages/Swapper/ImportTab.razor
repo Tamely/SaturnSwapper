@@ -1,0 +1,349 @@
+﻿@using Saturn.Backend.Data
+@using Saturn.Backend.Data.Fortnite
+@using System.IO
+@using CUE4Parse
+@using CUE4Parse.Encryption.Aes
+@using CUE4Parse.FileProvider
+@using CUE4Parse.UE4.Assets
+@using CUE4Parse.UE4.Objects.Core.Misc
+@using CUE4Parse.UE4.Versions
+@using Newtonsoft.Json
+@using Saturn.Backend.Data.Compression
+@using Saturn.Backend.Data.FortniteCentral
+@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Data.Swapper
+@using Saturn.Backend.Data.Swapper.Core.Models
+@using Saturn.Backend.Data.Swapper.Swapping
+@using Saturn.Backend.Data.Variables
+
+@inject IJSRuntime _jsRuntime;
+@inject IFortniteCentralService _fortniteCentralService;
+@inject LocalizationResourceService _localizationResourceService
+
+<FinishedModal/>
+
+<div class="tab-page" id="asset-page" style="display: none">
+    @switch (UEFNState)
+    {
+        case UEFNImporterState.S_Experience:
+            <div class="section">
+                <h2>Select which UEFN experience's files you want to use</h2>
+                <h3>Files are sorted from newest to oldest</h3>
+            </div>
+            
+            <div class="section">
+                <button style="width: 100%" onclick="@(async () => await Clear())">Clear UEFN Files</button>
+            </div>
+            
+            <div class="section vertical">
+                @foreach (var file in GetUEFNExperiences())
+                {
+                    <button style="width: 100%" onclick="@(async () => await LoadUEFN(file))">@file</button>
+                }
+            </div>
+            break;
+        case UEFNImporterState.S_Asset:
+            <div class="section vertical">
+                <h2>Select which custom file from UEFN you want to swap to</h2>
+                <h3>NOTE: The swapping process works better if the custom file has a shorter path than the one you are replacing in the next step</h3>
+            </div>
+
+            <div class="section vertical">
+                @foreach (var file in GetUEFNFiles())
+                {
+                    <button style="width: 100%" onclick="@(async () => await SetUEFNFile(file))">@file</button>
+                }
+            </div>
+            break;
+        case UEFNImporterState.S_ParentAsset:
+            <div class="section">
+                <h2>Paste the file path you want to replace</h2>
+                <h3>You can get the path from FModel</h3>
+            </div>
+            
+            <div class="section vertical">
+                <h2>Path must include ".uasset" extension</h2>
+                <div class="input-block">
+                    <input placeholder="/FortniteGame/Content/..." @bind="@assetPath"/>
+                    <span class="label">/FortniteGame/Content/...</span>
+                </div>
+                <button style="width: 100%" onclick="@(async () => await SetParent())">SELECT</button>
+            </div>
+            break;
+        case UEFNImporterState.S_ParentFiles:
+            <div class="section">
+                <h2>Select which path in the parent you want to swap with your custom file</h2>
+            </div>
+            
+            <div class="section vertical">
+                @foreach (var file in GetNameMapEntries())
+                {
+                    <button style="width: 100%" onclick="@(async () => await SwapNameMap(file))">@file</button>
+                }
+            </div>
+            break;
+        case UEFNImporterState.S_Swap:
+            <div class="section">
+                <h2>Click the button below to finish the swap</h2>
+            </div>
+            
+            <div class="section">
+                <button style="width: 100%" onclick="@(async () => await Swap())">SWAP</button>
+            </div>
+            break;
+        case UEFNImporterState.S_CheckDone:
+            <div class="section">
+                <h2>Would you like to hide a character part?</h2>
+                <h3>This is useful for hiding Fortnite's head/hat meshes if you imported a custom body mesh</h3>
+            </div>
+            
+            <div class="section">
+                <button onclick="@(async() => await ChangeState(UEFNImporterState.S_Hide))">Yes</button>
+            </div>
+            
+            <div class="section">
+                <h2>Would you like to import something else?</h2>
+            </div>
+            
+            <div class="section">
+                <button onclick="@(async() => await Reset())">Yes</button>
+            </div>
+
+            break;
+        case UEFNImporterState.S_Hide:
+            <div class="section">
+                <h2>Paste the file path you want to make empty</h2>
+                <h3>You can get the path from FModel</h3>
+            </div>
+            
+            <div class="section vertical">
+                <h2>Path must include ".uasset" extension</h2>
+                <div class="input-block">
+                    <input placeholder="/FortniteGame/Content/..." @bind="@assetPath"/>
+                    <span class="label">/FortniteGame/Content/...</span>
+                </div>
+                <button style="width: 100%" onclick="@(async() => await MakeEmpty())">SELECT</button>
+            </div>
+            break;
+        case UEFNImporterState.S_Empty:
+            <div class="section">
+                <h2>Select the asset's skeletal mesh</h2>
+            </div>
+            
+            <div class="section vertical">
+                @foreach (var file in GetNameMapEntries())
+                {
+                    <button style="width: 100%" onclick="@(async () => await MakeEmpty(file))">@file</button>
+                }
+            </div>
+            break;
+        default:
+            throw new ArgumentOutOfRangeException("Invalid UEFN state!");
+    }
+</div>
+
+@code {
+    private UEFNImporterState UEFNState = UEFNImporterState.S_Experience;
+    private CompressionBase compressor = new Oodle();
+    
+    private DefaultFileProvider UEFNProvider;
+    private object parentObj;
+
+    private string workingDirectory;
+    private string customExperienceName;
+
+    private string assetPath;
+    private string customAssetPath;
+
+    private bool hasMoved = false;
+
+    private async void ChangeState()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(100);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ChangeState();
+    }
+
+    private async Task ChangeState(UEFNImporterState state)
+    {
+        UEFNState = state;
+    }
+
+    private async Task Reset()
+    {
+        UEFNState = UEFNImporterState.S_Experience;
+        UEFNProvider.Dispose();
+        parentObj = null;
+        workingDirectory = null;
+        customExperienceName = null;
+        assetPath = null;
+        customAssetPath = null;
+        hasMoved = false;
+    }
+
+    private async Task MakeEmpty(string search)
+    {
+        //parentObj.SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), "/Game/G.G");
+        await Swap();
+    }
+
+    private async Task MakeEmpty()
+    {
+        SaturnData.Clear();
+
+        if (!Constants.Provider.TrySavePackage(assetPath, out var parentPkg))
+        {
+            throw new Exception($"Parent package with the path '{assetPath}' doesn't exist!");
+        }
+
+        //parentObj = new Deserializer(parentPkg.Values.First());
+        //parentObj.Deserialize();
+
+        //int count = parentObj.ModifiedNameMap.Count(x => x.Name.ToLower().Contains("mesh") && !x.Name.ToLower().Contains("material") && !x.Name.ToLower().Contains("skeleton") && !x.Name.ToLower().Contains("animbp") && !x.Name.ToLower().Contains("abp"));
+        //if (count == 1)
+        //{
+        //    string search = parentObj.ModifiedNameMap.First(x => x.Name.ToLower().Contains("mesh") && !x.Name.ToLower().Contains("material") && !x.Name.ToLower().Contains("skeleton") && !x.Name.ToLower().Contains("animbp") && !x.Name.ToLower().Contains("abp")).Name;
+       //     parentObj.SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), "/Game/G.G");
+        //    await Swap();
+        //}
+       // else
+       // {
+        //    UEFNState = UEFNImporterState.S_Empty;
+       //     StateHasChanged();
+       // }
+    }
+    
+    private async Task Swap()
+    {
+        var swapData = new List<SwapData>
+        {
+            new()
+            {
+                SaturnData = SaturnData.ToNonStatic(),
+                //Data = new Serializer(parentObj).Serialize()
+            }
+        };
+
+        if (!hasMoved)
+        {
+            int i = 100;
+            while (File.Exists(DataCollection.GetGamePath() + $"\\pakchunk{i}-WindowsClient.ucas"))
+            {
+                i++;
+            }
+            
+            File.Copy(workingDirectory + "\\plugin.ucas", DataCollection.GetGamePath() + $"\\pakchunk{i}-WindowsClient.ucas");
+            File.Copy(workingDirectory + "\\plugin.utoc", DataCollection.GetGamePath() + $"\\pakchunk{i}-WindowsClient.utoc");
+            File.Copy(workingDirectory + "\\plugin.pak", DataCollection.GetGamePath() + $"\\pakchunk{i}-WindowsClient.pak");
+            File.Copy(workingDirectory + "\\plugin.sig", DataCollection.GetGamePath() + $"\\pakchunk{i}-WindowsClient.sig");
+
+            hasMoved = true;
+        }
+        
+        File.Delete(workingDirectory + "\\global.ucas");
+        File.Delete(workingDirectory + "\\global.utoc");
+
+        await FileLogic.Convert(swapData);
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "finished");
+
+        UEFNState = UEFNImporterState.S_CheckDone;
+        StateHasChanged();
+    }
+
+    private async Task SwapNameMap(string search)
+    {
+        //parentObj.SwapNameMap(search + '.' + Path.GetFileNameWithoutExtension(search), customAssetPath.Split('.')[0] + '.' + Path.GetFileNameWithoutExtension(customAssetPath));
+
+        UEFNState = UEFNImporterState.S_Swap;
+        StateHasChanged();
+    }
+
+    private string[] GetNameMapEntries()
+    {
+        SaturnData.Clear();
+
+        if (!Constants.Provider.TrySavePackage(assetPath, out var parentPkg))
+        {
+            throw new Exception($"Parent package with the path '{assetPath}' doesn't exist!");
+        }
+        
+        //parentObj = new Deserializer(parentPkg.Values.First());
+        //parentObj.Deserialize();
+
+        //return parentObj.ReadNameMap.Select(x => x.Name).Where(x => x.Contains('/')).ToArray();
+        return Array.Empty<string>();
+    }
+
+    private async Task SetParent()
+    {
+        UEFNState = UEFNImporterState.S_ParentFiles;
+        StateHasChanged();
+    }
+
+    private async Task LoadUEFN(string dir)
+    {
+        workingDirectory = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FortniteGame", "Saved", "PersistentDownloadDir", "GameCustom", "InstalledBundles", dir);
+        
+        File.Copy(DataCollection.GetGamePath() + "\\global.utoc", workingDirectory + "\\global.utoc", true);
+        File.Copy(DataCollection.GetGamePath() + "\\global.ucas", workingDirectory + "\\global.ucas", true);
+        
+        UEFNProvider = new DefaultFileProvider(workingDirectory, SearchOption.TopDirectoryOnly, false, new VersionContainer(EGame.GAME_UE5_LATEST));
+        UEFNProvider.Initialize();
+        await UEFNProvider.SubmitKeyAsync(new FGuid(), new FAesKey("0x0000000000000000000000000000000000000000000000000000000000000000"));
+
+        UEFNState = UEFNImporterState.S_Asset;
+        StateHasChanged();
+    }
+
+    private async Task SetUEFNFile(string path)
+    {
+        customAssetPath = path.Replace("Game", customExperienceName);
+        
+        UEFNState = UEFNImporterState.S_ParentAsset;
+        UEFNProvider.Dispose();
+        StateHasChanged();
+    }
+
+    private string[] GetUEFNFiles()
+    {
+        List<string> files = UEFNProvider.Files.Keys.ToList();
+        files.RemoveAll(x => !x.ToLower().Contains(".uasset"));
+        for (int i = 0; i < files.Count; i++)
+        {
+            files[i] = files[i].Replace("FortniteGame/Plugins/GameFeatures", "");
+            int nameOffset = files[i].IndexOf('/', 2);
+            customExperienceName = files[i].Substring(1, nameOffset - 1);
+            files[i] = files[i].Replace(customExperienceName + "/Content/", "Game/");
+        }
+
+        return files.ToArray();
+    }
+
+    private string[] GetUEFNExperiences()
+    {
+        string fortnitePath = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FortniteGame", "Saved", "PersistentDownloadDir", "GameCustom", "InstalledBundles");
+        if (!Directory.Exists(fortnitePath))
+            throw new Exception("InstalledBundles folder doesn't exist! Make sure at lease one UEFN experience has downloaded its content!");
+
+        var subDirectories = new DirectoryInfo(fortnitePath).GetDirectories().OrderByDescending(d => d.LastWriteTimeUtc);
+
+        return subDirectories.Select(directory => directory.Name).ToArray();
+    }
+
+    private async Task Clear()
+    {
+        string path = Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FortniteGame", "Saved", "PersistentDownloadDir", "GameCustom", "InstalledBundles");
+        foreach (var dir in Directory.EnumerateDirectories(path))
+        {
+            Directory.Delete(dir, true);
+        }
+    }
+}

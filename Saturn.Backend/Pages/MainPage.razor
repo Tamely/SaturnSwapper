@@ -1,0 +1,242 @@
+﻿@page "/"
+@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Pages.Swapper
+@using System.IO
+@using System.Net
+@using CUE4Parse.FileProvider.Objects
+@using CUE4Parse.UE4.AssetRegistry
+@using CUE4Parse.UE4.Assets.Exports.Texture
+@using Newtonsoft.Json
+@using Radon.Runtime
+@using Saturn.Backend.Data
+@using Saturn.Backend.Data.Fortnite
+@using Saturn.Backend.Data.FortniteCentral
+@using Saturn.Backend.Data.FortniteCentral.Models
+@using Saturn.Backend.Data.Manifest
+@using Saturn.Backend.Data.SaturnAPI
+@using Saturn.Backend.Data.SaturnAPI.Models
+@using Saturn.Backend.Data.SaturnConfig
+@using Saturn.Backend.Data.Swapper
+@using Saturn.Backend.Data.Swapper.Assets
+@using Saturn.Backend.Data.Variables
+@using UAssetAPI
+@using UAssetAPI.IO
+@using UAssetAPI.UnrealTypes
+@using UAssetAPI.Unversioned
+@inherits LayoutComponentBase
+
+@inject IJSRuntime _jsRuntime
+@inject ISaturnAPIService _saturnAPIService
+@inject IFortniteCentralService _fortniteCentralService
+@inject LocalizationResourceService _localizationResourceService
+
+<Scripts/>
+<body>
+    <div class="app-mount">
+        <OobeOverlay/>
+        <DiscordModal/>
+        <SwapperPage/>
+        <InstallerPage/>
+    </div>
+</body>
+
+@code {
+
+    async Task UpdateState()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(500);
+        }
+    }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        UpdateState();
+
+        Constants.State = SaturnState.S_Installer;
+        
+        foreach (var file in Directory.EnumerateFiles(Constants.DataPath))
+            File.Delete(file);
+
+        Utilities.CorrectFiles();
+
+        while (!await _jsRuntime.InvokeAsync<bool>("saturn.anims.waitForId", "installer-welcome")) {}
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerWelcomeIn");
+
+        // Check if the swapper has an update
+        var idx = await _saturnAPIService.ReturnEndpointAsync<IndexModel>("/");
+        
+        for (int i = 0; i < 10; i++)
+        {
+            if (idx == null)
+                idx = await _saturnAPIService.ReturnEndpointAsync<IndexModel>("/");
+            else
+                break;
+        }
+
+        if (idx == null)
+            throw new Exception("Unable to connect to Saturn's API. Please try using a VPN to resolve this.");
+        
+        if (idx.swapperVersion != Constants.USER_VERSION)
+            throw new Exception($"There's an update for the swapper, please download it from {idx.DiscordServer} and try again");
+
+        // If it doesn't, check if mappings are up to date
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(74));
+        
+        var mappings = await _fortniteCentralService.ReturnEndpointAsync<FortniteCentralMappingsModel[]>("/api/v1/mappings");
+
+        for (int i = 0; i < 10; i++)
+        {
+            if (mappings == null)
+                mappings = await _fortniteCentralService.ReturnEndpointAsync<FortniteCentralMappingsModel[]>("/api/v1/mappings");
+            else
+                break;
+        }
+        
+        if (mappings == null)
+            throw new Exception("Unable to connect to FortniteCentral's API. Please try using a VPN to resolve this.");
+        
+        if (mappings.Length == 0)
+            throw new Exception(_localizationResourceService.GetString(75));
+
+        // If they aren't, download the new mappings
+        if (!File.Exists(Constants.MappingsPath + mappings[0].FileName))
+        {
+            new WebClient().DownloadFile(mappings[0].Url, Constants.MappingsPath + mappings[0].FileName);
+        }
+        
+        // If they are, check if the game is up to date with the mappings
+        if (mappings[0].Meta.Version.Split("-CL-")[0] != DataCollection.GetGameVersion().Split("-CL-")[0])
+        {
+            await WarningModal.SetEmergencyNotice(_localizationResourceService.GetString(77), _localizationResourceService.GetString(76));
+            await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "emergency");
+        }
+        
+        // Check if cosmetics are already input
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(78));
+        if (File.Exists(Constants.CosmeticsPath))
+        {
+            string data = await File.ReadAllTextAsync(Constants.CosmeticsPath);
+            try
+            {
+                Constants.PotentialOptions = JsonConvert.DeserializeObject<List<string>>(data) ?? new();
+            }
+            catch
+            {
+                Logger.Log("Found corrupt cosmetics.json! Deleting it from disk.");
+                File.Delete(Constants.CosmeticsPath);
+            }
+        }
+        
+        // Check if dependencies are up to date
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(79));
+        var deps = await _saturnAPIService.ReturnEndpointAsync<DependencyModel[]>("/api/v1/Saturn/Dependencies");
+        for (int i = 0; i < 10; i++)
+        {
+            if (deps == null)
+                deps = await _saturnAPIService.ReturnEndpointAsync<DependencyModel[]>("/api/v1/Saturn/Dependencies");
+            else
+                break;
+        }
+        
+        if (deps == null)
+            throw new Exception("Unable to connect to Saturn's API. Please try using a VPN to resolve this.");
+        
+        foreach (var dep in deps)
+        {
+            if (Config.Get().CheckVersion(dep.name, dep.version)) continue;
+            await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(80) + dep.name);
+            new WebClient().DownloadFile(dep.link, Constants.ExternalPath + dep.name);
+            Config.Get().Dispose();
+        }
+        
+        // Check if key is valid
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(81));
+        Constants.isKeyValid = await Utilities.IsKeyValid(_saturnAPIService);
+        Constants.isPluginKeyValid = await Utilities.IsKeyPluginValid(_saturnAPIService);
+        Constants.isKeyValid |= Constants.isPlus;
+        Constants.isPluginKeyValid |= Constants.isPlus;
+
+        // Download the manifest
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(106));
+        Fortnite manifest = new Fortnite();
+        
+        // Check for modified files
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(107));
+        manifest.CleanFiles();
+        //await manifest.CheckForModifiedFiles();
+
+        // Initialize provider
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(108));
+        Constants.Provider = new SaturnFileProvider(_fortniteCentralService).Provider;
+        Constants.Provider.LoadLocalization();
+        Constants.Provider.LoadVirtualPaths();
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(114));
+        var rarityData = await Constants.Provider.LoadObjectAsync("FortniteGame/Content/Balance/RarityData");
+        for (int i = 0; i < 8; i++)
+        {
+            Constants.RarityData[i] = rarityData.GetByIndex<RarityCollection>(i);
+        }
+
+        async Task LoadAssetRegistry(GameFile file)
+        {
+            var assetArchive = await file.TryCreateReaderAsync();
+            if (assetArchive is not null)
+            {
+                try
+                {
+                    var assetRegistry = new FAssetRegistryState(assetArchive);
+                    Constants.AssetDataBuffers.AddRange(assetRegistry.PreallocatedAssetDataBuffers);
+                    Logger.Log($"Loaded Asset Registry: {file.Path}");
+                }
+                catch
+                {
+                    Logger.Log($"Failed to load Asset Registry: {file.Path}", LogLevel.Error);
+                }
+            }
+        }
+
+        var assetRegistries = Constants.Provider.Files.Where(x => x.Key.Contains("AssetRegistry", StringComparison.OrdinalIgnoreCase)).ToList();
+        foreach (var (_, file) in assetRegistries)
+        {
+            await LoadAssetRegistry(file);
+        }
+
+        if (assetRegistries.Count == 0)
+        {
+            throw new Exception("Failed to load asset registry, please ensure your game is up to date");
+        }
+
+        Constants.PlaceholderTexture = await Constants.Provider.TryLoadObjectAsync<UTexture2D>("FortniteGame/Content/Athena/Prototype/Textures/T_Placeholder_Generic");
+        Usmap.CachedMappings = new Usmap();
+
+        var pkg = await Constants.Provider.SaveAssetAsync(Constants.DEFAULTGAMEDATACOSMETICS_PATH);
+        ZenAsset asset = new ZenAsset(new AssetBinaryReader(pkg), EngineVersion.VER_LATEST, Usmap.CachedMappings);
+        if (!asset.VerifyBinaryEquality(pkg))
+        {
+            await WarningModal.SetEmergencyNotice("Binary Equality Check Failed!", "The swapper WILL NOT WORK in most cases at the moment! The binary equality check has failed which is most likely caused by an engine update. Look in Saturn's Discord for more information!");
+            await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "emergency");
+        }
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerChangeText", _localizationResourceService.GetString(82));
+
+        await _jsRuntime.InvokeVoidAsync("saturn.anims.installerWelcomeOut");
+
+        Constants.State = SaturnState.S_Dash;
+
+        while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "dash")) {}
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "dash");
+
+        // Reload the UI just in case
+        StateHasChanged();
+
+        DiscordModal.DiscordLink = idx.DiscordServer;
+        await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "discord");
+
+        Shared.PakPath = DataCollection.GetGamePath();
+        Shared.AllowedFiles.RemoveAll(x => File.Exists(DataCollection.GetGamePath() + x + ".utoc"));
+    }
+}

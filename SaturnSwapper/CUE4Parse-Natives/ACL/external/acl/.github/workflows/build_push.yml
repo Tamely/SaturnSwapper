@@ -1,0 +1,164 @@
+name: build push
+
+on:
+  push:
+    branches:
+      - '**'
+    paths-ignore:
+      - docs/**
+      - '**/*.md'
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc13, clang15]
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Building (release-x86)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x86 -build'
+      - name: Running unit tests (release-x86)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x86 -unit_test'
+      - name: Running regression tests (release-x86)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x86 -regression_test'
+      - name: Clean
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -clean_only'
+      - name: Building (release-x64)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x64 -build'
+      - name: Running unit tests (release-x64)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x64 -unit_test'
+      - name: Running regression tests (release-x64)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x64 -regression_test'
+      - name: Clean
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -clean_only'
+      - name: Building (release-x64 nosimd)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x64 -nosimd -build'
+      - name: Running unit tests (release-x64 nosimd)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x64 -nosimd -unit_test'
+      - name: Running regression tests (release-x64 nosimd)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x64 -nosimd -regression_test'
+      - name: Clean
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -clean_only'
+      - name: Building (release-x64 AVX)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x64 -avx -build'
+      - name: Running unit tests (release-x64 AVX)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x64 -avx -unit_test'
+      - name: Running regression tests (release-x64 AVX)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x64 -avx -regression_test'
+
+  osx-12:
+    runs-on: macos-12
+    strategy:
+      matrix:
+        compiler: [xcode14]
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Setup ${{ matrix.compiler }} compiler
+        run: ./tools/setup_osx_compiler.sh ${{ matrix.compiler }}
+      - name: Building (release-x64)
+        run: python3 make.py -ci -compiler osx -config Release -cpu x64 -build
+      - name: Running unit tests (release-x64)
+        run: python3 make.py -ci -compiler osx -config Release -cpu x64 -unit_test
+      - name: Running regression tests (release-x64)
+        run: python3 make.py -ci -compiler osx -config Release -cpu x64 -regression_test
+      - name: Clean
+        run: python3 make.py -ci -clean_only
+      - name: Building (release-x64 nosimd)
+        run: python3 make.py -ci -compiler osx -config Release -cpu x64 -nosimd -build
+      - name: Running unit tests (release-x64 nosimd)
+        run: python3 make.py -ci -compiler osx -config Release -cpu x64 -nosimd -unit_test
+      - name: Running regression tests (release-x64 nosimd)
+        run: python3 make.py -ci -compiler osx -config Release -cpu x64 -nosimd -regression_test
+      - name: Clean
+        run: python3 make.py -ci -clean_only
+      - name: Building for iOS (release-arm64)
+        run: python3 make.py -ci -compiler ios -config Release -build
+      - name: Clean
+        run: python3 make.py -ci -clean_only
+      - name: Building for iOS (release-arm64 nosimd)
+        run: python3 make.py -ci -compiler ios -config Release -build -nosimd
+
+  emscripten:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Build (release)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-linux-emscripten:v1
+        with:
+          args: 'python3 make.py -ci -compiler emscripten -config release -build'
+      - name: Unit tests (release)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-linux-emscripten:v1
+        with:
+          args: 'python3 make.py -ci -compiler emscripten -config release -unit_test'
+      - name: Regression tests (release)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-linux-emscripten:v1
+        with:
+          args: 'python3 make.py -ci -compiler emscripten -config release -regression_test'
+
+  vs2022:
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        compiler: [vs2022, vs2022-clang]
+        build_config: [debug, release]
+        cpu: [x86, x64, arm64]
+        simd: [-simd, -nosimd, -avx]
+        exclude:
+          # Don't run arm64 with clang
+          - compiler: vs2022-clang
+            cpu: arm64
+          # Don't run AVX with arm64
+          - cpu: arm64
+            simd: -avx
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Building (${{ matrix.build_config }}-${{ matrix.cpu }})
+        run: python3 make.py -ci -compiler ${{ matrix.compiler }} -config ${{ matrix.build_config }} -cpu ${{ matrix.cpu }} -build ${{ matrix.simd }}
+      - name: Running unit tests (${{ matrix.build_config }}-${{ matrix.cpu }})
+        run: python3 make.py -ci -compiler ${{ matrix.compiler }} -config ${{ matrix.build_config }} -cpu ${{ matrix.cpu }} -unit_test ${{ matrix.simd }}
+      - name: Running regression tests (${{ matrix.build_config }}-${{ matrix.cpu }})
+        if: ${{ matrix.build_config == 'release' }}
+        run: python3 make.py -ci -compiler ${{ matrix.compiler }} -config ${{ matrix.build_config }} -cpu ${{ matrix.cpu }} -regression_test ${{ matrix.simd }}

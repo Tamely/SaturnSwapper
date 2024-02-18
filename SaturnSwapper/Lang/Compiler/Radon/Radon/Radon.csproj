@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>Radon</RootNamespace>
+        <LangVersion>latest</LangVersion>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <TargetFramework>net7.0-windows</TargetFramework>
+    </PropertyGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Radon.Generator\Radon.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.1" />
+        <PackageReference Include="System.Collections.Immutable" Version="8.0.0-preview.5.23280.8" />
+    </ItemGroup>
+    <ItemGroup>
+        <InternalsVisibleTo Include="Radon.Runtime" />
+        <InternalsVisibleTo Include="ILViewer" />
+        <InternalsVisibleTo Include="Radon.Lsp" />
+        <InternalsVisibleTo Include="Saturn.Backend" />
+    </ItemGroup>
+</Project>

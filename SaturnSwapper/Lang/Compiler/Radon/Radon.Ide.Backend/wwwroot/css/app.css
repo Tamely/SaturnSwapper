@@ -1,0 +1,221 @@
+/* Main IDE */
+
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: url('../fonts/JetBrainsMono/fonts/ttf/JetBrainsMono-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: url('../fonts/JetBrainsMono/fonts/ttf/JetBrainsMono-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+:root {
+    --primary-color: #262626;
+    --primary-color-dark: #000000;
+    --secondary-color: #404040;
+    --secondary-color-bright: #666666;
+    --foreground-color: #FFFFFF;
+    --foreground-color-dark: #F2F2F2;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    background-color: var(--primary-color);
+    color: var(--foreground-color);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    outline: none;
+    overflow: clip;
+}
+
+.ide-page {
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--primary-color);
+    color: var(--foreground-color);
+}
+
+.btn-primary {
+    background-color: var(--secondary-color);
+    color: var(--foreground-color);
+    border: none;
+    margin: 10px;
+    width: 10vw;
+    padding: 12px 20px;
+    box-sizing: border-box;
+    font-size: 16px;
+    border-radius: 20px;
+}
+
+.btn-primary:hover {
+    background-color: var(--secondary-color-bright);
+}
+
+
+
+/* Menu */
+
+.menu-strip {
+    overflow: hidden;
+    background-color: var(--secondary-color);
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+}
+
+.dropdown {
+    float: left;
+    overflow: hidden;
+}
+
+.dropdown .dropbtn {
+    font-size: 16px;
+    border: none;
+    outline: none;
+    color: var(--foreground-color);
+    padding: 14px 16px;
+    background-color: var(--secondary-color);
+}
+
+.menu-strip a:hover, .dropdown:hover .dropbtn {
+    background-color: var(--secondary-color-bright);
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: var(--secondary-color);
+    min-width: 160px;
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+    border: 1px solid var(--foreground-color-dark);
+}
+
+.dropdown-content a {
+    float: none;
+    color: var(--foreground-color);
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown-content a:hover {
+    background-color: var(--secondary-color-bright);
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+
+
+/* Editor */
+.editor {
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background-color: var(--primary-color);
+    color: var(--foreground-color);
+}
+
+.editor-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 75px;
+    background-color: var(--primary-color);
+    color: var(--foreground-color);
+    padding: 10px;
+    border-bottom: 1px solid var(--foreground-color-dark);
+}
+
+.editor-body {
+    overflow: auto;
+    display: flex;
+    flex-direction: row;
+    /*position: relative;*/
+    width: 100vw;
+    height: calc(100% - 75px);
+    background-color: var(--primary-color);
+    color: var(--foreground-color);
+}
+
+.editor-line-number {
+    margin: 0;
+    padding: 0;
+    line-height: 20px;
+}
+
+.text-editor {
+    /*position: relative;*/
+    width: calc(100% - 75px);
+    height: 100%;
+    color: var(--foreground-color);
+    border: none;
+    resize: none;
+    outline: none;
+    font-size: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    overflow: auto;
+}
+
+.text-editor, .editor-line-numbers {
+    box-sizing: border-box;
+    padding: 10px;
+}
+
+.editor-token, .editor-trivia {
+    color: var(--foreground-color);
+    line-height: 20px;
+    font-size: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+    overflow: auto;
+}
+
+
+
+/* New File */
+
+.center-div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column; /* stack child elements vertically */
+    height: 100%;
+    background-color: var(--primary-color);
+}
+
+.button-container {
+    display: flex;
+    justify-content: center;
+}
+
+.input-textbox {
+    background-color: var(--secondary-color);
+    color: var(--foreground-color);
+    border: none;
+    margin: 10px auto;
+    width: 50%;
+    padding: 12px 20px;
+    box-sizing: border-box;
+    font-size: 16px;
+    border-radius: 20px;
+    outline: none;
+    /* Set the placeholder text color */
+}
+
+.input-textbox::placeholder {
+    color: var(--foreground-color-dark);
+}

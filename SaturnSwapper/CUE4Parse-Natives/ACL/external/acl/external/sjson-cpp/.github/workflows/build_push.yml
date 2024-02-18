@@ -1,0 +1,161 @@
+name: build push
+
+on:
+  push:
+    branches:
+      - '**'
+    paths-ignore:
+      - '**/*.md'
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc13, clang15]
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Building (debug-x86)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Debug -cpu x86 -build'
+      - name: Running unit tests (debug-x86)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Debug -cpu x86 -unit_test'
+      - name: Clean
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -clean_only'
+      - name: Building (debug-x64)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Debug -cpu x64 -build'
+      - name: Running unit tests (debug-x64)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Debug -cpu x64 -unit_test'
+      - name: Clean
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -clean_only'
+      - name: Building (release-x86)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x86 -build'
+      - name: Running unit tests (release-x86)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x86 -unit_test'
+      - name: Clean
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -clean_only'
+      - name: Building (release-x64)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x64 -build'
+      - name: Running unit tests (release-x64)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-lunar:v1
+        with:
+          args: 'python3 make.py -ci -compiler ${{ matrix.compiler }} -config Release -cpu x64 -unit_test'
+
+  osx-12:
+    runs-on: macos-12
+    strategy:
+      matrix:
+        compiler: [xcode14]
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Setup ${{ matrix.compiler }} compiler
+        run: ./tools/setup_osx_compiler.sh ${{ matrix.compiler }}
+      - name: Building (debug-x64)
+        run: python3 make.py -ci -compiler osx -config Debug -cpu x64 -build
+      - name: Running unit tests (debug-x64)
+        run: python3 make.py -ci -compiler osx -config Debug -cpu x64 -unit_test
+      - name: Clean
+        run: python3 make.py -clean_only
+      - name: Building (release-x64)
+        run: python3 make.py -ci -compiler osx -config Release -cpu x64 -build
+      - name: Running unit tests (release-x64)
+        run: python3 make.py -ci -compiler osx -config Release -cpu x64 -unit_test
+      - name: Clean
+        run: python3 make.py -clean_only
+      - name: Building for iOS (debug-arm64)
+        run: python3 make.py -ci -compiler ios -config Debug -build
+      - name: Clean
+        run: python3 make.py -clean_only
+      - name: Building for iOS (release-arm64)
+        run: python3 make.py -ci -compiler ios -config Release -build
+
+  emscripten:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Building (debug)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-linux-emscripten:v1
+        with:
+          args: 'python3 make.py -ci -compiler emscripten -config debug -build'
+      - name: Running unit tests (debug)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-linux-emscripten:v1
+        with:
+          args: 'python3 make.py -ci -compiler emscripten -config debug -unit_test'
+      - name: Clean
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-linux-emscripten:v1
+        with:
+          args: 'python3 make.py -clean_only'
+      - name: Building (release)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-linux-emscripten:v1
+        with:
+          args: 'python3 make.py -ci -compiler emscripten -config release -build'
+      - name: Running unit tests (release)
+        uses: docker://ghcr.io/nfrechette/toolchain-amd64-linux-emscripten:v1
+        with:
+          args: 'python3 make.py -ci -compiler emscripten -config release -unit_test'
+
+  vs2022:
+    runs-on: windows-2022
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+      - name: Building (debug-x64)
+        run: python3 make.py -ci -compiler vs2022 -config Debug -cpu x64 -build
+      - name: Running unit tests (debug-x64)
+        run: python3 make.py -ci -compiler vs2022 -config Debug -cpu x64 -unit_test
+      - name: Clean
+        run: python3 make.py -clean_only
+      - name: Building (release-x64)
+        run: python3 make.py -ci -compiler vs2022 -config Release -cpu x64 -build
+      - name: Running unit tests (release-x64)
+        run: python3 make.py -ci -compiler vs2022 -config Release -cpu x64 -unit_test
+      - name: Clean
+        run: python3 make.py -clean_only
+      - name: Building (debug-arm64)
+        run: python3 make.py -ci -compiler vs2022 -config Debug -cpu arm64 -build
+      - name: Clean
+        run: python3 make.py -clean_only
+      - name: Building (release-arm64)
+        run: python3 make.py -ci -compiler vs2022 -config Release -cpu arm64 -build
+      - name: Clean
+        run: python3 make.py -clean_only
+      - name: Building (debug-x64) with Clang
+        run: python3 make.py -ci -compiler vs2022-clang -config Debug -cpu x64 -build
+      - name: Running unit tests (debug-x64) with Clang
+        run: python3 make.py -ci -compiler vs2022-clang -config Debug -cpu x64 -unit_test
+      - name: Clean
+        run: python3 make.py -clean_only
+      - name: Building (release-x64) with Clang
+        run: python3 make.py -ci -compiler vs2022-clang -config Release -cpu x64 -build
+      - name: Running unit tests (release-x64) with Clang
+        run: python3 make.py -ci -compiler vs2022-clang -config Release -cpu x64 -unit_test

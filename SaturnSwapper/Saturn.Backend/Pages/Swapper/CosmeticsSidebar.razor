@@ -1,0 +1,122 @@
+﻿@using Saturn.Backend.Data.Variables
+@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Data.Swapper.Generation
+@using Saturn.Backend.Data
+@using Saturn.Backend.Data.FortniteCentral
+@using Saturn.Backend.Data.SaturnAPI.Models
+
+@inject IJSRuntime _jsRuntime
+@inject IFortniteCentralService _fortniteCentralService
+@inject LocalizationResourceService _localizationResourceService
+
+<ul class="sidebar">
+    <li id="skin-li" class="selected" @onclick="@(async() => await SwitchState(SaturnState.S_Skin))">
+        <h6><i class="fas fa-user"></i> @_localizationResourceService.GetString(18)</h6>
+    </li>
+    
+    <li id="backbling-li" @onclick="@(async() => await SwitchState(SaturnState.S_Backbling))">
+        <h6><i class="fas fa-backpack"></i> @_localizationResourceService.GetString(19)</h6>
+    </li>
+    
+    <li id="pickaxe-li" @onclick="@(async() => await SwitchState(SaturnState.S_Pickaxe))">
+        <h6><i class="fas fa-axe"></i> @_localizationResourceService.GetString(20)</h6>
+    </li>
+    
+    <li id="emote-li" @onclick="@(async() => await SwitchState(SaturnState.S_Emote))">
+        <h6><i class="fas fa-user-music"></i> @_localizationResourceService.GetString(21)</h6>
+    </li>
+    
+    <li id="glider-li" @onclick="@(async() => await SwitchState(SaturnState.S_Glider))">
+        <h6><i class="fas fa-umbrella"></i> @_localizationResourceService.GetString(22)</h6>
+    </li>
+    
+    <div class="input-block-small">
+        <input placeholder="Search..." @onkeydown="@(async(key) => await FilterItems(key))" @bind="@SearchPattern"/>
+        <span class="label">@_localizationResourceService.GetString(24)</span>
+    </div>
+    
+    <li id="back-li" class="settings-high" @onclick="@(async() => await GoBack())">
+        <h6><i class="fas fa-arrow-to-left"></i> @_localizationResourceService.GetString(23)</h6>
+    </li>
+</ul>
+
+@code {
+    private string SearchPattern = "";
+
+    private async Task FilterItems(KeyboardEventArgs key, int count = 0)
+    {
+        if (key.Code != "Enter")
+            return;
+        
+        StateHasChanged();
+        await Task.Delay(250);
+        StateHasChanged();
+
+        Constants.CosmeticCount = -1;
+        Constants.Cosmetics.Clear();
+        await Constants.Handler.Reset();
+        if (string.IsNullOrWhiteSpace(SearchPattern))
+        {
+            await Constants.Handler.Handler.Execute();
+        }
+        else
+        {
+            await Constants.Handler.Handler.Execute(SearchPattern);
+        }
+        await Task.Delay(250);
+        StateHasChanged();
+    }
+    
+    private async Task SwitchState(SaturnState state)
+    {
+        if (Constants.Handler.Handler.HasStarted) return;
+        
+        Constants.CosmeticState = state;
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOutNoOutro", "pickaxe");
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOutNoOutro", "emote");
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOutNoOutro", "skin");
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOutNoOutro", "backbling");
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOutNoOutro", "glider");
+        switch (state)
+        {
+            case SaturnState.S_Pickaxe:
+                await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "pickaxe");
+                await Constants.Handler.SwitchHandler(Constants.Handler.PickaxeHandler);
+                break;
+            case SaturnState.S_Emote:
+                await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "emote");
+                await Constants.Handler.SwitchHandler(Constants.Handler.DanceHandler);
+                break;
+            case SaturnState.S_Skin:
+                await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "skin");
+                await Constants.Handler.SwitchHandler(Constants.Handler.SkinHandler);
+                break;
+            case SaturnState.S_Backbling:
+                await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "backbling");
+                await Constants.Handler.SwitchHandler(Constants.Handler.BackpackHandler);
+                break;
+            case SaturnState.S_Glider:
+                await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabInNoIntro", "glider");
+                await Constants.Handler.SwitchHandler(Constants.Handler.GliderHandler);
+                break;
+        }
+
+        Constants.ChunkIndex = 0;
+        Constants.CosmeticCount = -1;
+        Constants.Cosmetics.Clear();
+        await Constants.Handler.Handler.Execute();
+        StateHasChanged();
+    }
+
+    private async Task GoBack()
+    {
+        Constants.CosmeticState = SaturnState.S_Skin;
+
+        DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", "Dash");
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOut", "cosmetic");
+        Constants.State = SaturnState.S_Dash;
+        while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "dash")) {}
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "dash");
+    }
+}

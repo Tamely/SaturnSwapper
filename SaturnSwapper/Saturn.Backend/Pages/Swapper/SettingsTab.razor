@@ -1,0 +1,159 @@
+﻿@using Saturn.Backend.Data.SaturnConfig
+@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Data.Variables
+@using System.IO
+@using Saturn.Backend.Data.Fortnite
+@using System.Diagnostics
+@using System.Threading
+@using Newtonsoft.Json
+@using Radon.Runtime
+@using Saturn.Backend.Data
+@using Saturn.Backend.Data.Compression
+@using Saturn.Backend.Data.Discord
+@using Saturn.Backend.Data.Swapper.Generation
+@using Saturn.Backend.Data.Swapper.Swapping.Models
+
+@inject IJSRuntime _jsRuntime;
+@inject LocalizationResourceService _localizationResourceService
+
+<PresetModal/>
+<CreativeSwapModal/>
+<KeyModal/>
+<FinishedModal/>
+
+<div class="tab-page" id="settings-page" style="display: none">
+    <div class="section vertical" id="user-settings">
+        <h1>@_localizationResourceService.GetString(95)</h1>
+        
+        @if (Constants.DiscordName != Environment.UserName)
+        {
+            <div class="flex-box">
+                <img class="avatar" src="@Constants.DiscordAvatar" alt="Avatar"/>
+                @if (Constants.isPlus)
+                {
+                    <div class="additional-info">
+                        <h3>SATURN+</h3>
+                    </div>
+                }
+            </div>
+            <span>@(Constants.DiscordName)</span>
+        }
+        else
+        {
+            <button @onclick="@(async() => await CheckSaturnPlus())">
+                @_localizationResourceService.GetString(99)
+            </button>
+        }
+    </div>
+    
+    <div class="section vertical" id="swapper-settings">
+        <h1>@_localizationResourceService.GetString(96)</h1>
+        
+        <button @onclick="@(async () => await ToggleCreativeSwaps())">
+            @("Toggle Creative Swaps: " + (Constants.ShouldCreativeSwap ? "On" : "Off"))
+        </button>
+
+        <button @onclick="@(async() => await NavToSelect())">
+            @_localizationResourceService.GetString(97)
+        </button>
+    </div>
+    
+    <div class="section vertical" id="game-settings">
+        <h1>@_localizationResourceService.GetString(98)</h1>
+
+        <div class="setting">
+            <button @onclick="@(async() => await LaunchFortnite())">
+                <i class="fas fa-play" style="padding-right: 5px"></i>
+                @_localizationResourceService.GetString(100)
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private async Task UpdateState()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(500);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        UpdateState();
+    }
+    
+    private async Task ToggleCreativeSwaps()
+    {
+        Constants.ShouldCreativeSwap = !Constants.ShouldCreativeSwap;
+
+        if (Constants.ShouldCreativeSwap)
+        {
+            await _jsRuntime.InvokeVoidAsync("saturn.modalManager.showModal", "creative");
+        }
+    }
+
+    private async Task CheckSaturnPlus()
+    {
+        new Thread(() =>
+        {
+            new DiscordUtilities();
+            Constants.isKeyValid |= Constants.isPlus;
+            Constants.isPluginKeyValid |= Constants.isPlus;
+        }).Start();
+    }
+
+    private async Task LaunchFortnite()
+    {
+        await File.WriteAllTextAsync(Constants.ExternalPath + "files.json", JsonConvert.SerializeObject(Shared.AllowedFiles, Formatting.None));
+        
+        if (Constants.CurrentLobbySwaps.Count > 0)
+        {
+            CompressionBase oodle = new Oodle();
+            ItemModel LobbySwaps = new()
+            {
+                Name = "Lobby Swaps",
+                Swaps = new Swap[Constants.CurrentLobbySwaps.Sum(x => x.Swaps.Length)]
+            };
+
+            int idx = 0;
+            foreach (var item in Constants.CurrentLobbySwaps)
+            {
+                foreach (var swap in item.Swaps)
+                {
+                    swap.Data = oodle.Compress(swap.Data);
+                    LobbySwaps.Swaps[idx++] = swap;
+                }
+            }
+            
+            await File.WriteAllTextAsync(Constants.DataPath + LobbySwaps.Name + ".json", JsonConvert.SerializeObject(LobbySwaps));
+        }
+        Constants.isClosingCorrectly = true;
+
+        await Task.Delay(1000); // Wait 1 second for everything to load
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = Constants.ExternalPath + "Saturn.Launcher.exe",
+            CreateNoWindow = false,
+            UseShellExecute = false
+        });
+    }
+
+    private async Task NavToSelect()
+    {
+        Logger.Log("Generating cosmetics!");
+        await Constants.Handler.SwitchHandler(Constants.Handler.SkinHandler);
+        Constants.Cosmetics.Clear();
+        await Constants.Handler.Initialize();
+        Logger.Log("Done!");
+
+        DiscordService.DiscordHandler.UpdatePresence($"{Constants.USER_VERSION} - In Saturn", "Selecting Cosmetics");
+        
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabOut", "settings");
+        Constants.State = SaturnState.S_SelectCosmetics;
+        while (!await _jsRuntime.InvokeAsync<bool>("saturn.tabManager.checkTab", "cosmetic")) {}
+        await _jsRuntime.InvokeVoidAsync("saturn.tabManager.tabIn", "cosmetic");
+    }
+}

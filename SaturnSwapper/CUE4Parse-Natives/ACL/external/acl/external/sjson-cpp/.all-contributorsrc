@@ -1,0 +1,53 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "CodyDWJones",
+      "name": "CodyDWJones",
+      "avatar_url": "https://avatars.githubusercontent.com/u/28773740?v=4",
+      "profile": "https://github.com/CodyDWJones",
+      "contributions": [
+        "code",
+        "maintenance"
+      ]
+    },
+    {
+      "login": "janisozaur",
+      "name": "Michał Janiszewski",
+      "avatar_url": "https://avatars.githubusercontent.com/u/550290?v=4",
+      "profile": "https://github.com/janisozaur",
+      "contributions": [
+        "code",
+        "maintenance"
+      ]
+    },
+    {
+      "login": "tirpidz",
+      "name": "Martin Turcotte",
+      "avatar_url": "https://avatars.githubusercontent.com/u/9991876?v=4",
+      "profile": "https://github.com/tirpidz",
+      "contributions": [
+        "maintenance"
+      ]
+    },
+    {
+      "login": "Meradrin",
+      "name": "Meradrin",
+      "avatar_url": "https://avatars.githubusercontent.com/u/7066278?v=4",
+      "profile": "https://github.com/Meradrin",
+      "contributions": [
+        "bug"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "projectName": "sjson-cpp",
+  "projectOwner": "nfrechette",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "skipCi": true
+}

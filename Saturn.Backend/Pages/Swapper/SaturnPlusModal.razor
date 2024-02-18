@@ -1,0 +1,33 @@
+﻿@using Saturn.Backend.Data.Services
+@using Saturn.Backend.Data
+
+@inject LocalizationResourceService _localizationResourceService;
+
+<div class="modal minimized" id="plus-modal">
+    <div class="modal-window" style="width: 490px">
+        <div class="close-button" onclick="saturn.modalManager.hideModal('plus')">
+            <i class="fas fa-times"></i>
+        </div>
+        
+        <div class="modal-header">
+            <h1 class="modal-title">Saturn+</h1>
+            <p class="modal-desc">Methods of getting Saturn+</p>
+        </div>
+        
+        <div class="section vertical">
+            <h1>Get a server membership for the Discord server below. ($3.99 USD)</h1>
+        </div>
+        
+        <div class="section vertical">
+            <h1>Boost the Discord server below. ($4.99 USD)</h1>
+        </div>
+        
+        <div class="modal-bottom">
+            <h3><span class="hyperlink" onclick="@(() => Utilities.OpenBrowser(DiscordLink))">@(_localizationResourceService.GetString(112) + "+")</span></h3>
+        </div>
+    </div>
+</div>
+
+@code {
+    public static string DiscordLink = "https://discord.gg/saturnclient";
+}
