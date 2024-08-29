@@ -1,17 +1,17 @@
 # Saturn
-This repo contains the code to build the Saturn Backend, Launcher, and Client for all supported platforms, as well as the source to the file provider, manifest parser, and uasset API used to edit assets.
+This branch of this repo contains the code to the Saturn Version Virtual Launcher! We are not supplying the codebase towards the actual virtualization of Fortnite at the moment due to security, legal, and theft concerns.
 
 ## What is Saturn?
-Saturn is the most advanced Fortnite Skin Changer on the market and is completely free! Items get automatically added to the swapper when EPIC adds them to Fortnite allowing you to change skins without having to wait for a contributor to add them to the program. The UI is made in HTML, CSS, and JavaScript combining the smooth navigation of a website with the benefits of a native app.
+Saturn is the most advanced Unreal Engine modding tool. We natively ship with the ability to mod Fortnite - as that is the most popular Unreal Engine game at the moment - but will provide help for modifying it towards another game.
 
-Official Get-Started Page: https://github.com/Tamely/SaturnSwapper/blob/master/docs/using/GetStarted.md
+Official Get-Started Page: NOT AVAILABLE YET
 
 ## How can I contribute?
+
 We welcome all kinds of contributions! Many people, listed or not, have bettered this project, and without them, it wouldn't be where it is today.
 
 * [Contributing](docs/contributing/GetStarted.md) explains what kind of contributions we welcome
 * [Workflow Instructions](docs/contributing/BuildingAndRunning.md) explains how to build and run the project
-* [Fortnite's File Documentation](docs/contributing/FortniteFiles.md) gives a quick overview of where everything is located in Fortnite's files and how Saturn takes advantage of it
 
 ## Reporting security issues and security bugs
 
@@ -23,16 +23,6 @@ This repo should contain issues that are tied to the actual codebase of the proj
 
 ## Useful Links
 * [Saturn's Discord](https://discord.gg/SaturnSwapper)
-* [WebView2 Runtime (comes with Windows 11, you need the x64 Evergreen Bootstrapper)](https://developer.microsoft.com/en-us/microsoft-edge/webview2/#download-section) - Needed to run the website the project hosts as a native program
-
-## Unlisted Contributors
-
-| Contributor | Contribution |
-| ----------- | ----------- |
-| [Amr Satrio](https://github.com/Amrsatrio)   | Helped with asset obfuscation and just general questions |
-| [cyclonefreeze](https://github.com/cyclonefreeze)   | Developed base which Saturn built upon |
-| [jakedothow](https://github.com/jakedothow)   | Developed base which Saturn built upon |
-| [All CUE4Parse contributors](https://github.com/FabianFG/CUE4Parse/graphs/contributors)   | CUE4Parse is a main part of the swapper |
 
 ## License
 
