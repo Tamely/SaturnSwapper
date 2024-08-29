@@ -1,2 +1,0 @@
-include ':app'
-rootProject.name='@RTM_ANDROID_PROJECT_NAME@'
