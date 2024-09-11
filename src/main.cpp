@@ -7,7 +7,7 @@ import Saturn.Scripts.ScriptWrapper;
 
 int main(int argc, char* argv[]) {
 	FScriptWrapper::InitBindings();
-	//FWebServer::CreateWebServerThread();
+	FWebServer::CreateWebServerThread();
 
 	if (argc >= 3) {
 		FContext::Channel = argv[1]; // channel
