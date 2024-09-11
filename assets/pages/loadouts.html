@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+
+<script>window.saturn = {}</script>
+
+<html>
+  <head>
+    <link rel="stylesheet" href="../css/vars.css">
+    <link rel="stylesheet" href="../css/items.css">
+    <link rel="stylesheet" href="../css/modal.css">
+    <link rel="stylesheet" href="../css/loadouts.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/css/all.css">
+  </head>
+  <body onload="OnLoadLoadouts()">
+    <div class ="modal minimized" id="apply-modal">
+      <div class="modal-window">
+          <div class="modal-icon"></div>
+          <div class="modal-textbox">
+              <h1>Set Selected Loadout!</h1>
+              <p>Reminder: Press RShift in a Fortnite match to apply the items.</p>
+          </div>
+
+          <div class="modal-buttons">
+              <div class="modal-button" onclick="saturn.modalManager.hideModal('apply')">OK</div>
+          </div>
+      </div>
+    </div>
+
+    <div id="nav">
+        <h2 onclick="SendToURL('/pages/home.html')"><i class="fas fa-arrow-alt-circle-left"></i> Back</h2>
+        <h1>Saturn 3.0.0</h1>
+    </div>
+
+    <div id="image-track" class="no-scrollbar"></div>
+
+    <div id="button-container" onclick="OnAddLoadout()">
+        <h2><i class="fas fa-plus"></i> Add Loadout</h2>
+    </div>
+  </body>
+</html>
+
+<script src="../js/utilities.js"></script>
+<script src="../js/modalManager.js"></script>
+<script src="../js/loadoutManager.js"></script>

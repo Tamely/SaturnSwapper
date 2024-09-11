@@ -1,0 +1,125 @@
+#nav > h2 {
+    color: var(--foreground-color);
+    font-family: var(--font-title);
+    font-size: 2em;
+    position: absolute;
+    left: 6vw;
+    cursor: pointer;
+    transition: 300ms ease;
+}
+
+#nav > h2:hover {
+    font-size: 2.1em;
+}
+
+#nav > h1 {
+    color: var(--foreground-color);
+    font-family: var(--font-title);
+    position: absolute;
+    right: 6vw;
+}
+
+#container {
+    position: fixed;
+    left: 2vw;
+    top: 13vh;
+    height: 78vh;
+    width: 96vw;
+    overflow-y: auto;
+    transition: 0.5s;
+    justify-content: space-evenly;
+    display: flex;
+    flex-direction: row;
+    flex-flow: row wrap;
+}
+
+.container-item {
+    position: relative;
+    text-align: center;
+    cursor: pointer;
+    width: 17vw; /* Set a fixed width for consistency */
+    height: 10vw; /* Set a fixed height for consistency */
+}
+
+.container-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0.5vw;
+    width: 16vw;
+    height: 9vw;
+    border-radius: 10%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+    pointer-events: none; /* Ensure the gradient does not block interactions with the image */
+}
+
+.container-item > img {
+    width: 16vw;
+    height: 9vw;
+    border-radius: 10%;
+    background-color: var(--foreground-color);
+    transition: 300ms ease;
+}
+
+.container-item > h2 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, 20%);
+    font-family: var(--font);
+    color: var(--foreground-color);
+    font-size: 1.5vw;
+    width: 15.5vw;
+    max-height: 2vw;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    padding: 5px;
+    border-radius: 0px 0px 30px 30px;
+    transition: 300ms ease;
+}
+
+#button-container {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: row;
+    z-index: 2;
+    width: 100vw;
+    background-color: var(--background-color);
+}
+
+#button-container input {
+    position: fixed;
+    left: 1vw;
+    bottom: 2vw;
+    padding: 10px;
+    color: var(--background-color);
+    background-color: var(--foreground-color);
+    font-family: var(--font);
+    font-size: 1.5vw;
+    border-radius: 1vw;
+    display: inline-block;
+}
+
+#button-container h2 {
+    color: var(--foreground-color);
+    font-family: var(--font-title);
+    font-size: 2vw;
+    cursor: pointer;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+#button-container > h2 {
+    padding: .25vw 6vw;
+}
+
+#button-container > div {
+    position: fixed;
+    right: 4vw;
+}
+
+#button-container > div > h2 {
+    padding: 0 2vw;
+}

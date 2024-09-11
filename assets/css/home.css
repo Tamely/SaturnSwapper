@@ -1,0 +1,114 @@
+#version {
+    color: var(--foreground-color);
+    font-family: var(--font-title);
+
+    position: absolute;
+    top: 3vw;
+    right: 6vw;
+}
+
+#menu {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+#menu-items {
+    position: absolute;
+    left: 12vw;
+
+    z-index: 2;
+}
+
+#menu-items:hover > .menu-item {
+    opacity: 0.3;
+}
+
+#menu-items:hover > .menu-item:hover {
+    opacity: 1;
+}
+
+.menu-item {
+    color: white;
+    font-size: 4vw;
+    font-family: var(--font-title);
+
+    display: block;
+    text-decoration: none;
+    padding: .15vw;
+    cursor: pointer;
+}
+
+#menu-background-image {
+    height: 100%;
+    width: 100%;
+
+    background-image: url(../img/Saturn.png);
+
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 0;
+
+    background-position: center 40%;
+    background-size: 110vmax;
+    opacity: 0.15;
+
+    transition: opacity 800ms ease,
+                background-size 800ms ease,
+                background-position 800ms ease;
+}
+
+#menu-items:hover ~ #menu-background-image {
+    background-size: 100vmax;
+    opacity: 0.1;
+}
+
+#menu[data-active-index="0"] > #menu-background-image {
+    background-position: 0% 45%;
+}
+
+#menu[data-active-index="1"] > #menu-background-image {
+    background-position: 0% 50%;
+}
+
+#menu[data-active-index="2"] > #menu-background-image {
+    background-position: 0% 55%;
+}
+
+#menu[data-active-index="3"] > #menu-background-image {
+    background-position: 0% 60%;
+}
+
+#menu[data-active-index="4"] > #menu-background-image {
+    background-position: 0% 65%;
+}
+
+#menu[data-active-index="5"] > #menu-background-image {
+    background-position: 0% 70%;
+}
+
+#menu[data-active-index="6"] > #menu-background-image {
+    background-position: 0% 75%;
+}
+
+#hero {
+    color: var(--foreground-color);
+    font-family: var(--font-caption);
+    position: absolute;
+    bottom: 1vh;
+    right: 1vw;
+
+    width: 40%;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#hero h1 {
+    font-family: var(--font-title);
+    font-size: clamp(1rem, 2vw, 2rem);
+}
+
+#hero p {
+    font-size: 1vw;
+}

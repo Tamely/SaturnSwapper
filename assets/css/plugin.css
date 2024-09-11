@@ -1,0 +1,167 @@
+#nav > h2 {
+    color: var(--foreground-color);
+    font-family: var(--font-title);
+    font-size: 2em;
+    position: absolute;
+    left: 6vw;
+    cursor: pointer;
+    transition: 300ms ease;
+}
+
+#nav > h2:hover {
+    font-size: 2.1em;
+}
+
+#nav > h1 {
+    color: var(--foreground-color);
+    font-family: var(--font-title);
+    position: absolute;
+    right: 6vw;
+}
+
+#header {
+    position: fixed;
+    top: 13vh;
+
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position-y: -10vw;
+
+    width: 100vw;
+    height: 16vw;
+}
+
+#header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 16vw;
+    background: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+    pointer-events: none;
+}
+
+#header > h1 {
+    position: absolute;
+    top: 60%;
+    left: 5%;
+    font-family: var(--font);
+    color: var(--foreground-color);
+    font-size: 2vw;
+    width: 30vw;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    padding: 5px;
+    transition: 300ms ease;
+}
+
+#header > h2 {
+    position: absolute;
+    top: 80%;
+    left: 5%;
+    font-family: var(--font);
+    color: var(--foreground-color);
+    font-size: 1vw;
+    width: 30vw;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    padding: 5px;
+    transition: 300ms ease;
+}
+
+#header > #download {
+    position: absolute;
+    width: 10vw;
+    top: 70%;
+    right: -2%;
+}
+
+#download {
+    margin-right: 8vw;
+    background-color: #275efe;
+    max-width: 10vw;
+    display: flex;
+
+    justify-content: center;
+    text-align: center;
+
+    cursor: pointer;
+
+    border-radius: 8px;
+    box-shadow: 0 2px 8px -1px rgba(10, 22, 50, .24);
+}
+
+#download > h2 {
+    color: #fff;
+
+    font-weight: 500;
+    line-height: 28px;
+
+    font-size: 1vw;
+}
+
+#button-container {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: row;
+    z-index: 2;
+    width: 100vw;
+    background-color: var(--background-color);
+}
+
+#button-container input {
+    position: fixed;
+    left: 1vw;
+    bottom: 2vw;
+    padding: 10px;
+    color: var(--background-color);
+    background-color: var(--foreground-color);
+    font-family: var(--font);
+    font-size: 1.5vw;
+    border-radius: 1vw;
+    display: inline-block;
+}
+
+#button-container h2 {
+    color: var(--foreground-color);
+    font-family: var(--font-title);
+    font-size: 2vw;
+    cursor: pointer;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+#button-container > h2 {
+    padding: .25vw 6vw;
+}
+
+#button-container > div {
+    position: fixed;
+    right: 4vw;
+}
+
+#button-container > div > h2 {
+    padding: 0 2vw;
+}
+
+.center {
+    justify-content: center;
+    align-items: center;
+}
+
+.code-container {
+    position: fixed;
+    top: 24vw;
+
+    font-family: 'Courier New', Courier, monospace;
+
+    font-size: 10px;
+
+    height: 54vh;
+    width: 100vw;
+    overflow-y: auto;
+    overflow-x: hidden;
+}

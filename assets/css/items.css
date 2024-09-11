@@ -1,0 +1,126 @@
+#nav > h2 {
+    color: var(--foreground-color);
+    font-family: var(--font-title);
+    font-size: 2em;
+
+    position: absolute;
+    left: 6vw;
+
+    cursor: pointer;
+    transition: 300ms ease;
+}
+
+#nav > h2:hover {
+    font-size: 2.1em;
+}
+
+#nav > h1 {
+    color: var(--foreground-color);
+    font-family: var(--font-title);
+
+    position: absolute;
+    right: 6vw;
+}
+
+#container {
+    position: fixed;
+    left: 2vw;
+    top: 13vh;
+
+    height: 78vh;
+    width: 96vw;
+    overflow-y: auto;
+
+    transition: 0.5s;
+
+    justify-content: space-evenly;
+    display: flex;
+    flex-direction: row;
+    flex-flow: row wrap;
+}
+
+.container-item {
+    text-align: center;
+
+    cursor: pointer;
+}
+
+.container-item > img {
+    width: 75px;
+    border-radius: 20%;
+    background-color: var(--foreground-color);
+
+    transition: 300ms ease;
+}
+
+.container-item > h2 {
+    font-family: var(--font);
+    color: var(--foreground-color);
+    font-size: 1.5vw;
+
+    width: 75px;
+    max-height: 60px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+
+    transition: 300ms ease;
+}
+
+.container-item:hover > h2 {
+    background-color: var(--selected-card);
+    padding: 3px;
+    border-radius: 10px;
+}
+
+#button-container {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+
+    display: flex;
+    flex-direction: row;
+    z-index: 2;
+
+    width: 100vw;
+    background-color: var(--background-color);
+}
+
+#button-container input {
+    position: fixed;
+    left: 1vw;
+    bottom: 2vw;
+    padding: 10px;
+    
+    color: var(--background-color);
+    background-color: var(--foreground-color);
+    font-family: var(--font);
+    font-size: 1.5vw;
+
+    border-radius: 1vw;
+
+    display: inline-block;
+}
+
+#button-container h2 {
+    color: var(--foreground-color);
+    font-family: var(--font-title);
+    font-size: 2vw;
+
+    cursor: pointer;
+    border-radius: 5px;
+
+    display: inline-block;
+}
+
+#button-container > h2 {
+    padding: .25vw 6vw;
+}
+
+#button-container > div {
+    position: fixed;
+    right: 4vw;
+}
+
+#button-container > div > h2 {
+    padding: 0 2vw;
+}

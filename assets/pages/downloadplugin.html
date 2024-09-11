@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+
+<script>
+  window.saturn = {}
+</script>
+
+<script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js?lang=js&amp;skin=sunburst"></script>
+
+<html>
+  <head>
+    <link rel="stylesheet" href="../css/vars.css">
+    <link rel="stylesheet" href="../css/plugin.css">
+    <link rel="stylesheet" href="../css/modal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/css/all.css">
+  </head>
+  <body onload="saturn.pluginManager.onLoadPlugins()">
+    <div class ="modal minimized" id="message-modal">
+      <div class="modal-window" style="min-width: 400px;">
+          <div class="modal-icon"></div>
+          <div class="modal-textbox">
+              <h1>Message</h1>
+              <p id="message"></p>
+          </div>
+
+          <div class="modal-buttons">
+              <div class="modal-button" onclick="saturn.modalManager.hideModal('message')">OK</div>
+          </div>
+      </div>
+    </div>
+
+    <div id="nav">
+      <h2 onclick="SendToDash()">
+        <i class="fas fa-arrow-alt-circle-left"></i> Back
+      </h2>
+      <h1>Saturn 3.0.0</h1>
+    </div>
+
+    <div id="header">
+      <h1 id="header-name">Test Plugin</h1>
+      <h2 id="header-author">Author: Tamely</h2>
+
+      <div id="download" onclick="saturn.pluginManager.onDownloadPlugin()">
+        <h2 id="download-text">Apply <i class="fas fa-star"></i></h2>
+      </div>
+
+      <div id="download-content" onclick="saturn.pluginManager.onDownloadContent()">
+        <h2 id="download-content-text">Download Content <i class="fas fa-arrow-down"></i></h2>
+      </div>
+    </div>
+
+    <div class="code-container no-scrollbar"id="plugin">
+        
+    </div>
+  </body>
+</html>
+
+<script src="../js/modalManager.js"></script>
+<script src="../js/pluginManager.js"></script>
+<script src="../js/utilities.js"></script>
