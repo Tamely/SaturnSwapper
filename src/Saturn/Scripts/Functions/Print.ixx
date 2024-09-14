@@ -1,0 +1,44 @@
+export module Saturn.Functions.Print;
+
+import Saturn.FortniteFunctionLibrary;
+import Saturn.WindowsFunctionLibrary;
+import Saturn.Language.Opcodes;
+import Saturn.Context;
+
+import <duktape/duktape.h>;
+
+import <Windows.h>;
+import <string>;
+import <vector>;
+
+import <iostream>;
+
+export struct FPrint {
+	static void encode(std::string command) {
+		std::string message = std::to_string((int)EOpcodes::PRINT) + ",,,,," + command;
+		WindowsFunctionLibrary::StringToImage(WindowsFunctionLibrary::ws2s(FortniteFunctionLibrary::GetFortniteLocalPath() + L"instruction.png"), message);
+		std::cout << command << std::endl;
+	}
+
+	static duk_ret_t dukPrint(duk_context* ctx) {
+		int ArgsLength = duk_get_top(ctx);
+		if (ArgsLength != 1) {
+			MessageBoxW(nullptr, L"This function takes 1 argument!", L"Print", NULL);
+			return DUK_RET_TYPE_ERROR;
+		}
+
+		std::string cmd = duk_get_string(ctx, 0);
+
+		if (!cmd.empty()) {
+			FContext::ResponseWaiting = true;
+			encode(cmd);
+			while (FContext::ResponseWaiting);
+		}
+		else {
+			MessageBoxW(nullptr, L"Command cannot be empty!", L"Print", NULL);
+			return DUK_RET_TYPE_ERROR;
+		}
+
+		return 0;
+	}
+};

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+
+<script>window.saturn = {}</script>
+
+<html>
+  <head>
+    <link rel="stylesheet" href="../css/vars.css">
+    <link rel="stylesheet" href="../css/items.css">
+    <link rel="stylesheet" href="../css/modal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/css/all.css">
+  </head>
+  <body onload="OnDisplayItems()">
+    <div class ="modal minimized" id="apply-modal">
+      <div class="modal-window">
+          <div class="modal-icon"></div>
+          <div class="modal-textbox">
+              <h1>Swap this item?</h1>
+              <p>Reminder: All items swap default, but you MUST go into a match for it to load.</p>
+          </div>
+
+          <div class="modal-buttons">
+              <div class="modal-button" onclick="saturn.modalManager.hideModal('apply')">Cancel</div>
+              <div class="modal-button" id="ok-button" onclick="saturn.itemManager.addLoadoutItem()">Convert</div>
+          </div>
+      </div>
+    </div>
+
+    <div id="nav">
+        <h2 onclick="SendToHome()"><i class="fas fa-arrow-alt-circle-left"></i> Back</h2>
+        <h1>Saturn 3.0.0</h1>
+    </div>
+
+    <div id="container" class="no-scrollbar"></div>
+
+    <div id="button-container">
+        <input id="search" onkeydown="saturn.itemManager.onSearch(event)" placeholder="Search..."/>
+        <h2 id="far-left" class="zero-opacity"><i class="fas fa-star"></i> Favorite</h2>
+    
+        <div>
+            <h2 id="close-left" onclick="OnPreviousPage()"><i class="fas fa-backward"></i> Previous Page</h2>
+            <h2 id="far-right" onclick="OnNextPage()"><i class="fas fa-forward"></i> Next Page</h2>
+         </div>
+    </div>
+  </body>
+</html>
+
+<script src="../js/modalManager.js"></script>
+<script src="../js/itemManager.js"></script>
+<script src="../js/utilities.js"></script>

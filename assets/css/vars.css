@@ -1,0 +1,55 @@
+@font-face {
+    font-family: 'Geist';
+    src: url("../font/Geist.otf");
+}
+
+@font-face {
+    font-family: 'Geist Light';
+    src: url("../font/Geist-Light.otf");
+}
+
+@font-face {
+    font-family: 'Geist Bold';
+    src: url("../font/Geist-Bold.otf");
+}
+
+
+/* Variables */
+:root {
+    --foreground-color: rgb(212, 212, 212);
+    --background-color: rgb(20, 20, 20);
+    --selected-card: rgba(40, 151, 255, 0.85);
+
+    --popup-color: rgba(246, 246, 246, 0.8);
+    --cancel-button-color: rgb(179, 179, 179);
+    --ok-button-color: linear-gradient(180deg, rgba(255, 255, 255, 0.17) 0%, rgba(255, 255, 255, 0.00) 100%), #007AFF;
+
+    --font: "Geist";
+    --font-caption: "Geist Light";
+    --font-title: "Geist Bold";
+}
+
+body {
+    background-color: var(--background-color);
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    user-select: none;
+    font-family: var(--font);
+}
+
+/* Just a basic invis class */
+.zero-opacity {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Just a basic no scrollbar class */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}

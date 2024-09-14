@@ -1,0 +1,30 @@
+body, html {
+    height: 100%;
+    color: var(--foreground-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 1vmin;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    background-color: var(--cancel-button-color);
+    color: var(--background-color);
+    cursor: pointer;
+
+    border-radius: 1vmin;
+}
+
+button:hover {
+    background-color: #666;
+}

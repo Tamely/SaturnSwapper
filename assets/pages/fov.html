@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+
+<script>window.saturn = {}</script>
+
+<html>
+  <head>
+    <title>Saturn</title>
+    <link rel="stylesheet" href="../css/vars.css">
+    <link rel="stylesheet" href="../css/fov.css">
+    <link rel="stylesheet" href="../css/home.css">
+    <link rel="stylesheet" href="../css/items.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/hung1001/font-awesome-pro@4cac1a6/css/all.css">
+  </head>
+  <body onload="saturn.fovManager.getConfig()">
+    <div id="nav">
+        <h2 onclick="SendToURL('/pages/home.html')"><i class="fas fa-arrow-alt-circle-left"></i> Back</h2>
+        <h1>Saturn 3.0.0</h1>
+    </div>
+
+    <div id="container">
+        <div id="FOV-Container">
+          <h1>Field of View - Press RShift to apply, then leave the current match to toggle the setting.</h1>
+          <input id="FOVCheckBox" type="checkbox" role="switch" class="lighted" onchange="saturn.fovManager.updateValue()"/>
+        </div>
+    </div>
+  </body>
+</html>
+
+
+<script src="../js/utilities.js"></script>
+<script src="../js/fovManager.js"></script>
+<script src="../js/itemManager.js"></script>

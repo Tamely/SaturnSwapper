@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+
+<script>window.saturn = {}</script>
+
+<html>
+  <head>
+    <title>Saturn</title>
+    <link rel="stylesheet" href="./css/vars.css">
+    <link rel="stylesheet" href="./css/modal.css">
+    <link rel="stylesheet" href="./app.css">
+  </head>
+  <body>
+    <div class ="modal minimized" id="error-modal">
+      <div class="modal-window">
+          <div class="modal-icon"></div>
+          <div class="modal-textbox">
+              <h1>Error Fetching Data!</h1>
+              <p>There was an error fetching required data! Saturn is probably down right now. Try again later.</p>
+          </div>
+
+          <div class="modal-buttons">
+              <div class="modal-button" onclick="saturn.modalManager.hideModal('error')">OK</div>
+          </div>
+      </div>
+    </div>
+
+    <div class="loading">
+      <span class="bubble"></span>
+      <h1>Saturn is loading...</1>
+    </div>
+  </body>
+</html>
+
+<script src="./app.js"></script>
+<script src="../js/modalManager.js"></script>

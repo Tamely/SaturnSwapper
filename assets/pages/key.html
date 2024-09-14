@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+
+<script>window.saturn = {}</script>
+
+<html>
+  <head>
+    <title>Saturn</title>
+    <link rel="stylesheet" href="../css/vars.css">
+    <link rel="stylesheet" href="../css/modal.css">
+    <link rel="stylesheet" href="../css/home.css">
+    <link rel="stylesheet" href="../css/key.css">
+  </head>
+  <body onload="saturn.keyManager.getConfig()">
+    <div class ="modal minimized" id="key-modal">
+        <div class="modal-window">
+            <div class="modal-icon"></div>
+            <div class="modal-textbox">
+                <h1>Error</h1>
+                <p>The key you have entered has either expired or is incorrect! Please check it for any typos.</p>
+            </div>
+  
+            <div class="modal-buttons">
+                <div class="modal-button" onclick="saturn.modalManager.hideModal('key')">OK</div>
+            </div>
+        </div>
+      </div>
+
+      <div class ="modal minimized" id="version-modal">
+        <div class="modal-window">
+            <div class="modal-icon"></div>
+            <div class="modal-textbox">
+                <h1>Error</h1>
+                <p>The Saturn version you are using is outdated. Please get the new one from discord.gg/saturnswapper.</p>
+            </div>
+  
+            <div class="modal-buttons">
+                <div class="modal-button" onclick="saturn.modalManager.hideModal('version')">OK</div>
+            </div>
+        </div>
+      </div>
+
+    <h1 id="version">Saturn 3.0.0</h1>
+
+    <div>
+        <h1>This content is protected.</h1>
+        <p>To access, please enter your key.</p>
+        <input id="key" placeholder="0x..."/>
+        <button onclick="OnOpenKey()">Get Key</button>
+        <button onclick="saturn.keyManager.checkKey()">Continue</button>
+    </div>
+  </body>
+</html>
+
+
+<script src="../js/utilities.js"></script>
+<script src="../js/keyManager.js"></script>
+<script src="../js/modalManager.js"></script>
