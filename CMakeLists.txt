@@ -8,6 +8,8 @@ include_directories("lib")
 link_directories("lib")
 link_libraries(libcurl_a)
 
+add_compile_definitions(CURL_STATICLIB)
+
 file(GLOB_RECURSE saturn_SRC true "src/*.h"
                                   "src/*.hpp"
                                   "src/*.cpp"
