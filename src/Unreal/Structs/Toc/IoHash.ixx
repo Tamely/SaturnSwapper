@@ -25,6 +25,10 @@ public:
     inline bool operator!=(const FIoHash& Rhs) const {
         return !(*this == Rhs);
     }
+
+    inline uint8_t* GetBytes() {
+        return Hash;
+    }
 private:
-    unsigned __int8 Hash[32];
+    unsigned uint8_t Hash[32];
 };

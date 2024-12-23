@@ -19,8 +19,6 @@ export enum class EIoStoreTocReadOptions {
 };
 
 export struct FIoStoreTocResource {
-    FIoStoreTocResource(const std::string& TocFilePath, EIoStoreTocReadOptions ReadOptions);
-
     enum { CompressionMethodNameLen = 32 };
 
     std::string TocPath;
