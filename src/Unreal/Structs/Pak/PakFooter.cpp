@@ -10,6 +10,7 @@ import Saturn.Pak.PakFileVersion;
 import <cstdint>;
 import <vector>;
 import <string>;
+import <memory>;
 
 FPakFooter::FPakFooter(FArchive& reader, EPakFileVersion version) {
     if (reader.TotalSize() < (reader.Tell() + GetSerializedSize(version))) {

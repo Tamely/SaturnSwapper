@@ -140,6 +140,7 @@ bool FortniteFunctionLibrary::PatchEpicGames() {
 bool FortniteFunctionLibrary::PatchFortnite() {
 	FortniteFunctionLibrary::KillEpicProcesses();
 
+	/*
 	try {
 		uint8_t* asset = ASSET_DATA;
 
@@ -258,7 +259,8 @@ bool FortniteFunctionLibrary::PatchFortnite() {
 	}
 	catch (std::exception e) {
 		return false;
-	}
+	}*/
+	return true;
 }
 
 void FortniteFunctionLibrary::LaunchFortnite() {

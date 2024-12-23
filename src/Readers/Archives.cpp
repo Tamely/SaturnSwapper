@@ -1,4 +1,5 @@
 #include <string>
+#include <memory>
 
 import Saturn.Readers.FArchive;
 

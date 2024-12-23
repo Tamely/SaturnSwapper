@@ -1,5 +1,7 @@
 #include "DiscordSDK/rapidjson/document.h"
 
+#include <algorithm>
+
 import Saturn.Generators.SkinGenerator;
 
 import Saturn.Context;

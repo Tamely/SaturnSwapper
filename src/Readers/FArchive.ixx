@@ -1,5 +1,7 @@
 export module Saturn.Readers.FArchive;
 
+import Saturn.Core.UObject;
+
 import <string>;
 import <vector>;
 import <memory>;
@@ -24,6 +26,21 @@ public:
 
 	virtual void Serialize(void* V, int64_t Length) { }
 	virtual void WriteBuffer(void* V, int64_t Length) { }
+
+	virtual FArchive& operator<<(UObjectPtr& Value)
+	{
+		return *this;
+	}
+
+	inline FArchive& operator<<(UClassPtr& Value)
+	{
+		return *this << reinterpret_cast<UObjectPtr&>(Value);
+	}
+
+	inline FArchive& operator<<(UStructPtr& Value)
+	{
+		return *this << reinterpret_cast<UObjectPtr&>(Value);
+	}
 
 	template<class T1, class T2>
 	friend FArchive& operator<<(FArchive& Ar, std::pair<T1, T2>& InPair)
