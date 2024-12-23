@@ -30,5 +30,5 @@ public:
         return Hash;
     }
 private:
-    unsigned uint8_t Hash[32];
+    uint8_t Hash[32];
 };
