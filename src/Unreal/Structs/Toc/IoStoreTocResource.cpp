@@ -10,8 +10,48 @@ import Saturn.Core.IoStatus;
 import Saturn.Readers.MemoryReader;
 import Saturn.Readers.FileReaderNoWrite;
 
+import Saturn.Structs.IoChunkHash;
+import Saturn.Structs.IoContainerFlags;
 import Saturn.Structs.IoStoreTocHeader;
+import Saturn.Structs.IoOffsetLength;
 import Saturn.Structs.IoStoreTocEntryMeta;
+import Saturn.Structs.IoStoreTocChunkInfo;
+
+FIoStoreTocChunkInfo FIoStoreTocResource::GetTocChunkInfo(int32_t TocEntryIndex) const {
+    const FIoStoreTocEntryMeta& Meta = ChunkMetas[TocEntryIndex];
+    const FIoOffsetAndLength& OffsetAndLength = ChunkOffsetAndLengths[TocEntryIndex];
+
+    const bool bIsContainerCompressed = EnumHasAnyFlags(Header.ContainerFlags, EIoContainerFlags::Compressed);
+
+    FIoStoreTocChunkInfo ChunkInfo;
+    ChunkInfo.Id = ChunkIds[TocEntryIndex];
+    ChunkInfo.ChunkType = ChunkInfo.Id.GetChunkType();
+    ChunkInfo.Hash = FIoChunkHash::CreateFromIoHash(Meta.ChunkHash);
+    ChunkInfo.ChunkHash = Meta.ChunkHash;
+    ChunkInfo.bHasValidFileName = false;
+    ChunkInfo.bIsCompressed = EnumHasAnyFlags(Meta.Flags, FIoStoreTocEntryMetaFlags::Compressed);
+    ChunkInfo.bIsMemoryMapped = EnumHasAnyFlags(Meta.Flags, FIoStoreTocEntryMetaFlags::MemoryMapped);
+    ChunkInfo.bForceUncompressed = bIsContainerCompressed && !EnumHasAnyFlags(Meta.Flags, FIoStoreTocEntryMetaFlags::Compressed);
+    ChunkInfo.Offset = OffsetAndLength.GetOffset();
+    ChunkInfo.Size = OffsetAndLength.GetLength();
+
+    const uint64_t CompressionBlockSize = Header.CompressionBlockSize;
+    int32_t FirstBlockIndex = int32_t(ChunkInfo.Offset / CompressionBlockSize);
+    int32_t LastBlockIndex = int32_t((Align(ChunkInfo.Offset + ChunkInfo.Size, CompressionBlockSize) - 1) / CompressionBlockSize);
+
+    ChunkInfo.NumCompressedBlocks = LastBlockIndex - FirstBlockIndex + 1;
+    ChunkInfo.OffsetOnDisk = CompressionBlocks[FirstBlockIndex].GetOffset();
+    ChunkInfo.CompressedSize = 0;
+    ChunkInfo.PartitionIndex = -1;
+    for (int32_t BlockIndex = FirstBlockIndex; BlockIndex <= LastBlockIndex; ++BlockIndex) {
+        const FIoStoreTocCompressedBlockEntry& CompressionBlock = CompressionBlocks[BlockIndex];
+        ChunkInfo.CompressedSize += CompressionBlock.GetCompressedSize();
+        if (ChunkInfo.PartitionIndex < 0) {
+            ChunkInfo.PartitionIndex = int32_t(CompressionBlock.GetOffset() / Header.PartitionSize);
+        }
+    }
+    return ChunkInfo;
+}
 
 FIoStatus FIoStoreTocResource::Read(const std::string& TocFilePath, EIoStoreTocReadOptions ReadOptions, FIoStoreTocResource& OutTocResource) {
     OutTocResource.TocPath = TocFilePath;

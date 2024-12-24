@@ -6,16 +6,7 @@ export module Saturn.Structs.IoStoreTocHeader;
 
 import Saturn.Structs.Guid;
 import Saturn.Structs.IoContainerId;
-
-export enum class EIoContainerFlags : uint8_t {
-    None,
-    Compressed = (1 << 0),
-    Encrypted = (1 << 1),
-    Signed = (1 << 2),
-    Indexed = (1 << 3)
-};
-
-ENUM_CLASS_FLAGS(EIoContainerFlags);
+import Saturn.Structs.IoContainerFlags;
 
 export struct FIoStoreTocHeader {
     static constexpr inline char TocMagicImg[] = "-==--==--==--==-";

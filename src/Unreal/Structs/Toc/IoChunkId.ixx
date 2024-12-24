@@ -5,6 +5,24 @@ import <memory>;
 
 import Saturn.Readers.FArchive;
 
+export enum class EIoChunkType : uint8_t {
+	Invalid = 0,
+	ExportBundleData = 1,
+	BulkData = 2,
+	OptionalBulkData = 3,
+	MemoryMappedBulkData = 4,
+	ScriptObjects = 5,
+	ContainerHeader = 6,
+	ExternalFile = 7,
+	ShaderCodeLibrary = 8,
+	ShaderCode = 9,
+	PackageStoreEntry = 10,
+	DerivedData = 11,
+	EditorDerivedData = 12,
+	PackageResource = 13,
+	MAX
+};
+
 export struct FIoChunkId {
 public:
 	static const FIoChunkId InvalidChunkId;
@@ -51,6 +69,10 @@ public:
 	inline const uint8_t* GetData() const { return Id; }
 	inline uint32_t	GetSize() const { return sizeof Id; }
 	inline uint64_t GetPosition() const { return Position; }
+
+	EIoChunkType GetChunkType() const {
+		return static_cast<EIoChunkType>(Id[11]);
+	}
 private:
 	static inline FIoChunkId CreateEmptyId(){
 		FIoChunkId ChunkId;

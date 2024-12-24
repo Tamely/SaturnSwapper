@@ -7,10 +7,6 @@ import Saturn.Structs.IoChunkHash;
 import <string>;
 import <cstdint>;
 
-export enum EIoChunkType {
-    None
-};
-
 export struct FIoStoreTocChunkInfo {
     FIoChunkId Id;
     FIoHash ChunkHash;
@@ -33,4 +29,11 @@ export struct FIoStoreTocChunkInfo {
     FIoStoreTocChunkInfo(FIoStoreTocChunkInfo&&) = default;
     FIoStoreTocChunkInfo& operator=(FIoStoreTocChunkInfo&) = default;
     FIoStoreTocChunkInfo& operator=(FIoStoreTocChunkInfo&&) = default;
+};
+
+export struct FIoStoreTocCompressedBlockInfo {
+    uint64_t Offset;
+    uint32_t CompressedSize;
+    uint32_t UncompressedSize;
+    uint8_t CompressionMethodIndex;
 };
