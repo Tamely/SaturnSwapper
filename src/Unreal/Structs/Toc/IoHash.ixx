@@ -1,34 +1,62 @@
 export module Saturn.Structs.IoHash;
 
+import Saturn.Hash.Blake3;
+
 import Saturn.Readers.FArchive;
+
 import <cstdint>;
+import <string>;
 
 export struct FIoHash {
 public:
-    friend unsigned __int32 hash_value(const FIoHash& InHash) {
-        uint32_t Result = 5381;
-        for (int i = 0; i < sizeof InHash.Hash; ++i) {
-            Result = Result * 33 + InHash.Hash[i];
-        }
-        return Result;
+    using ByteArray = uint8_t[20];
+
+    FIoHash() = default;
+
+    inline explicit FIoHash(const ByteArray& Hash);
+
+    inline FIoHash(const FBlake3Hash& Hash);
+
+    inline explicit FIoHash(const std::string& HexHash);
+
+    inline void Reset() { *this = FIoHash(); }
+
+    inline bool IsZero() const;
+
+    inline ByteArray& GetBytes() { return Hash; }
+    inline const ByteArray& GetBytes() const { return Hash; }
+
+    static inline FIoHash HashBuffer(const void* Data, uint64_t Size);
+
+    static const FIoHash Zero;
+private:
+    alignas(uint32_t) ByteArray Hash{};
+
+    friend inline bool operator==(const FIoHash& A, const FIoHash& B) {
+        return memcmp(A.GetBytes(), B.GetBytes(), sizeof(decltype(A.GetBytes()))) == 0;
     }
 
-    inline friend FArchive& operator<<(FArchive& Ar, FIoHash& ChunkHash) {
-        Ar.Serialize(&ChunkHash.Hash, sizeof(ChunkHash.Hash));
+    friend inline bool operator!=(const FIoHash& A, const FIoHash& B) {
+        return memcmp(A.GetBytes(), B.GetBytes(), sizeof(decltype(A.GetBytes()))) != 0;
+    }
+
+    friend inline bool operator<(const FIoHash& A, const FIoHash& B) {
+        return memcmp(A.GetBytes(), B.GetBytes(), sizeof(decltype(A.GetBytes()))) < 0;
+    }
+
+    friend inline uint32_t GetTypeHash(const FIoHash& Value) {
+        return *reinterpret_cast<const uint32_t*>(Value.GetBytes());
+    }
+
+    friend inline FArchive& operator<<(FArchive& Ar, FIoHash& InHash) {
+        Ar.Serialize(InHash.GetBytes(), sizeof(decltype(InHash.GetBytes())));
         return Ar;
     }
+};
 
-    inline bool operator==(const FIoHash& Rhs) const {
-        return memcmp(Hash, Rhs.Hash, sizeof Hash) == 0;
-    }
-
-    inline bool operator!=(const FIoHash& Rhs) const {
-        return !(*this == Rhs);
-    }
-
-    inline uint8_t* GetBytes() {
-        return Hash;
-    }
-private:
-    uint8_t Hash[32];
+export class FIoHashBuilder : public FBlake3 {
+public:
+    [[nodiscard]] inline FIoHash Finalize() const { return FBlake3::Finalize(); }
+    
+    [[nodiscard]] inline static FIoHash HashBuffer(const void* Data, uint64_t Size) { return FBlake3::HashBuffer(Data, Size); }
 };
