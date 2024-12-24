@@ -1,9 +1,10 @@
 #include "Saturn/Defines.h"
 
-import Saturn.Toc.IoStoreTocResource;
+import Saturn.Structs.IoStoreTocResource;
 
 import <string>;
 import <vector>;
+import <memory>;
 
 import Saturn.Core.IoStatus;
 import Saturn.Readers.MemoryReader;
@@ -16,8 +17,8 @@ FIoStatus FIoStoreTocResource::Read(const std::string& TocFilePath, EIoStoreTocR
     OutTocResource.TocPath = TocFilePath;
     FFileReaderNoWrite TocFileHandle(TocFilePath.c_str());
 
-    if (!TocFileHandle) {
-        return FIoStatusBuilder(EIoErrorCode::FileOpenFailed) << "Failed to openn IoStore TOC file '" << TocFilePath << "'";
+    if (!TocFileHandle.IsValid()) {
+        return FIoStatusBuilder(EIoErrorCode::FileOpenFailed) << "Failed to open IoStore TOC file '" << TocFilePath << "'";
     }
 
     // Header
@@ -119,7 +120,7 @@ FIoStatus FIoStoreTocResource::Read(const std::string& TocFilePath, EIoStoreTocR
     if (EnumHasAnyFlags(ReadOptions, EIoStoreTocReadOptions::ReadDirectoryIndex) &&
         EnumHasAnyFlags(Header.ContainerFlags, EIoContainerFlags::Indexed) &&
         Header.DirectoryIndexSize > 0) {
-            uint8_t* Buf = TocMemReader.GetBufferCur();
+            const uint8_t* Buf = TocMemReader.GetBufferCur();
 
             OutTocResource.DirectoryIndexBuffer = std::vector<uint8_t>(Buf, Buf + Header.DirectoryIndexSize);
     }
@@ -142,7 +143,7 @@ FIoStatus FIoStoreTocResource::Read(const std::string& TocFilePath, EIoStoreTocR
             std::vector<FIoStoreTocEntryMetaOld> OldChunkMetas = std::vector<FIoStoreTocEntryMetaOld>(ChunkMetas, ChunkMetas + Header.TocEntryCount);
             OutTocResource.ChunkMetas.reserve(OldChunkMetas.size());
             for (const FIoStoreTocEntryMetaOld& OldChunkMeta : OldChunkMetas) {
-                FIoStoreTocEntryMeta& ChunkMeta;
+                FIoStoreTocEntryMeta ChunkMeta;
                 
                 memcpy(ChunkMeta.ChunkHash.GetBytes(), &OldChunkMeta.ChunkHash, sizeof(ChunkMeta.ChunkHash));
                 ChunkMeta.Flags = OldChunkMeta.Flags;
@@ -153,8 +154,8 @@ FIoStatus FIoStoreTocResource::Read(const std::string& TocFilePath, EIoStoreTocR
     }
 
     if (Header.Version < static_cast<uint8_t>(EIoStoreTocVersion::PartitionSize)) {
-        Heaader.PartitionCount = 1;
-        Header.PartitionSize = MAX_uint64;
+        Header.PartitionCount = 1;
+        Header.PartitionSize = UINT64_MAX;
     }
 
     return FIoStatus::Ok;

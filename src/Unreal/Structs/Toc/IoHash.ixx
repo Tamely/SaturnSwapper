@@ -3,7 +3,7 @@ export module Saturn.Structs.IoHash;
 import Saturn.Readers.FArchive;
 import <cstdint>;
 
-export class FIoHash {
+export struct FIoHash {
 public:
     friend unsigned __int32 hash_value(const FIoHash& InHash) {
         uint32_t Result = 5381;

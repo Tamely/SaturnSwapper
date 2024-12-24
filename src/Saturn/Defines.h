@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <memory>
 #include <intrin.h>
 #include <cstdint>
@@ -32,8 +33,12 @@ using TWeakPtr = std::weak_ptr<T>;
 	inline constexpr Enum  operator~ (Enum  E)             { return (Enum)~(__underlying_type(Enum))E; }
 
 
-template <typename Enum>
-constexpr bool
-EnumHasAnyFlags(Enum Flags, Enum Contains) {
-	return (Flags & Contains) != 0;
+template<typename Enum>
+constexpr bool EnumHasAnyFlags(Enum Flags, Enum Contains) {
+	return (((__underlying_type(Enum))Flags) & (__underlying_type(Enum))Contains) != 0;
 }
+
+template<int32_t Size, uint32_t Alignment>
+struct TAlignedBytes {
+	alignas(Alignment) uint8_t Pad[Size];
+};
