@@ -113,7 +113,7 @@ public:
 	__forceinline FArchive& BulkWriteArray(std::vector<T>& InArray) {
 		*this >> InArray.size();
 
-		return BulkSerializeArray(InArray, InArray.size());
+		return BulkWriteArray(InArray, InArray.size());
 	}
 
 	template<typename T>
