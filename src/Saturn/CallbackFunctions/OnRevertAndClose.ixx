@@ -9,7 +9,7 @@ export module Saturn.CallbackFunctions.OnRevertAndClose;
 
 import Saturn.Context;
 import Saturn.FortniteFunctionLibrary;
-import Saturn.Unreal.IoStoreWriter;
+//import Saturn.Unreal.IoStoreWriter;
 
 import <AppCore/AppCore.h>;
 
@@ -17,7 +17,7 @@ export class FOnRevertAndClose {
 public:
 	static JSValueRef OnRevertAndClose(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception) {
 		FortniteFunctionLibrary::KillEpicProcesses();
-		IoStoreWriter::Revert();
+		//IoStoreWriter::Revert();
 		Sleep(1000);
 
 		exit(0);

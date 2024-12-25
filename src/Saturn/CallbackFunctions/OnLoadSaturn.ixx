@@ -29,7 +29,6 @@ import <tuple>;
 import <time.h>;
 import <fstream>;
 import <filesystem>;
-import Saturn.Unreal.IoStoreReader;
 
 export class FOnLoadSaturn {
 public:

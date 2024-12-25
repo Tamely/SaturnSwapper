@@ -6,8 +6,6 @@ import <AppCore/AppCore.h>;
 import <duktape/duktape.h>;
 
 int FContext::Tab;
-std::shared_ptr<IoStoreWriter> FContext::Writer;
-std::shared_ptr<IoStoreWriter> FContext::SecondWriter;
 
 FLoadout FContext::Loadout;
 std::vector<FLoadout> FContext::Loadouts = {};

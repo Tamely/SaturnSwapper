@@ -7,7 +7,6 @@ export module Saturn.Context;
 import Saturn.CosmeticState;
 import Saturn.Items.PluginModel;
 import Saturn.Items.LoadoutModel;
-import Saturn.Unreal.IoStoreWriter;
 import Saturn.Structs.FileModification;
 
 import <string>;
@@ -23,8 +22,8 @@ public:
 
 	static int Tab;
 
-	static std::shared_ptr<IoStoreWriter> Writer;
-	static std::shared_ptr<IoStoreWriter> SecondWriter;
+	//static std::shared_ptr<IoStoreWriter> Writer;
+	//static std::shared_ptr<IoStoreWriter> SecondWriter;
 
 	static FLoadout	Loadout;
 	static std::vector<FLoadout> Loadouts;
