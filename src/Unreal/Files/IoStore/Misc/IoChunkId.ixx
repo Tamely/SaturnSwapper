@@ -85,3 +85,11 @@ private:
 	uint64_t Position;
 	uint8_t	Id[12];
 };
+
+// This lets it be used as a key in maps
+export template<>
+struct std::hash<FIoChunkId> {
+	std::size_t operator()(const FIoChunkId& k) const {
+		return GetTypeHash(k);
+	}
+};
