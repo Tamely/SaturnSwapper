@@ -1,7 +1,7 @@
 #include <DiscordSDK/rapidjson/document.h>
 #include <Crypt/skCrypter.h>
 
-#include "Defines.h"
+#include "Saturn/Defines.h"
 
 #include <windows.h>
 #include <process.h>

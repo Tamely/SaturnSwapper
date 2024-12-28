@@ -1,73 +1,21 @@
 #include "Saturn/Defines.h"
-#include <thread>
-#include <queue>
-#include <condition_variable>
+#include "Saturn/Log.h"
 
 import Saturn.Files.FileProvider;
 
 import <iostream>;
 
-import <string>;
+import <vector>;
 import <future>;
-import <vector>;
-import <mutex>;
-import <vector>;
-import <functional>;
 import <filesystem>;
 
-import Saturn.Core.IoStatus;
+import Saturn.Core.ThreadPool;
 
 import Saturn.Structs.Guid;
 import Saturn.Encryption.AES;
 
+import Saturn.Core.IoStatus;
 import Saturn.IoStore.IoStoreReader;
-
-class ThreadPool {
-public:
-    ThreadPool(size_t NumThreads) {
-        for (size_t i = 0; i < NumThreads; ++i) {
-            workers.emplace_back([this]() {
-                while (true) {
-                    std::function<void()> task;
-                    {
-                        std::unique_lock<std::mutex> lock(queueMutex);
-                        condition.wait(lock, [this]() { return stop || !tasks.empty(); });
-                        if (stop && tasks.empty()) return;
-                        task = std::move(tasks.front());
-                        tasks.pop();
-                    }
-                    task();
-                }
-            });
-        }
-    }
-
-    ~ThreadPool() {
-        {
-            std::unique_lock<std::mutex> lock(queueMutex);
-            stop = true;
-        }
-        condition.notify_all();
-        for (std::thread& worker : workers) {
-            worker.join();
-        }
-    }
-
-    template <class F>
-    void enqueue(F&& task) {
-        {
-            std::unique_lock<std::mutex> lock(queueMutex);
-            tasks.emplace(std::forward<F>(task));
-        }
-        condition.notify_one();
-    }
-private:
-    std::vector<std::thread> workers;
-    std::queue<std::function<void()>> tasks;
-    std::mutex queueMutex;
-    std::condition_variable condition;
-    bool stop = false;
-};
 
 FFileProvider::FFileProvider(const std::string& PakDirectory) {
     std::error_code Code;
@@ -101,11 +49,11 @@ void FFileProvider::MountAsync() {
                 FIoStoreReader* reader = new FIoStoreReader();
                 FIoStatus status = reader->Initialize(Archive, this->DecryptionKeys);
                 if (!status.IsOk()) {
-                    std::cout << "Error: [" << status.ToString() << "] when reading archive: '" << Archive << "'";
+                    LOG_WARN("Error: [{0}] while reading archive: '{1}'", status.ToString(), Archive);
                     delete reader;
                 }
                 else {
-                    std::cout << "Successfully mounted archive: '" << Archive << "'";
+                    LOG_INFO("Successfully mounted archive: '{0}'", Archive);
                     std::lock_guard<std::mutex> lock(this->TocArchivesMutex);
                     this->TocArchives.emplace_back(reader);
                 }
@@ -123,10 +71,10 @@ void FFileProvider::Mount() {
         FIoStoreReader* reader = new FIoStoreReader();
         FIoStatus status = reader->Initialize(Archive, this->DecryptionKeys);
         if (!status.IsOk()) {
-            std::cout << "Error: [" << status.ToString() << "] when reading archive: '" << Archive << "'";
+            LOG_WARN("Error: [{0}] while reading archive: '{1}'", status.ToString(), Archive);
         }
         else {
-            std::cout << "Successfully mounted archive: '" << Archive << "'";
+            LOG_INFO("Successfully mounted archive: '{0}'", Archive);
             this->TocArchives.emplace_back(reader);
         }
     }
