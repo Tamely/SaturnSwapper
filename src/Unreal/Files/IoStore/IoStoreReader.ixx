@@ -9,6 +9,7 @@ import <memory>;
 import <atomic>;
 import <string>;
 import <cstdint>;
+import <future>;
 import <functional>;
 
 import Saturn.Structs.Guid;
@@ -28,7 +29,7 @@ public:
     FIoStoreReader();
     ~FIoStoreReader();
 
-    FIoStatus Initialize(const std::string& ContainerPath, const TMap<FGuid, FAESKey>& InDecryptionKeys);
+    FIoStatus Initialize(const std::string& InContainerPath, const TMap<FGuid, FAESKey>& InDecryptionKeys);
     FIoContainerId GetContainerId() const;
     uint32_t GetVersion() const;
     EIoContainerFlags GetContainerFlags() const;
@@ -37,17 +38,20 @@ public:
     std::string GetContainerName() const; // The container name is the babse filename of ContainerPath, e.g. "global"
 
     void EnumerateChunks(std::function<bool(FIoStoreTocChunkInfo&&)>&& Callback) const;
-    FIoStatus GetChunkInfo(const FIoChunkId& Chunk, FIoStoreTocChunkInfo& OutChunkInfo) const;
-    FIoStatus GetChunkInfo(const uint32_t TocEntryIndex, FIoStoreTocChunkInfo& OutChunkInfo) const;
+    TIoStatusOr<FIoStoreTocChunkInfo> GetChunkInfo(const FIoChunkId& Chunk) const;
+    TIoStatusOr<FIoStoreTocChunkInfo> GetChunkInfo(const uint32_t TocEntryIndex) const;
 
     // Reads the chunk off the disk, decryption/decompressing as necessary.
-    FIoStatus Read(const FIoChunkId& Chunk, const FIoReadOptions& Options, FIoBuffer& OutBuffer) const;
+    TIoStatusOr<FIoBuffer> Read(const FIoChunkId& Chunk, const FIoReadOptions& Options) const;
+
+    // As Read(), except returns a task that will contain the result after a .wait/.get.
+    std::future<TIoStatusOr<FIoBuffer>> ReadAsync(const FIoChunkId& Chunk, const FIoReadOptions& Options) const;
 
     // Reads and decrypts if necessary the compressed blocks, bbut does _not_ decompress them, The totality of the data is stored
     // in FIoStoreCompressedReadResult::FIoBuffer as a contiguous buffer, however each block is padded during encryption, so
     // either use FIoStoreCompressedBlockInfo::AlignedSize to advance through the buffer, or use FIoStoreCompressedBlockInfo::OffsetInBuffer
     // directly.
-    FIoStatus ReadCompressed(const FIoChunkId& Chunk, const FIoReadOptions& Options, FIoStoreCompressedReadResult& OutResult, bool bDecrypt = true) const;
+    TIoStatusOr<FIoStoreCompressedReadResult> ReadCompressed(const FIoChunkId& Chunk, const FIoReadOptions& Options, bool bDecrypt = true) const;
 
     const FIoDirectoryIndexReader& GetDirectoryIndexReader() const;
 

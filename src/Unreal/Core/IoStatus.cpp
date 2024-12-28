@@ -77,3 +77,7 @@ FIoStatusBuilder& FIoStatusBuilder::operator<<(const std::string& String) {
 FIoStatusBuilder operator<<(const FIoStatus& Status, const std::string& String) {
     return FIoStatusBuilder(Status, String);
 }
+
+void StatusOrCrash(const FIoStatus& Status) {
+    //LOG(Fatal, "I/O Error '" + Status.ToString() + "'");
+}
