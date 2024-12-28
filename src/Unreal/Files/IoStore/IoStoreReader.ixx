@@ -55,7 +55,9 @@ public:
 
     const FIoDirectoryIndexReader& GetDirectoryIndexReader() const;
 
-    void GetFilenamesbyBlockIndex(std::vector<int32_t>& InBlockIndexList, std::vector<std::string>& OutFileList) const;
+    // TMap<{xxhashed file path}, TocEntryIndex>
+    void GetFiles(TMap<uint64_t, uint32_t>& OutFileList) const;
+    void GetFilenamesbyBlockIndex(const std::vector<int32_t>& InBlockIndexList, std::vector<std::string>& OutFileList) const;
     void GetFilenames(std::vector<std::string>& OutFileList) const;
 
     uint32_t GetCompressionBlockSize() const;

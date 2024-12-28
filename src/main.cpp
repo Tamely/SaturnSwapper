@@ -30,13 +30,18 @@ int main(int argc, char* argv[]) {
 	provider.MountAsync();
 	LOG_INFO("Mounted");
 
+	std::vector<std::string> Files;
+	provider.GetArchives()[4]->GetFilenames(Files);
+
+	LOG_INFO(Files[3]);
+
 	if (argc >= 3) {
 		FContext::Channel = argv[1]; // channel
 		FContext::Variant = argv[2]; // variant
 	}
 
-	SaturnApp app;
-	app.Run();
+	//SaturnApp app;
+	//app.Run();
 
 	return 0;
 }

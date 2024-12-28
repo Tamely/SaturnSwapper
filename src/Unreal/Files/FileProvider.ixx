@@ -23,6 +23,8 @@ public:
     void MountAsync();
     void Mount();
     void Unmount();
+public:
+    std::vector<FIoStoreReader*>& GetArchives() { return TocArchives; }
 private:
     TMap<FGuid, FAESKey> DecryptionKeys;
     std::vector<std::string> ArchivePaths;

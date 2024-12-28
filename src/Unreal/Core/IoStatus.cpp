@@ -1,7 +1,8 @@
 import Saturn.Core.IoStatus;
 
-import <string>;
+#include "Saturn/Log.h"
 
+import <string>;
 #include <algorithm>
 
 void Convert(char* OutStr, int32_t OutStrSize, const char* InStr, int32_t InStrSize) {
@@ -79,5 +80,5 @@ FIoStatusBuilder operator<<(const FIoStatus& Status, const std::string& String) 
 }
 
 void StatusOrCrash(const FIoStatus& Status) {
-    //LOG(Fatal, "I/O Error '" + Status.ToString() + "'");
+    LOG_CRITICAL("I/O Error '{0}'", Status.ToString());
 }

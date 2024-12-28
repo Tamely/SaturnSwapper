@@ -92,8 +92,17 @@ public:
         FIoDirectoryIndexHandle File = GetFile(DirectoryIndexHandle);
         while (File.IsValid()) {
             const uint32_t TocEntryIndex = GetFileData(File);
+            std::string FilePath;
+
+            std::string MountPoint = GetMountPoint();
             std::string FileName = GetFileName(File);
-            std::string FilePath = GetMountPoint() + Path + FileName;
+
+            MountPoint.pop_back(); // Get rid of null terminator
+            FileName.pop_back();
+
+            FilePath.append(MountPoint);
+            FilePath.append(Path);
+            FilePath.append(FileName);
 
             if (!Visit(FilePath, TocEntryIndex)) {
                 return false;
@@ -105,7 +114,12 @@ public:
         FIoDirectoryIndexHandle ChildDirectory = GetChildDirectory(DirectoryIndexHandle);
         while (ChildDirectory.IsValid()) {
             std::string DirectoryName = GetDirectoryName(ChildDirectory);
-            std::string ChildDirectoryPath = Path + DirectoryName;
+            std::string ChildDirectoryPath;
+
+            DirectoryName.pop_back();
+            ChildDirectoryPath.append(Path);
+            ChildDirectoryPath.append(DirectoryName);
+            ChildDirectoryPath.append("/");
 
             if (!IterateDirectoryIndex(ChildDirectory, ChildDirectoryPath, Visit)) {
                 return false;

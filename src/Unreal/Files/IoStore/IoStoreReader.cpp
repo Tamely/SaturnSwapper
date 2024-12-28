@@ -1,4 +1,7 @@
 #include "Saturn/Defines.h"
+#include "Saturn/Log.h"
+
+#include <xxhash/xxhash.h>
 
 import Saturn.IoStore.IoStoreReader;
 
@@ -590,7 +593,7 @@ public:
 
         uint8_t* OutputBuffer = Result.IoBuffer.Data();
 
-        // We can read the entire thing aat once since we obligate the caller to skip the alignment padding.
+        // We can read the entire thing at once since we obligate the caller to skip the alignment padding.
         {
             const FIoStoreTocCompressedBlockEntry& CompressionBlock = TocResource.CompressionBlocks[FirstBlockIndex];
             int32_t PartitionIndex = int32_t(CompressionBlock.GetOffset() / TocResource.Header.PartitionSize);
@@ -604,7 +607,7 @@ public:
             }
 
             if (bReadSucceeded == false) {
-                //LOG(Error, "Read from container " + ContainerPath + "failed (partition " + PartitionIndex + ", offset " + PartitionOffset + ", size " + TotalAlignedSize +")");
+                LOG_ERROR("Read from container {0} failed (partition {1}, offset {2}, size {3})", ContainerPath, PartitionIndex, PartitionOffset, TotalAlignedSize);
                 return FIoStoreCompressedReadResult();
             }
         }
@@ -783,4 +786,45 @@ void FIoStoreReader::EnumerateCompressedBlocksForChunk(const FIoChunkId& Chunk, 
 
 void FIoStoreReader::GetContainerFilePaths(std::vector<std::string>& OutPaths) {
     Impl->GetContainerFilePaths(OutPaths);
+}
+
+void FIoStoreReader::GetFiles(TMap<uint64_t, uint32_t>& OutFileList) const {
+        const FIoDirectoryIndexReader& DirectoryIndex = GetDirectoryIndexReader();
+
+    DirectoryIndex.IterateDirectoryIndex(
+        FIoDirectoryIndexHandle::RootDirectory(),
+        "",
+        [&OutFileList](std::string Filename, uint32_t TocEntryIndex) -> bool {
+            OutFileList.insert({ XXH3_64bits(Filename.c_str(), Filename.size()), TocEntryIndex });
+            return true;
+        });
+}
+
+void FIoStoreReader::GetFilenames(std::vector<std::string>& OutFileList) const {
+    const FIoDirectoryIndexReader& DirectoryIndex = GetDirectoryIndexReader();
+
+    DirectoryIndex.IterateDirectoryIndex(
+        FIoDirectoryIndexHandle::RootDirectory(),
+        "",
+        [&OutFileList](std::string Filename, uint32_t TocEntryIndex) -> bool {
+            OutFileList.emplace_back(Filename);
+            return true;
+        });
+}
+
+void FIoStoreReader::GetFilenamesbyBlockIndex(const std::vector<int32_t>& InBlockIndexList, std::vector<std::string>& OutFileList) const {
+    const FIoDirectoryIndexReader& DirectoryIndex = GetDirectoryIndexReader();
+
+    DirectoryIndex.IterateDirectoryIndex(
+        FIoDirectoryIndexHandle::RootDirectory(),
+        "",
+        [this, &InBlockIndexList, &OutFileList](std::string Filename, uint32_t TocEntryIndex) -> bool {
+            for (int32_t BlockIndex : InBlockIndexList) {
+                if (Impl->TocChunkContainsBlockIndex(TocEntryIndex, BlockIndex)) {
+                    OutFileList.emplace_back(Filename);
+                    break;
+                }
+            }
+            return true;
+        });
 }
