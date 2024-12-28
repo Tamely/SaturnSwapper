@@ -6,6 +6,7 @@ export module Saturn.Files.FileProvider;
 
 import <string>;
 import <vector>;
+import <mutex>;
 
 import Saturn.Structs.Guid;
 import Saturn.Encryption.AES;
@@ -19,10 +20,12 @@ public:
     void SubmitKey(FGuid& Guid, FAESKey& Key);
     void SubmitKeys(TMap<FGuid, FAESKey>& DecryptionKeys);
 
+    void MountAsync();
     void Mount();
     void Unmount();
 private:
     TMap<FGuid, FAESKey> DecryptionKeys;
     std::vector<std::string> ArchivePaths;
     std::vector<FIoStoreReader*> TocArchives;
+    std::mutex TocArchivesMutex;
 };

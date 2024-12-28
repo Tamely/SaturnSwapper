@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
 
 	FFileProvider provider("D:\\Fortnite Builds\\Fortnite\\FortniteGame\\Content\\Paks");
 	provider.SubmitKey(guid, aes);
-	provider.Mount();
+	provider.MountAsync();
 
 	if (argc >= 3) {
 		FContext::Channel = argv[1]; // channel
