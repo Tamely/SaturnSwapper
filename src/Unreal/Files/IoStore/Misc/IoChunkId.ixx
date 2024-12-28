@@ -36,7 +36,7 @@ public:
 	}
 
 	friend FArchive& operator<<(FArchive& Ar, FIoChunkId& ChunkId) {
-		ChunkId.Position = Ar.Tell();
+		//ChunkId.Position = Ar.Tell();
 		Ar.Serialize(&ChunkId.Id, sizeof FIoChunkId::Id);
 		return Ar;
 	}
@@ -68,7 +68,7 @@ public:
 
 	inline const uint8_t* GetData() const { return Id; }
 	inline uint32_t	GetSize() const { return sizeof Id; }
-	inline uint64_t GetPosition() const { return Position; }
+	//inline uint64_t GetPosition() const { return Position; }
 
 	EIoChunkType GetChunkType() const {
 		return static_cast<EIoChunkType>(Id[11]);
@@ -82,7 +82,7 @@ private:
 		return ChunkId;
 	}
 
-	uint64_t Position;
+	//uint64_t Position;
 	uint8_t	Id[12];
 };
 

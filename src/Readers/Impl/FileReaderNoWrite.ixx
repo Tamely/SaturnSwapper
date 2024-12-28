@@ -9,6 +9,7 @@ public:
 	FFileReaderNoWrite() {}
 	FFileReaderNoWrite(const char* InFilename) : FileStream(InFilename, std::ios::binary | std::ios::in)
 	{
+		FileStream.imbue(std::locale::classic());
 	}
 
 	~FFileReaderNoWrite()
@@ -44,13 +45,19 @@ public:
 		return !FileStream.is_open();
 	}
 
-	void Serialize(void* V, int64_t Length)
+	bool Serialize(void* V, int64_t Length)
 	{
-		FileStream.read(static_cast<char*>(V), Length);
+		if (FileStream.read(static_cast<char*>(V), Length)) {
+			return true;
+		}
+		return false;
 	}
 
-	void WriteBuffer(void* V, int64_t Length) {
-		FileStream.write(static_cast<char*>(V), Length);
+	bool WriteBuffer(void* V, int64_t Length) {
+		if (FileStream.write(static_cast<char*>(V), Length)) {
+			return true;
+		}
+		return false;
 	}
 
 	bool IsValid()

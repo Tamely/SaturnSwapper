@@ -24,8 +24,8 @@ public:
 
 	virtual ~FArchive();
 
-	virtual void Serialize(void* V, int64_t Length) { }
-	virtual void WriteBuffer(void* V, int64_t Length) { }
+	virtual bool Serialize(void* V, int64_t Length) { return true; }
+	virtual bool WriteBuffer(void* V, int64_t Length) { return true; }
 
 	virtual FArchive& operator<<(UObjectPtr& Value)
 	{
@@ -133,9 +133,9 @@ public:
 	}
 
 	template<typename T>
-	__forceinline void BulkSerialize(void* V) // the idea here is to save time by reducing the amount of serialization operations done, but a few conditions have to be met before using this. i would just avoid this for now
+	__forceinline bool BulkSerialize(void* V) // the idea here is to save time by reducing the amount of serialization operations done, but a few conditions have to be met before using this. i would just avoid this for now
 	{
-		Serialize(V, sizeof(T));
+		return Serialize(V, sizeof(T));
 	}
 
 

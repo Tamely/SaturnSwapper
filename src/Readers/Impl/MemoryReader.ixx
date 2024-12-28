@@ -14,13 +14,22 @@ public:
 		return LimitSize;
 	}
 
-	void Serialize(void* Data, int64_t Num) override
-	{
-		if (Num && Offset + Num <= TotalSize())
-		{
+	bool Serialize(void* Data, int64_t Num) override {
+		if (Num && Offset + Num <= TotalSize()) {
 			memcpyfst(Data, Bytes + Offset, Num);
 			Offset += Num;
+			return true;
 		}
+		return false;
+	}
+
+	bool WriteBuffer(void* Data, int64_t Num) override {
+		if (Num && Offset + Num <= TotalSize()) {
+			memcpyfst(Bytes + Offset, reinterpret_cast<const unsigned char*>(Data), Num);
+			Offset += Num;
+			return true;
+		}
+		return false;
 	}
 
 	explicit FMemoryReader(std::vector<uint8_t>& InBytes, bool bFreeBuffer = false)

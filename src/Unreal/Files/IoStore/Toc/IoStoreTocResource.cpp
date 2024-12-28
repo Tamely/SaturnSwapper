@@ -93,7 +93,7 @@ FIoStatus FIoStoreTocResource::Read(const std::string& TocFilePath, EIoStoreTocR
     uint64_t TocSize = DefaultTocSize;
 
     if (EnumHasAnyFlags(ReadOptions, EIoStoreTocReadOptions::ReadTocMeta)) {
-        TocSize = TotalTocSize; // Meta dataa is at the end of the TOC file
+        TocSize = TotalTocSize; // Meta data is at the end of the TOC file
     }
     else if (EnumHasAnyFlags(ReadOptions, EIoStoreTocReadOptions::ReadDirectoryIndex)) {
         TocSize = DefaultTocSize + Header.DirectoryIndexSize;
