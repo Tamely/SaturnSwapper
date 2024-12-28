@@ -10,6 +10,7 @@ import Saturn.Scripts.ScriptWrapper;
 import Saturn.Structs.Guid;
 import Saturn.Encryption.AES;
 import Saturn.Files.FileProvider;
+import Saturn.VFS.FileSystem;
 
 int main(int argc, char* argv[]) {
 	Log::Init();
@@ -30,10 +31,7 @@ int main(int argc, char* argv[]) {
 	provider.MountAsync();
 	LOG_INFO("Mounted");
 
-	std::vector<std::string> Files;
-	provider.GetArchives()[4]->GetFilenames(Files);
-
-	LOG_INFO(Files[3]);
+	VirtualFileSystem::PrintRegisteredFiles();
 
 	if (argc >= 3) {
 		FContext::Channel = argv[1]; // channel
