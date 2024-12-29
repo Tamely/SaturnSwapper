@@ -84,3 +84,12 @@ void FFileProvider::Mount() {
         }
     }
 }
+
+void FFileProvider::Unmount() {
+    for (FIoStoreReader*& reader : this->TocArchives) {
+        delete reader;
+    }
+    this->TocArchives.clear();
+
+    VirtualFileSystem::Clear();
+}

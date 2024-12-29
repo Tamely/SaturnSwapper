@@ -106,6 +106,10 @@ void VirtualFileSystem::RegisterParallel(const std::vector<std::pair<std::string
     }
 }
 
+void VirtualFileSystem::Clear() {
+    s_FileMap.clear();
+}
+
 std::optional<FGameFile> VirtualFileSystem::GetFileByPath(const std::string& Path) {
     std::unique_lock<std::shared_mutex> lock(s_VFSMutex);
 

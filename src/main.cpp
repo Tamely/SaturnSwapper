@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
 	provider.MountAsync();
 	LOG_INFO("Mounted");
 
-	VirtualFileSystem::PrintRegisteredFiles();
+	//VirtualFileSystem::PrintRegisteredFiles();
 
 	if (argc >= 3) {
 		FContext::Channel = argv[1]; // channel

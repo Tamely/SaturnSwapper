@@ -26,6 +26,8 @@ public:
     static void RegisterBatch(const std::vector<std::pair<std::string, uint32_t>>& Files);
     static void RegisterParallel(const std::vector<std::pair<std::string, uint32_t>>& Files);
 
+    static void Clear();
+
     static void PrintRegisteredFiles();
     static std::optional<FGameFile> GetFileByPath(const std::string& Path);
 private:
