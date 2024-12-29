@@ -54,6 +54,10 @@ void FFileProvider::MountAsync() {
                     delete reader;
                 }
                 else {
+                    std::vector<std::pair<std::string, uint32_t>> Files;
+                    reader->GetFiles(Files);
+                    VirtualFileSystem::RegisterBatch(Files);
+
                     LOG_INFO("Successfully mounted archive: '{0}'", Archive);
                     std::lock_guard<std::mutex> lock(this->TocArchivesMutex);
                     this->TocArchives.emplace_back(reader);

@@ -30,6 +30,36 @@ void VirtualFileSystem::Register(const std::string& Path, uint32_t TocEntryIndex
     }
 }
 
+void VirtualFileSystem::RegisterBatch(const std::vector<std::pair<std::string, uint32_t>>& Files) {
+    TMap<std::string, FGameFile> localFileMap;
+
+    // Build the file map locally without locking
+    for (const auto& [Path, TocEntryIndex] : Files) {
+        std::string pathWithoutExtension = GetPathWithoutExtension(Path);
+        std::string extension = GetExtension(Path);
+
+        auto& file = localFileMap[pathWithoutExtension];
+        if (file.Path.empty()) {
+            file.Path = pathWithoutExtension;
+        }
+        file.Extensions[extension] = TocEntryIndex;
+    }
+
+    // Merge local changes inot the main map with a single lock
+    {
+        std::unique_lock<std::shared_mutex> lock(s_VFSMutex);
+        for (const auto& [key, localFile] : localFileMap) {
+            auto& globalFile = s_FileMap[key];
+            if (globalFile.Path.empty()) {
+                globalFile.Path = localFile.Path;
+            }
+            for (const auto& [ext, tocIdx] : localFile.Extensions) {
+                globalFile.Extensions[ext] = tocIdx;
+            }
+        }
+    }
+}
+
 std::optional<FGameFile> VirtualFileSystem::GetFileByPath(const std::string& Path) {
     std::unique_lock<std::shared_mutex> lock(s_VFSMutex);
 

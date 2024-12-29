@@ -23,6 +23,8 @@ export struct FGameFile {
 export class VirtualFileSystem {
 public:
     static void Register(const std::string& Path, uint32_t TocEntryIndex);
+    static void RegisterBatch(const std::vector<std::pair<std::string, uint32_t>>& Files);
+
     static void PrintRegisteredFiles();
     static std::optional<FGameFile> GetFileByPath(const std::string& Path);
 private:

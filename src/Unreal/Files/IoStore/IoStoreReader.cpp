@@ -68,7 +68,6 @@ public:
                     [this](std::string Filename, uint32_t TocEntryIndex) -> bool
                     {
                         AddFileName(TocEntryIndex, Filename);
-                        VirtualFileSystem::Register(Filename, TocEntryIndex);
                         return true;
                     });
         }
@@ -791,13 +790,25 @@ void FIoStoreReader::GetContainerFilePaths(std::vector<std::string>& OutPaths) {
 }
 
 void FIoStoreReader::GetFiles(TMap<uint64_t, uint32_t>& OutFileList) const {
-        const FIoDirectoryIndexReader& DirectoryIndex = GetDirectoryIndexReader();
+    const FIoDirectoryIndexReader& DirectoryIndex = GetDirectoryIndexReader();
 
     DirectoryIndex.IterateDirectoryIndex(
         FIoDirectoryIndexHandle::RootDirectory(),
         "",
         [&OutFileList](std::string Filename, uint32_t TocEntryIndex) -> bool {
             OutFileList.insert({ XXH3_64bits(Filename.c_str(), Filename.size()), TocEntryIndex });
+            return true;
+        });
+}
+
+void FIoStoreReader::GetFiles(std::vector<std::pair<std::string, uint32_t>>& OutFileList) const {
+    const FIoDirectoryIndexReader& DirectoryIndex = GetDirectoryIndexReader();
+
+    DirectoryIndex.IterateDirectoryIndex(
+        FIoDirectoryIndexHandle::RootDirectory(),
+        "",
+        [&OutFileList](std::string Filename, uint32_t TocEntryIndex) -> bool {
+            OutFileList.push_back({ Filename, TocEntryIndex });
             return true;
         });
 }
