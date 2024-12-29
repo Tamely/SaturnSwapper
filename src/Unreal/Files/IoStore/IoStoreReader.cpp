@@ -68,7 +68,7 @@ public:
                     [this](std::string Filename, uint32_t TocEntryIndex) -> bool
                     {
                         AddFileName(TocEntryIndex, Filename);
-                        VirtualFileSystem::Register(Filename);
+                        VirtualFileSystem::Register(Filename, TocEntryIndex);
                         return true;
                     });
         }
