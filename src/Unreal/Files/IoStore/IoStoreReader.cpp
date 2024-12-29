@@ -9,6 +9,7 @@ import Saturn.Compression;
 import Saturn.Structs.Guid;
 import Saturn.Misc.IoBuffer;
 import Saturn.Core.IoStatus;
+import Saturn.VFS.FileSystem;
 import Saturn.Encryption.AES;
 import Saturn.Structs.IoChunkId;
 import Saturn.Misc.IoReadOptions;
@@ -67,6 +68,7 @@ public:
                     [this](std::string Filename, uint32_t TocEntryIndex) -> bool
                     {
                         AddFileName(TocEntryIndex, Filename);
+                        VirtualFileSystem::Register(Filename);
                         return true;
                     });
         }
