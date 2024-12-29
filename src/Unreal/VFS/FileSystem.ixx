@@ -24,6 +24,7 @@ export class VirtualFileSystem {
 public:
     static void Register(const std::string& Path, uint32_t TocEntryIndex);
     static void RegisterBatch(const std::vector<std::pair<std::string, uint32_t>>& Files);
+    static void RegisterParallel(const std::vector<std::pair<std::string, uint32_t>>& Files);
 
     static void PrintRegisteredFiles();
     static std::optional<FGameFile> GetFileByPath(const std::string& Path);
@@ -35,7 +36,7 @@ private:
     static std::string GetPathWithoutExtension(const std::string& Path) {
         std::filesystem::path fsPath(Path);
         fsPath.make_preferred();
-        return fsPath.parent_path().string() + "/" + fsPath.stem().string();
+        return fsPath.parent_path().string() + "\\" + fsPath.stem().string();
     }
 
     static TMap<std::string, FGameFile> s_FileMap;

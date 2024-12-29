@@ -7,7 +7,9 @@ import <cstdint>;
 import <string>;
 import <vector>;
 import <mutex>;
+import <future>;
 import <optional>;
+import <functional>;
 import <filesystem>;
 import <shared_mutex>;
 
@@ -47,6 +49,50 @@ void VirtualFileSystem::RegisterBatch(const std::vector<std::pair<std::string, u
 
     // Merge local changes inot the main map with a single lock
     {
+        std::unique_lock<std::shared_mutex> lock(s_VFSMutex);
+        for (const auto& [key, localFile] : localFileMap) {
+            auto& globalFile = s_FileMap[key];
+            if (globalFile.Path.empty()) {
+                globalFile.Path = localFile.Path;
+            }
+            for (const auto& [ext, tocIdx] : localFile.Extensions) {
+                globalFile.Extensions[ext] = tocIdx;
+            }
+        }
+    }
+}
+
+void VirtualFileSystem::RegisterParallel(const std::vector<std::pair<std::string, uint32_t>>& Files) {
+    const size_t numThreads = std::thread::hardware_concurrency();
+    const size_t chunkSize = Files.size() / numThreads;
+
+    std::vector<std::future<TMap<std::string, FGameFile>>> futures;
+
+    // Divide the files into chukns and process them in parallel
+    for (size_t i = 0; i < numThreads; ++i) {
+        size_t startIdx = i * chunkSize;
+        size_t endIdx = (i == numThreads - 1) ? Files.size() : (i + 1) * chunkSize;
+
+        futures.emplace_back(std::async(std::launch::async, [startIdx, endIdx, &Files]() {
+            TMap<std::string, FGameFile> localFileMap;
+            for (size_t j = startIdx; j < endIdx; ++j) {
+                const auto& [Path, TocEntryIndex] = Files[j];
+                std::string pathWithoutExtension = GetPathWithoutExtension(Path);
+                std::string extension = GetExtension(Path);
+
+                auto& file = localFileMap[pathWithoutExtension];
+                if (file.Path.empty()) {
+                    file.Path = pathWithoutExtension;
+                }
+                file.Extensions[extension] = TocEntryIndex;
+            }
+            return localFileMap;
+        }));
+    }
+
+    // Merge the results into the global file map
+    for (auto& future : futures) {
+        TMap<std::string, FGameFile> localFileMap = future.get();
         std::unique_lock<std::shared_mutex> lock(s_VFSMutex);
         for (const auto& [key, localFile] : localFileMap) {
             auto& globalFile = s_FileMap[key];

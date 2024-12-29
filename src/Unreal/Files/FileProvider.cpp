@@ -56,7 +56,7 @@ void FFileProvider::MountAsync() {
                 else {
                     std::vector<std::pair<std::string, uint32_t>> Files;
                     reader->GetFiles(Files);
-                    VirtualFileSystem::RegisterBatch(Files);
+                    VirtualFileSystem::RegisterParallel(Files);
 
                     LOG_INFO("Successfully mounted archive: '{0}'", Archive);
                     std::lock_guard<std::mutex> lock(this->TocArchivesMutex);
