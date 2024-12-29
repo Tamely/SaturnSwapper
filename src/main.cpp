@@ -12,6 +12,13 @@ import Saturn.Encryption.AES;
 import Saturn.Files.FileProvider;
 import Saturn.VFS.FileSystem;
 
+import Saturn.Core.IoStatus;
+import Saturn.Misc.IoBuffer;
+import Saturn.Compression.Oodle;
+import Saturn.Structs.IoStoreTocChunkInfo;
+
+import <optional>;
+
 int main(int argc, char* argv[]) {
 	Log::Init();
 	LOG_INFO("Started Saturn");
@@ -19,6 +26,7 @@ int main(int argc, char* argv[]) {
 	LOG_INFO("Init bindings");
 	FWebServer::CreateWebServerThread();
 	LOG_INFO("Create Web Server");
+	Oodle::LoadDLL("oo2core_5_win64.dll");
 
 	FGuid defaultGUID;
 	FAESKey defaultAES("0x62450FF9261CCC2EE50C217A2D9EE97F05F09203CF6E395B7CAB9D8892B714CE");
@@ -35,7 +43,32 @@ int main(int argc, char* argv[]) {
 	provider.MountAsync();
 	LOG_INFO("Mounted");
 
-	//VirtualFileSystem::PrintRegisteredFiles();
+	std::optional<FGameFile> cid = VirtualFileSystem::GetFileByPath("..\\..\\..\\FortniteGame\\Plugins\\GameFeatures\\BRCosmetics\\Content\\Athena\\Items\\Cosmetics\\Characters\\CID_028_Athena_Commando_F");
+	if (cid.has_value()) {
+		LOG_INFO("Got CID value");
+
+		std::pair<uint32_t, FIoStoreReader*> asset = cid.value().Extensions[".uasset"];
+		TIoStatusOr<FIoStoreTocChunkInfo> chunkInfoStatus = asset.second->GetChunkInfo(asset.first);
+		if (!chunkInfoStatus.IsOk()) {
+			LOG_WARN("Unable to get chunk info!");
+		}
+		else {
+			LOG_INFO("Got chunk info!");
+			FIoStoreTocChunkInfo chunkInfo = chunkInfoStatus.ConsumeValueOrDie();
+			TIoStatusOr<FIoBuffer> bufferStatus = asset.second->Read(chunkInfo.Id, FIoReadOptions(0, chunkInfo.Size));
+			if (!bufferStatus.IsOk()) {
+				LOG_WARN("Failed read!");
+			}
+			else {
+				FIoBuffer buffer = bufferStatus.ConsumeValueOrDie();
+				LOG_INFO("Read succeeded!");
+				//buffer.GetData()
+			}
+		}
+	}
+	else {
+		LOG_WARN("Unable to find CID");
+	}
 
 	if (argc >= 3) {
 		FContext::Channel = argv[1]; // channel

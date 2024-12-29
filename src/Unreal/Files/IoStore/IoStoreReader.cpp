@@ -194,8 +194,8 @@ public:
             bool bReadSucceeded;
             {
                 ContainerFileAccess->Handle[OurIndex]->Seek(InPartitionOffset);
-                ContainerFileAccess->Handle[OurIndex]->Serialize(OutBuffer, InReadAmount);
-                bReadSucceeded = ContainerFileAccess->Handle[OurIndex]->Tell() == InPartitionIndex + InReadAmount;
+                int64_t TotalSizeUCAS = ContainerFileAccess->Handle[OurIndex]->TotalSize();
+                bReadSucceeded = ContainerFileAccess->Handle[OurIndex]->Serialize(OutBuffer, InReadAmount);
             }
 
             OutSuccess->store(bReadSucceeded);
@@ -217,17 +217,18 @@ public:
 
         FIoStoreTocResource& TocResource = TocReader.GetTocResource();
 
-        ContainerFileAccessors.reserve(TocResource.Header.PartitionCount);
+        ContainerFileAccessors.resize(TocResource.Header.PartitionCount);
         for (uint32_t PartitionIndex = 0; PartitionIndex < TocResource.Header.PartitionCount; ++PartitionIndex) {
             std::string ContainerFilePath;
             ContainerFilePath.append(InContainerPath);
             if (PartitionIndex > 0) {
-                ContainerFilePath.append("_s" + PartitionIndex);
+                ContainerFilePath.append("_s");
+                ContainerFilePath.append(std::to_string(PartitionIndex));
             }
             ContainerFilePath.append(".ucas");
 
-            ContainerFileAccessors.emplace_back(std::make_unique<FContainerFileAccess>(ContainerFilePath));
-            if (ContainerFileAccessors.back()->IsValid() == false) {
+            ContainerFileAccessors[PartitionIndex] = std::unique_ptr<FContainerFileAccess>(new FContainerFileAccess(ContainerFilePath));
+            if (ContainerFileAccessors[PartitionIndex]->IsValid() == false) {
                 return FIoStatusBuilder(EIoErrorCode::FileOpenFailed) << "Failed to open IoStore container file '" << TocFilePath << "'";
             }
         }
@@ -419,7 +420,7 @@ public:
     TIoStatusOr<FIoBuffer> Read(const FIoChunkId& ChunkId, const FIoReadOptions& Options) const {
         const FIoOffsetAndLength* OffsetAndLength = TocReader.GetOffsetAndLength(ChunkId);
         if (!OffsetAndLength) {
-            return FIoStatus(EIoErrorCode::NotFound, "Unkown chunk ID");
+            return FIoStatus(EIoErrorCode::NotFound, "Unknown chunk ID");
         }
 
         uint64_t RequestedOffset = Options.GetOffset();
@@ -801,14 +802,14 @@ void FIoStoreReader::GetFiles(TMap<uint64_t, uint32_t>& OutFileList) const {
         });
 }
 
-void FIoStoreReader::GetFiles(std::vector<std::pair<std::string, uint32_t>>& OutFileList) const {
+void FIoStoreReader::GetFiles(std::vector<std::pair<std::string, std::pair<uint32_t, class FIoStoreReader*>>>& OutFileList) const {
     const FIoDirectoryIndexReader& DirectoryIndex = GetDirectoryIndexReader();
 
     DirectoryIndex.IterateDirectoryIndex(
         FIoDirectoryIndexHandle::RootDirectory(),
         "",
-        [&OutFileList](std::string Filename, uint32_t TocEntryIndex) -> bool {
-            OutFileList.push_back({ Filename, TocEntryIndex });
+        [this, &OutFileList](std::string Filename, uint32_t TocEntryIndex) -> bool {
+            OutFileList.emplace_back(Filename, std::make_pair(TocEntryIndex, const_cast<FIoStoreReader*>(this)));
             return true;
         });
 }

@@ -1,71 +1,37 @@
 export module Saturn.Readers.FileReaderNoWrite;
 
 export import Saturn.Readers.FArchive;
-import <fstream>;
+import <string>;
 
-export class FFileReaderNoWrite : public FArchive
-{
+export class FFileReaderNoWrite : public FArchive {
 public:
-	FFileReaderNoWrite() {}
-	FFileReaderNoWrite(const char* InFilename) : FileStream(InFilename, std::ios::binary | std::ios::in)
-	{
-		FileStream.imbue(std::locale::classic());
-	}
+    FFileReaderNoWrite();
+    FFileReaderNoWrite(const char* InFilename);
+    ~FFileReaderNoWrite();
 
-	~FFileReaderNoWrite()
-	{
-		FileStream.close();
-	}
+    void Seek(int64_t InPos);
+    int64_t Tell();
+    int64_t TotalSize();
+    bool Close();
+    bool Serialize(void* V, int64_t Length);
+    bool WriteBuffer(void* V, int64_t Length);
+    bool IsValid();
 
-	void Seek(int64_t InPos)
-	{
-		FileStream.seekg(InPos, FileStream._Seekbeg);
-	}
+private:
+    void openFileForMapping();
+    void closeFileMapping();
 
-	int64_t Tell()
-	{
-		return FileStream.tellg();
-	}
+    std::string FilePath;
+    int64_t FileSize = 0;
+    int64_t FilePosition = 0;
 
-	int64_t TotalSize()
-	{
-		auto Pos = FileStream.tellg();
-		FileStream.seekg(0, FileStream._Seekend);
-
-		auto Ret = FileStream.tellg();
-		FileStream.seekg(Pos, FileStream._Seekbeg);
-
-		return Ret;
-	}
-
-	bool Close()
-	{
-		FileStream.close();
-
-		return !FileStream.is_open();
-	}
-
-	bool Serialize(void* V, int64_t Length)
-	{
-		if (FileStream.read(static_cast<char*>(V), Length)) {
-			return true;
-		}
-		return false;
-	}
-
-	bool WriteBuffer(void* V, int64_t Length) {
-		if (FileStream.write(static_cast<char*>(V), Length)) {
-			return true;
-		}
-		return false;
-	}
-
-	bool IsValid()
-	{
-		return !!FileStream;
-	}
-
-protected:
-	friend class FortniteFunctionLibrary;
-	std::fstream FileStream;
+#if defined(_WIN32) || defined(_WIN64)
+    void* hFile = ((void*)(long long)-1);
+    void* hMapping = 0;
+    void* MappedData = nullptr;
+#else
+    int fd = -1;
+    void* MappedData = MAP_FAILED;
+#endif
+friend class FortniteFunctionLibrary;
 };

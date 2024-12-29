@@ -16,15 +16,15 @@ import Saturn.Structs.IoChunkId;
 
 export struct FGameFile {
     std::string Path;
-    // Extension | TocEntryIndex
-    TMap<std::string, uint32_t> Extensions;
+    // Extension | <TocEntryIndex, Reader>
+    TMap<std::string, std::pair<uint32_t, class FIoStoreReader*>> Extensions;
 };
 
 export class VirtualFileSystem {
 public:
-    static void Register(const std::string& Path, uint32_t TocEntryIndex);
-    static void RegisterBatch(const std::vector<std::pair<std::string, uint32_t>>& Files);
-    static void RegisterParallel(const std::vector<std::pair<std::string, uint32_t>>& Files);
+    static void Register(const std::string& Path, uint32_t TocEntryIndex, class FIoStoreReader* Reader);
+    static void RegisterBatch(const std::vector<std::pair<std::string, std::pair<uint32_t, class FIoStoreReader*>>>& Files);
+    static void RegisterParallel(const std::vector<std::pair<std::string, std::pair<uint32_t, class FIoStoreReader*>>>& Files);
 
     static void Clear();
 

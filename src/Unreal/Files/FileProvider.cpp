@@ -54,7 +54,7 @@ void FFileProvider::MountAsync() {
                     delete reader;
                 }
                 else {
-                    std::vector<std::pair<std::string, uint32_t>> Files;
+                    std::vector<std::pair<std::string, std::pair<uint32_t, class FIoStoreReader*>>> Files;
                     reader->GetFiles(Files);
                     VirtualFileSystem::RegisterParallel(Files);
 

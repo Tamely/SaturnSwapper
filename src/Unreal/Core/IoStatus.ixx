@@ -1,5 +1,6 @@
 module;
 
+#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 
 export module Saturn.Core.IoStatus;
@@ -133,7 +134,9 @@ private:
     T Value;
 };
 
-void StatusOrCrash(const FIoStatus& Status);
+void StatusOrCrash(const FIoStatus& Status) {
+    LOG_CRITICAL("I/O Error '{0}'", Status.ToString());
+}
 
 template <typename T>
 void TIoStatusOr<T>::Reset() {
