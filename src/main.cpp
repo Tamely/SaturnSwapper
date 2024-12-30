@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
 	provider.MountAsync();
 	LOG_INFO("Mounted");
 
-	TIoStatusOr<FIoBuffer> bufferStatus = VirtualFileSystem::GetBufferByPathAndExtension("FortniteGame/Plugins/GameFeatures/BRCosmetics/Content/Athena/Items/Cosmetics/Characters/CID_028_Athena_Commando_F.uasset");
+	TIoStatusOr<FIoBuffer> bufferStatus = VirtualFileSystem::GetBufferByPathAndExtension("/BRCosmetics/Athena/Items/Cosmetics/Characters/CID_028_Athena_Commando_F.uasset");
 	if (!bufferStatus.IsOk()) {
 		LOG_WARN("Failed read!");
 	}
