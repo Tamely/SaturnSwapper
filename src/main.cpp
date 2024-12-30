@@ -43,31 +43,14 @@ int main(int argc, char* argv[]) {
 	provider.MountAsync();
 	LOG_INFO("Mounted");
 
-	std::optional<FGameFile> cid = VirtualFileSystem::GetFileByPath("..\\..\\..\\FortniteGame\\Plugins\\GameFeatures\\BRCosmetics\\Content\\Athena\\Items\\Cosmetics\\Characters\\CID_028_Athena_Commando_F");
-	if (cid.has_value()) {
-		LOG_INFO("Got CID value");
-
-		std::pair<uint32_t, FIoStoreReader*> asset = cid.value().Extensions[".uasset"];
-		TIoStatusOr<FIoStoreTocChunkInfo> chunkInfoStatus = asset.second->GetChunkInfo(asset.first);
-		if (!chunkInfoStatus.IsOk()) {
-			LOG_WARN("Unable to get chunk info!");
-		}
-		else {
-			LOG_INFO("Got chunk info!");
-			FIoStoreTocChunkInfo chunkInfo = chunkInfoStatus.ConsumeValueOrDie();
-			TIoStatusOr<FIoBuffer> bufferStatus = asset.second->Read(chunkInfo.Id, FIoReadOptions(0, chunkInfo.Size));
-			if (!bufferStatus.IsOk()) {
-				LOG_WARN("Failed read!");
-			}
-			else {
-				FIoBuffer buffer = bufferStatus.ConsumeValueOrDie();
-				LOG_INFO("Read succeeded!");
-				//buffer.GetData()
-			}
-		}
+	TIoStatusOr<FIoBuffer> bufferStatus = VirtualFileSystem::GetBufferByPathAndExtension("FortniteGame/Plugins/GameFeatures/BRCosmetics/Content/Athena/Items/Cosmetics/Characters/CID_028_Athena_Commando_F.uasset");
+	if (!bufferStatus.IsOk()) {
+		LOG_WARN("Failed read!");
 	}
 	else {
-		LOG_WARN("Unable to find CID");
+		FIoBuffer buffer = bufferStatus.ConsumeValueOrDie();
+		LOG_INFO("Read succeeded! Buffer size: {0}", buffer.GetSize());
+		//buffer.GetData()
 	}
 
 	if (argc >= 3) {

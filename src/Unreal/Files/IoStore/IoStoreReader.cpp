@@ -9,7 +9,6 @@ import Saturn.Compression;
 import Saturn.Structs.Guid;
 import Saturn.Misc.IoBuffer;
 import Saturn.Core.IoStatus;
-import Saturn.VFS.FileSystem;
 import Saturn.Encryption.AES;
 import Saturn.Structs.IoChunkId;
 import Saturn.Misc.IoReadOptions;
@@ -194,7 +193,6 @@ public:
             bool bReadSucceeded;
             {
                 ContainerFileAccess->Handle[OurIndex]->Seek(InPartitionOffset);
-                int64_t TotalSizeUCAS = ContainerFileAccess->Handle[OurIndex]->TotalSize();
                 bReadSucceeded = ContainerFileAccess->Handle[OurIndex]->Serialize(OutBuffer, InReadAmount);
             }
 
@@ -217,7 +215,7 @@ public:
 
         FIoStoreTocResource& TocResource = TocReader.GetTocResource();
 
-        ContainerFileAccessors.resize(TocResource.Header.PartitionCount);
+        ContainerFileAccessors.reserve(TocResource.Header.PartitionCount);
         for (uint32_t PartitionIndex = 0; PartitionIndex < TocResource.Header.PartitionCount; ++PartitionIndex) {
             std::string ContainerFilePath;
             ContainerFilePath.append(InContainerPath);
@@ -227,7 +225,7 @@ public:
             }
             ContainerFilePath.append(".ucas");
 
-            ContainerFileAccessors[PartitionIndex] = std::unique_ptr<FContainerFileAccess>(new FContainerFileAccess(ContainerFilePath));
+            ContainerFileAccessors.emplace_back(std::unique_ptr<FContainerFileAccess>(new FContainerFileAccess(ContainerFilePath)));
             if (ContainerFileAccessors[PartitionIndex]->IsValid() == false) {
                 return FIoStatusBuilder(EIoErrorCode::FileOpenFailed) << "Failed to open IoStore container file '" << TocFilePath << "'";
             }
@@ -802,14 +800,14 @@ void FIoStoreReader::GetFiles(TMap<uint64_t, uint32_t>& OutFileList) const {
         });
 }
 
-void FIoStoreReader::GetFiles(std::vector<std::pair<std::string, std::pair<uint32_t, class FIoStoreReader*>>>& OutFileList) const {
+void FIoStoreReader::GetFiles(std::vector<std::pair<std::string, uint32_t>>& OutFileList) const {
     const FIoDirectoryIndexReader& DirectoryIndex = GetDirectoryIndexReader();
 
     DirectoryIndex.IterateDirectoryIndex(
         FIoDirectoryIndexHandle::RootDirectory(),
         "",
         [this, &OutFileList](std::string Filename, uint32_t TocEntryIndex) -> bool {
-            OutFileList.emplace_back(Filename, std::make_pair(TocEntryIndex, const_cast<FIoStoreReader*>(this)));
+            OutFileList.emplace_back(Filename, TocEntryIndex);
             return true;
         });
 }

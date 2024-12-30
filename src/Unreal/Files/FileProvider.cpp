@@ -54,9 +54,10 @@ void FFileProvider::MountAsync() {
                     delete reader;
                 }
                 else {
-                    std::vector<std::pair<std::string, std::pair<uint32_t, class FIoStoreReader*>>> Files;
+                    std::vector<std::pair<std::string, uint32_t>> Files;
                     reader->GetFiles(Files);
                     VirtualFileSystem::RegisterParallel(Files);
+                    VirtualFileSystem::RegisterReader(reader);
 
                     LOG_INFO("Successfully mounted archive: '{0}'", Archive);
                     std::lock_guard<std::mutex> lock(this->TocArchivesMutex);
@@ -79,6 +80,11 @@ void FFileProvider::Mount() {
             LOG_WARN("Error: [{0}] while reading archive: '{1}'", status.ToString(), Archive);
         }
         else {
+            std::vector<std::pair<std::string, uint32_t>> Files;
+            reader->GetFiles(Files);
+            VirtualFileSystem::RegisterParallel(Files);
+            VirtualFileSystem::RegisterReader(reader);
+
             LOG_INFO("Successfully mounted archive: '{0}'", Archive);
             this->TocArchives.emplace_back(reader);
         }

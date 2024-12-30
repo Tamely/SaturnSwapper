@@ -57,7 +57,7 @@ public:
 
     // TMap<{xxhashed file path}, TocEntryIndex>
     void GetFiles(TMap<uint64_t, uint32_t>& OutFileList) const;
-    void GetFiles(std::vector<std::pair<std::string, std::pair<uint32_t, class FIoStoreReader*>>>& OutFileList) const;
+    void GetFiles(std::vector<std::pair<std::string, uint32_t>>& OutFileList) const;
     void GetFilenamesbyBlockIndex(const std::vector<int32_t>& InBlockIndexList, std::vector<std::string>& OutFileList) const;
     void GetFilenames(std::vector<std::string>& OutFileList) const;
 
