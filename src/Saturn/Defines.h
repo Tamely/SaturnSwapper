@@ -6,11 +6,10 @@
 #include <cstdint>
 #include <string>
 #include <type_traits>
-//#include "tsl/ordered_map.h"
-#include <unordered_map>
+#include <parallel_hashmap/phmap.h>
 
 template <typename K, typename V>
-using TMap = std::unordered_map<K, V>;
+using TMap = phmap::parallel_node_hash_map<K, V>;
 
 typedef uint32_t FNameEntryId;
 

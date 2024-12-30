@@ -1,6 +1,6 @@
 module;
 
-#include <parallel_hashmap/phmap.h>
+#include "Saturn/Defines.h"
 
 export module Saturn.VFS.FileSystem;
 
@@ -50,7 +50,7 @@ private:
     static std::string NormalizeFilePath(const std::string& path);
 
     // Key is xxhashed normalized path
-    static phmap::flat_hash_map<uint64_t, FGameFile> s_FileMap;
+    static TMap<uint64_t, FGameFile> s_FileMap;
     static std::shared_mutex s_VFSMutex;
     static std::vector<class FIoStoreReader*> s_Readers;
 };

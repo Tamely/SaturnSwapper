@@ -1,11 +1,15 @@
 module;
 
 #include "Saturn/Defines.h"
+#include "tsl/ordered_map.h"
 
 export module Saturn.Properties.MapProperty;
 
 export import Saturn.Reflection.FProperty;
 import Saturn.Readers.FArchive;
+
+template <typename K, typename V>
+using TOrderedMap = tsl::ordered_map<K, V>;
 
 export class FMapProperty : public FProperty {
 public:
@@ -17,7 +21,7 @@ public:
     struct Value : public IPropValue {
     public:
         std::vector<TSharedPtr<class IPropValue>> KeysToRemove;
-        TMap<TSharedPtr<class IPropValue>, TSharedPtr<class IPropValue>> Value;
+        TOrderedMap<TSharedPtr<class IPropValue>, TSharedPtr<class IPropValue>> Value;
 
         __forceinline bool IsAcceptableType(EPropertyType Type) override {
             return Type == EPropertyType::MapProperty;

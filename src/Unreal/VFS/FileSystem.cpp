@@ -1,7 +1,6 @@
 import Saturn.VFS.FileSystem;
 
 #include <xxhash/xxhash.h>
-#include <parallel_hashmap/phmap.h>
 
 #include "Saturn/Log.h"
 #include "Saturn/Defines.h"
@@ -38,7 +37,7 @@ const std::string& ExtensionPool::Get(uint32_t id) {
     return s_ReverseLookup[id];
 }
 
-phmap::flat_hash_map<uint64_t, FGameFile> VirtualFileSystem::s_FileMap;
+TMap<uint64_t, FGameFile> VirtualFileSystem::s_FileMap;
 std::shared_mutex VirtualFileSystem::s_VFSMutex;
 std::vector<class FIoStoreReader*> VirtualFileSystem::s_Readers;
 
