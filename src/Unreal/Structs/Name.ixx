@@ -27,6 +27,10 @@ public:
 	FName(std::vector<FNameEntrySerialized> nameMap, int index, int number) : Index(index), Number(number) {
 		_name = nameMap[Index];
 	}
+
+	FName(std::vector<std::string> nameMap, int index, int number) : Index(index), Number(number) {
+		_name = FNameEntrySerialized(nameMap[index]);
+	}
 public:
 	std::string GetText() {
 		return Number == 0 ? PlainText() : (PlainText() + "_" + std::to_string(Number - 1));
@@ -51,6 +55,17 @@ public:
 		}
 
 		Name = FName(index, number);
+		return Ar;
+	}
+
+	friend FArchive& operator>>(FArchive& Ar, FName& Name) {
+		Ar >> Name.Index;
+
+		if ((Name.Index & FName::AssetRegistryNumberedNameBit) > 0) {
+			Name.Index -= FName::AssetRegistryNumberedNameBit;
+			Ar >> Name.Number;
+		}
+
 		return Ar;
 	}
 public:

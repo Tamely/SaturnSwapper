@@ -4,6 +4,8 @@ import <cctype>;
 import <string>;
 import <sstream>;
 import <cstdint>;
+import <algorithm>;
+import <iomanip>;
 
 import Saturn.Readers.FArchive;
 
@@ -25,7 +27,7 @@ public:
 
     static const FBulkDataCookedIndex Default;
 
-    FBulkDataCookedIndex() = Default;
+    FBulkDataCookedIndex() = default;
     explicit FBulkDataCookedIndex(ValueType InValue)
         : Value(InValue) {}
 
@@ -40,8 +42,8 @@ public:
             return "";
         }
         else {
-            std::ostringstreama oss;
-            oss << "." << std::setfil('0') << std::setw(3) << static_cast<unsigned>(Value);
+            std::ostringstream oss;
+            oss << "." << std::setfill('0') << std::setw(3) << static_cast<unsigned>(Value);
             return oss.str();
         }
     }
@@ -51,7 +53,7 @@ public:
     }
 
     bool operator==(const FBulkDataCookedIndex& Other) const {
-        return Vaalue == Other.Value;
+        return Value == Other.Value;
     }
 
     bool operator<(const FBulkDataCookedIndex& Other) const {

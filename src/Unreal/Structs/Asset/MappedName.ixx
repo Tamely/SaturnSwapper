@@ -2,6 +2,7 @@ export module Saturn.Asset.MappedName;
 
 import <cstdint>;
 
+import Saturn.Structs.Name;
 import Saturn.Readers.FArchive;
 
 export struct FMappedName {
@@ -12,8 +13,6 @@ private:
 	static constexpr uint32_t TypeMask = ~IndexMask;
 	static constexpr uint32_t TypeShift = IndexBits;
 public:
-	FMappedName() {}
-
 	enum class EType
 	{
 		Package,
@@ -27,22 +26,8 @@ public:
 		return FMappedName((uint32_t(InType) << TypeShift) | InIndex, InNumber);
 	}
 
-	static inline FMappedName FromMinimalName(const FMinimalName& MinimalName) {
-		return *reinterpret_cast<const FMappedName*>(&MinimalName);
-	}
-
-	static inline bool IsResolvedToMinimalName(const FMinimalName& MinimalName) {
-		// Not completely safe, relies on that no FName will have its Index and Number equal to UINT32_MAX
-		const FMappedName MappedName = FromMinimalName(MinimalName);
-		return MappedName.IsValid();
-	}
-
-	static inline FName SafeMinimalNameToName(const FMinimalName& MinimalName) {
-		return IsResolvedToMinimalName(MinimalName) ? MinimalNameToName(MinimalName) : NAME_none;
-	}
-
-	inline FMinimalName ToUnresolvedMinimalName() const {
-		return *reinterpret_cast<const FMinimalName*>(this);
+	inline FName GetName() {
+		return FName(Index, Number);
 	}
 
 	inline bool IsValid() const {

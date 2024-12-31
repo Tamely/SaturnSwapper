@@ -58,37 +58,35 @@
 // By the way, for some hash functions, given strings a and b, the hash
 // of a+b is easily derived from the hashes of a and b.  This property
 // doesn't hold for any hash functions in this file.
+#pragma once
 
-module;
+#include <cstdint>
+#include <memory>
 
-#include "Saturn/Defines.h"
-
-export module Saturn.Hash.CityHash;
-
-export struct Uint128_64 {
+struct Uint128_64 {
 	inline Uint128_64(uint64_t InLo, uint64_t InHi) : lo(InLo), hi(InHi) {}
 	uint64_t lo;
 	uint64_t hi;
 };
 
 // Hash function for a byte array.
-export uint64_t CityHash64(const char *buf, uint64_t len);
+uint64_t CityHash64(const char *s, uint32_t len);
 
 // Hash function for a byte array.  For convenience, a 64-bit seed is also
 // hashed into the result.
-export uint64_t CityHash64WithSeed(const char *buf, uint32_t len, uint64_t seed);
+uint64_t CityHash64WithSeed(const char *buf, uint32_t len, uint64_t seed);
 
 // Hash function for a byte array.  For convenience, two seeds are also
 // hashed into the result.
-export uint64_t CityHash64WithSeeds(const char *buf, uint32_t len,
+uint64_t CityHash64WithSeeds(const char *buf, uint32_t len,
 	uint64_t seed0, uint64_t seed1);
 
 // Hash function for a byte array.  Most useful in 32-bit binaries.
-export uint32_t CityHash32(const char *buf, uint32_t len);
+uint32_t CityHash32(const char *buf, uint32_t len);
 
 // Hash 128 input bits down to 64 bits of output.
 // This is intended to be a reasonably good hash function.
-export inline uint64_t CityHash128to64(const Uint128_64& x) {
+inline uint64_t CityHash128to64(const Uint128_64& x) {
 	// Murmur-inspired hashing.
 	const uint64_t kMul = 0x9ddfea08eb382d69ULL;
 	uint64_t a = (x.lo ^ x.hi) * kMul;

@@ -28,10 +28,7 @@
 // compromising on hash quality.
 
 //#include "config.h"
-import Saturn.Hash.CityHash;
-
-#include "Saturn/Defines.h"
-
+#include "CityHash.h"
 
 static uint64_t UNALIGNED_LOAD64(const char *p) {
 	uint64_t result;

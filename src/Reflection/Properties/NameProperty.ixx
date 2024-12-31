@@ -6,7 +6,7 @@ export module Saturn.Properties.NameProperty;
 
 export import Saturn.Reflection.FProperty;
 import Saturn.Readers.FArchive;
-import Saturn.Structs.Name
+import Saturn.Structs.Name;
 
 export class FNameProperty : public FProperty {
     class Value : public IPropValue {
@@ -24,6 +24,10 @@ export class FNameProperty : public FProperty {
             else if (Type == EPropertyType::StrProperty) {
                 ((std::string*)OutBuffer)->assign(Name.GetText());
             }
+        }
+
+        __forceinline void Write(FArchive& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
+            Ar >> Name;
         }
     };
 
