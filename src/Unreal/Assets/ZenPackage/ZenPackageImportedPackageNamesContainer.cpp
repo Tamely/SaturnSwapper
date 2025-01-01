@@ -8,12 +8,18 @@ import Saturn.Asset.NameMap;
 import Saturn.Readers.FArchive;
 
 FArchive& operator<<(FArchive& Ar, FZenPackageImportedPackageNamesContainer& Container) {
-    std::vector<FName> NameEntries = FNameMap::LoadNameBatch(Ar);
+    std::vector<std::wstring> NameEntries = FNameMap::LoadNameBatch(Ar);
     Container.Names.resize(NameEntries.size());
     for (int32_t Index = 0; Index < NameEntries.size(); ++Index) {
         int32_t Number;
         Ar << Number;
-        Container.Names[Index] = FName(NameEntries[Index].NameMap, NameEntries[Index].Index, Number);
+
+        std::wstring Name = NameEntries[Index];
+        if (Number > 0) {
+            Name += L"_" + std::to_wstring(Number + 1);
+        }
+        
+        Container.Names[Index] = Name;
     }
 
     return Ar;

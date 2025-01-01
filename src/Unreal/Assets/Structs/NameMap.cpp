@@ -24,6 +24,11 @@ struct FNameBatchLoader {
         Ar << Num;
 
         if (Num == 0) {
+            Hashes.clear();
+            Headers.clear();
+            Strings.clear();
+            Data.clear();
+            
             return false;
         }
 
@@ -40,26 +45,56 @@ struct FNameBatchLoader {
         Data.resize(NumHashBytes + NumHeaderBytes + NumStringBytes);
         Ar.Serialize(Data.data(), Data.size());
 
-        std::vector<uint64_t> SavedHashes(reinterpret_cast<uint64_t*>(Data.data()), reinterpret_cast<uint64_t*>(Data.data()) + Num);
+        Hashes.resize(Num);
+        std::memcpy(Hashes.data(), Data.data(), NumHashBytes);
 
-        Hashes = bUseSavedHashes ? SavedHashes : std::vector<uint64_t>();
+        Headers.resize(Num);
+        std::memcpy(Headers.data(), Data.data() + NumHashBytes, NumHeaderBytes);
 
-        std::vector<FSerializedNameHeader> Headers(reinterpret_cast<FSerializedNameHeader*>(SavedHashes.data() + SavedHashes.size()), reinterpret_cast<FSerializedNameHeader*>(SavedHashes.data() + SavedHashes.size() + (sizeof(FSerializedNameHeader) * Num)));
+        Strings.resize(NumStringBytes);
+        std::memcpy(Strings.data(), Data.data() + NumHashBytes + NumHeaderBytes, NumStringBytes);
 
-        std::vector<uint8_t> Strings(reinterpret_cast<uint8_t*>(Headers.data() + Headers.size()), reinterpret_cast<uint8_t*>(Headers.data() + Headers.size() + NumStringBytes));
+        if (!bUseSavedHashes) {
+            Hashes.clear();
+        }
 
         return true;
     }
+
+    std::vector<std::wstring> Load() {
+        std::vector<std::wstring> Out(Headers.size());
+
+        uint32_t Pos = 0;
+        for (size_t i = 0; i < Headers.size(); ++i) {
+            const FSerializedNameHeader& Header = Headers[i];
+            uint32_t Length = Header.Length();
+
+            if (Header.IsUTF16()) {
+                if (Pos + Length * 2 > Strings.size()) break; // Boundary check
+                std::wstring name(reinterpret_cast<wchar_t*>(Strings.data() + Pos), Length);
+                Out[i] = name;
+                Pos += Length * 2;
+            }
+            else {
+                if (Pos + Length > Strings.size()) break; // Boundary check
+                std::string name(reinterpret_cast<char*>(Strings.data() + Pos), Length);
+                Out[i] = std::wstring(name.begin(), name.end());
+                Pos += Length;
+            }
+        }
+
+        return Out;
+    }
 };
 
-std::vector<FName> FNameMap::LoadNameBatch(FArchive& Ar) {
+std::vector<std::wstring> FNameMap::LoadNameBatch(FArchive& Ar) {
     FNameBatchLoader Loader;
 
     if (Loader.Read(Ar)) {
-        //return Loader.Load();
+        return Loader.Load();
     }
 
-    return std::vector<FName>();
+    return std::vector<std::wstring>();
 }
 
 void FNameMap::Load(FArchive& Ar, FMappedName::EType InNameMapType) {

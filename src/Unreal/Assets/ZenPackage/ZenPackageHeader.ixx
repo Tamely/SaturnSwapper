@@ -21,7 +21,7 @@ export struct FZenPackageHeader {
     uint32_t ExportCount = 0; // Need to keep this count around after ExportMap is cleared
     //std::optional<FZenPackageVersioningInfo> VersioningInfo; // this isn't used by Fortnite, so I'm just not going to do it
     FNameMap NameMap;
-    FName PackageName;
+    std::wstring PackageName;
 
     // Backend by IoBuffer
     FZenPackageSummary* PackageSummary = nullptr;
@@ -33,7 +33,7 @@ export struct FZenPackageHeader {
     std::vector<FDependencyBundleHeader> DependencyBundleHeaders;
     std::vector<FDependencyBundleEntry> DependencyBundleEntries;
 
-    std::vector<FName> ImportedPackageNames;
+    std::vector<std::wstring> ImportedPackageNames;
 
     static FZenPackageHeader MakeView(std::vector<uint8_t>& Memory);
     static FZenPackageHeader MakeView(std::vector<uint8_t>& Memory, std::string& OutError);

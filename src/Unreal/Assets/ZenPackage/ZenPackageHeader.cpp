@@ -64,7 +64,7 @@ FZenPackageHeader FZenPackageHeader::MakeView(std::vector<uint8_t>& Memory, std:
     const int32_t ExportBundleEntriesCount = static_cast<int32_t>(ExportBundleEntriesSize / sizeof(FExportBundleEntry));
 
     if (ExportBundleEntriesCount != PackageHeader.ExportCount * FExportBundleEntry::ExportCommandType_Count) {
-        OutError = "Corrupt Zen header in package " + PackageHeader.PackageName.GetText();
+        OutError = "Corrupt Zen header in package " + std::string(PackageHeader.PackageName.begin(), PackageHeader.PackageName.end());
         return PackageHeader;
     }
 

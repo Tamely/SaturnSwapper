@@ -1,12 +1,12 @@
 export module Saturn.ZenPackage.ZenPackageImportedPackageNamesContainer;
 
+import <string>;
 import <vector>;
 
-import Saturn.Structs.Name;
 import Saturn.Readers.FArchive;
 
 export struct FZenPackageImportedPackageNamesContainer {
-    std::vector<FName> Names;
+    std::vector<std::wstring> Names;
 
     friend FArchive& operator<<(FArchive& Ar, FZenPackageImportedPackageNamesContainer& Container);
 };
