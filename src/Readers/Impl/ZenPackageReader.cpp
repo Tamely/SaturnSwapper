@@ -4,6 +4,7 @@ import <string>;
 import <vector>;
 import <cstdint>;
 
+import Saturn.Core.IoStatus;
 import Saturn.Structs.Name;
 import Saturn.Asset.NameMap;
 import Saturn.Misc.IoBuffer;
@@ -16,6 +17,18 @@ import Saturn.Asset.DependencyBundleEntry;
 import Saturn.ZenPackage.ZenPackageHeader;
 import Saturn.Asset.DependencyBundleHeader;
 import Saturn.ZenPackage.ZenPackageSummary;
+
+std::string& FZenPackageReader::GetError() {
+    return Error;
+}
+
+FIoStatus& FZenPackageReader::GetStatus() {
+    return Status;
+}
+
+bool FZenPackageReader::IsOk() {
+    return Status == FIoStatus::Ok;
+}
 
 uint32_t FZenPackageReader::GetCookedHeaderSize() {
     return Header.CookedHeaderSize;
