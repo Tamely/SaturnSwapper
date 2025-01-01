@@ -11,8 +11,6 @@ import <mutex>;
 import Saturn.Structs.Guid;
 import Saturn.Encryption.AES;
 
-import Saturn.IoStore.IoStoreReader;
-
 export class FFileProvider {
 public:
     FFileProvider(const std::string& PakDirectory);
@@ -24,10 +22,10 @@ public:
     void Mount();
     void Unmount();
 public:
-    std::vector<FIoStoreReader*>& GetArchives() { return TocArchives; }
+    std::vector<class FIoStoreReader*>& GetArchives() { return TocArchives; }
 private:
     TMap<FGuid, FAESKey> DecryptionKeys;
     std::vector<std::string> ArchivePaths;
-    std::vector<FIoStoreReader*> TocArchives;
+    std::vector<class FIoStoreReader*> TocArchives;
     std::mutex TocArchivesMutex;
 };

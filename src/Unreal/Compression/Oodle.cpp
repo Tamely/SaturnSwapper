@@ -1,9 +1,11 @@
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#include <filesystem>
 #include <xxhash/xxhash.h>
-#include <fstream>
 
 import Saturn.Compression.Oodle;
+
+import <filesystem>;
+import <fstream>;
 
 #define OODLELZ_BLOCK_LEN (1<<18)
 #define OODLELZ_BLOCK_MAXIMUM_EXPANSION (2)

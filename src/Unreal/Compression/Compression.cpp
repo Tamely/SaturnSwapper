@@ -1,7 +1,7 @@
-#include <string>
-
 import Saturn.Compression;
 import Saturn.Compression.Oodle;
+
+import <string>;
 
 bool FCompression::VerifyCompressionFlagsValid(int32_t InCompressionFlags) {
 	const int32_t CompressionFlagsMask = COMPRESS_DeprecatedFormatFlagsMask | COMPRESS_OptionsFlagsMask | COMPRESS_ForPurposeMask;
@@ -41,7 +41,7 @@ int64_t FCompression::CompressMemoryBound(const std::string& FormatName, int32_t
 
 void FCompression::CompressMemory(const std::string& FormatName, const void* UncompressedBuffer, int32_t UncompressedSize, void* CompressedBuffer, int32_t* CompressedSize) {
 	if (UncompressedSize == *CompressedSize) {
-		memcpy_s(CompressedBuffer, *CompressedSize, UncompressedBuffer, *CompressedSize);
+		memcpy(CompressedBuffer, UncompressedBuffer, UncompressedSize);
 		return;
 	}
 
@@ -65,7 +65,7 @@ void FCompression::CompressMemory(const std::string& FormatName, const void* Unc
 
 void FCompression::DecompressMemory(const std::string& FormatName, void* UncompressedBuffer, int32_t UncompressedSize, const void* CompressedBuffer, int32_t CompressedSize) {
 	if (UncompressedSize == CompressedSize) {
-		memcpy_s(UncompressedBuffer, CompressedSize, CompressedBuffer, CompressedSize);
+		memcpy(UncompressedBuffer, CompressedBuffer, CompressedSize);
 		return;
 	}
 

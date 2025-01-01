@@ -1,6 +1,7 @@
 export module Saturn.Compression;
 
 import <string>;
+import <cstdint>;
 
 export enum ECompressionFlags {
 	/** No compression																*/
@@ -33,10 +34,11 @@ export enum ECompressionFlags {
 	COMPRESS_ForPurposeMask = 0xF00,
 };
 
-export namespace FCompression {
-	bool __forceinline VerifyCompressionFlagsValid(int32_t InCompressionFlags);
-	int64_t __forceinline GetMaximumCompressedSize(const std::string& FormatName, int32_t UncompressedSize, ECompressionFlags Flags = COMPRESS_NoFlags, int32_t CompressionData = 0);
-	int64_t __forceinline CompressMemoryBound(const std::string& FormatName, int32_t UncompressedSize, ECompressionFlags Flags, int32_t CompressionData);
-	void __forceinline CompressMemory(const std::string& FormatName, const void* UncompressedBuffer, int32_t UncompressedSize, void* CompressedBuffer, int32_t* CompressedSize);
-	void __forceinline DecompressMemory(const std::string& FormatName, void* UncompressedBuffer, int32_t UncompressedSize, const void* CompressedBuffer, int32_t CompressedSize);
-}
+export class FCompression {
+public:
+    static bool VerifyCompressionFlagsValid(int32_t InCompressionFlags);
+	static int64_t GetMaximumCompressedSize(const std::string& FormatName, int32_t UncompressedSize, ECompressionFlags Flags = COMPRESS_NoFlags, int32_t CompressionData = 0);
+	static int64_t CompressMemoryBound(const std::string& FormatName, int32_t UncompressedSize, ECompressionFlags Flags, int32_t CompressionData);
+	static void CompressMemory(const std::string& FormatName, const void* UncompressedBuffer, int32_t UncompressedSize, void* CompressedBuffer, int32_t* CompressedSize);
+	static void DecompressMemory(const std::string& FormatName, void* UncompressedBuffer, int32_t UncompressedSize, const void* CompressedBuffer, int32_t CompressedSize);
+};
