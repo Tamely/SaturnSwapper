@@ -4,39 +4,24 @@ import Saturn.Readers.FArchive;
 
 import <cstdint>;
 
-export class FSerializedNameHeader {
-public:
-	const int Size = 2;
-public:
-	FSerializedNameHeader() : _data0(0), _data1(0) {}
-
-	FSerializedNameHeader(FArchive& Ar) {
-		Ar << _data0;
-		Ar << _data1;
-	}
-public:
-	FSerializedNameHeader operator=(const FSerializedNameHeader& other) {
-		_data0 = other._data0;
-		_data1 = other._data1;
-		return *this;
+export struct FSerializedNameHeader {
+	FSerializedNameHeader() {}
+	FSerializedNameHeader(uint32_t Len, bool bIsUtf16) {
+		Data[0] = uint8_t(bIsUtf16) << 7 | static_cast<uint8_t>(Len >> 8);
+		Data[1] = static_cast<uint8_t>(Len);
 	}
 
-	bool operator==(const FSerializedNameHeader& other) const {
-		return _data0 == other._data0 && _data1 == other._data1;
+	uint8_t IsUtf16() const {
+		return Data[0] & 0x80u;
 	}
 
-	bool operator!=(const FSerializedNameHeader& other) const {
-		return !(*this == other);
+	uint32_t Len() const {
+		return ((Data[0] & 0x7Fu) << 8) + Data[1];
 	}
 
-	bool IsUTF16() const {
-		return (_data0 & 0x80) != 0;
+	uint32_t NumBytes() const {
+		return IsUtf16() ? sizeof(wchar_t) * Len() : sizeof(char) * Len();
 	}
 
-	uint32_t Length() const {
-		return ((_data0 & 0x7F) << 8) + _data1;
-	}
-private:
-	uint8_t _data0;
-	uint8_t _data1;
+	uint8_t Data[2];
 };

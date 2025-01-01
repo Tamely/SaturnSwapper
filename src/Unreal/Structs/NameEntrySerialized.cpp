@@ -38,28 +38,25 @@ std::vector<FNameEntrySerialized> FNameEntrySerialized::LoadNameBatch(FArchive& 
 	Ar.SeekCur(nameCount * sizeof(uint64_t)); // Skip hashes
 
 	std::vector<FSerializedNameHeader> headers(nameCount);
-	for (int i = 0; i < nameCount; i++) {
-		headers[i] = FSerializedNameHeader(Ar);
-	}
+	Ar.Serialize(&headers, nameCount * sizeof(FSerializedNameHeader));
 
 	std::vector<FNameEntrySerialized> entries(nameCount);
 	for (int i = 0; i < nameCount; i++) {
 		FSerializedNameHeader& header = headers[i];
-		uint32_t length = header.Length();
 
 		std::string s;
-		if (header.IsUTF16())
+		if (header.IsUtf16())
 		{
-			auto WStringData = std::make_unique<wchar_t[]>(header.Length());
-			Ar.Serialize(WStringData.get(), header.Length() * sizeof(wchar_t));
+			auto WStringData = std::make_unique<wchar_t[]>(header.Len());
+			Ar.Serialize(WStringData.get(), header.NumBytes());
 
 			auto Temp = std::wstring(WStringData.get());
 			s.assign(Temp.begin(), Temp.end());
 		}
 		else
 		{
-			s.resize(header.Length());
-			Ar.Serialize(&s[0], header.Length());
+			s.resize(header.Len());
+			Ar.Serialize(&s[0], header.NumBytes());
 		}
 
 		entries[i] = FNameEntrySerialized(s);
@@ -69,16 +66,16 @@ std::vector<FNameEntrySerialized> FNameEntrySerialized::LoadNameBatch(FArchive& 
 }
 
 FNameEntrySerialized FNameEntrySerialized::LoadNameHeader(FArchive& Ar) {
-	FSerializedNameHeader header = FSerializedNameHeader(Ar);
+	FSerializedNameHeader header;
+	Ar.Serialize(&header, sizeof(FSerializedNameHeader));
 
-	uint32_t length = header.Length();
-	if (header.IsUTF16()) {
+	if (header.IsUtf16()) {
 		if (Ar.Tell() % 2 == 1) Ar.SeekCur(1);
 
 		std::string s;
 
-		auto WStringData = std::make_unique<wchar_t[]>(length);
-		Ar.Serialize(WStringData.get(), length * sizeof(wchar_t));
+		auto WStringData = std::make_unique<wchar_t[]>(header.Len());
+		Ar.Serialize(WStringData.get(), header.NumBytes());
 		auto Temp = std::wstring(WStringData.get());
 		s.assign(Temp.begin(), Temp.end());
 
@@ -86,7 +83,7 @@ FNameEntrySerialized FNameEntrySerialized::LoadNameHeader(FArchive& Ar) {
 	}
 
 	std::string s;
-	s.resize(length);
-	Ar.Serialize(&s[0], length);
+	s.resize(header.Len());
+	Ar.Serialize(&s[0], header.NumBytes());
 	return FNameEntrySerialized(s);
 }

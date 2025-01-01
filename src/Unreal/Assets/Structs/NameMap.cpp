@@ -67,20 +67,17 @@ struct FNameBatchLoader {
         uint32_t Pos = 0;
         for (size_t i = 0; i < Headers.size(); ++i) {
             const FSerializedNameHeader& Header = Headers[i];
-            uint32_t Length = Header.Length();
+            if (Pos + Header.NumBytes() > Strings.size()) break; // Boundary check
 
-            if (Header.IsUTF16()) {
-                if (Pos + Length * 2 > Strings.size()) break; // Boundary check
-                std::wstring name(reinterpret_cast<wchar_t*>(Strings.data() + Pos), Length);
+            if (Header.IsUtf16()) {
+                std::wstring name(reinterpret_cast<wchar_t*>(Strings.data() + Pos), Header.NumBytes());
                 Out[i] = name;
-                Pos += Length * 2;
             }
             else {
-                if (Pos + Length > Strings.size()) break; // Boundary check
-                std::string name(reinterpret_cast<char*>(Strings.data() + Pos), Length);
+                std::string name(reinterpret_cast<char*>(Strings.data() + Pos), Header.NumBytes());
                 Out[i] = std::wstring(name.begin(), name.end());
-                Pos += Length;
             }
+            Pos += Header.NumBytes();
         }
 
         return Out;
