@@ -15,7 +15,7 @@ import Saturn.VFS.FileSystem;
 import Saturn.Core.IoStatus;
 import Saturn.Misc.IoBuffer;
 import Saturn.Compression.Oodle;
-import Saturn.ZenPackage.ZenPackageHeader;
+import Saturn.Readers.ZenPackageReader;
 import Saturn.Structs.IoStoreTocChunkInfo;
 
 import <optional>;
@@ -51,8 +51,8 @@ int main(int argc, char* argv[]) {
 	else {
 		FIoBuffer buffer = bufferStatus.ConsumeValueOrDie();
 		LOG_INFO("Read succeeded! Buffer size: {0}", buffer.GetSize());
-		std::vector<uint8_t> bufferAsVector(buffer.Data(), buffer.Data() + buffer.DataSize());
-		FZenPackageHeader bufferHeader = FZenPackageHeader::MakeView(bufferAsVector);
+		FZenPackageReader Ar(buffer);
+		LOG_INFO("Package Name: {0}", std::string(Ar.GetPackageName().begin(), Ar.GetPackageName().end()));
 	}
 
 	if (argc >= 3) {
