@@ -5,7 +5,7 @@ import <vector>;
 
 import Saturn.Readers.FArchive;
 
-import Saturn.Asset.MappedName;
+import Saturn.Structs.MappedName;
 import Saturn.Structs.NameEntrySerialized;
 
 export class ZenAsset {

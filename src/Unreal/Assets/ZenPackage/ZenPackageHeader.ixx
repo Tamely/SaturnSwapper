@@ -1,4 +1,4 @@
-export module Saturn.Asset.ZenPackageHeader;
+export module Saturn.ZenPackage.ZenPackageHeader;
 
 import <vector>;
 import <string>;
@@ -14,22 +14,23 @@ import Saturn.Asset.ExportBundleEntry;
 import Saturn.Asset.PackageObjectIndex;
 import Saturn.Asset.DependencyBundleEntry;
 import Saturn.Asset.DependencyBundleHeader;
+import Saturn.ZenPackage.ZenPackageSummary;
 
 export struct FZenPackageHeader {
     uint32_t CookedHeaderSize = 0;
     uint32_t ExportCount = 0; // Need to keep this count around after ExportMap is cleared
-    //std::optional<FZenPackageVersioningInfo> VersioningInfo;
+    //std::optional<FZenPackageVersioningInfo> VersioningInfo; // this isn't used by Fortnite, so I'm just not going to do it
     FNameMap NameMap;
     FName PackageName;
 
     // Backend by IoBuffer
-    //const FZenPackageSummary* PackageSummary = nullptr;
+    FZenPackageSummary* PackageSummary = nullptr;
     std::vector<uint64_t> ImportedPublicExportHashes;
     std::vector<FPackageObjectIndex> ImportMap;
     std::vector<FExportMapEntry> ExportMap;
     std::vector<FBulkDataMapEntry> BulkDataMap;
     std::vector<FExportBundleEntry> ExportBundleEntries;
-    std::vector<FDependencyBundleHeader> DependencyBundleHeders;
+    std::vector<FDependencyBundleHeader> DependencyBundleHeaders;
     std::vector<FDependencyBundleEntry> DependencyBundleEntries;
 
     std::vector<FName> ImportedPackageNames;

@@ -4,8 +4,9 @@ import <string>;
 import <vector>;
 import <cstdint>;
 
-import Saturn.Asset.MappedName;
+import Saturn.Structs.Name;
 import Saturn.Readers.FArchive;
+import Saturn.Structs.MappedName;
 import Saturn.Structs.SerializedNameHeader;
 
 bool CanUseSavedHashes(uint64_t HashVersion) {
@@ -43,28 +44,22 @@ struct FNameBatchLoader {
 
         Hashes = bUseSavedHashes ? SavedHashes : std::vector<uint64_t>();
 
-        std::vector<FSerializedNameHeader> Headers(
-            reinterpret_cast<FSerializedNameHeader*>(SavedHashes.data() + SavedHashes.size()),
-            reinterpret_cast<FSerializedNameHeader*>(SavedHashes.data() + SavedHashes.size() + Num)
-        );
+        std::vector<FSerializedNameHeader> Headers(reinterpret_cast<FSerializedNameHeader*>(SavedHashes.data() + SavedHashes.size()), reinterpret_cast<FSerializedNameHeader*>(SavedHashes.data() + SavedHashes.size() + (sizeof(FSerializedNameHeader) * Num)));
 
-        std::vector<uint8_t> Strings(
-            reinterpret_cast<uint8_t*>(Headers.data() + Headers.size()),
-            reinterpret_cast<uint8_t*>(Headers.data() + Headers.size() + NumStringBytes)
-        );
+        std::vector<uint8_t> Strings(reinterpret_cast<uint8_t*>(Headers.data() + Headers.size()), reinterpret_cast<uint8_t*>(Headers.data() + Headers.size() + NumStringBytes));
 
         return true;
     }
 };
 
-std::vector<std::string> LoadNameBatch(FArchive& Ar) {
+std::vector<FName> FNameMap::LoadNameBatch(FArchive& Ar) {
     FNameBatchLoader Loader;
 
     if (Loader.Read(Ar)) {
         //return Loader.Load();
     }
 
-    return std::vector<std::string>();
+    return std::vector<FName>();
 }
 
 void FNameMap::Load(FArchive& Ar, FMappedName::EType InNameMapType) {

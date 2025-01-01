@@ -1,7 +1,7 @@
 import Saturn.Asset.ExportMapEntry;
 
 import Saturn.Core.UObject;
-import Saturn.Asset.MappedName;
+import Saturn.Structs.MappedName;
 import Saturn.Readers.FArchive;
 import Saturn.Asset.ExportFilterFlags;
 import Saturn.Asset.PackageObjectIndex;

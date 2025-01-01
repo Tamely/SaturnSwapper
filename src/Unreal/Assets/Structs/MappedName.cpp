@@ -1,4 +1,4 @@
-import Saturn.Asset.MappedName;
+import Saturn.Structs.MappedName;
 
 import Saturn.Readers.FArchive;
 

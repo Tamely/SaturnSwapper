@@ -1,4 +1,4 @@
-export module Saturn.Asset.MappedName;
+export module Saturn.Structs.MappedName;
 
 import <cstdint>;
 

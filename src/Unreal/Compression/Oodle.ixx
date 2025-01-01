@@ -59,10 +59,9 @@ export typedef intptr_t(*OodleCompressionFunc)(
 	intptr_t scratchSize);
 
 export class Oodle {
-public:
 	static inline OodleCompressionFunc OodleLZ_Compress;
 	static inline OodleDecompressionFunc OodleLZ_Decompress;
-
+public:
 	static void LoadDLL(const char* DllPath);
 	static void Compress(void* compressedData, int32_t* compressedSize, const void* decompressedData, intptr_t decompressedSize);
 	static void Decompress(const void* compressedData, intptr_t compressedSize, void* decompressedData, intptr_t decompressedSize);

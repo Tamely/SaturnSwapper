@@ -72,8 +72,8 @@ public:
 	int Index;
 	int Number;
 	bool ShouldCalculateName = false;
-private:
 	static std::vector<FNameEntrySerialized> NameMap;
+private:
 	static const uint32_t AssetRegistryNumberedNameBit = 0x80000000u; // int32 max
 	FNameEntrySerialized _name;
 };
