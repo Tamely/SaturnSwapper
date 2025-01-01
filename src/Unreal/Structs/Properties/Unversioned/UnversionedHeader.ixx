@@ -3,6 +3,7 @@ export module Saturn.Unversioned.UnversionedHeader;
 import <cstdint>;
 import <vector>;
 
+import Saturn.Core.IoStatus;
 import Saturn.Readers.FArchive;
 import Saturn.Unversioned.Fragment;
 
@@ -10,14 +11,16 @@ import Saturn.Unversioned.Fragment;
 export class FUnversionedHeader {
 public:
     void Save(FArchive& Ar) const;
-    void Load(FArchive& Ar);
+    FIoStatus Load(FArchive& Ar);
     bool HasValues() const;
     bool HasNonZeroValues() const;
 protected:
     void SaveZeroMaskData(FArchive& Ar, uint32_t NumBits, const uint32_t* Data) const;
-    void LoadZeroMaskData(FArchive& Ar, uint32_t NumBits, uint32_t* Data);
+    FIoStatus LoadZeroMaskData(FArchive& Ar, uint32_t NumBits, uint32_t* Data);
 protected:
     std::vector<FFragment> Fragments;
     bool bHasNonZeroValues = false;
     std::vector<uint32_t> ZeroMask;
+
+    friend class FZenPackageReader;
 };

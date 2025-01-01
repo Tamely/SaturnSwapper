@@ -17,67 +17,76 @@ import Saturn.Asset.DependencyBundleEntry;
 import Saturn.ZenPackage.ZenPackageHeader;
 import Saturn.Asset.DependencyBundleHeader;
 import Saturn.ZenPackage.ZenPackageSummary;
-
-std::string& FZenPackageReader::GetError() {
-    return Error;
-}
+import Saturn.Unversioned.UnversionedHeader;
 
 FIoStatus& FZenPackageReader::GetStatus() {
     return Status;
 }
 
 bool FZenPackageReader::IsOk() {
-    return Status == FIoStatus::Ok;
+    return Status.IsOk();
+}
+
+void FZenPackageReader::LoadProperties() {
+    Status = PropertyHeader.Load(*this);
 }
 
 uint32_t FZenPackageReader::GetCookedHeaderSize() {
-    return Header.CookedHeaderSize;
+    return PackageHeader.CookedHeaderSize;
 }
 
 uint32_t FZenPackageReader::GetExportCount() {
-    return Header.ExportCount;
+    return PackageHeader.ExportCount;
 }
 
 FNameMap& FZenPackageReader::GetNameMap() {
-    return Header.NameMap;
+    return PackageHeader.NameMap;
 }
 
 std::wstring& FZenPackageReader::GetPackageName() {
-    return Header.PackageName;
+    return PackageHeader.PackageName;
 }
 
 FZenPackageSummary* FZenPackageReader::GetPackageSummary() {
-    return Header.PackageSummary;
+    return PackageHeader.PackageSummary;
 }
 
 std::vector<uint64_t>& FZenPackageReader::GetImportedPublicExportHashes() {
-    return Header.ImportedPublicExportHashes;
+    return PackageHeader.ImportedPublicExportHashes;
 }
 
 std::vector<FPackageObjectIndex>& FZenPackageReader::GetImportMap() {
-    return Header.ImportMap;
+    return PackageHeader.ImportMap;
 }
 
 std::vector<FExportMapEntry>& FZenPackageReader::GetExportMap() {
-    return Header.ExportMap;
+    return PackageHeader.ExportMap;
 }
 
 std::vector<FBulkDataMapEntry>& FZenPackageReader::GetBulkDataMap() {
-    return Header.BulkDataMap;
+    return PackageHeader.BulkDataMap;
 }
 
 std::vector<FExportBundleEntry>& FZenPackageReader::GetExportBundleEntries() {
-    return Header.ExportBundleEntries;
+    return PackageHeader.ExportBundleEntries;
 }
 
 std::vector<FDependencyBundleHeader>& FZenPackageReader::GetDependencyBundleHeaders() {
-    return Header.DependencyBundleHeaders;
+    return PackageHeader.DependencyBundleHeaders;
 }
 
 std::vector<FDependencyBundleEntry>& FZenPackageReader::GetDependencyBundleEntries() {
-    return Header.DependencyBundleEntries;
+    return PackageHeader.DependencyBundleEntries;
 }
 
 std::vector<std::wstring>& FZenPackageReader::GetImportedPackageNames() {
-    return Header.ImportedPackageNames;
+    return PackageHeader.ImportedPackageNames;
+}
+
+std::vector<class FFragment>& FZenPackageReader::GetFragments() {
+    return PropertyHeader.Fragments;
+}
+
+std::vector<uint32_t>& FZenPackageReader::GetZeroMask() {
+    return PropertyHeader.ZeroMask;
 }
