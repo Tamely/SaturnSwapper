@@ -4,6 +4,7 @@ import <string>;
 import <vector>;
 import <cstdint>;
 
+import Saturn.Core.UObject;
 import Saturn.Core.IoStatus;
 import Saturn.Misc.IoBuffer;
 import Saturn.Readers.MemoryReader;
@@ -44,7 +45,7 @@ public:
     FIoStatus& GetStatus();
     bool IsOk();
 
-    void LoadProperties();
+    void LoadProperties(UStructPtr Struct, UObjectPtr Object);
 
     uint32_t GetCookedHeaderSize();
     uint32_t GetExportCount();
@@ -59,9 +60,6 @@ public:
     std::vector<class FDependencyBundleHeader>& GetDependencyBundleHeaders();
     std::vector<class FDependencyBundleEntry>& GetDependencyBundleEntries();
     std::vector<std::wstring>& GetImportedPackageNames();
-
-    std::vector<class FFragment>& GetFragments();
-    std::vector<uint32_t>& GetZeroMask();
 private:
     FIoStatus Status = FIoStatus::Ok;
 

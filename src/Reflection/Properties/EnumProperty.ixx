@@ -4,12 +4,12 @@ module;
 
 export module Saturn.Properties.EnumProperty;
 
-export import Saturn.Reflection.FProperty;
-import Saturn.Structs.Name;
-import Saturn.Readers.FArchive;
-
 import <string>;
 import <vector>;
+
+import Saturn.Structs.Name;
+import Saturn.Readers.ZenPackageReader;
+export import Saturn.Reflection.FProperty;
 
 export struct FReflectedEnum {
     std::vector<std::string> Enum;
@@ -38,7 +38,7 @@ public:
             }
         }
 
-        void Write(FArchive& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
+        void Write(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
             uint8_t valAsByte = static_cast<uint8_t>(BinaryValue);
             Ar >> valAsByte;
         }
@@ -59,7 +59,7 @@ public:
         return Enum->EnumName;
     }
 
-    TUniquePtr<class IPropValue> Serialize(FArchive& Ar) override {
+    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<Value>();
 
         if (Enum and UnderlyingProp) {

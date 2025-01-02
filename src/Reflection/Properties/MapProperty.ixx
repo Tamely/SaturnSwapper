@@ -5,8 +5,8 @@ module;
 
 export module Saturn.Properties.MapProperty;
 
+import Saturn.Readers.ZenPackageReader;
 export import Saturn.Reflection.FProperty;
-import Saturn.Readers.FArchive;
 
 template <typename K, typename V>
 using TOrderedMap = tsl::ordered_map<K, V>;
@@ -31,7 +31,7 @@ public:
             
         }
 
-        void Write(FArchive& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
+        void Write(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
             Ar >> static_cast<uint32_t>(KeysToRemove.size());
             for (TSharedPtr<IPropValue> key : KeysToRemove) {
                 key->Write(Ar);
@@ -45,7 +45,7 @@ public:
         }
     };
 
-    TUniquePtr<class IPropValue> Serialize(FArchive& Ar) override {
+    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<Value>();
 
         int32_t NumKeysToRemove = 0;

@@ -10,7 +10,7 @@ export import Saturn.Reflection.PropertyValue;
 export class FProperty {
 public:
     friend class FPropertyFactory;
-    //friend struct FUnversionedSerializer;
+    friend struct FZenPackageReader;
     friend class Mappings;
 
     virtual ~FProperty() = default;
@@ -26,9 +26,7 @@ public:
     __forceinline uint8_t GetArrayDim() { return ArrayDim; }
     __forceinline FProperty* GetNext() { return Next; }
 
-    virtual TUniquePtr<class IPropValue> Serialize(class FArchive& Ar) {
+    virtual TUniquePtr<class IPropValue> Serialize(class FZenPackageReader& Ar) {
         return nullptr;
     }
-
-    virtual void Write(class FArchive& Ar) {}
 };

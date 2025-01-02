@@ -93,7 +93,7 @@ public:
 
     virtual bool IsAcceptableType(EPropertyType Type) = 0;
     virtual void PlaceValue(EPropertyType Type, void* OutBuffer) = 0;
-    virtual void Write(class FArchive& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) = 0;
+    virtual void Write(class FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) = 0;
 
     template <typename T>
     std::optional<T> TryGetValue() {

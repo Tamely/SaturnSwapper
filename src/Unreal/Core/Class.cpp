@@ -1,5 +1,5 @@
 import Saturn.Core.UObject;
-import Saturn.Readers.FArchive;
+import Saturn.Readers.ZenPackageReader;
 
 UStruct::~UStruct() {
     while (PropertyLink) {
@@ -17,6 +17,6 @@ void UStruct::SetSuper(UStructPtr Val) {
     Super = Val;
 }
 
-void UStruct::SerializeScriptProperties(FArchive& Ar, UObjectPtr Object) {
-    // TODO: Serialize properties
+void UStruct::SerializeScriptProperties(FZenPackageReader& Ar, UObjectPtr Object) {
+    Ar.LoadProperties(This<UStruct>(), Object);
 }

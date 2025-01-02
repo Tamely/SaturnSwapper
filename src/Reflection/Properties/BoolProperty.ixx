@@ -4,9 +4,8 @@ module;
 
 export module Saturn.Properties.BoolProperty;
 
+import Saturn.Readers.ZenPackageReader;
 export import Saturn.Reflection.FProperty;
-
-import Saturn.Readers.FArchive;
 
 export class FBoolProperty : public FProperty {
 public:
@@ -22,13 +21,13 @@ public:
             memcpy(OutBuffer, &Val, sizeof(Val));
         }
 
-        void Write(FArchive& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
+        void Write(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
             uint8_t val = Val == 1 ? 1 : 0;
             Ar >> val;
         }
     };
 
-    TUniquePtr<class IPropValue> Serialize(FArchive& Ar) override {
+    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<Value>();
 
         uint8_t ByteValue;

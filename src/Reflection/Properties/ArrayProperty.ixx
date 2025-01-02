@@ -4,10 +4,10 @@ module;
 
 export module Saturn.Properties.ArrayProperty;
 
-export import Saturn.Reflection.FProperty;
-
-import Saturn.Readers.FArchive;
 import <vector>;
+
+import Saturn.Readers.ZenPackageReader;
+export import Saturn.Reflection.FProperty;
 
 export class FArrayProperty : public FProperty {
 public:
@@ -36,7 +36,7 @@ public:
             }
         }
 
-        void Write(FArchive& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
+        void Write(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
             Ar >> Array.size();
 
             for (size_t i = 0; i < Array.size(); i++) {
@@ -47,7 +47,7 @@ public:
         }
     };
 
-    TUniquePtr<class IPropValue> Serialize(FArchive& Ar) override {
+    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<FArrayProperty::Value>();
 
         int32_t ArrayCount;

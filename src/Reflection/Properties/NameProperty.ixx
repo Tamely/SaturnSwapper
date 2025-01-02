@@ -4,9 +4,9 @@ module;
 
 export module Saturn.Properties.NameProperty;
 
-export import Saturn.Reflection.FProperty;
-import Saturn.Readers.FArchive;
 import Saturn.Structs.Name;
+import Saturn.Readers.ZenPackageReader;
+export import Saturn.Reflection.FProperty;
 
 export class FNameProperty : public FProperty {
     class Value : public IPropValue {
@@ -26,12 +26,12 @@ export class FNameProperty : public FProperty {
             }
         }
 
-        __forceinline void Write(FArchive& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
+        __forceinline void Write(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
             Ar >> Name;
         }
     };
 
-    TUniquePtr<IPropValue> Serialize(FArchive& Ar) override {
+    TUniquePtr<IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<Value>();
         Ar << Ret->Name;
 

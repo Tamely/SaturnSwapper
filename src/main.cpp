@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
 
 	TIoStatusOr<FIoBuffer> bufferStatus = VirtualFileSystem::GetBufferByPathAndExtension("/BRCosmetics/Athena/Items/Cosmetics/Characters/CID_028_Athena_Commando_F.uasset");
 	if (!bufferStatus.IsOk()) {
-		LOG_WARN("Failed read!");
+		LOG_WARN(bufferStatus.Status().ToString());
 		return 0;
 	}
 	FIoBuffer buffer = bufferStatus.ConsumeValueOrDie();
@@ -59,12 +59,14 @@ int main(int argc, char* argv[]) {
 	}
 	LOG_INFO("Package Name: {0}", std::string(Ar.GetPackageName().begin(), Ar.GetPackageName().end()));
 
+	/*
 	Ar.LoadProperties();
 	if (!Ar.IsOk()) {
 		LOG_WARN(Ar.GetStatus().ToString());
 		return 0;
 	}
 	LOG_INFO("Fragment Count: {0}", Ar.GetFragments().size());
+	*/
 
 	if (argc >= 3) {
 		FContext::Channel = argv[1]; // channel

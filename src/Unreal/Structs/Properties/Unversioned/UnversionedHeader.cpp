@@ -1,20 +1,22 @@
 import Saturn.Unversioned.UnversionedHeader;
 
+import Saturn.Core.UObject;
 import Saturn.Core.IoStatus;
 import Saturn.Readers.FArchive;
 import Saturn.Unversioned.Fragment;
+import Saturn.Reflection.PropertyIterator;
 
 import <cstdint>;
 import <vector>;
 
-void FUnversionedHeader::Save(FArchive& Ar) const {
+void FUnversionedHeader::Save(FArchive& Ar) {
     for (FFragment Fragment : Fragments) {
         uint16_t Packed = Fragment.Pack();
         Ar >> Packed;
     }
 
     if (ZeroMask.size() > 0) {
-        SaveZeroMaskData(Ar, ZeroMask.size(), ZeroMask.data());
+        SaveZeroMaskData(Ar, ZeroMask.size(), (uint32_t*)ZeroMask[0]._Getptr());
     }
 }
 
@@ -37,7 +39,7 @@ FIoStatus FUnversionedHeader::Load(FArchive& Ar) {
 
     if (ZeroMaskNum > 0) {
         ZeroMask.reserve(ZeroMaskNum);
-        FIoStatus status = LoadZeroMaskData(Ar, ZeroMaskNum, ZeroMask.data());
+        FIoStatus status = LoadZeroMaskData(Ar, ZeroMaskNum, (uint32_t*)ZeroMask[0]._Getptr());
         if (!status.IsOk()) {
             return status;
         }
@@ -105,4 +107,50 @@ FIoStatus FUnversionedHeader::LoadZeroMaskData(FArchive& Ar, uint32_t NumBits, u
     }
 
     return FIoStatus::Ok;
+}
+
+FUnversionedIterator::FUnversionedIterator(const FUnversionedHeader& Header, UStructPtr& Struct)
+    : It(Struct), ZeroMask(Header.ZeroMask), FragmentIt(Header.Fragments.data()), bDone(!Header.HasValues()) {
+    if (!bDone) {
+        Skip();
+    }
+}
+
+void FUnversionedIterator::Next() {
+    ++It;
+    --RemainingFragmentValues;
+    ZeroMaskIndex += FragmentIt->bHasAnyZeroes;
+
+    if (RemainingFragmentValues == 0) {
+        if (FragmentIt->bIsLast) {
+            bDone = true;
+        }
+        else {
+            ++FragmentIt;
+            Skip();
+        }
+    }
+}
+
+FUnversionedIterator::operator bool() const {
+    return !bDone;
+}
+
+bool FUnversionedIterator::IsNonZero() const {
+    return !FragmentIt->bHasAnyZeroes || !ZeroMask[ZeroMaskIndex];
+}
+
+FProperty* FUnversionedIterator::operator*() {
+    return *It;
+}
+
+void FUnversionedIterator::Skip() {
+    It += FragmentIt->SkipNum;
+
+    while (FragmentIt->ValueNum == 0) {
+        ++FragmentIt;
+        It += FragmentIt->SkipNum;
+    }
+
+    RemainingFragmentValues = FragmentIt->ValueNum;
 }

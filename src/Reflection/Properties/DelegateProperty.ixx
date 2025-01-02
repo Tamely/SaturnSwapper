@@ -4,10 +4,9 @@ module;
 
 export module Saturn.Properties.DelegateProperty;
 
+import Saturn.Readers.ZenPackageReader;
 export import Saturn.Reflection.FProperty;
 import Saturn.Delegates.MulticastScriptDelegate;
-
-import Saturn.Readers.FArchive;
 
 export class FDelegateProperty : public FProperty {
 public:
@@ -28,10 +27,10 @@ public:
             }
         }
 
-        void Write(FArchive& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {}
+        void Write(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {}
     };
 
-    TUniquePtr<class IPropValue> Serialize(FArchive& Ar) override {
+    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<Value>();
         Ar << Ret->Delegate;
         
@@ -55,10 +54,10 @@ public:
             }
         }
 
-        void Write(FArchive& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {}
+        void Write(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {}
     };
 
-    TUniquePtr<class IPropValue> Serialize(FArchive& Ar) override {
+    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<Value>();
         Ar << Ret->Delegate;
         
