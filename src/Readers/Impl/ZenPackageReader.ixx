@@ -1,3 +1,7 @@
+module;
+
+#include "Saturn/Defines.h"
+
 export module Saturn.Readers.ZenPackageReader;
 
 import <string>;
@@ -10,6 +14,11 @@ import Saturn.Misc.IoBuffer;
 import Saturn.Readers.MemoryReader;
 import Saturn.ZenPackage.ZenPackageHeader;
 import Saturn.Unversioned.UnversionedHeader;
+
+export struct FExportObject {
+    UObjectPtr Object;
+    UObjectPtr TemplateObject;
+};
 
 export class FZenPackageReader : public FMemoryReader {
 public:
@@ -60,9 +69,19 @@ public:
     std::vector<class FDependencyBundleHeader>& GetDependencyBundleHeaders();
     std::vector<class FDependencyBundleEntry>& GetDependencyBundleEntries();
     std::vector<std::wstring>& GetImportedPackageNames();
+
+    std::vector<FExportObject>& GetExports();
+
+    template<typename T = UObject>
+    UObjectPtr IndexToObject(int32_t Index);
+
+    friend FZenPackageReader& operator<<(FZenPackageReader& Ar, UObjectPtr& Object);
 private:
     FIoStatus Status = FIoStatus::Ok;
 
     FZenPackageHeader PackageHeader;
     FUnversionedHeader PropertyHeader;
+
+    std::vector<FExportObject> Exports;
+    TMap<std::string, UObjectPtr> ObjectArray;
 };

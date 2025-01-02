@@ -12,6 +12,7 @@ import Saturn.Core.IoStatus;
 import Saturn.Structs.Name;
 import Saturn.Asset.NameMap;
 import Saturn.Misc.IoBuffer;
+import Saturn.Asset.PackageIndex;
 import Saturn.Readers.MemoryReader;
 import Saturn.Asset.ExportMapEntry;
 import Saturn.Unversioned.Fragment;
@@ -108,4 +109,61 @@ std::vector<FDependencyBundleEntry>& FZenPackageReader::GetDependencyBundleEntri
 
 std::vector<std::wstring>& FZenPackageReader::GetImportedPackageNames() {
     return PackageHeader.ImportedPackageNames;
+}
+
+std::vector<FExportObject>& FZenPackageReader::GetExports() {
+    return Exports;
+}
+
+template<typename T>
+UObjectPtr FZenPackageReader::IndexToObject(int32_t Index) {
+    FPackageObjectIndex& Import = PackageHeader.ImportMap[Index];
+    if (Import.IsNull()) {
+        return {};
+    }
+
+    if (Import.IsExport()) {
+        return Exports[Import.ToExport()].Object;
+    }
+
+    // We actually are not going to do imports yet
+    if (Import.IsImport()) {
+        if (Import.IsScriptImport()) {
+
+        }
+    }
+
+    return {};
+}
+
+
+FZenPackageReader& operator<<(FZenPackageReader& Ar, UObjectPtr& Object) {
+    FPackageIndex Index;
+    Ar << Index;
+
+    if (Index.IsNull()) {
+        Object = UObjectPtr(nullptr);
+        return Ar;
+    }
+
+    if (Index.IsExport()) {
+        int32_t ExportIndex = Index.ToExport();
+        if (ExportIndex < Ar.GetExports().size()) {
+            Object = Ar.GetExports()[ExportIndex].Object;
+        }
+        else {
+            Ar.Status = FIoStatus(EIoErrorCode::ReadError, "Export index read is not a valid index.");
+        }
+
+        return Ar;
+    }
+
+    if (Index.IsImport() && Index.ToImport() < Ar.PackageHeader.ImportMap.size()) {
+        Object = Ar.IndexToObject(Index.ToImport());
+    }
+    else {
+        Ar.Status = FIoStatus(EIoErrorCode::ReadError, "Bad object import index.");
+    }
+
+    return Ar;
 }

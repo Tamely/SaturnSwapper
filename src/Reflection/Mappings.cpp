@@ -8,10 +8,7 @@ import Saturn.Readers.FileReaderNoWrite;
 
 import Saturn.Compression.Oodle;
 
-import Saturn.Properties.ArrayProperty;
-import Saturn.Properties.BoolProperty;
-import Saturn.Properties.DelegateProperty;
-import Saturn.Properties.EnumProperty;
+import Saturn.Properties.PropertyTypes;
 
 import <string>;
 import <vector>;
@@ -75,6 +72,13 @@ class FPropertyFactory {
         switch (Type) {
             case EPropertyType::EnumProperty: {
                 auto Prop = new FEnumProperty;
+                Prop->UnderlyingProp = SerializePropertyInternal(Ar);
+                Prop->Enum = Enums[ReadName(Ar, Names)];
+                Ret = Prop;
+                break;
+            }
+            case EPropertyType::StructProperty: {
+                //auto Prop = new FStructProperty;
             }
         }
     }

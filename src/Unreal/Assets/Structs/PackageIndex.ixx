@@ -29,6 +29,11 @@ public:
         return Index < 0;
     }
 
+    /** return true if this is an index into the export map **/
+    __forceinline bool IsExport() const {
+        return Index > 0;
+    }
+
     /** return true if this null (i.e. neither aan import nor an export) **/
     __forceinline bool IsNull() const {
         return Index == 0;
