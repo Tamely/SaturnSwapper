@@ -8,6 +8,7 @@ export import Saturn.Properties.MapProperty;
 export import Saturn.Properties.NameProperty;
 export import Saturn.Properties.NumericProperty;
 export import Saturn.Properties.ObjectProperty;
+export import Saturn.Properties.OptionalProperty;
 export import Saturn.Properties.SetProperty;
 export import Saturn.Properties.SoftObjectProperty;
 export import Saturn.Properties.StrProperty;
