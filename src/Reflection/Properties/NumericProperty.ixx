@@ -14,8 +14,9 @@ export import Saturn.Reflection.FProperty;
     break; \
     } \
 
-export template <typenaame NumType, EPropertyType NumPropType>
+export template <typename NumType, EPropertyType NumPropType>
 class TNumericProperty : public FProperty {
+public:
     class Value : public IPropValue {
     public:
         NumType Val = 0;

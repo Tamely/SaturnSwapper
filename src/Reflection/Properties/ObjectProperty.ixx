@@ -5,6 +5,7 @@ module;
 export module Saturn.Properties.ObjectProperty;
 
 import Saturn.Core.UObject;
+import Saturn.Asset.PackageIndex;
 import Saturn.Readers.ZenPackageReader;
 export import Saturn.Reflection.FProperty;
 
@@ -12,6 +13,7 @@ export class FObjectProperty : public FProperty {
 public:
     struct Value : public IPropValue {
     public:
+        FPackageIndex Index;
         UObjectPtr Object;
 
         __forceinline bool IsAcceptableType(EPropertyType Type) override {
@@ -25,13 +27,14 @@ public:
         }
 
         void Write(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
-            uint8_t val = Val == 1 ? 1 : 0;
-            Ar >> val;
+            Ar >> Index.ForDebugging();
         }
     };
 
     TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<Value>();
+        Ar << Ret->Index;
+        Ar.SeekCur(-1 * sizeof(FPackageIndex));
         Ar << Ret->Object;
 
         return std::move(Ret);

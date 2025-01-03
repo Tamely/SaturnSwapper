@@ -51,11 +51,6 @@ public:
     }
 
     template <typename T>
-    __forceinline TSharedPtr<T> As() {
-        return std::dynamic_pointer_cast<T>(Val);
-    }
-
-    template <typename T>
     __forceinline TObjectPtr<T> As() const {
         return TObjectPtr<T>(std::dynamic_pointer_cast<T>(Val));
     }

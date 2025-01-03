@@ -12,12 +12,23 @@ import Saturn.Core.UObject;
 import Saturn.Core.IoStatus;
 import Saturn.Misc.IoBuffer;
 import Saturn.Readers.MemoryReader;
+import Saturn.Asset.PackageObjectIndex;
 import Saturn.ZenPackage.ZenPackageHeader;
 import Saturn.Unversioned.UnversionedHeader;
+
+export class GContext {
+
+};
 
 export struct FExportObject {
     UObjectPtr Object;
     UObjectPtr TemplateObject;
+};
+
+export struct FExportState {
+    UObjectPtr TargetObject = nullptr;
+    std::string TargetObjectName = {};
+    bool LoadTargetOnly = false;
 };
 
 export class FZenPackageReader : public FMemoryReader {
@@ -54,6 +65,7 @@ public:
     FIoStatus& GetStatus();
     bool IsOk();
 
+    void MakePackage(TSharedPtr<GContext> Context, FExportState& ExportState);
     void LoadProperties(UStructPtr Struct, UObjectPtr Object);
 
     uint32_t GetCookedHeaderSize();
@@ -70,11 +82,6 @@ public:
     std::vector<class FDependencyBundleEntry>& GetDependencyBundleEntries();
     std::vector<std::wstring>& GetImportedPackageNames();
 
-    std::vector<FExportObject>& GetExports();
-
-    template<typename T = UObject>
-    UObjectPtr IndexToObject(int32_t Index);
-
     friend FZenPackageReader& operator<<(FZenPackageReader& Ar, UObjectPtr& Object);
 private:
     FIoStatus Status = FIoStatus::Ok;
@@ -82,6 +89,21 @@ private:
     FZenPackageHeader PackageHeader;
     FUnversionedHeader PropertyHeader;
 
+    TSharedPtr<struct FZenPackageData> PackageData;
+    TObjectPtr<class UZenPackage> Package;
+
+    friend class UZenPackage;
+};
+
+
+export struct FZenPackageData {
+    TObjectPtr<class UZenPackage> Package;
+    class FZenPackageReader Reader;
+    class FExportState ExportState;
+    FZenPackageHeader Header;
     std::vector<FExportObject> Exports;
-    TMap<std::string, UObjectPtr> ObjectArray;
+
+    bool HasFlag(uint32_t Flags) {
+        return Header.PackageSummary->PackageFlags & Flags;
+    }
 };

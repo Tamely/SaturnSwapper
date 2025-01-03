@@ -19,8 +19,8 @@ export class UObject : public std::enable_shared_from_this<UObject> {
 public:
     UObject() = default;
 
+    friend class UZenPackage;
     friend class FZenPackageReader;
-    //friend struct FUnversionedSerializer;
 
     enum EObjectFlags
     {
