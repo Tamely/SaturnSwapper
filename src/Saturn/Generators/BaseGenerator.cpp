@@ -24,10 +24,10 @@ void FBaseGenerator::InitializeAssetRegistry(const std::string& pakPath, const F
 	FBufferReader reader(entry.Read(pakPath, pak.GetVersion(), pak.GetCompressionMethods(), encryptionKey));
 	AssetRegistryState = FAssetRegistryState(reader);
 
-	std::erase_if(AssetRegistryState.PreallocatedAssetDataBuffers, [](FAssetData& data) { return data.AssetClass.GetText() != "AthenaCharacterItemDefinition" 
-																							  && data.AssetClass.GetText() != "AthenaBackpackItemDefinition"
-																							  && data.AssetClass.GetText() != "AthenaPickaxeItemDefinition"
-																							  && data.AssetClass.GetText() != "AthenaDanceItemDefinition"
+	std::erase_if(AssetRegistryState.PreallocatedAssetDataBuffers, [](FAssetData& data) { return data.AssetClass.ToString() != "AthenaCharacterItemDefinition" 
+																							  && data.AssetClass.ToString() != "AthenaBackpackItemDefinition"
+																							  && data.AssetClass.ToString() != "AthenaPickaxeItemDefinition"
+																							  && data.AssetClass.ToString() != "AthenaDanceItemDefinition"
 		; });
 
 	bIsInitialized = true;

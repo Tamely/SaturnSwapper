@@ -8,7 +8,7 @@ import <string>;
 import <vector>;
 import <optional>;
 
-import Saturn.Core.TObjectPtr;
+export import Saturn.Core.TObjectPtr;
 import Saturn.Reflection.FProperty;
 
 export typedef TObjectPtr<class UObject> UObjectPtr;
@@ -172,4 +172,5 @@ public:
 export class UClass : public UStruct {
 public:
     friend class UObject;
+    friend class Mappings;
 };

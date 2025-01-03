@@ -10,5 +10,8 @@ import Saturn.Core.UObject;
 
 export class Mappings {
 public:
-    static bool RegisterTypesFromUsmap(const std::string& Path, TMap<std::string, UObjectPtr>& ObjectArray);
+    static std::string& ReadName(class FArchive& Ar, std::vector<std::string>& Names);
+    template <typename T>
+    static TObjectPtr<T> GetOrCreateObject(std::string& ClassName, std::unordered_map<std::string, UObjectPtr>& ObjectArray);
+    static bool RegisterTypesFromUsmap(const std::string& Path, std::unordered_map<std::string, UObjectPtr>& ObjectArray);
 };

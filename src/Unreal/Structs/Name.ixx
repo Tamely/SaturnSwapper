@@ -8,72 +8,37 @@ import <vector>;
 
 export class FName {
 public:
-	FName() : Index(0), Number(0) {
-		_name = FNameEntrySerialized();
+	friend class FNameProperty;
+
+	FName() = default;
+
+	FName(std::string& InStr) : Val(InStr) {}
+	FName(std::string_view& StrView) : Val(StrView) {}
+
+	__forceinline void operator=(std::string const& Other) {
+		Val = Other;
 	}
 
-	FName(std::string name, int index = 0, int number = 0) : Index(index), Number(number) {
-		_name = FNameEntrySerialized(name);
+	__forceinline void operator=(FName const& Other) {
+		Val = Other.Val;
 	}
 
-	FName(int index, int number) : Index(index), Number(number) {
-		_name = NameMap[index];
+	bool operator==(FName const& Other) const {
+		return Val == Other.Val;
 	}
 
-	FName(FNameEntrySerialized name, int index, int number) : Index(index), Number(number) {
-		_name = name;
+	bool operator!=(FName const& Other) const {
+		return Val != Other.Val;
 	}
 
-	FName(std::vector<FNameEntrySerialized> nameMap, int index, int number) : Index(index), Number(number) {
-		_name = nameMap[Index];
+	__forceinline std::string ToString() const {
+		return Val;
 	}
 
-	FName(std::vector<std::string> nameMap, int index, int number) : Index(index), Number(number) {
-		_name = FNameEntrySerialized(nameMap[index]);
+	__forceinline std::string& GetString() {
+		return Val;
 	}
-public:
-	std::string GetText() {
-		return Number == 0 ? PlainText() : (PlainText() + "_" + std::to_string(Number - 1));
-	}
-
-	std::string PlainText() {
-		return _name.Name.empty() ? "None" : _name.Name;
-	}
-
-	static void SetNameMap(std::vector<FNameEntrySerialized> nameMap) {
-		NameMap = nameMap;
-	}
-
-	friend FArchive& operator<<(FArchive& Ar, FName& Name) {
-		int index;
-		Ar << index;
-		int number = 0;
-
-		if ((index & FName::AssetRegistryNumberedNameBit) > 0) {
-			index -= FName::AssetRegistryNumberedNameBit;
-			Ar << number;
-		}
-
-		Name = FName(index, number);
-		return Ar;
-	}
-
-	friend FArchive& operator>>(FArchive& Ar, FName& Name) {
-		Ar >> Name.Index;
-
-		if ((Name.Index & FName::AssetRegistryNumberedNameBit) > 0) {
-			Name.Index -= FName::AssetRegistryNumberedNameBit;
-			Ar >> Name.Number;
-		}
-
-		return Ar;
-	}
-public:
-	int Index;
-	int Number;
-	bool ShouldCalculateName = false;
-	static std::vector<FNameEntrySerialized> NameMap;
 private:
+	std::string Val;
 	static const uint32_t AssetRegistryNumberedNameBit = 0x80000000u; // int32 max
-	FNameEntrySerialized _name;
 };

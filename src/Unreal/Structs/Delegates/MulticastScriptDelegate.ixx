@@ -1,15 +1,16 @@
 export module Saturn.Delegates.MulticastScriptDelegate;
 
-export import Saturn.Delegates.ScriptDelegate;
-import Saturn.Readers.FArchive;
 import <vector>;
+
+import Saturn.Readers.ZenPackageReader;
+export import Saturn.Delegates.ScriptDelegate;
 
 export class FMulticastScriptDelegate {
     __forceinline std::vector<FScriptDelegate> GetInvocationList() {
         return InvocationList;
     }
 
-    friend class FArchive& operator<<(FArchive& Ar, FMulticastScriptDelegate& Delegate) {
+    friend FZenPackageReader& operator<<(FZenPackageReader& Ar, FMulticastScriptDelegate& Delegate) {
         return Ar << Delegate.InvocationList;
     }
 protected:

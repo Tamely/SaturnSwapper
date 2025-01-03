@@ -26,10 +26,6 @@ public:
 		return FMappedName((uint32_t(InType) << TypeShift) | InIndex, InNumber);
 	}
 
-	inline FName GetName() {
-		return FName(Index, Number);
-	}
-
 	inline bool IsValid() const {
 		return Index != InvalidIndex && Number != InvalidIndex;
 	}

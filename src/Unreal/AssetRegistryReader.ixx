@@ -2,7 +2,6 @@ export module Saturn.Unreal.AssetRegistryReader;
 
 import Saturn.Structs.Name;
 import Saturn.Readers.FArchive;
-import Saturn.Structs.TopLevelAssetPath;
 import Saturn.Structs.NameEntrySerialized;
 import Saturn.AssetRegistry.AssetRegistryHeader;
 
@@ -16,7 +15,7 @@ public:
 	FAssetRegistryReader(FArchive& Ar, FAssetRegistryHeader& header) {
 		Header = header;
 		NameMap = FNameEntrySerialized::LoadNameBatch(Ar);
-		FName::SetNameMap(NameMap);
+		//FName::SetNameMap(NameMap);
 
 		uint32_t storeMagic;
 		Ar << storeMagic;
@@ -36,23 +35,23 @@ public:
 
 		for (int i = 0; i < nums[1]; i++) {
 			FName name;
-			Ar << name;
+			//Ar << name;
 		}
 
 		Ar.SeekCur(((header.Version >= FAssetRegistryVersionType::ClassPaths ? sizeof(uint32_t) : 0) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t)) * nums[2]);
 
 		for (int i = 0; i < nums[3]; i++) {
 			if (header.Version >= FAssetRegistryVersionType::ClassPaths) {
-				FTopLevelAssetPath name(Ar);
+				//FTopLevelAssetPath name(Ar);
 			}
 			else {
 				FName name;
-				Ar << name;
+				//Ar << name;
 			}
 
 			FName name;
-			Ar << name;
-			Ar << name;
+			//Ar << name;
+			//Ar << name;
 		}
 
 		if (storeMagic == 0x12345678) {
@@ -72,7 +71,7 @@ public:
 
 		for (int i = 0; i < nums[10]; i++) {
 			FName key;
-			Ar << key;
+			//Ar << key;
 
 			uint32_t value;
 			Ar << value;

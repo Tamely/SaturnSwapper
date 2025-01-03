@@ -30,7 +30,7 @@ std::vector<FItem> FEmoteGenerator::GetItems() {
 
 	int skipNum = FContext::Tab * 254;
 	for (auto& buffer : AssetRegistryState.PreallocatedAssetDataBuffers) {
-		if (buffer.AssetClass.GetText() != ClassName) {
+		if (buffer.AssetClass.GetString() != ClassName) {
 			continue;
 		}
 
@@ -41,8 +41,8 @@ std::vector<FItem> FEmoteGenerator::GetItems() {
 
 		FItem item;
 
-		item.PackagePath = buffer.PackageName.GetText();
-		item.Id = buffer.AssetName.GetText();
+		item.PackagePath = buffer.PackageName.GetString();
+		item.Id = buffer.AssetName.GetString();
 
 		item.Name = "Unknown";
 		if (std::get<int>(stringData) == 200) {
@@ -83,14 +83,14 @@ std::vector<FItem> FEmoteGenerator::FilterItems(const std::string& filter) {
 	filterCopy.erase(std::remove_if(filterCopy.begin(), filterCopy.end(), [](auto const& c) -> bool { return !std::isalpha(c); }), filterCopy.end());
 
 	for (auto& buffer : AssetRegistryState.PreallocatedAssetDataBuffers) {
-		if (buffer.AssetClass.GetText() != ClassName) {
+		if (buffer.AssetClass.GetString() != ClassName) {
 			continue;
 		}
 
 		FItem item;
 
-		item.PackagePath = buffer.PackageName.GetText();
-		item.Id = buffer.AssetName.GetText();
+		item.PackagePath = buffer.PackageName.GetString();
+		item.Id = buffer.AssetName.GetString();
 
 		item.Name = "Unknown";
 
@@ -125,13 +125,13 @@ FItem FEmoteGenerator::GetItemById(const std::string& id) {
 	FItem item;
 
 	for (auto& buffer : AssetRegistryState.PreallocatedAssetDataBuffers) {
-		if (buffer.AssetClass.GetText() != ClassName) {
+		if (buffer.AssetClass.GetString() != ClassName) {
 			continue;
 		}
 
-		if (buffer.AssetName.GetText() == id) {
-			item.PackagePath = buffer.PackageName.GetText();
-			item.Id = buffer.AssetName.GetText();
+		if (buffer.AssetName.GetString() == id) {
+			item.PackagePath = buffer.PackageName.GetString();
+			item.Id = buffer.AssetName.GetString();
 
 			item.Name = "Unknown";
 			for (Value& iteration : json["data"].GetArray()) {

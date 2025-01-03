@@ -10,7 +10,7 @@ export import Saturn.Reflection.PropertyValue;
 export class FProperty {
 public:
     friend class FPropertyFactory;
-    friend struct FZenPackageReader;
+    friend class FZenPackageReader;
     friend class Mappings;
 
     virtual ~FProperty() = default;

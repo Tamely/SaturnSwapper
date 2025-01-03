@@ -22,7 +22,7 @@ export class FNameProperty : public FProperty {
                 *((FName*)OutBuffer) = Name;
             }
             else if (Type == EPropertyType::StrProperty) {
-                ((std::string*)OutBuffer)->assign(Name.GetText());
+                ((std::string*)OutBuffer)->assign(Name.ToString());
             }
         }
 

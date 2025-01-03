@@ -6,6 +6,7 @@ import Saturn.Readers.ZenPackageReader;
 import <string>;
 import <vector>;
 import <cstdint>;
+import <iomanip>;
 
 import Saturn.Core.UObject;
 import Saturn.Core.IoStatus;
@@ -309,6 +310,71 @@ FZenPackageReader& operator<<(FZenPackageReader& Ar, UObjectPtr& Object) {
     else {
         Ar.Status = FIoStatus(EIoErrorCode::ReadError, "Bad object import index.");
     }*/
+
+    return Ar;
+}
+
+FZenPackageReader& operator<<(FZenPackageReader& Ar, FName& Name) {
+    uint32_t NameIndex;
+    Ar << NameIndex;
+    uint32_t Number = 0;
+    Ar << Number;
+
+    auto MappedName = FMappedName::Create(NameIndex, Number, FMappedName::EType::Package);
+    auto NameStrW = Ar.PackageHeader.NameMap.GetName(MappedName);
+
+    if (NameStrW.empty()) {
+        LOG_WARN("Name serialized is empty or invalid.");
+    }
+
+    std::string NameStr = std::string(NameStrW.begin(), NameStrW.end());
+    Name = NameStr;
+
+    return Ar;
+}
+
+bool endsWithNumber(const std::string& str, int& number) {
+    if (str.empty() || !std::isdigit(str.back())) {
+        return false;
+    }
+
+    size_t pos = str.rfind('_');
+    if (pos == std::string::npos || pos == str.size() - 1) {
+        return false;
+    }
+
+    std::string numberStr = str.substr(pos + 1);
+    if (numberStr.empty() || !std::all_of(numberStr.begin(), numberStr.end(), ::isdigit)) {
+        return false;
+    }
+
+    number = std::stoi(numberStr);
+    return true;
+}
+
+FZenPackageReader& operator>>(FZenPackageReader& Ar, FName& Name) {
+    int number = 0;
+    if (endsWithNumber(Name.ToString(), number)) {
+        number--;
+    }
+
+    int index = 0;
+    bool bFound = false;
+    for (auto& nameW : Ar.PackageHeader.NameMap) {
+        std::string name = std::string(nameW.begin(), nameW.end());
+        if (name == Name.ToString()) {
+            bFound = true;
+            break;
+        }
+        index++;
+    }
+
+    if (!bFound) {
+        LOG_WARN("Failed to find name {0} in Name Map", Name.ToString());
+    }
+
+    Ar >> index;
+    Ar >> number;
 
     return Ar;
 }
