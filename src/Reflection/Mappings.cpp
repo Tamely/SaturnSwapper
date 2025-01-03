@@ -33,7 +33,7 @@ std::string& Mappings::ReadName(FArchive& Ar, std::vector<std::string>& Names) {
 }
 
 template <typename T>
-TObjectPtr<T> Mappings::GetOrCreateObject(std::string& ClassName, std::unordered_map<std::string, UObjectPtr>& ObjectArray) {
+TObjectPtr<T> Mappings::GetOrCreateObject(std::string& ClassName, TMap<std::string, UObjectPtr>& ObjectArray) {
     if (ObjectArray.contains(ClassName)) {
         return ObjectArray[ClassName].As<T>();
     }
@@ -48,6 +48,8 @@ TObjectPtr<T> Mappings::GetOrCreateObject(std::string& ClassName, std::unordered
 enum class EUsmapVersion : uint8_t {
     Initial,
     PackageVersioning,
+    LongFName,
+    LargeEnums,
     LatestPlusOne,
     Latest = LatestPlusOne - 1
 };
@@ -62,8 +64,8 @@ enum class EUsmapCompressionMethod : uint8_t {
 };
 
 class FPropertyFactory {
-    std::unordered_map<std::string, UObjectPtr>& ObjectArray;
-    std::unordered_map<std::string, TSharedPtr<FReflectedEnum>> Enums;
+    TMap<std::string, UObjectPtr>& ObjectArray;
+    TMap<std::string, TSharedPtr<FReflectedEnum>> Enums;
     std::vector<std::string>& Names;
 
     FProperty* SerializePropertyInternal(FArchive& Ar) {
@@ -133,10 +135,10 @@ class FPropertyFactory {
         return Ret;
     }
 public:
-    FPropertyFactory(std::vector<std::string>& InNames, std::unordered_map<std::string, UObjectPtr>& InObjectArray)
+    FPropertyFactory(std::vector<std::string>& InNames, TMap<std::string, UObjectPtr>& InObjectArray)
         : Names(InNames), ObjectArray(InObjectArray) {}
 
-    void SerializeEnums(FArchive& Ar) {
+    void SerializeEnums(FArchive& Ar, EUsmapVersion Version) {
         uint32_t EnumsCount;
         Ar << EnumsCount;
 
@@ -145,8 +147,15 @@ public:
         for (size_t i = 0; i < EnumsCount; i++) {
             auto& EnumName = Mappings::ReadName(Ar, Names);
 
-            uint8_t EnumNamesCount;
-            Ar << EnumNamesCount;
+            uint16_t EnumNamesCount;
+            if (Version >= EUsmapVersion::LargeEnums) {
+                Ar << EnumNamesCount;
+            }
+            else {
+                uint8_t Val;
+                Ar << Val;
+                EnumNamesCount = Val;
+            }
 
             auto Enum = std::make_shared<FReflectedEnum>();
             Enum->EnumName = EnumName;
@@ -179,7 +188,7 @@ public:
     }
 };
 
-bool Mappings::RegisterTypesFromUsmap(const std::string& Path, std::unordered_map<std::string, UObjectPtr>& ObjectArray) {
+bool Mappings::RegisterTypesFromUsmap(const std::string& Path, TMap<std::string, UObjectPtr>& ObjectArray) {
     FFileReaderNoWrite FileAr(Path.c_str());
 
     if (!FileAr.IsValid()) {
@@ -200,6 +209,16 @@ bool Mappings::RegisterTypesFromUsmap(const std::string& Path, std::unordered_ma
 
     if (Ver < EUsmapVersion::Initial || Ver > EUsmapVersion::Latest) {
         LOG_ERROR("Invalid usmap file version.");
+        return false;
+    }
+
+    bool bHasVersioning = false;
+    if (Ver >= EUsmapVersion::PackageVersioning) {
+        FileAr << bHasVersioning;
+    }
+
+    if (bHasVersioning) {
+        LOG_ERROR("Usmap has versioning info and that hasn't been implemented!");
         return false;
     }
 
@@ -245,8 +264,15 @@ bool Mappings::RegisterTypesFromUsmap(const std::string& Path, std::unordered_ma
     for (size_t i = 0; i < NamesCount; i++) {
         auto& Str = Names[i];
 
-        uint8_t Len;
-        Ar << Len;
+        uint16_t Len;
+        if (Ver >= EUsmapVersion::LongFName) {
+            Ar << Len;
+        }
+        else {
+            uint8_t Val;
+            Ar << Val;
+            Len = Val;
+        }
 
         Str.resize(Len);
         Ar.Serialize(&Str[0], Len);
@@ -254,7 +280,7 @@ bool Mappings::RegisterTypesFromUsmap(const std::string& Path, std::unordered_ma
 
     FPropertyFactory Factory(Names, ObjectArray);
     
-    Factory.SerializeEnums(Ar);
+    Factory.SerializeEnums(Ar, Ver);
 
     uint32_t StructCount;
     Ar << StructCount;

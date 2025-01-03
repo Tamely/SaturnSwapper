@@ -18,6 +18,9 @@ import Saturn.Compression.Oodle;
 import Saturn.Readers.ZenPackageReader;
 import Saturn.Structs.IoStoreTocChunkInfo;
 
+import Saturn.Core.UObject;
+import Saturn.Reflection.Mappings;
+
 import <optional>;
 
 int main(int argc, char* argv[]) {
@@ -43,6 +46,9 @@ int main(int argc, char* argv[]) {
 	LOG_INFO("Submit key");
 	provider.MountAsync();
 	LOG_INFO("Mounted");
+
+	TMap<std::string, UObjectPtr> ObjectArray;
+	Mappings::RegisterTypesFromUsmap("D:\\++Fortnite+Release-33.11-CL-38773622-Windows_oo.usmap", ObjectArray);
 
 	TIoStatusOr<FIoBuffer> bufferStatus = VirtualFileSystem::GetBufferByPathAndExtension("/BRCosmetics/Athena/Items/Cosmetics/Characters/CID_028_Athena_Commando_F.uasset");
 	if (!bufferStatus.IsOk()) {

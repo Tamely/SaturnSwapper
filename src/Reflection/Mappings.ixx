@@ -12,6 +12,6 @@ export class Mappings {
 public:
     static std::string& ReadName(class FArchive& Ar, std::vector<std::string>& Names);
     template <typename T>
-    static TObjectPtr<T> GetOrCreateObject(std::string& ClassName, std::unordered_map<std::string, UObjectPtr>& ObjectArray);
-    static bool RegisterTypesFromUsmap(const std::string& Path, std::unordered_map<std::string, UObjectPtr>& ObjectArray);
+    static TObjectPtr<T> GetOrCreateObject(std::string& ClassName, TMap<std::string, UObjectPtr>& ObjectArray);
+    static bool RegisterTypesFromUsmap(const std::string& Path, TMap<std::string, UObjectPtr>& ObjectArray);
 };
