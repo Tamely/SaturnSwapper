@@ -75,6 +75,10 @@ public:
         return Ar;
     }
 
+    inline uint32_t GetImportedPackageIndex() const {
+        return static_cast<uint32_t>((TypeAndId & IndexMask) >> 32);
+    }
+
     inline friend uint32_t GetTypeHash(const FPackageObjectIndex& Value) {
         return uint32_t(Value.TypeAndId);
     }

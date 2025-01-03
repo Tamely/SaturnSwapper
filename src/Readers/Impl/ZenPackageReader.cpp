@@ -150,6 +150,34 @@ public:
     }
 
     template <typename T = UObject>
+    TObjectPtr<T> CreateScriptObject(TSharedPtr<GlobalContext> Context, FPackageObjectIndex& Index) {
+        auto ScriptObject = Context->GlobalToc->ScriptObjectByGlobalIdMap[Index];
+        std::wstring NameW = Context->GlobalToc->NameMap.GetName(ScriptObject.MappedName);
+        std::string Name = std::string(NameW.begin(), NameW.end());
+
+        if (Context->ObjectArray.contains(Name)) {
+            UObjectPtr Ret = Context->ObjectArray[Name];
+
+            if (!Ret->GetOuter() && !ScriptObject.OuterIndex.IsNull()) {
+                Ret->SetOuter(CreateScriptObject<UObject>(Context, ScriptObject.OuterIndex));
+            }
+
+            return Ret.As<T>();
+        }
+
+        auto Ret = std::make_shared<T>();
+        Ret->SetName(Name);
+
+        if (!ScriptObject.OuterIndex.IsNull()) {
+            Ret->SetOuter(CreateScriptObject<UObject>(Context, ScriptObject.OuterIndex));
+        }
+
+        Ret->SetFlags(UObject::RF_NeedLoad);
+
+        return Ret;
+    }
+
+    template <typename T = UObject>
     UObjectPtr IndexToObject(FZenPackageHeader& Header, std::vector<FExportObject>& Exports, FPackageObjectIndex Index) {
         if (Index.IsNull()) {
             return {};
@@ -159,7 +187,6 @@ public:
             return Exports[Index.ToExport()].Object;
         }
 
-        /* TODO
         if (Index.IsImport()) {
             if (Index.IsScriptImport()) {
                 auto ContextLock = Context.lock();
@@ -170,18 +197,21 @@ public:
 
                 auto Ret = CreateScriptObject<T>(ContextLock, Index);
 
-                if (!ContextLock->ObjectArray.contains(Ret->GameName())) {
-                    ContextLock->ObjectArray.insert_or_assign(Ret->GetName(), Ret);
+                if (!ContextLock->ObjectArray.contains(Ret->GetName())) {
+                    ContextLock->ObjectArray.insert_or_assign(Ret->GetName(), Ret.As<UObject>());
                 }
 
-                return Ret;
+                return Ret.As<UObject>();
             }
             else if (Index.IsPackageImport()) {
-                if (Index.ToPackageImportRef() >= Header.ImportedPackageNames.size()) {
+                if (Index.GetImportedPackageIndex() >= Header.ImportedPackageNames.size()) {
                     return {};
                 }
+
+                LOG_WARN("Package Import (which we have not done yet");
+                //auto PackageId = Header.ImportedPackageNames[Index.GetImportedPackageIndex()]
             }
-        }*/
+        }
 
         return {};
     }
