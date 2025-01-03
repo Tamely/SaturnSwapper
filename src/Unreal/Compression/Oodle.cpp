@@ -9,7 +9,7 @@ import <fstream>;
 
 #define OODLELZ_BLOCK_LEN (1<<18)
 #define OODLELZ_BLOCK_MAXIMUM_EXPANSION (2)
-#define HASH 11433906145999146762
+#define HASH 5462001189984043287
 
 void Oodle::LoadDLL(const char* DllPath) {
 	if (!std::filesystem::exists(DllPath)) {
@@ -23,7 +23,7 @@ void Oodle::LoadDLL(const char* DllPath) {
 	uint64_t hash = XXH3_64bits(content.c_str(), content.size());
 	if (hash != HASH) {
 		MessageBoxW(nullptr, L"Saturn attempted to load a potentially dangerous library disguised as Saturn's Oodle library. Please report this to Saturn staff, delete the Saturn folder in localappdata, then virus scan your PC! Please always download Saturn from the official discord!", L"Blocked loading of potentially malicious library", MB_OK);
-		//exit(0);
+		exit(0);
 	}
 
 	auto OodleHandle = LoadLibraryA(DllPath);

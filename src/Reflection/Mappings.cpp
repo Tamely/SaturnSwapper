@@ -291,6 +291,7 @@ bool Mappings::RegisterTypesFromUsmap(const std::string& Path, TMap<std::string,
         auto Struct = GetOrCreateObject<UClass>(ClassName, ObjectArray);
 
         auto& SuperName = ReadName(Ar, Names);
+        LOG_INFO("Class Name {0} and Super Name {1}", ClassName, SuperName);
 
         if (!SuperName.empty()) {
             if (ObjectArray.contains(SuperName)) {
