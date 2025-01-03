@@ -12,6 +12,7 @@ import Saturn.Structs.Name;
 import Saturn.Core.UObject;
 import Saturn.Core.IoStatus;
 import Saturn.Misc.IoBuffer;
+import Saturn.Core.GlobalContext;
 import Saturn.Readers.MemoryReader;
 import Saturn.Asset.PackageObjectIndex;
 import Saturn.ZenPackage.ZenPackageHeader;
@@ -21,10 +22,6 @@ template <typename T> struct TCanBulkSerialize { enum { Value = false }; };
 template<> struct TCanBulkSerialize<unsigned int> { enum { Value = true }; };
 template<> struct TCanBulkSerialize<unsigned short> { enum { Value = true }; };
 template<> struct TCanBulkSerialize<int> { enum { Value = true }; };
-
-export class GContext {
-    TMap<std::string, UObjectPtr>& ObjectArray;
-};
 
 export struct FExportObject {
     UObjectPtr Object;
@@ -71,7 +68,7 @@ public:
     FIoStatus& GetStatus();
     bool IsOk();
 
-    void MakePackage(TSharedPtr<GContext> Context, FExportState& ExportState);
+    void MakePackage(TSharedPtr<GlobalContext> Context, FExportState& ExportState);
     void LoadProperties(UStructPtr Struct, UObjectPtr Object);
 
     uint32_t GetCookedHeaderSize();

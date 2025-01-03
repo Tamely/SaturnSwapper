@@ -19,7 +19,6 @@ import Saturn.Readers.ZenPackageReader;
 import Saturn.Structs.IoStoreTocChunkInfo;
 
 import Saturn.Core.UObject;
-import Saturn.Reflection.Mappings;
 
 import <optional>;
 
@@ -39,16 +38,13 @@ int main(int argc, char* argv[]) {
 	FGuid guid1001("02A94B6E1D64352BBF332D801395069C");
 	FAESKey aes1001("0x106B870C4F18C617510178913431943D52829093805F4AC151716207F1D5478B");
 
-	FFileProvider provider("D:\\Fortnite Builds\\Fortnite\\FortniteGame\\Content\\Paks");
+	FFileProvider provider("D:\\Fortnite Builds\\Fortnite\\FortniteGame\\Content\\Paks", "D:\\++Fortnite+Release-33.11-CL-38773622-Windows_oo.usmap");
 	LOG_INFO("Created provider");
 	provider.SubmitKey(defaultGUID, defaultAES);
 	provider.SubmitKey(guid1001, aes1001);
 	LOG_INFO("Submit key");
 	provider.MountAsync();
 	LOG_INFO("Mounted");
-
-	TMap<std::string, UObjectPtr> ObjectArray;
-	Mappings::RegisterTypesFromUsmap("D:\\++Fortnite+Release-33.11-CL-38773622-Windows_oo.usmap", ObjectArray);
 
 	TIoStatusOr<FIoBuffer> bufferStatus = VirtualFileSystem::GetBufferByPathAndExtension("/BRCosmetics/Athena/Items/Cosmetics/Characters/CID_028_Athena_Commando_F.uasset");
 	if (!bufferStatus.IsOk()) {

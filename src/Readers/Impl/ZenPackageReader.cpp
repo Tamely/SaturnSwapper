@@ -14,6 +14,7 @@ import Saturn.Structs.Name;
 import Saturn.Asset.NameMap;
 import Saturn.Misc.IoBuffer;
 import Saturn.Asset.PackageIndex;
+import Saturn.Core.GlobalContext;
 import Saturn.Readers.MemoryReader;
 import Saturn.Asset.ExportMapEntry;
 import Saturn.Unversioned.Fragment;
@@ -28,7 +29,7 @@ import Saturn.Unversioned.UnversionedHeader;
 
 class UPackage : public UObject {
 protected:
-    TWeakPtr<GContext> Context;
+    TWeakPtr<GlobalContext> Context;
     std::vector<UObjectPtr> Exports;
 public:
     std::vector<UObjectPtr>& GteExports() {
@@ -52,7 +53,7 @@ public:
 
 class UZenPackage : public UPackage {
 public:
-    UZenPackage(FZenPackageHeader& InHeader, TSharedPtr<GContext>& InContext) {
+    UZenPackage(FZenPackageHeader& InHeader, TSharedPtr<GlobalContext>& InContext) {
         Name = std::string(InHeader.PackageName.begin(), InHeader.PackageName.end());
         Context = InContext;
     }
@@ -194,7 +195,7 @@ bool FZenPackageReader::IsOk() {
     return Status.IsOk();
 }
 
-void FZenPackageReader::MakePackage(TSharedPtr<GContext> Context, FExportState& ExportState) {
+void FZenPackageReader::MakePackage(TSharedPtr<GlobalContext> Context, FExportState& ExportState) {
     Package = PackageData->Package = std::make_shared<UZenPackage>(PackageHeader, Context);
     PackageData->ExportState = ExportState;
     PackageData->Header = PackageHeader;

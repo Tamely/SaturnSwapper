@@ -13,12 +13,22 @@ import Saturn.Core.ThreadPool;
 
 import Saturn.Structs.Guid;
 import Saturn.Encryption.AES;
+import Saturn.Core.GlobalContext;
+import Saturn.Reflection.Mappings;
 
 import Saturn.Core.IoStatus;
 import Saturn.VFS.FileSystem;
 import Saturn.IoStore.IoStoreReader;
 
-FFileProvider::FFileProvider(const std::string& PakDirectory) {
+FFileProvider::FFileProvider(const std::string& PakDirectory, const std::string& MappingsFile) {
+    Context = std::make_shared<GlobalContext>();
+    Mappings::RegisterTypesFromUsmap(MappingsFile, Context->ObjectArray);
+
+    if (!std::filesystem::is_directory(PakDirectory)) {
+        LOG_ERROR("Invalid pak directory {0}", PakDirectory);
+        return;
+    }
+
     std::error_code Code;
     {
         for (auto& File : std::filesystem::directory_iterator(PakDirectory, Code)) {
@@ -59,6 +69,12 @@ void FFileProvider::MountAsync() {
                     VirtualFileSystem::RegisterParallel(Files);
                     VirtualFileSystem::RegisterReader(reader);
 
+                    if (reader->GetContainerName() == "global") {
+                        Context->GlobalToc = std::make_shared<FGlobalTocData>();
+                        Context->GlobalToc->Serialize(reader);
+                        LOG_INFO("Serialized global toc");
+                    }
+
                     LOG_INFO("Successfully mounted archive: '{0}'", Archive);
                     std::lock_guard<std::mutex> lock(this->TocArchivesMutex);
                     this->TocArchives.emplace_back(reader);
@@ -84,6 +100,12 @@ void FFileProvider::Mount() {
             reader->GetFiles(Files);
             VirtualFileSystem::RegisterParallel(Files);
             VirtualFileSystem::RegisterReader(reader);
+
+            if (reader->GetContainerName() == "global") {
+                Context->GlobalToc = std::make_shared<FGlobalTocData>();
+                Context->GlobalToc->Serialize(reader);
+                LOG_INFO("Serialized global toc");
+            }
 
             LOG_INFO("Successfully mounted archive: '{0}'", Archive);
             this->TocArchives.emplace_back(reader);

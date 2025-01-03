@@ -79,3 +79,9 @@ public:
         return uint32_t(Value.TypeAndId);
     }
 };
+
+export struct PackageObjectIndexHasher {
+    std::size_t operator()(const FPackageObjectIndex& Index) const {
+        return GetTypeHash(Index);
+    }
+};
