@@ -86,12 +86,57 @@ export typedef TNumericProperty<uint64_t, EPropertyType::UInt64Property> FUInt64
 
 export class FByteProperty : public TNumericProperty<uint8_t, EPropertyType::ByteProperty> {
 public:
-    int32_t Index;
-    FZenPackageReader Owner;
+    class Value : public IPropValue {
+    public:
+        uint8_t Val = 0;
+        int32_t Index = 0;
+        FZenPackageReader* Owner = nullptr;
+
+        __forceinline bool IsAcceptableType(EPropertyType Type) override {
+            switch (Type) {
+            case EPropertyType::ByteProperty:
+            case EPropertyType::Int8Property:
+            case EPropertyType::UInt16Property:
+            case EPropertyType::Int16Property:
+            case EPropertyType::UInt32Property:
+            case EPropertyType::IntProperty:
+            case EPropertyType::Int64Property:
+            case EPropertyType::UInt64Property:
+            case EPropertyType::FloatProperty:
+            case EPropertyType::DoubleProperty:
+                return true;
+            default:
+                return false;
+            }
+        }
+
+        __forceinline void PlaceValue(EPropertyType Type, void* OutBuffer) override {
+            switch (Type) {
+            case EPropertyType::ByteProperty: QUICK_NUM_CAST(uint8_t);
+            case EPropertyType::Int8Property: QUICK_NUM_CAST(int8_t);
+            case EPropertyType::UInt16Property: QUICK_NUM_CAST(uint16_t);
+            case EPropertyType::Int16Property: QUICK_NUM_CAST(int16_t);
+            case EPropertyType::UInt32Property: QUICK_NUM_CAST(uint32_t);
+            case EPropertyType::IntProperty: QUICK_NUM_CAST(int32_t);
+            case EPropertyType::Int64Property: QUICK_NUM_CAST(int64_t);
+            case EPropertyType::UInt64Property: QUICK_NUM_CAST(uint64_t);
+            case EPropertyType::FloatProperty: QUICK_NUM_CAST(float);
+            case EPropertyType::DoubleProperty: QUICK_NUM_CAST(double);
+            }
+        }
+
+        __forceinline void Write(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
+            Ar >> Val;
+            Ar >> Index;
+        }
+    };
+
 	TUniquePtr<IPropValue> Serialize(FZenPackageReader& Ar) override {
-        TUniquePtr<IPropValue> Ret = TNumericProperty::Serialize(Ar);
-        Ar << Index;
-        Owner = Ar;
+        auto Ret = std::make_unique<Value>();
+
+        Ar << Ret->Val;
+        Ar << Ret->Index;
+        Ret->Owner = &Ar;
 
 		return std::move(Ret);
 	}

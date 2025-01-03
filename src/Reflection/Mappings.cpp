@@ -73,17 +73,62 @@ class FPropertyFactory {
         FProperty* Ret = nullptr;
 
         switch (Type) {
-            case EPropertyType::EnumProperty: {
-                auto Prop = new FEnumProperty;
-                Prop->UnderlyingProp = SerializePropertyInternal(Ar);
-                Prop->Enum = Enums[Mappings::ReadName(Ar, Names)];
-                Ret = Prop;
-                break;
-            }
-            case EPropertyType::StructProperty: {
-                auto Prop = new FStructProperty;
-            }
+        case EPropertyType::EnumProperty: {
+            auto Prop = new FEnumProperty;
+            Prop->UnderlyingProp = SerializePropertyInternal(Ar);
+            Prop->Enum = Enums[Mappings::ReadName(Ar, Names)];
+            Ret = Prop;
+            break;
         }
+        case EPropertyType::StructProperty: {
+            auto Prop = new FStructProperty;
+            Prop->Struct = Mappings::GetOrCreateObject<UClass>(Mappings::ReadName(Ar, Names), ObjectArray);
+            Ret = Prop;
+            break;
+        }
+        case EPropertyType::ArrayProperty: {
+            auto Prop = new FArrayProperty;
+            Prop->ElementType = SerializePropertyInternal(Ar);
+            Ret = Prop;
+            break;
+        }
+        case EPropertyType::SetProperty: {
+            auto Prop = new FSetProperty;
+            Prop->ElementType = SerializePropertyInternal(Ar);
+            Ret = Prop;
+            break;
+        }
+        case EPropertyType::MapProperty: {
+            auto Prop = new FMapProperty;
+            Prop->KeyType = SerializePropertyInternal(Ar);
+            Prop->ValueType = SerializePropertyInternal(Ar);
+            Ret = Prop;
+            break;
+        }
+        case EPropertyType::ByteProperty: Ret = new FByteProperty; break;
+        case EPropertyType::Int8Property: Ret = new FInt8Property; break;
+        case EPropertyType::Int16Property: Ret = new FInt16Property; break;
+        case EPropertyType::IntProperty: Ret = new FIntProperty; break;
+        case EPropertyType::Int64Property: Ret = new FInt64Property; break;
+        case EPropertyType::UInt16Property: Ret = new FUInt16Property; break;
+        case EPropertyType::UInt32Property: Ret = new FUInt32Property; break;
+        case EPropertyType::UInt64Property: Ret = new FUInt64Property; break;
+        case EPropertyType::DoubleProperty: Ret = new FDoubleProperty; break;
+        case EPropertyType::FloatProperty: Ret = new FFloatProperty; break;
+        case EPropertyType::NameProperty: Ret = new FNameProperty; break;
+        case EPropertyType::WeakObjectProperty:
+        case EPropertyType::LazyObjectProperty:
+        case EPropertyType::ObjectProperty: Ret = new FObjectProperty; break;
+        case EPropertyType::TextProperty: Ret = new FTextProperty; break;
+        case EPropertyType::BoolProperty: Ret = new FBoolProperty; break;
+        case EPropertyType::SoftObjectProperty: Ret = new FSoftObjectProperty; break;
+        case EPropertyType::StrProperty: Ret = new FStrProperty; break;
+        case EPropertyType::DelegateProperty: Ret = new FDelegateProperty; break;
+        case EPropertyType::MulticastDelegateProperty: Ret = new FMulticastDelegateProperty; break;
+        default: Ret = new FProperty; break;
+        };
+
+        Ret->Type = Type;
 
         return Ret;
     }
