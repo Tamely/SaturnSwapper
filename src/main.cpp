@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
 	LOG_INFO("Init bindings");
 	FWebServer::CreateWebServerThread();
 	LOG_INFO("Create Web Server");
-	Oodle::LoadDLL("oo2core_5_win64.dll");
+	Oodle::LoadDLL("oo2core_9_win64.dll");
 
 	FGuid defaultGUID;
 	FAESKey defaultAES("0x62450FF9261CCC2EE50C217A2D9EE97F05F09203CF6E395B7CAB9D8892B714CE");
