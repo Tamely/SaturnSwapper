@@ -22,11 +22,11 @@ public:
     friend FZenPackageReader& operator<<(FZenPackageReader& Ar, FInstancedStruct& Struct) {
         EVersion Version = EVersion::LatestVersion;
 
-        Ar.Serialize(&Version, sizeof(Version));
+        //Ar.Serialize(&Version, sizeof(Version));
 
-        if (Version > EVersion::LatestVersion) {
-            return Ar;
-        }
+        //if (Version > EVersion::LatestVersion) {
+        //    return Ar;
+        //}
 
         Ar << Struct.ScriptStruct;
 

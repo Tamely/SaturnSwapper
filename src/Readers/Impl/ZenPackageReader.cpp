@@ -222,22 +222,22 @@ UPackagePtr FZenPackageReader::MakePackage(TSharedPtr<GlobalContext> Context, FE
 }
 
 void FZenPackageReader::LoadProperties(UStructPtr Struct, UObjectPtr Object) {
-    Status = PropertyHeader.Load(*this);
-    if (!Status.IsOk()) {
+    FUnversionedHeader header;
+    FIoStatus status = header.Load(*this);
+    if (!status.IsOk()) {
+        LOG_ERROR("Error reading FUnversioned header: {0}", status.ToString());
         return;
     }
 
-    if (!PropertyHeader.HasNonZeroValues() or !PropertyHeader.HasValues()) {
-        Status = FIoStatus(EIoErrorCode::InvalidParameter, "Provided asset either doesn't have NonZero values or doesn't have values at all.");
+    if (!header.HasValues()) {
+        LOG_ERROR("Header doesn't have values");
         return;
     }
 
-    for (FUnversionedIterator It(PropertyHeader, Struct); It; It.Next()) {
+    for (FUnversionedIterator It(header, Struct); It; It.Next()) {
         if (!It.IsNonZero()) continue;
 
         FProperty* Prop = *It;
-
-        LOG_TRACE("Serializing property {0} {1} {2}", Prop->GetName(), (int)Prop->Type, Tell());
 
         TUniquePtr<IPropValue> Value = Prop->Serialize(*this);
 

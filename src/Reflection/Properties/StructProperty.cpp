@@ -14,13 +14,17 @@ import Saturn.Readers.ZenPackageReader;
 import Saturn.Math.Box;
 import Saturn.Math.Vector;
 import Saturn.Structs.Guid;
+import Saturn.Tags.GameplayTag;
 import Saturn.Paths.SoftObjectPath;
 import Saturn.Structs.InstancedStruct;
+import Saturn.Tags.GameplayTagContainer;
 
 static phmap::flat_hash_map<std::string, std::function<TUniquePtr<IPropValue>(FZenPackageReader&)>> NativeStructs = {
     { "Box", [](FZenPackageReader& Ar) -> TUniquePtr<IPropValue> { return FStructProperty::SerializeNativeStruct<FBox>(Ar); } },
     { "Box2D", [](FZenPackageReader& Ar) -> TUniquePtr<IPropValue> { return FStructProperty::SerializeNativeStruct<FBox2D>(Ar); } },
     { "Guid", [](FZenPackageReader& Ar) -> TUniquePtr<IPropValue> { return FStructProperty::SerializeNativeStruct<FGuid>(Ar); } },
+    //{ "GameplayTag", [](FZenPackageReader& Ar) -> TUniquePtr<IPropValue> { return FStructProperty::SerializeNativeStruct<FGameplayTag>(Ar); } },
+    { "GameplayTagContainer", [](FZenPackageReader& Ar) -> TUniquePtr<IPropValue> { return FStructProperty::SerializeNativeStruct<FGameplayTagContainer>(Ar); } },
     { "InstancedStruct", [](FZenPackageReader& Ar) -> TUniquePtr<IPropValue> { return FStructProperty::SerializeNativeStruct<FInstancedStruct>(Ar); } },
     { "SoftObjectPath", [](FZenPackageReader& Ar) -> TUniquePtr<IPropValue> { return FStructProperty::SerializeNativeStruct<FSoftObjectPath>(Ar); } },
     { "Vector", [](FZenPackageReader& Ar) -> TUniquePtr<IPropValue> { return FStructProperty::SerializeNativeStruct<FVector>(Ar); } },

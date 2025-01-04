@@ -1,3 +1,5 @@
+#include <Saturn/Log.h>
+
 import Saturn.Unversioned.UnversionedHeader;
 
 import Saturn.Core.UObject;

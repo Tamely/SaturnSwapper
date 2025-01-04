@@ -154,7 +154,6 @@ private:
     FIoStatus Status = FIoStatus::Ok;
 
     FZenPackageHeader PackageHeader;
-    FUnversionedHeader PropertyHeader;
 
     TSharedPtr<struct FZenPackageData> PackageData;
     TObjectPtr<class UZenPackage> Package;

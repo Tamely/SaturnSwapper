@@ -1,6 +1,5 @@
 module;
 
-#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 
 export module Saturn.Properties.TextProperty;

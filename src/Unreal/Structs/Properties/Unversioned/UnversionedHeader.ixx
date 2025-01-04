@@ -25,6 +25,7 @@ protected:
     std::vector<bool> ZeroMask;
 
     friend class FUnversionedIterator;
+    friend class FIterator;
 };
 
 export class FUnversionedIterator {
