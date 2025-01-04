@@ -7,6 +7,7 @@ import <optional>;
 
 import Saturn.Structs.Name;
 
+import Saturn.Files.PackageId;
 import Saturn.Asset.NameMap;
 import Saturn.Asset.ExportMapEntry;
 import Saturn.Asset.BulkDataMapEntry;
@@ -33,6 +34,7 @@ export struct FZenPackageHeader {
     std::vector<FDependencyBundleHeader> DependencyBundleHeaders;
     std::vector<FDependencyBundleEntry> DependencyBundleEntries;
 
+    std::vector<FPackageId> ImportedPackageIds;
     std::vector<std::wstring> ImportedPackageNames;
     uint32_t ExportOffset = 0;
 

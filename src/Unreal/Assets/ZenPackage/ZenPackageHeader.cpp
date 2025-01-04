@@ -80,6 +80,11 @@ FZenPackageHeader FZenPackageHeader::MakeView(std::vector<uint8_t>& Memory, std:
 
     PackageHeader.ExportOffset = PackageHeader.PackageSummary->HeaderSize;
 
+    for (std::wstring& nameW : PackageHeader.ImportedPackageNames) {
+        std::string name(nameW.begin(), nameW.end());
+        PackageHeader.ImportedPackageIds.push_back(FPackageId::FromName(name));
+    }
+
     return PackageHeader;
 }
 

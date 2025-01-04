@@ -19,6 +19,7 @@ import Saturn.Readers.MemoryReader;
 import Saturn.Asset.ExportMapEntry;
 import Saturn.Unversioned.Fragment;
 import Saturn.Asset.BulkDataMapEntry;
+import Saturn.Core.LazyPackageObject;
 import Saturn.Asset.ExportBundleEntry;
 import Saturn.Asset.PackageObjectIndex;
 import Saturn.Asset.DependencyBundleEntry;
@@ -185,12 +186,13 @@ public:
                 return Ret.As<UObject>();
             }
             else if (Index.IsPackageImport()) {
-                if (Index.GetImportedPackageIndex() >= Header.ImportedPackageNames.size()) {
+                if (Index.GetImportedPackageIndex() >= Header.ImportedPackageIds.size()) {
                     return {};
                 }
 
-                LOG_WARN("Package Import (which we have not done yet");
-                //auto PackageId = Header.ImportedPackageNames[Index.GetImportedPackageIndex()]
+                FPackageId PackageId = Header.ImportedPackageIds[Index.GetImportedPackageIndex()];
+
+                return UObjectPtr(std::make_shared<ULazyPackageObject>(PackageId));
             }
         }
 
