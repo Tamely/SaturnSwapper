@@ -46,20 +46,9 @@ int main(int argc, char* argv[]) {
 	provider.MountAsync();
 	LOG_INFO("Mounted");
 
-	TIoStatusOr<FIoBuffer> bufferStatus = VirtualFileSystem::GetBufferByPathAndExtension("/BRCosmetics/Athena/Items/Cosmetics/Characters/CID_028_Athena_Commando_F.uasset");
-	if (!bufferStatus.IsOk()) {
-		LOG_WARN(bufferStatus.Status().ToString());
-		return 0;
-	}
-	FIoBuffer buffer = bufferStatus.ConsumeValueOrDie();
-	LOG_INFO("Read succeeded! Buffer size: {0}", buffer.GetSize());
 
-	FZenPackageReader Ar(buffer);
-	if (!Ar.IsOk()) {
-		LOG_WARN(Ar.GetStatus().ToString());
-		return 0;
-	}
-	LOG_INFO("Package Name: {0}", std::string(Ar.GetPackageName().begin(), Ar.GetPackageName().end()));
+	UPackagePtr package = provider.LoadPackage("/BRCosmetics/Athena/Items/Cosmetics/Characters/CID_028_Athena_Commando_F.uasset");
+	LOG_INFO("Export Name {0}", package->GetFirstExport()->GetName());
 
 	/*
 	Ar.LoadProperties();

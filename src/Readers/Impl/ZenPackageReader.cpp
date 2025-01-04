@@ -27,30 +27,6 @@ import Saturn.Asset.DependencyBundleHeader;
 import Saturn.ZenPackage.ZenPackageSummary;
 import Saturn.Unversioned.UnversionedHeader;
 
-class UPackage : public UObject {
-protected:
-    TWeakPtr<GlobalContext> Context;
-    std::vector<UObjectPtr> Exports;
-public:
-    std::vector<UObjectPtr>& GteExports() {
-        return Exports;
-    }
-
-    UObjectPtr GetFirstExport() {
-        return Exports.size() ? Exports[0] : nullptr;
-    }
-
-    UObjectPtr GetExportByName(std::string InName) {
-        for (auto&& Export : Exports) {
-            if (Export->GetName() == InName) {
-                return Export;
-            }
-        }
-
-        return nullptr;
-    }
-};
-
 class UZenPackage : public UPackage {
 public:
     UZenPackage(FZenPackageHeader& InHeader, TSharedPtr<GlobalContext>& InContext) {
@@ -151,6 +127,11 @@ public:
 
     template <typename T = UObject>
     TObjectPtr<T> CreateScriptObject(TSharedPtr<GlobalContext> Context, FPackageObjectIndex& Index) {
+        if (!Context->GlobalToc->ScriptObjectByGlobalIdMap.contains(Index)) {
+            LOG_ERROR("Failed to find script object with index {0}. ScriptMap has a size of {1}.", GetTypeHash(Index), Context->GlobalToc->ScriptObjectByGlobalIdMap.size());
+            return nullptr;
+        }
+
         auto ScriptObject = Context->GlobalToc->ScriptObjectByGlobalIdMap[Index];
         std::wstring NameW = Context->GlobalToc->NameMap.GetName(ScriptObject.MappedName);
         std::string Name = std::string(NameW.begin(), NameW.end());
@@ -225,14 +206,17 @@ bool FZenPackageReader::IsOk() {
     return Status.IsOk();
 }
 
-void FZenPackageReader::MakePackage(TSharedPtr<GlobalContext> Context, FExportState& ExportState) {
+UPackagePtr FZenPackageReader::MakePackage(TSharedPtr<GlobalContext> Context, FExportState& ExportState) {
+    PackageData = std::make_shared<FZenPackageData>();
     Package = PackageData->Package = std::make_shared<UZenPackage>(PackageHeader, Context);
     PackageData->ExportState = ExportState;
     PackageData->Header = PackageHeader;
     PackageData->Reader = *this;
-    PackageData->Reader.Seek(PackageHeader.PackageSummary->HeaderSize);
+    PackageData->Reader.Seek(PackageHeader.ExportOffset);
 
     Package->ProcessExports(*PackageData);
+
+    return Package.As<UPackage>();
 }
 
 void FZenPackageReader::LoadProperties(UStructPtr Struct, UObjectPtr Object) {

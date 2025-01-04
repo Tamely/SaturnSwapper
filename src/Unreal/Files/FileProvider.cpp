@@ -19,8 +19,10 @@ import Saturn.Reflection.Mappings;
 import Saturn.Core.IoStatus;
 import Saturn.VFS.FileSystem;
 import Saturn.IoStore.IoStoreReader;
+import Saturn.Readers.ZenPackageReader;
 
 FFileProvider::FFileProvider(const std::string& PakDirectory, const std::string& MappingsFile) {
+    VFS = std::make_shared<VirtualFileSystem>();
     Context = std::make_shared<GlobalContext>();
     Mappings::RegisterTypesFromUsmap(MappingsFile, Context->ObjectArray);
 
@@ -66,13 +68,12 @@ void FFileProvider::MountAsync() {
                 else {
                     std::vector<std::pair<std::string, uint32_t>> Files;
                     reader->GetFiles(Files);
-                    VirtualFileSystem::RegisterParallel(Files);
-                    VirtualFileSystem::RegisterReader(reader);
+                    VFS->RegisterParallel(Files);
+                    VFS->RegisterReader(reader);
 
                     if (reader->GetContainerName() == "global") {
                         Context->GlobalToc = std::make_shared<FGlobalTocData>();
                         Context->GlobalToc->Serialize(reader);
-                        LOG_INFO("Serialized global toc");
                     }
 
                     LOG_INFO("Successfully mounted archive: '{0}'", Archive);
@@ -98,13 +99,12 @@ void FFileProvider::Mount() {
         else {
             std::vector<std::pair<std::string, uint32_t>> Files;
             reader->GetFiles(Files);
-            VirtualFileSystem::RegisterParallel(Files);
-            VirtualFileSystem::RegisterReader(reader);
+            VFS->RegisterParallel(Files);
+            VFS->RegisterReader(reader);
 
             if (reader->GetContainerName() == "global") {
                 Context->GlobalToc = std::make_shared<FGlobalTocData>();
                 Context->GlobalToc->Serialize(reader);
-                LOG_INFO("Serialized global toc");
             }
 
             LOG_INFO("Successfully mounted archive: '{0}'", Archive);
@@ -114,10 +114,35 @@ void FFileProvider::Mount() {
 }
 
 void FFileProvider::Unmount() {
-    for (FIoStoreReader*& reader : this->TocArchives) {
+    for (FIoStoreReader*& reader : TocArchives) {
         delete reader;
     }
-    this->TocArchives.clear();
+    TocArchives.clear();
+    VFS->Clear();
+}
 
-    VirtualFileSystem::Clear();
+UPackagePtr FFileProvider::LoadPackage(const std::string& Path) {
+    FExportState State;
+    State.LoadTargetOnly = false;
+
+    return LoadPackage(Path, State);
+}
+
+UPackagePtr FFileProvider::LoadPackage(const std::string& Path, FExportState& State) {
+    std::string AssetPath = Path;
+    TIoStatusOr<FIoBuffer> Entry = VFS->GetBufferByPathAndExtension(AssetPath);
+
+    if (!Entry.IsOk()) {
+        LOG_ERROR(Entry.Status().ToString());
+        return nullptr;
+    }
+
+    FIoBuffer Buffer = Entry.ConsumeValueOrDie();
+    return LoadPackage(Buffer, State);
+}
+
+UPackagePtr FFileProvider::LoadPackage(FIoBuffer& Entry, FExportState& State) {
+    FZenPackageReader reader(Entry);
+    LOG_INFO("Made reader for {0}", std::string(reader.GetPackageName().begin(), reader.GetPackageName().end()));
+    return reader.MakePackage(Context, State);
 }

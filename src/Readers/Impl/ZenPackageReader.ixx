@@ -23,6 +23,32 @@ template<> struct TCanBulkSerialize<unsigned int> { enum { Value = true }; };
 template<> struct TCanBulkSerialize<unsigned short> { enum { Value = true }; };
 template<> struct TCanBulkSerialize<int> { enum { Value = true }; };
 
+export class UPackage : public UObject {
+protected:
+    TWeakPtr<GlobalContext> Context;
+    std::vector<UObjectPtr> Exports;
+public:
+    std::vector<UObjectPtr>& GteExports() {
+        return Exports;
+    }
+
+    UObjectPtr GetFirstExport() {
+        return Exports.size() ? Exports[0] : nullptr;
+    }
+
+    UObjectPtr GetExportByName(std::string InName) {
+        for (auto&& Export : Exports) {
+            if (Export->GetName() == InName) {
+                return Export;
+            }
+        }
+
+        return nullptr;
+    }
+};
+
+export typedef TObjectPtr<UPackage> UPackagePtr;
+
 export struct FExportObject {
     UObjectPtr Object;
     UObjectPtr TemplateObject;
@@ -36,6 +62,7 @@ export struct FExportState {
 
 export class FZenPackageReader : public FMemoryReader {
 public:
+    FZenPackageReader() : FMemoryReader(nullptr, 0) {} // DO NOT USE THIS
     FZenPackageReader(FIoBuffer& buffer) : FMemoryReader(buffer.GetData(), buffer.GetSize()) {
         std::string OutError;
         std::vector<uint8_t> bufferAsVector(buffer.GetData(), buffer.GetData() + buffer.GetSize());
@@ -68,7 +95,7 @@ public:
     FIoStatus& GetStatus();
     bool IsOk();
 
-    void MakePackage(TSharedPtr<GlobalContext> Context, FExportState& ExportState);
+    UPackagePtr MakePackage(TSharedPtr<GlobalContext> Context, FExportState& ExportState);
     void LoadProperties(UStructPtr Struct, UObjectPtr Object);
 
     uint32_t GetCookedHeaderSize();
@@ -137,8 +164,8 @@ private:
 
 export struct FZenPackageData {
     TObjectPtr<class UZenPackage> Package;
-    class FZenPackageReader Reader;
-    struct FExportState ExportState;
+    FZenPackageReader Reader;
+    FExportState ExportState;
     FZenPackageHeader Header;
     std::vector<FExportObject> Exports;
 

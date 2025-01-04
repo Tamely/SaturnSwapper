@@ -43,7 +43,7 @@ public:
 
         ChunkIdToIndex.clear();
         for (int32_t ChunkIndex = 0; ChunkIndex < Toc.ChunkIds.size(); ++ChunkIndex) {
-            ChunkIdToIndex.insert({ Toc.ChunkIds[ChunkIndex], ChunkIndex });
+            ChunkIdToIndex.insert_or_assign(Toc.ChunkIds[ChunkIndex], ChunkIndex);
         }
 
         if (EnumHasAnyFlags(Toc.Header.ContainerFlags, EIoContainerFlags::Encrypted)) {
@@ -91,8 +91,11 @@ public:
     }
 
     const int32_t* GetTocEntryIndex(const FIoChunkId& ChunkId) const {
-        auto It = ChunkIdToIndex.find(ChunkId);
-        return (It != ChunkIdToIndex.end()) ? &It->second : nullptr;
+        auto it = ChunkIdToIndex.find(ChunkId);
+        if (it != ChunkIdToIndex.end()) {
+            return &it->second;
+        }
+        return nullptr;
     }
 
     const FIoOffsetAndLength* GetOffsetAndLength(const FIoChunkId& ChunkId) const {

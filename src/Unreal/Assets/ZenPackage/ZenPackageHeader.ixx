@@ -34,6 +34,7 @@ export struct FZenPackageHeader {
     std::vector<FDependencyBundleEntry> DependencyBundleEntries;
 
     std::vector<std::wstring> ImportedPackageNames;
+    uint32_t ExportOffset = 0;
 
     static FZenPackageHeader MakeView(std::vector<uint8_t>& Memory);
     static FZenPackageHeader MakeView(std::vector<uint8_t>& Memory, std::string& OutError);

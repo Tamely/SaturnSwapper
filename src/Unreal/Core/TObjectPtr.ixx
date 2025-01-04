@@ -20,11 +20,6 @@ public:
         return *this;
     }
 
-    __forceinline TObjectPtr operator=(TObjectPtr<ObjectType> Other) {
-        Val = Other.Val;
-        return *this;
-    }
-
     template <typename OtherType>
     __forceinline TObjectPtr operator=(TObjectPtr<OtherType> Other) {
         Val = std::static_pointer_cast<ObjectType>(Other.Val);

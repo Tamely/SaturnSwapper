@@ -9,9 +9,13 @@ import <vector>;
 import <mutex>;
 import <memory>;
 
+import Saturn.Misc.IoBuffer;
+import Saturn.Core.UObject;
 import Saturn.Structs.Guid;
+import Saturn.VFS.FileSystem;
 import Saturn.Encryption.AES;
 import Saturn.Core.GlobalContext;
+import Saturn.Readers.ZenPackageReader;
 
 export class FFileProvider {
 public:
@@ -23,6 +27,10 @@ public:
     void MountAsync();
     void Mount();
     void Unmount();
+
+    UPackagePtr LoadPackage(const std::string& Path);
+    UPackagePtr LoadPackage(const std::string& Path, FExportState& State);
+    UPackagePtr LoadPackage(FIoBuffer& Entry, FExportState& State);
 public:
     std::vector<class FIoStoreReader*>& GetArchives() { return TocArchives; }
 private:
@@ -31,4 +39,5 @@ private:
     std::vector<class FIoStoreReader*> TocArchives;
     std::mutex TocArchivesMutex;
     TSharedPtr<GlobalContext> Context;
+    TSharedPtr<VirtualFileSystem> VFS;
 };

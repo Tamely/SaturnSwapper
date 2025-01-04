@@ -37,10 +37,6 @@ const std::string& ExtensionPool::Get(uint32_t id) {
     return s_ReverseLookup[id];
 }
 
-TMap<uint64_t, FGameFile> VirtualFileSystem::s_FileMap;
-std::shared_mutex VirtualFileSystem::s_VFSMutex;
-std::vector<class FIoStoreReader*> VirtualFileSystem::s_Readers;
-
 void VirtualFileSystem::Register(const std::string& Path, uint32_t TocEntryIndex) {
     std::unique_lock<std::shared_mutex> lock(s_VFSMutex);
 

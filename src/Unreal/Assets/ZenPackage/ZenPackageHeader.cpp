@@ -77,6 +77,9 @@ FZenPackageHeader FZenPackageHeader::MakeView(std::vector<uint8_t>& Memory, std:
     FZenPackageImportedPackageNamesContainer Container;
     ImportedPackageNamesDataReader << Container;
     PackageHeader.ImportedPackageNames = std::move(Container.Names);
+
+    PackageHeader.ExportOffset = PackageHeader.PackageSummary->HeaderSize;
+
     return PackageHeader;
 }
 

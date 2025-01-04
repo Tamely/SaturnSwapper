@@ -31,18 +31,18 @@ export struct FGameFile {
 
 export class VirtualFileSystem {
 public:
-    static void Register(const std::string& Path, uint32_t TocEntryIndex);
-    static void RegisterBatch(const std::vector<std::pair<std::string, uint32_t>>& Files);
-    static void RegisterParallel(const std::vector<std::pair<std::string, uint32_t>>& Files);
+    void Register(const std::string& Path, uint32_t TocEntryIndex);
+    void RegisterBatch(const std::vector<std::pair<std::string, uint32_t>>& Files);
+    void RegisterParallel(const std::vector<std::pair<std::string, uint32_t>>& Files);
 
-    static void RegisterReader(class FIoStoreReader* Reader);
-    static void RegisterReaders(std::vector<class FIoStoreReader*>& Readers);
+    void RegisterReader(class FIoStoreReader* Reader);
+    void RegisterReaders(std::vector<class FIoStoreReader*>& Readers);
 
-    static void Clear();
+    void Clear();
 
-    static void PrintRegisteredFiles();
-    static std::optional<FGameFile> GetFileByPath(const std::string& Path);
-    static TIoStatusOr<FIoBuffer> GetBufferByPathAndExtension(const std::string& Path);
+    void PrintRegisteredFiles();
+    std::optional<FGameFile> GetFileByPath(const std::string& Path);
+    TIoStatusOr<FIoBuffer> GetBufferByPathAndExtension(const std::string& Path);
 
 private:
     static std::string GetExtension(const std::string& Path);
@@ -50,7 +50,7 @@ private:
     static std::string NormalizeFilePath(const std::string& path);
 
     // Key is xxhashed normalized path
-    static TMap<uint64_t, FGameFile> s_FileMap;
-    static std::shared_mutex s_VFSMutex;
-    static std::vector<class FIoStoreReader*> s_Readers;
+    TMap<uint64_t, FGameFile> s_FileMap;
+    std::shared_mutex s_VFSMutex;
+    std::vector<class FIoStoreReader*> s_Readers;
 };

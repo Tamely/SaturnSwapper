@@ -15,15 +15,21 @@ import Saturn.IoStore.IoStoreReader;
 import Saturn.Structs.IoStoreTocChunkInfo;
 
 void FGlobalTocData::Serialize(FIoStoreReader* Reader) {
-    FIoChunkId ChunkId(0, 0, EIoChunkType::ScriptObjects);
+    FIoChunkId ChunkId = CreateIoChunkId(0, 0, EIoChunkType::ScriptObjects);
 
     TIoStatusOr<FIoStoreTocChunkInfo> ChunkStatus = Reader->GetChunkInfo(ChunkId);
-    if (!ChunkStatus.IsOk()) return;
+    if (!ChunkStatus.IsOk()) {
+        LOG_ERROR("Failed to find ScriptObjects in Global Toc. Reader chunk count: {0}.", Reader->GetChunkCount());
+        return;
+    }
 
     FIoStoreTocChunkInfo ChunkInfo = ChunkStatus.ConsumeValueOrDie();
 
     TIoStatusOr<FIoBuffer> ScriptObjectsBufferStatus = Reader->Read(ChunkId, FIoReadOptions(0, ChunkInfo.Size));
-    if (!ScriptObjectsBufferStatus.IsOk()) return;
+    if (!ScriptObjectsBufferStatus.IsOk()) {
+        LOG_ERROR("Failed to read ScriptObjects in Global Toc. Reader chunk count: {0}.", Reader->GetChunkCount());
+        return;
+    }
 
     FIoBuffer ScriptObjectsBuffer = ScriptObjectsBufferStatus.ConsumeValueOrDie();
 
@@ -41,4 +47,6 @@ void FGlobalTocData::Serialize(FIoStoreReader* Reader) {
         auto& ScriptObjectEntry = ScriptObjectEntries[i];
         ScriptObjectByGlobalIdMap.insert_or_assign(ScriptObjectEntry.GlobalIndex, ScriptObjectEntry);
     }
+
+    LOG_INFO("Serialized global toc");
 }
