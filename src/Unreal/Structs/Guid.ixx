@@ -21,11 +21,20 @@ public:
 		return ((A ^ Y.A) | (B ^ Y.B) | (C ^ Y.C) | (D ^ Y.D)) != 0;
 	}
 
-	friend __forceinline FArchive& operator<<(FArchive& Ar, FGuid& value) {
-		Ar << value.A;
-		Ar << value.B;
-		Ar << value.C;
-		Ar << value.D;
+	friend __forceinline FArchive& operator<<(FArchive& Ar, FGuid& Value) {
+		Ar << Value.A;
+		Ar << Value.B;
+		Ar << Value.C;
+		Ar << Value.D;
+
+		return Ar;
+	}
+
+	friend __forceinline FArchive& operator>>(FArchive& Ar, FGuid& Value) {
+		Ar >> Value.A;
+		Ar >> Value.B;
+		Ar >> Value.C;
+		Ar >> Value.D;
 
 		return Ar;
 	}

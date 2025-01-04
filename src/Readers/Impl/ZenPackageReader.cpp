@@ -301,7 +301,6 @@ FZenPackageReader& operator<<(FZenPackageReader& Ar, UObjectPtr& Object) {
     FPackageIndex Index;
     Ar << Index;
 
-    /*
     if (Index.IsNull()) {
         Object = UObjectPtr(nullptr);
         return Ar;
@@ -309,8 +308,8 @@ FZenPackageReader& operator<<(FZenPackageReader& Ar, UObjectPtr& Object) {
 
     if (Index.IsExport()) {
         int32_t ExportIndex = Index.ToExport();
-        if (ExportIndex < Ar.GetExports().size()) {
-            Object = Ar.GetExports()[ExportIndex].Object;
+        if (ExportIndex < Ar.PackageData->Exports.size()) {
+            Object = Ar.PackageData->Exports[ExportIndex].Object;
         }
         else {
             Ar.Status = FIoStatus(EIoErrorCode::ReadError, "Export index read is not a valid index.");
@@ -319,14 +318,20 @@ FZenPackageReader& operator<<(FZenPackageReader& Ar, UObjectPtr& Object) {
         return Ar;
     }
 
-    if (Index.IsImport() && Index.ToImport() < Ar.PackageHeader.ImportMap.size()) {
-        Object = Ar.IndexToObject(Ar.PackageHeader.ImportMap[Index.ToImport()]);
+    auto& ImportMap = Ar.PackageData->Header.ImportMap;
+
+    if (Index.IsImport() && Index.ToImport() < ImportMap.size()) {
+        Object = Ar.PackageData->Package->IndexToObject(Ar.PackageData->Header, Ar.PackageData->Exports, Ar.PackageData->Header.ImportMap[Index.ToImport()]);
     }
     else {
         Ar.Status = FIoStatus(EIoErrorCode::ReadError, "Bad object import index.");
-    }*/
+    }
 
     return Ar;
+}
+
+FZenPackageReader& operator<<(FZenPackageReader& Ar, UStructPtr& Struct) {
+    return Ar << reinterpret_cast<UObjectPtr&>(Struct);
 }
 
 FZenPackageReader& operator<<(FZenPackageReader& Ar, FName& Name) {
