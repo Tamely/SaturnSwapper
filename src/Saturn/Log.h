@@ -1,15 +1,15 @@
-#include "Saturn/Defines.h"
-
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
+
+#include <memory>
 
 class Log {
 public:
     static void Init();
 
-    inline static TSharedPtr<spdlog::logger>& GetCoreLogger() { return s_CoreLogger; }
+    inline static std::shared_ptr<spdlog::logger>& GetCoreLogger() { return s_CoreLogger; }
 private:
-    static TSharedPtr<spdlog::logger> s_CoreLogger;
+    static std::shared_ptr<spdlog::logger> s_CoreLogger;
 };
 
 // Core logging macros

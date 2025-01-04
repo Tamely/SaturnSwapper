@@ -5,7 +5,7 @@ module;
 
 export module Saturn.Properties.TextProperty;
 
-//import Saturn.Localization.Text;
+import Saturn.Localization.Text;
 import Saturn.Readers.ZenPackageReader;
 export import Saturn.Reflection.FProperty;
 
@@ -13,7 +13,7 @@ export class FTextProperty : public FProperty {
 public:
     struct Value : public IPropValue {
     public:
-        //FText Text;
+        FText Text;
 
         __forceinline bool IsAcceptableType(EPropertyType Type) override {
             return false; // TODO: this
@@ -24,15 +24,15 @@ public:
         }
 
         void Write(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
-            //Ar >> Text;
+            Ar >> Text;
         }
     };
 
     TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<Value>();
-        //Ar << Ret->Text;
+        Ar << Ret->Text;
 
-        LOG_ERROR("Text is getting serialized");
+        LOG_INFO(Ret->Text.ToString());
         
         return std::move(Ret);
     }

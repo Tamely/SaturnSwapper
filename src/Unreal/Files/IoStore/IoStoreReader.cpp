@@ -141,7 +141,7 @@ public:
 	// year 2022 ssd drives. For a file hot in the windows file cache, you can get 4+ GB/s with as few as
 	// 4 file handles, however for a cold file you need upwards of 32 in order to reach ~1.5 GB/s. This is
 	// low because IoStoreReader (note: not IoDispatcher!) reads are comparatively small - at most you're reading compression block sized
-	// chunks when uncompressed, however with Oodle those get cut by ~half, so with a defaualt block size
+	// chunks when uncompressed, however with Oodle those get cut by ~half, so with a default block size
 	// of 64kb, reads are generally less than 32kb, which is tough to use and get full ssd bandwith out of.
 	//
 	static constexpr uint32_t NumHandlesPerFile = 12;
