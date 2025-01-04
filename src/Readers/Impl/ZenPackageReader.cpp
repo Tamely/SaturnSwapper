@@ -235,7 +235,7 @@ void FZenPackageReader::LoadProperties(UStructPtr Struct, UObjectPtr Object) {
 
         FProperty* Prop = *It;
 
-        LOG_TRACE("Serializing property {0} {1}", Prop->GetName(), (int)Prop->Type);
+        LOG_TRACE("Serializing property {0} {1} {2}", Prop->GetName(), (int)Prop->Type, Tell());
 
         TUniquePtr<IPropValue> Value = Prop->Serialize(*this);
 

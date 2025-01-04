@@ -31,8 +31,6 @@ public:
     TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<Value>();
         Ar << Ret->Text;
-
-        LOG_INFO(Ret->Text.ToString());
         
         return std::move(Ret);
     }

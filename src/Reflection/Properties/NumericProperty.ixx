@@ -127,7 +127,7 @@ public:
 
         __forceinline void Write(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
             Ar >> Val;
-            Ar >> Index;
+            //Ar >> Index;
         }
     };
 
@@ -135,7 +135,7 @@ public:
         auto Ret = std::make_unique<Value>();
 
         Ar << Ret->Val;
-        Ar << Ret->Index;
+        //Ar << Ret->Index;
         Ret->Owner = &Ar;
 
 		return std::move(Ret);
