@@ -1,7 +1,9 @@
 export module Saturn.Unreal.AssetRegistryReader;
 
 import Saturn.Structs.Name;
+import Saturn.Asset.NameMap;
 import Saturn.Readers.FArchive;
+import Saturn.Paths.TopLevelAssetPath;
 import Saturn.Structs.NameEntrySerialized;
 import Saturn.AssetRegistry.AssetRegistryHeader;
 
@@ -14,8 +16,7 @@ public:
 	FAssetRegistryReader() = default;
 	FAssetRegistryReader(FArchive& Ar, FAssetRegistryHeader& header) {
 		Header = header;
-		NameMap = FNameEntrySerialized::LoadNameBatch(Ar);
-		//FName::SetNameMap(NameMap);
+		NameMap.Load(Ar, FMappedName::EType::Package);
 
 		uint32_t storeMagic;
 		Ar << storeMagic;
@@ -34,24 +35,23 @@ public:
 		Ar.SeekCur(sizeof(uint32_t) * nums[0]);
 
 		for (int i = 0; i < nums[1]; i++) {
-			FName name;
-			//Ar << name;
+			ReadFName(Ar);
 		}
 
 		Ar.SeekCur(((header.Version >= FAssetRegistryVersionType::ClassPaths ? sizeof(uint32_t) : 0) + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t)) * nums[2]);
 
 		for (int i = 0; i < nums[3]; i++) {
 			if (header.Version >= FAssetRegistryVersionType::ClassPaths) {
-				//FTopLevelAssetPath name(Ar);
+				FName PackageName = ReadFName(Ar);
+				FName AssetName = ReadFName(Ar);
+				FTopLevelAssetPath name(PackageName, AssetName);
 			}
 			else {
-				FName name;
-				//Ar << name;
+				ReadFName(Ar);
 			}
 
-			FName name;
-			//Ar << name;
-			//Ar << name;
+			ReadFName(Ar);
+			ReadFName(Ar);
 		}
 
 		if (storeMagic == 0x12345678) {
@@ -70,8 +70,7 @@ public:
 		Ar.SeekCur((sizeof(uint32_t) + sizeof(uint32_t)) * nums[9]);
 
 		for (int i = 0; i < nums[10]; i++) {
-			FName key;
-			//Ar << key;
+			ReadFName(Ar);
 
 			uint32_t value;
 			Ar << value;
@@ -79,7 +78,23 @@ public:
 
 		Ar.SeekCur(4);
 	}
+
+	FName ReadFName(FArchive& Ar) {
+		int index;
+		Ar << index;
+		int number = 0;
+
+		if ((index & FName::AssetRegistryNumberedNameBit) > 0) {
+			index -= FName::AssetRegistryNumberedNameBit;
+			Ar << number;
+		}
+
+		FMappedName MappedName = FMappedName::Create(index, number, FMappedName::EType::Package);
+		std::wstring NameW = NameMap.GetName(MappedName);
+		std::string Name = std::string(NameW.begin(), NameW.end());
+		return Name;
+	}
 public:
 	FAssetRegistryHeader Header;
-	std::vector<FNameEntrySerialized> NameMap;
+	FNameMap NameMap;
 };

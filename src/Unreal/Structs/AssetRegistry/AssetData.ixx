@@ -2,12 +2,12 @@ export module Saturn.AssetRegistry.AssetData;
 
 import Saturn.Structs.Name;
 import Saturn.Readers.FArchive;
-import Saturn.AssetRegistry.AssetRegistryVersion;
+import Saturn.Unreal.AssetRegistryReader;
 
 export class FAssetData {
 public:
 	FAssetData() = default;
-	FAssetData(FArchive& Ar, FAssetRegistryVersionType Version);
+	FAssetData(FArchive& Ar, FAssetRegistryReader& Reader);
 public:
 	FName PackageName;
 	FName PackagePath;

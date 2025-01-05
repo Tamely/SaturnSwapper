@@ -1,38 +1,37 @@
 import Saturn.AssetRegistry.AssetData;
 
 import Saturn.Structs.Name;
-import Saturn.Structs.NameEntrySerialized;
-//import Saturn.Structs.TopLevelAssetPath;
 import Saturn.Readers.FArchive;
+import Saturn.Paths.TopLevelAssetPath;
+import Saturn.Unreal.AssetRegistryReader;
+import Saturn.Structs.NameEntrySerialized;
 import Saturn.AssetRegistry.AssetRegistryVersion;
 
 import <string>;
 import <vector>;
 
-//std::vector<FNameEntrySerialized> FName::NameMap;
-
-FAssetData::FAssetData(FArchive& Ar, FAssetRegistryVersionType Version) {
-	if (Version < FAssetRegistryVersionType::RemoveAssetPathFNames) {
-		FName oldObjectPath;
-		//Ar << oldObjectPath;
+FAssetData::FAssetData(FArchive& Ar, FAssetRegistryReader& Reader) {
+	if (Reader.Header.Version < FAssetRegistryVersionType::RemoveAssetPathFNames) {
+		FName oldObjectPath = Reader.ReadFName(Ar);
 	}
 
-	//Ar << PackagePath;
+	PackagePath = Reader.ReadFName(Ar);
 
-	if (Version >= FAssetRegistryVersionType::ClassPaths) {
-		//AssetClass = FTopLevelAssetPath(Ar).AssetName;
+	if (Reader.Header.Version >= FAssetRegistryVersionType::ClassPaths) {
+		FName TopPackageName = Reader.ReadFName(Ar);
+		FName TopAssetName = Reader.ReadFName(Ar);
+		AssetClass = TopAssetName;
 	}
 	else {
-		//Ar << AssetClass;
+		AssetClass = Reader.ReadFName(Ar);
 	}
 
-	if (Version < FAssetRegistryVersionType::RemovedMD5Hash) {
-		FName oldGroupNames;
-		//Ar << oldGroupNames;
+	if (Reader.Header.Version < FAssetRegistryVersionType::RemovedMD5Hash) {
+		FName oldGroupNames = Reader.ReadFName(Ar);
 	}
 
-	//Ar << PackageName;
-	//Ar << AssetName;
+	PackageName = Reader.ReadFName(Ar);
+	AssetName = Reader.ReadFName(Ar);
 
 	uint64_t tagSize;
 	Ar << tagSize;
@@ -41,18 +40,17 @@ FAssetData::FAssetData(FArchive& Ar, FAssetRegistryVersionType Version) {
 	Ar << bundleCount;
 
 	for (uint32_t i = 0; i < bundleCount; i++) {
-		FName bundleName;
-		//Ar << bundleName;
+		FName bundleName = Reader.ReadFName(Ar);
 
 		uint32_t assetCount;
 		Ar << assetCount;
 		for (uint32_t j = 0; j < assetCount; j++) {
-			if (Version >= FAssetRegistryVersionType::ClassPaths) {
-				//FTopLevelAssetPath a(Ar);
+			if (Reader.Header.Version >= FAssetRegistryVersionType::ClassPaths) {
+				FName TopPackageName = Reader.ReadFName(Ar);
+				FName TopAssetName = Reader.ReadFName(Ar);
 			}
 			else {
-				FName a;
-				//Ar << a;
+				FName a = Reader.ReadFName(Ar);
 			}
 
 			std::string b;

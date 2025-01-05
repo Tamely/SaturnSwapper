@@ -149,6 +149,4 @@ FPak::FPak(const std::string& path, FAESKey key) : EncryptionKey(key) {
 
 		Entries[name] = FPakEntry(indexReader, Version);
 	}
-
-	reader.Close();
 }

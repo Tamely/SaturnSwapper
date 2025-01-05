@@ -86,13 +86,14 @@ JSValueRef FOnLoadSaturn::OnLoadSaturn(JSContextRef ctx, JSObjectRef function, J
 		return JSValueMakeBoolean(ctx, false);
 	}
 
-	//std::string path = FortniteFunctionLibrary::GetFortniteInstallationPath() + _("pakchunk0-WindowsClient.pak");
-
-	//FBaseGenerator::InitializeAssetRegistry(path, key);
-
 	FGuid defaultGUID;
 	FAESKey defaultAES(mainKey.c_str());
 	LOG_INFO("Created AES info");
+
+	LOG_INFO("Loading Asset Registry");
+	std::string path = FortniteFunctionLibrary::GetFortniteInstallationPath() + _("pakchunk0-WindowsClient.pak");
+	FBaseGenerator::InitializeAssetRegistry(path, defaultAES);
+	LOG_INFO("Loaded Asset Registry");
 
 	FFileProvider provider(FortniteFunctionLibrary::GetFortniteInstallationPath(), "D:\\++Fortnite+Release-33.11-CL-38773622-Windows_oo.usmap");
 	LOG_INFO("Created provider");

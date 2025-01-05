@@ -38,7 +38,8 @@ public:
 	__forceinline std::string& GetString() {
 		return Val;
 	}
+
+	static const uint32_t AssetRegistryNumberedNameBit = 0x80000000u; // int32 max
 private:
 	std::string Val;
-	static const uint32_t AssetRegistryNumberedNameBit = 0x80000000u; // int32 max
 };

@@ -36,7 +36,7 @@ void FAssetRegistryState::Load(FArchive& Ar, FAssetRegistryReader& Reader) {
 
 	PreallocatedAssetDataBuffers = std::vector<FAssetData>(numAssets);
 	for (uint32_t i = 0; i < numAssets; i++) {
-		FAssetData assetData(Ar, Reader.Header.Version);
+		FAssetData assetData(Ar, Reader);
 		PreallocatedAssetDataBuffers[i] = assetData;
 	}
 }

@@ -119,20 +119,48 @@ void FFileReaderNoWrite::openFileForMapping() {
 void FFileReaderNoWrite::closeFileMapping() {
 #if defined(_WIN32) || defined(_WIN64)
     if (MappedData) {
+        LOG_INFO("Unmapping view of file '{0}'.", FilePath);
         UnmapViewOfFile(MappedData);
+        MappedData = nullptr;
     }
+    else {
+        LOG_WARN("MappedData is already null for file '{0}'.", FilePath);
+    }
+
     if (hMapping) {
+        LOG_INFO("Closing file mapping handle for file '{0}'.", FilePath);
         CloseHandle(hMapping);
+        hMapping = nullptr;
     }
+    else {
+        LOG_WARN("hMapping is already null for file '{0}'.", FilePath);
+    }
+
     if (hFile != INVALID_HANDLE_VALUE) {
+        LOG_INFO("Closing file handle for file '{0}'.", FilePath);
         CloseHandle(hFile);
+        hFile = INVALID_HANDLE_VALUE;
+    }
+    else {
+        LOG_WARN("hFile is already invalid for file '{0}'.", FilePath);
     }
 #else
     if (MappedData != MAP_FAILED) {
+        LOG_INFO("Unmapping file '{0}'.", FilePath);
         munmap(MappedData, FileSize);
+        MappedData = MAP_FAILED;
     }
+    else {
+        LOG_WARN("MappedData is already unmapped for file '{0}'.", FilePath);
+    }
+
     if (fd != -1) {
+        LOG_INFO("Closing file descriptor for file '{0}'.", FilePath);
         close(fd);
+        fd = -1;
+    }
+    else {
+        LOG_WARN("File descriptor is already closed for file '{0}'.", FilePath);
     }
 #endif
 }

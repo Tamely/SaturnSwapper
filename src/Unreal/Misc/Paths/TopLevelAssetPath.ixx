@@ -49,6 +49,9 @@ public:
 		AssetName = FName(AssetNameView);
     }
 
+    FTopLevelAssetPath(FName& InPackageName, FName& InAssetName)
+        : PackageName(InPackageName), AssetName(InAssetName) {}
+
     __forceinline std::string GetPackageName() const { return PackageName.ToString(); }
     __forceinline std::string GetAssetName() const { return AssetName.ToString(); }
 
