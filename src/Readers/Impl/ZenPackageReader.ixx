@@ -128,7 +128,9 @@ public:
     std::vector<std::wstring>& GetImportedPackageNames();
 
     friend FZenPackageReader& operator<<(FZenPackageReader& Ar, UObjectPtr& Object);
+    friend FZenPackageReader& operator>>(FZenPackageReader& Ar, UObjectPtr& Object);
     friend FZenPackageReader& operator<<(FZenPackageReader& Ar, UStructPtr& Struct);
+    friend FZenPackageReader& operator>>(FZenPackageReader& Ar, UStructPtr& Struct);
     friend FZenPackageReader& operator<<(FZenPackageReader& Ar, FName& Name);
     friend FZenPackageReader& operator>>(FZenPackageReader& Ar, FName& Name);
 

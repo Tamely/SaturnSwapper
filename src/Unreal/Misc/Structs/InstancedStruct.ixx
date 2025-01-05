@@ -29,7 +29,7 @@ public:
             Ar.SeekCur(SerialSize);
         }
         else if (Struct.ScriptStruct) {
-            Struct.ScriptStruct->SerializeItem(Ar);
+            Struct.ScriptStruct->SerializeItem(Ar, ESerializationMode::Normal);
         }
 
         return Ar;

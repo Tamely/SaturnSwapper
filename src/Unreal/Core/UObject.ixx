@@ -18,6 +18,7 @@ export typedef TObjectPtr<class UStruct> UStructPtr;
 export class UObject : public std::enable_shared_from_this<UObject> {
 public:
     UObject() = default;
+    TSharedPtr<class FPackageIndex> Index;
 
     friend class UZenPackage;
     friend class FZenPackageReader;
@@ -166,7 +167,7 @@ public:
     }
 
     void SerializeScriptProperties(class FZenPackageReader& Ar, UObjectPtr Object);
-    TUniquePtr<IPropValue> SerializeItem(class FZenPackageReader& Ar);
+    TUniquePtr<IPropValue> SerializeItem(class FZenPackageReader& Ar, enum class ESerializationMode SerializationMode);
 };
 
 export class UClass : public UStruct {

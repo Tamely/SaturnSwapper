@@ -102,6 +102,11 @@ public:
         return Ar;
     }
 
+    __forceinline friend FArchive& operator>>(FArchive& Ar, FPackageIndex& Value) {
+        Ar >> Value.Index;
+        return Ar;
+    }
+
     [[nodiscard]] __forceinline friend uint32_t GetTypeHash(const FPackageIndex& In) {
         return uint32_t(In.Index);
     }

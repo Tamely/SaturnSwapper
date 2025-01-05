@@ -23,6 +23,8 @@ export struct FVector {
 
         return Ar;
     }
+
+    static const FVector ZeroVector;
 };
 
 export struct FVector2D {
@@ -45,6 +47,8 @@ export struct FVector2D {
 
         return Ar;
     }
+
+    static const FVector2D ZeroVector;
 };
 
 export struct FVector4 {
@@ -69,4 +73,10 @@ export struct FVector4 {
 
         return Ar;
     }
+
+    static const FVector4 ZeroVector;
 };
+
+const FVector FVector::ZeroVector = FVector(0.f, 0.f, 0.f);
+const FVector2D FVector2D::ZeroVector = FVector2D(0.f, 0.f);
+const FVector4 FVector4::ZeroVector = FVector4(0.f, 0.f, 0.f, 0.f);

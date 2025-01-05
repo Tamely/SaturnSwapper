@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
 	LOG_INFO("Mounted");
 
 
-	UPackagePtr package = provider.LoadPackage("/Game/Balance/DefaultGameDataCosmetics.uasset");
+	UPackagePtr package = provider.LoadPackage("FortniteGame/Plugins/GameFeatures/BRCosmetics/Content/Athena/Items/Cosmetics/Characters/CID_030_Athena_Commando_M_Halloween.uasset");
 	LOG_INFO("Export Name {0}", package->GetFirstExport()->GetName());
 
 	/*

@@ -49,12 +49,17 @@ public:
     };
 
     TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
-        return Struct->SerializeItem(Ar);
+        return Struct->SerializeItem(Ar, SerializationMode);
     }
 
     template <typename StructType>
-    static TUniquePtr<IPropValue> SerializeNativeStruct(class FZenPackageReader& Ar) {
+    static TUniquePtr<IPropValue> SerializeNativeStruct(class FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) {
         auto Ret = std::make_unique<FStructProperty::NativeValue<StructType>>();
+
+        if (SerializationMode == ESerializationMode::Zero) {
+            return std::move(Ret);
+        }
+
         Ar << Ret->Value;
 
         return std::move(Ret);
