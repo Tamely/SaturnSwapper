@@ -31,7 +31,7 @@ public:
         void Write(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {}
     };
 
-    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
+    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
         auto Ret = std::make_unique<Value>();
         Ar << Ret->Delegate;
 
@@ -60,7 +60,7 @@ public:
         void Write(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {}
     };
 
-    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
+    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
         auto Ret = std::make_unique<Value>();
         Ar << Ret->Delegate;
 

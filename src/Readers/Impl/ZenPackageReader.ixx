@@ -60,6 +60,21 @@ export struct FExportState {
     bool LoadTargetOnly = false;
 };
 
+class UZenPackage : public UPackage {
+public:
+    UZenPackage(FZenPackageHeader& InHeader, TSharedPtr<GlobalContext>& InContext);
+
+    void ProcessExports(class FZenPackageData& PackageData);
+    void CreateExport(class FZenPackageData& PackageData, std::vector<FExportObject>& Exports, int32_t LocalExportIndex);
+    std::optional<UObjectPtr> TrySerializeExport(class FZenPackageData& PackageData, int32_t LocalExportIndex);
+
+    template <typename T = UObject>
+    TObjectPtr<T> CreateScriptObject(TSharedPtr<GlobalContext> Context, FPackageObjectIndex& Index);
+
+    template <typename T = UObject>
+    UObjectPtr IndexToObject(FZenPackageHeader& Header, std::vector<FExportObject>& Exports, FPackageObjectIndex Index);
+};
+
 export class FZenPackageReader : public FMemoryReader {
 public:
     FZenPackageReader() : FMemoryReader(nullptr, 0) {} // DO NOT USE THIS
@@ -159,6 +174,7 @@ private:
     TObjectPtr<class UZenPackage> Package;
 
     friend class UZenPackage;
+    friend class FObjectProperty;
 };
 
 

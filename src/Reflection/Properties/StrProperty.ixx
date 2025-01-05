@@ -31,11 +31,11 @@ public:
         }
     };
 
-    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
+    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
         auto Ret = std::make_unique<Value>();
         Ar << Ret->Str;
 
-        LOG_TRACE("Serialized StrProperty with value {0}", Ret->Str);
+        LOG_TRACE("Serialized StrProperty with value '{0}'", Ret->Str);
         
         return std::move(Ret);
     }

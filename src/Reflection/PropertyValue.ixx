@@ -81,16 +81,17 @@ constexpr EPropertyType GetPropertyType() {
     return EPropertyType::Unknown;
 }
 
+export enum class ESerializationMode : uint8_t {
+    Zero,
+    Normal,
+    Map,
+    Array
+};
+
 export class IPropValue {
 protected:
     int ValueTypeSize = 0;
 public:
-    enum class ESerializationMode : uint8_t {
-        Zero,
-        Normal,
-        Map
-    };
-
     virtual bool IsAcceptableType(EPropertyType Type) = 0;
     virtual void PlaceValue(EPropertyType Type, void* OutBuffer) = 0;
     virtual void Write(class FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) = 0;

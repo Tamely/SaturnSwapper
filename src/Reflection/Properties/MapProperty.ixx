@@ -46,14 +46,14 @@ public:
         }
     };
 
-    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
+    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
         auto Ret = std::make_unique<Value>();
 
         int32_t NumKeysToRemove = 0;
         Ar << NumKeysToRemove;
 
         for (; NumKeysToRemove; --NumKeysToRemove) {
-            TUniquePtr<IPropValue> keyToRemove = KeyType->Serialize(Ar);
+            TUniquePtr<IPropValue> keyToRemove = KeyType->Serialize(Ar, ESerializationMode::Map);
             Ret->KeysToRemove.push_back(std::move(keyToRemove));
         }
 
@@ -61,8 +61,8 @@ public:
         Ar << NumEntries;
 
         for (; NumEntries; --NumEntries) {
-            TUniquePtr<IPropValue> key = KeyType->Serialize(Ar);
-            TUniquePtr<IPropValue> value = ValueType->Serialize(Ar);
+            TUniquePtr<IPropValue> key = KeyType->Serialize(Ar, ESerializationMode::Map);
+            TUniquePtr<IPropValue> value = ValueType->Serialize(Ar, ESerializationMode::Map);
             Ret->Value.insert({ std::move(key), std::move(value) });
         }
 

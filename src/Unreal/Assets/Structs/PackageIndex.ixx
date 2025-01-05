@@ -60,7 +60,7 @@ public:
     }
 
     /** Create a FPackageIndex from an export index **/
-    __forceinline static FPackageIndex FromExporot(int32_t ExportIndex) {
+    __forceinline static FPackageIndex FromExport(int32_t ExportIndex) {
         return FPackageIndex(ExportIndex + 1);
     }
 

@@ -28,177 +28,174 @@ import Saturn.Asset.DependencyBundleHeader;
 import Saturn.ZenPackage.ZenPackageSummary;
 import Saturn.Unversioned.UnversionedHeader;
 
-class UZenPackage : public UPackage {
-public:
-    UZenPackage(FZenPackageHeader& InHeader, TSharedPtr<GlobalContext>& InContext) {
-        Name = std::string(InHeader.PackageName.begin(), InHeader.PackageName.end());
-        Context = InContext;
-    }
+UZenPackage::UZenPackage(FZenPackageHeader& InHeader, TSharedPtr<GlobalContext>& InContext) {
+    Name = std::string(InHeader.PackageName.begin(), InHeader.PackageName.end());
+    Context = InContext;
+}
 
-    void ProcessExports(FZenPackageData& PackageData) {
-        PackageData.Exports.resize(PackageData.Header.ExportCount);
+void UZenPackage::ProcessExports(FZenPackageData& PackageData) {
+    PackageData.Exports.resize(PackageData.Header.ExportCount);
 
-        for (size_t i = 0; i < PackageData.Exports.size(); i++) {
-            if (!PackageData.Exports[i].Object) {
-                PackageData.Exports[i].Object = std::make_shared<UObject>();
-            }
-        }
-
-        auto& Header = PackageData.Header;
-        auto ExportOffset = 0;
-
-        for (size_t i = 0; i < Header.ExportBundleEntries.size(); i++) {
-            auto& ExportBundle = Header.ExportBundleEntries[i];
-            auto& LocalExport = PackageData.Exports[ExportBundle.LocalExportIndex];
-
-            if (ExportBundle.CommandType == FExportBundleEntry::ExportCommandType_Create) {
-                CreateExport(PackageData, PackageData.Exports, ExportBundle.LocalExportIndex);
-                continue;
-            }
-
-            if (ExportBundle.CommandType != FExportBundleEntry::ExportCommandType_Serialize)
-                continue; // the only other option is count (which obv will not be used, so this is more of making sure we read the right value
-
-            auto Export = TrySerializeExport(PackageData, ExportBundle.LocalExportIndex);
-
-            if (Export.has_value()) {
-                Exports.push_back(Export.value());
-            }
+    for (size_t i = 0; i < PackageData.Exports.size(); i++) {
+        if (!PackageData.Exports[i].Object) {
+            PackageData.Exports[i].Object = std::make_shared<UObject>();
         }
     }
 
-    void CreateExport(FZenPackageData& PackageData, std::vector<FExportObject>& Exports, int32_t LocalExportIndex) {
-        auto& Header = PackageData.Header;
-        auto& Export = Header.ExportMap[LocalExportIndex];
-        auto ObjectNameW = Header.NameMap.GetName(Export.ObjectName);
-        auto ObjectName = std::string(ObjectNameW.begin(), ObjectNameW.end());
+    auto& Header = PackageData.Header;
+    auto ExportOffset = 0;
 
-        bool IsTargetObject = ObjectName == PackageData.ExportState.TargetObjectName;
+    for (size_t i = 0; i < Header.ExportBundleEntries.size(); i++) {
+        auto& ExportBundle = Header.ExportBundleEntries[i];
+        auto& LocalExport = PackageData.Exports[ExportBundle.LocalExportIndex];
 
-        if (IsTargetObject) {
-            Exports[LocalExportIndex].Object = PackageData.ExportState.TargetObject;
-        }
-        else if (PackageData.ExportState.LoadTargetOnly) {
-            return;
+        if (ExportBundle.CommandType == FExportBundleEntry::ExportCommandType_Create) {
+            CreateExport(PackageData, PackageData.Exports, ExportBundle.LocalExportIndex);
+            continue;
         }
 
-        UObjectPtr& Object = Exports[LocalExportIndex].Object;
-        auto& TemplateObject = Exports[LocalExportIndex].TemplateObject;
+        if (ExportBundle.CommandType != FExportBundleEntry::ExportCommandType_Serialize)
+            continue; // the only other option is count (which obv will not be used, so this is more of making sure we read the right value
 
-        TemplateObject = IndexToObject(Header, Exports, Export.TemplateIndex);
+        auto Export = TrySerializeExport(PackageData, ExportBundle.LocalExportIndex);
 
-        if (!TemplateObject) {
-            PackageData.Reader.Status = FIoStatus(EIoErrorCode::ReadError, "Template object could not be loaded for FZenPackage.");
-            return;
+        if (Export.has_value()) {
+            Exports.push_back(Export.value());
         }
+    }
+}
 
-        Object->Name = std::string(ObjectName.begin(), ObjectName.end());
+void UZenPackage::CreateExport(FZenPackageData& PackageData, std::vector<FExportObject>& Exports, int32_t LocalExportIndex) {
+    auto& Header = PackageData.Header;
+    auto& Export = Header.ExportMap[LocalExportIndex];
+    auto ObjectNameW = Header.NameMap.GetName(Export.ObjectName);
+    auto ObjectName = std::string(ObjectNameW.begin(), ObjectNameW.end());
 
-        if (!Object->Class) {
-            Object->Class = IndexToObject<UClass>(Header, Exports, Export.ClassIndex).As<UClass>();
-        }
+    bool IsTargetObject = ObjectName == PackageData.ExportState.TargetObjectName;
 
-        if (!Object->Outer) {
-            Object->Outer = Export.OuterIndex.IsNull() ? This() : IndexToObject(Header, Exports, Export.OuterIndex);
-        }
-
-        if (UStructPtr Struct = Object.As<UStruct>()) {
-            if (!Struct->GetSuper()) {
-                Struct->SetSuper(IndexToObject<UStruct>(Header, Exports, Export.SuperIndex).As<UStruct>());
-            }
-        }
-
-        Object->ObjectFlags = UObject::EObjectFlags(Export.ObjectFlags | UObject::EObjectFlags::RF_NeedLoad | UObject::EObjectFlags::RF_NeedPostLoad | UObject::EObjectFlags::RF_NeedPostLoadSubobjects | UObject::EObjectFlags::RF_WasLoaded);
+    if (IsTargetObject) {
+        Exports[LocalExportIndex].Object = PackageData.ExportState.TargetObject;
+    }
+    else if (PackageData.ExportState.LoadTargetOnly) {
+        return;
     }
 
-    std::optional<UObjectPtr> TrySerializeExport(FZenPackageData& PackageData, int32_t LocalExportIndex) {
-        auto& Export = PackageData.Header.ExportMap[LocalExportIndex];
-        auto& ExportObject = PackageData.Exports[LocalExportIndex];
-        UObjectPtr& Object = ExportObject.Object;
+    UObjectPtr& Object = Exports[LocalExportIndex].Object;
+    auto& TemplateObject = Exports[LocalExportIndex].TemplateObject;
 
-        if (PackageData.ExportState.LoadTargetOnly and Object != PackageData.ExportState.TargetObject)
-            return std::nullopt;
+    TemplateObject = IndexToObject(Header, Exports, Export.TemplateIndex);
 
-        Object->ClearFlags(UObject::RF_NeedLoad);
-
-        Object->Serialize(PackageData.Reader);
-
-        return Object;
+    if (!TemplateObject) {
+        PackageData.Reader.Status = FIoStatus(EIoErrorCode::ReadError, "Template object could not be loaded for FZenPackage.");
+        return;
     }
 
-    template <typename T = UObject>
-    TObjectPtr<T> CreateScriptObject(TSharedPtr<GlobalContext> Context, FPackageObjectIndex& Index) {
-        if (!Context->GlobalToc->ScriptObjectByGlobalIdMap.contains(Index)) {
-            LOG_ERROR("Failed to find script object with index {0}. ScriptMap has a size of {1}.", GetTypeHash(Index), Context->GlobalToc->ScriptObjectByGlobalIdMap.size());
-            return nullptr;
+    Object->Name = std::string(ObjectName.begin(), ObjectName.end());
+
+    if (!Object->Class) {
+        Object->Class = IndexToObject<UClass>(Header, Exports, Export.ClassIndex).As<UClass>();
+    }
+
+    if (!Object->Outer) {
+        Object->Outer = Export.OuterIndex.IsNull() ? This() : IndexToObject(Header, Exports, Export.OuterIndex);
+    }
+
+    if (UStructPtr Struct = Object.As<UStruct>()) {
+        if (!Struct->GetSuper()) {
+            Struct->SetSuper(IndexToObject<UStruct>(Header, Exports, Export.SuperIndex).As<UStruct>());
         }
+    }
 
-        auto ScriptObject = Context->GlobalToc->ScriptObjectByGlobalIdMap[Index];
-        std::wstring NameW = Context->GlobalToc->NameMap.GetName(ScriptObject.MappedName);
-        std::string Name = std::string(NameW.begin(), NameW.end());
+    Object->ObjectFlags = UObject::EObjectFlags(Export.ObjectFlags | UObject::EObjectFlags::RF_NeedLoad | UObject::EObjectFlags::RF_NeedPostLoad | UObject::EObjectFlags::RF_NeedPostLoadSubobjects | UObject::EObjectFlags::RF_WasLoaded);
+}
 
-        if (Context->ObjectArray.contains(Name)) {
-            UObjectPtr Ret = Context->ObjectArray[Name];
+std::optional<UObjectPtr> UZenPackage::TrySerializeExport(FZenPackageData& PackageData, int32_t LocalExportIndex) {
+    auto& Export = PackageData.Header.ExportMap[LocalExportIndex];
+    auto& ExportObject = PackageData.Exports[LocalExportIndex];
+    UObjectPtr& Object = ExportObject.Object;
 
-            if (!Ret->GetOuter() && !ScriptObject.OuterIndex.IsNull()) {
-                Ret->SetOuter(CreateScriptObject<UObject>(Context, ScriptObject.OuterIndex));
-            }
+    if (PackageData.ExportState.LoadTargetOnly and Object != PackageData.ExportState.TargetObject)
+        return std::nullopt;
 
-            return Ret.As<T>();
-        }
+    Object->ClearFlags(UObject::RF_NeedLoad);
 
-        auto Ret = std::make_shared<T>();
-        Ret->SetName(Name);
+    Object->Serialize(PackageData.Reader);
 
-        if (!ScriptObject.OuterIndex.IsNull()) {
+    return Object;
+}
+
+template <typename T = UObject>
+TObjectPtr<T> UZenPackage::CreateScriptObject(TSharedPtr<GlobalContext> Context, FPackageObjectIndex& Index) {
+    if (!Context->GlobalToc->ScriptObjectByGlobalIdMap.contains(Index)) {
+        LOG_ERROR("Failed to find script object with index {0}. ScriptMap has a size of {1}.", GetTypeHash(Index), Context->GlobalToc->ScriptObjectByGlobalIdMap.size());
+        return nullptr;
+    }
+
+    auto ScriptObject = Context->GlobalToc->ScriptObjectByGlobalIdMap[Index];
+    std::wstring NameW = Context->GlobalToc->NameMap.GetName(ScriptObject.MappedName);
+    std::string Name = std::string(NameW.begin(), NameW.end());
+
+    if (Context->ObjectArray.contains(Name)) {
+        UObjectPtr Ret = Context->ObjectArray[Name];
+
+        if (!Ret->GetOuter() && !ScriptObject.OuterIndex.IsNull()) {
             Ret->SetOuter(CreateScriptObject<UObject>(Context, ScriptObject.OuterIndex));
         }
 
-        Ret->SetFlags(UObject::RF_NeedLoad);
-
-        return Ret;
+        return Ret.As<T>();
     }
 
-    template <typename T = UObject>
-    UObjectPtr IndexToObject(FZenPackageHeader& Header, std::vector<FExportObject>& Exports, FPackageObjectIndex Index) {
-        if (Index.IsNull()) {
-            return {};
-        }
+    auto Ret = std::make_shared<T>();
+    Ret->SetName(Name);
 
-        if (Index.IsExport()) {
-            return Exports[Index.ToExport()].Object;
-        }
+    if (!ScriptObject.OuterIndex.IsNull()) {
+        Ret->SetOuter(CreateScriptObject<UObject>(Context, ScriptObject.OuterIndex));
+    }
 
-        if (Index.IsImport()) {
-            if (Index.IsScriptImport()) {
-                auto ContextLock = Context.lock();
+    Ret->SetFlags(UObject::RF_NeedLoad);
 
-                if (!ContextLock) {
-                    return nullptr;
-                }
+    return Ret;
+}
 
-                auto Ret = CreateScriptObject<T>(ContextLock, Index);
-
-                if (!ContextLock->ObjectArray.contains(Ret->GetName())) {
-                    ContextLock->ObjectArray.insert_or_assign(Ret->GetName(), Ret.As<UObject>());
-                }
-
-                return Ret.As<UObject>();
-            }
-            else if (Index.IsPackageImport()) {
-                if (Index.GetImportedPackageIndex() >= Header.ImportedPackageIds.size()) {
-                    return {};
-                }
-
-                FPackageId PackageId = Header.ImportedPackageIds[Index.GetImportedPackageIndex()];
-
-                return UObjectPtr(std::make_shared<ULazyPackageObject>(PackageId));
-            }
-        }
-
+template <typename T = UObject>
+UObjectPtr UZenPackage::IndexToObject(FZenPackageHeader& Header, std::vector<FExportObject>& Exports, FPackageObjectIndex Index) {
+    if (Index.IsNull()) {
         return {};
     }
-};
+
+    if (Index.IsExport()) {
+        return Exports[Index.ToExport()].Object;
+    }
+
+    if (Index.IsImport()) {
+        if (Index.IsScriptImport()) {
+            auto ContextLock = Context.lock();
+
+            if (!ContextLock) {
+                return nullptr;
+            }
+
+            auto Ret = CreateScriptObject<T>(ContextLock, Index);
+
+            if (!ContextLock->ObjectArray.contains(Ret->GetName())) {
+                ContextLock->ObjectArray.insert_or_assign(Ret->GetName(), Ret.As<UObject>());
+            }
+
+            return Ret.As<UObject>();
+        }
+        else if (Index.IsPackageImport()) {
+            if (Index.GetImportedPackageIndex() >= Header.ImportedPackageIds.size()) {
+                return {};
+            }
+
+            FPackageId PackageId = Header.ImportedPackageIds[Index.GetImportedPackageIndex()];
+
+            return UObjectPtr(std::make_shared<ULazyPackageObject>(PackageId));
+        }
+    }
+
+    return {};
+}
 
 FIoStatus& FZenPackageReader::GetStatus() {
     return Status;

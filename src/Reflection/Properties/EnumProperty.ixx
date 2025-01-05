@@ -60,29 +60,83 @@ public:
         return Enum->EnumName;
     }
 
-    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
+    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
         auto Ret = std::make_unique<Value>();
 
-        if (Enum and UnderlyingProp) {
-            auto EnumVal = UnderlyingProp->Serialize(Ar);
-            auto IntValOpt = EnumVal->TryGetValue<int64_t>();
+        switch (SerializationMode) {
+            case ESerializationMode::Zero: {
+                Ret->BinaryValue = 0;
 
-            if (!IntValOpt.has_value()) {
-                return nullptr;
+                LOG_TRACE("Serialized EnumProperty with name {0} and index {1}", Ret->EnumName, 0);
+
+                break;
             }
+            case ESerializationMode::Normal: {
+                if (Enum and UnderlyingProp) {
+                    auto EnumVal = UnderlyingProp->Serialize(Ar);
+                    auto IntValOpt = EnumVal->TryGetValue<int64_t>();
 
-            auto EnumIndex = IntValOpt.value();
+                    if (!IntValOpt.has_value()) {
+                        return nullptr;
+                    }
 
-            if (EnumIndex >= Enum->Enum.size()) {
-                return nullptr;
+                    auto EnumIndex = IntValOpt.value();
+
+                    if (EnumIndex >= Enum->Enum.size()) {
+                        return nullptr;
+                    }
+
+                    Ret->BinaryValue = EnumIndex;
+                    Ret->EnumName = IndexToEnum(Enum, EnumIndex);
+
+                    LOG_TRACE("Serialized EnumProperty with name {0} and index {1}", Ret->EnumName, EnumIndex);
+                }
+                else if (Enum) {
+                    uint8_t EnumIndex;
+                    Ar << EnumIndex;
+
+                    if (EnumIndex >= Enum->Enum.size()) {
+                        return nullptr;
+                    }
+
+                    Ret->BinaryValue = EnumIndex;
+                    Ret->EnumName = IndexToEnum(Enum, EnumIndex);
+
+                    LOG_TRACE("Serialized EnumProperty with name {0} and index {1}", Ret->EnumName, EnumIndex);
+                }
+                break;
             }
+            default: {
+                FName val;
+                Ar << val;
 
-            Ret->BinaryValue = EnumIndex;
-            Ret->EnumName = Enum->Enum[EnumIndex];
+                Ret->EnumName = val.ToString();
 
-            LOG_TRACE("Serialized EnumProperty with name {0} and index {1}", Ret->EnumName, EnumIndex);
+                LOG_TRACE("Serialized EnumProperty with name {0}", Ret->EnumName);
+            }
+        };
+        return std::move(Ret);
+    }
+
+    std::string IndexToEnum(TSharedPtr<FReflectedEnum> Enum, int Index) {
+        std::string EnumName = "";
+        if (Enum) {
+            EnumName = Enum->EnumName;
+        }
+        else if (!Enum || Enum->EnumName.empty()) {
+            EnumName = std::to_string(Index);
+            return EnumName;
         }
 
-        return std::move(Ret);
+        if (Enum and Enum->Enum.size() > 0) {
+            for (int i = 0; i < Enum->Enum.size(); i++) {
+                auto& enumName = Enum->Enum[i];
+                if (i == Index) {
+                    return Enum->EnumName + "::" + Enum->Enum[i];
+                }
+            }
+        }
+
+        return Enum->EnumName + "::" + std::to_string(Index);
     }
 };

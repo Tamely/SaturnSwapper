@@ -32,11 +32,11 @@ export class FNameProperty : public FProperty {
         }
     };
 
-    TUniquePtr<IPropValue> Serialize(FZenPackageReader& Ar) override {
+    TUniquePtr<IPropValue> Serialize(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
         auto Ret = std::make_unique<Value>();
         Ar << Ret->Name;
 
-        LOG_TRACE("Serialized NameProperty with value {0}", Ret->Name.ToString());
+        LOG_TRACE("Serialized NameProperty with value '{0}'", Ret->Name.ToString());
 
         return std::move(Ret);
     }

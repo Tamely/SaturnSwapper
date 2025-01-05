@@ -27,7 +27,7 @@ public:
     __forceinline uint8_t GetArrayDim() { return ArrayDim; }
     __forceinline FProperty* GetNext() { return Next; }
 
-    virtual TUniquePtr<class IPropValue> Serialize(class FZenPackageReader& Ar) {
+    virtual TUniquePtr<class IPropValue> Serialize(class FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) {
         return nullptr;
     }
 };

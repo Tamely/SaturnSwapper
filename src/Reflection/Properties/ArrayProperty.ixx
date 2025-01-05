@@ -48,7 +48,7 @@ public:
         }
     };
 
-    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
+    TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
         auto Ret = std::make_unique<FArrayProperty::Value>();
 
         int32_t ArrayCount;

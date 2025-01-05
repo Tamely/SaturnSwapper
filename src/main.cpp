@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
 	LOG_INFO("Mounted");
 
 
-	UPackagePtr package = provider.LoadPackage("/BRCosmetics/Athena/Items/Cosmetics/Characters/CID_028_Athena_Commando_F.uasset");
+	UPackagePtr package = provider.LoadPackage("/Game/Balance/DefaultGameDataCosmetics.uasset");
 	LOG_INFO("Export Name {0}", package->GetFirstExport()->GetName());
 
 	/*

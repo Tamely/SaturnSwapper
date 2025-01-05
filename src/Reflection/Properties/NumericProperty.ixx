@@ -67,7 +67,7 @@ public:
         }
     };
 
-    TUniquePtr<IPropValue> Serialize(FZenPackageReader& Ar) override {
+    TUniquePtr<IPropValue> Serialize(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
         auto Ret = std::make_unique<Value>();
         Ar << Ret->Val;
 
@@ -134,7 +134,7 @@ public:
         }
     };
 
-	TUniquePtr<IPropValue> Serialize(FZenPackageReader& Ar) override {
+	TUniquePtr<IPropValue> Serialize(FZenPackageReader& Ar, ESerializationMode SerializationMode = ESerializationMode::Normal) override {
         auto Ret = std::make_unique<Value>();
 
         Ar << Ret->Val;
