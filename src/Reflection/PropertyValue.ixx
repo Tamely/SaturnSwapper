@@ -5,6 +5,7 @@ import <string>;
 import <vector>;
 
 import Saturn.Core.TObjectPtr;
+import Saturn.Paths.SoftObjectPath;
 
 template <class, template <class> class>
 struct is_t : public std::false_type {};
@@ -63,7 +64,7 @@ constexpr EPropertyType GetPropertyType() {
     if constexpr (is_t<T, TObjectPtr>::value) return EPropertyType::ObjectProperty;
     if constexpr (std::is_same<T, class FName>()) return EPropertyType::NameProperty;
     if constexpr (std::is_same<T, class FScriptDelegate>()) return EPropertyType::DelegateProperty;
-    if constexpr (std::is_same<T, class FSoftObjectPath>()) return EPropertyType::SoftObjectProperty;
+    if constexpr (std::is_same<T, FSoftObjectPath>()) return EPropertyType::SoftObjectProperty;
     if constexpr (std::is_same<T, double>()) return EPropertyType::DoubleProperty;
     if constexpr (std::is_same<T, std::string>()) return EPropertyType::StrProperty;
     if constexpr (std::is_same<T, class Text>()) return EPropertyType::TextProperty;

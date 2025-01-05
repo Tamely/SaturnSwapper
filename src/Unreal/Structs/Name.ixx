@@ -1,8 +1,5 @@
 export module Saturn.Structs.Name;
 
-import Saturn.Readers.FArchive;
-import Saturn.Structs.NameEntrySerialized;
-
 import <string>;
 import <vector>;
 

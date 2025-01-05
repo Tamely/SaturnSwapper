@@ -2,7 +2,6 @@ export module Saturn.Paths.SoftObjectPath;
 
 import <string>;
 
-import Saturn.Readers.ZenPackageReader;
 import Saturn.Paths.TopLevelAssetPath;
 
 export class FSoftObjectPath {
@@ -11,19 +10,8 @@ public:
         Reset();
     }
 
-    friend FZenPackageReader& operator<<(FZenPackageReader& Ar, FSoftObjectPath& Value) {
-        Ar << Value.AssetPath;
-        Ar << Value.SubPathString;
-
-        return Ar;
-    }
-
-    friend FZenPackageReader& operator>>(FZenPackageReader& Ar, FSoftObjectPath& Value) {
-        Ar >> Value.AssetPath;
-        Ar >> Value.SubPathString;
-
-        return Ar;
-    }
+    friend class FZenPackageReader& operator<<(class FZenPackageReader& Ar, FSoftObjectPath& Value);
+    friend class FZenPackageReader& operator>>(class FZenPackageReader& Ar, FSoftObjectPath& Value);
 
     __forceinline std::string GetAssetPathString() { return AssetPath.ToString(); }
     __forceinline FTopLevelAssetPath GetAssetPath() { return AssetPath; }

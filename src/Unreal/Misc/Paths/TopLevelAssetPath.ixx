@@ -2,7 +2,6 @@ export module Saturn.Paths.TopLevelAssetPath;
 
 import <string>;
 
-import Saturn.Readers.ZenPackageReader;
 export import Saturn.Structs.Name;
 
 export class FTopLevelAssetPath {
@@ -55,19 +54,8 @@ public:
     __forceinline std::string GetPackageName() const { return PackageName.ToString(); }
     __forceinline std::string GetAssetName() const { return AssetName.ToString(); }
 
-    friend FZenPackageReader& operator<<(FZenPackageReader& Ar, FTopLevelAssetPath& Value) {
-        Ar << Value.PackageName;
-        Ar << Value.AssetName;
-
-        return Ar;
-    }
-
-    friend FZenPackageReader& operator>>(FZenPackageReader& Ar, FTopLevelAssetPath& Value) {
-        Ar >> Value.PackageName;
-        Ar >> Value.AssetName;
-
-        return Ar;
-    }
+    friend class FZenPackageReader& operator<<(class FZenPackageReader& Ar, FTopLevelAssetPath& Value);
+    friend class FZenPackageReader& operator>>(class FZenPackageReader& Ar, FTopLevelAssetPath& Value);
 
     std::string ToString() {
         auto PackageNameStr = GetPackageName();
