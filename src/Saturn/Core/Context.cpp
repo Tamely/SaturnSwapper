@@ -14,11 +14,6 @@ ECosmeticState FContext::CosmeticState = ECosmeticState::None;
 uint8_t* FContext::SearchArray = nullptr;
 uint8_t* FContext::ReplaceArray = nullptr;
 
-std::vector<FFileModification> FContext::FileModifications = {};
-
-std::string FContext::Variant = "";
-std::string FContext::Channel = "";
-
 bool FContext::Paid = false;
 
 std::string FContext::VERSION = "3.0.0";
