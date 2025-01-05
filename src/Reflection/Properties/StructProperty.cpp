@@ -39,7 +39,7 @@ TUniquePtr<IPropValue> UStruct::SerializeItem(FZenPackageReader& Ar) {
         return std::move(NativeStructs[StructName](Ar));
     }
      
-    LOG_INFO("Native structs did not contain {0}", StructName);
+    LOG_TRACE("Native structs did not contain {0}", StructName);
 
     auto Ret = std::make_unique<FStructProperty::Value>();
     auto ThisClass = This<UClass>();

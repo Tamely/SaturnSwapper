@@ -1,5 +1,6 @@
 module;
 
+#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 
 export module Saturn.Properties.ObjectProperty;
@@ -36,6 +37,8 @@ public:
         Ar << Ret->Index;
         Ar.SeekCur(-1 * sizeof(FPackageIndex));
         Ar << Ret->Object;
+
+        LOG_TRACE("Serialized ObjectProperty with index {0}", Ret->Index.ForDebugging());
 
         return std::move(Ret);
     }

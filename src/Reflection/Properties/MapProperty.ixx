@@ -1,5 +1,6 @@
 module;
 
+#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 #include "tsl/ordered_map.h"
 
@@ -64,6 +65,8 @@ public:
             TUniquePtr<IPropValue> value = ValueType->Serialize(Ar);
             Ret->Value.insert({ std::move(key), std::move(value) });
         }
+
+        LOG_TRACE("Serialized MapProperty with length {0}", Ret->Value.size());
 
         return std::move(Ret);
     }

@@ -1,5 +1,6 @@
 module;
 
+#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 
 export module Saturn.Properties.EnumProperty;
@@ -78,6 +79,8 @@ public:
 
             Ret->BinaryValue = EnumIndex;
             Ret->EnumName = Enum->Enum[EnumIndex];
+
+            LOG_TRACE("Serialized EnumProperty with name {0} and index {1}", Ret->EnumName, EnumIndex);
         }
 
         return std::move(Ret);

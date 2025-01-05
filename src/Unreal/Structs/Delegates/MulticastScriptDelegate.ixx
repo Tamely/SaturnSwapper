@@ -6,6 +6,7 @@ import Saturn.Readers.ZenPackageReader;
 export import Saturn.Delegates.ScriptDelegate;
 
 export class FMulticastScriptDelegate {
+public:
     __forceinline std::vector<FScriptDelegate> GetInvocationList() {
         return InvocationList;
     }

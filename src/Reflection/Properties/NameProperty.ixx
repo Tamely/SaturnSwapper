@@ -1,5 +1,6 @@
 module;
 
+#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 
 export module Saturn.Properties.NameProperty;
@@ -34,6 +35,8 @@ export class FNameProperty : public FProperty {
     TUniquePtr<IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<Value>();
         Ar << Ret->Name;
+
+        LOG_TRACE("Serialized NameProperty with value {0}", Ret->Name.ToString());
 
         return std::move(Ret);
     }

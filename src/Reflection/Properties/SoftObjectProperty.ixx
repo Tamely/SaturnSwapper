@@ -1,5 +1,6 @@
 module;
 
+#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 
 export module Saturn.Properties.SoftObjectProperty;
@@ -35,6 +36,8 @@ public:
     TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<Value>();
         Ar << Ret->Path;
+
+        LOG_TRACE("Serialized SoftObjectProperty with path '{0}' and substring '{1}'", Ret->Path.GetAssetPathString(), Ret->Path.GetSubPath());
         
         return std::move(Ret);
     }

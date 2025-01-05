@@ -1,5 +1,6 @@
 module;
 
+#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 #include "tsl/ordered_set.h"
 
@@ -37,6 +38,8 @@ public:
     TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<Value>();
         Ret->Val = ElementType->Serialize(Ar);
+
+        LOG_TRACE("Serialized OptionalProperty with val (true or false) {0}", Ret->Val == nullptr);
 
         return std::move(Ret);
     }

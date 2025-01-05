@@ -20,14 +20,6 @@ public:
     FInstancedStruct() = default;
 
     friend FZenPackageReader& operator<<(FZenPackageReader& Ar, FInstancedStruct& Struct) {
-        EVersion Version = EVersion::LatestVersion;
-
-        //Ar.Serialize(&Version, sizeof(Version));
-
-        //if (Version > EVersion::LatestVersion) {
-        //    return Ar;
-        //}
-
         Ar << Struct.ScriptStruct;
 
         int32_t SerialSize = 0;

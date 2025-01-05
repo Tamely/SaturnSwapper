@@ -16,7 +16,7 @@ public:
         return FunctionName.GetString();
     }
 
-    __forceinline UObjectPtr GetObject() {
+    __forceinline UObjectPtr GetObjectPtr() {
         return Object;
     }
 };

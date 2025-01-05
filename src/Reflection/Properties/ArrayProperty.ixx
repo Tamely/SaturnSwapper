@@ -1,5 +1,6 @@
 module;
 
+#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 
 export module Saturn.Properties.ArrayProperty;
@@ -58,6 +59,8 @@ public:
         for (size_t i = 0; i < ArrayCount; i++) {
             Ret->Array[i] = ElementType->Serialize(Ar);
         }
+
+        LOG_TRACE("Serialized ArrayProperty with length {0}", ArrayCount);
 
         return std::move(Ret);
     }

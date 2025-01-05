@@ -1,5 +1,6 @@
 module;
 
+#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 
 export module Saturn.Properties.BoolProperty;
@@ -34,6 +35,8 @@ public:
         Ar << ByteValue;
 
         Ret->Val = ByteValue;
+
+        LOG_TRACE("Serialized BoolProperty with value {0}", ByteValue);
         
         return std::move(Ret);
     }

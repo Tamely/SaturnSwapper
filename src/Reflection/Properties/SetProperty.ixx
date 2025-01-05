@@ -1,5 +1,6 @@
 module;
 
+#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 #include "tsl/ordered_set.h"
 
@@ -61,6 +62,8 @@ public:
             TUniquePtr<IPropValue> value = ElementType->Serialize(Ar);
             Ret->Value.insert(std::move(value));
         }
+
+        LOG_TRACE("Serialized SetProperty with length {0}", Ret->Value.size());
 
         return std::move(Ret);
     }

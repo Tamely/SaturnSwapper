@@ -11,6 +11,7 @@ export class FProperty {
 public:
     friend class FPropertyFactory;
     friend class FZenPackageReader;
+    friend struct FLinkWalkingSchemaIterator;
     friend class Mappings;
 
     virtual ~FProperty() = default;

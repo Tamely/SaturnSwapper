@@ -1,5 +1,6 @@
 module;
 
+#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 
 export module Saturn.Properties.StrProperty;
@@ -33,6 +34,8 @@ public:
     TUniquePtr<class IPropValue> Serialize(FZenPackageReader& Ar) override {
         auto Ret = std::make_unique<Value>();
         Ar << Ret->Str;
+
+        LOG_TRACE("Serialized StrProperty with value {0}", Ret->Str);
         
         return std::move(Ret);
     }

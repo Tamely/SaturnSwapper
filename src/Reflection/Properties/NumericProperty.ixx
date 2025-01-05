@@ -1,5 +1,6 @@
 module;
 
+#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 
 export module Saturn.Properties.NumericProperty;
@@ -70,6 +71,8 @@ public:
         auto Ret = std::make_unique<Value>();
         Ar << Ret->Val;
 
+        LOG_TRACE("Serialized NumericProperty with value {0}", Ret->Val);
+
         return std::move(Ret);
     }
 };
@@ -137,6 +140,8 @@ public:
         Ar << Ret->Val;
         //Ar << Ret->Index;
         Ret->Owner = &Ar;
+
+        LOG_TRACE("Serialized ByteProperty with value {0}", Ret->Val);
 
 		return std::move(Ret);
 	}

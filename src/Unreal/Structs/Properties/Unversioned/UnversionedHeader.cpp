@@ -40,12 +40,12 @@ FIoStatus FUnversionedHeader::Load(FArchive& Ar) {
     while (!Fragment.bIsLast);
 
     if (ZeroMaskNum > 0) {
-        ZeroMask.reserve(ZeroMaskNum);
+        ZeroMask.resize(ZeroMaskNum);
         FIoStatus status = LoadZeroMaskData(Ar, ZeroMaskNum, (uint32_t*)ZeroMask[0]._Getptr());
         if (!status.IsOk()) {
             return status;
         }
-        bHasNonZeroValues = UnmaskedNum > 0 || std::count(ZeroMask.begin(), ZeroMask.end(), 0) != 0;
+        bHasNonZeroValues = UnmaskedNum > 0 || std::find(ZeroMask.begin(), ZeroMask.end(), 0) != ZeroMask.end();
     }
     else {
         bHasNonZeroValues = UnmaskedNum > 0;
@@ -102,9 +102,7 @@ FIoStatus FUnversionedHeader::LoadZeroMaskData(FArchive& Ar, uint32_t NumBits, u
     else {
         for (uint32_t Idx = 0, Num = (NumBits + 31) / 32; Idx < Num; ++Idx) {
             if (Ar.Tell() + sizeof(uint32_t) > Ar.TotalSize()) return FIoStatus(EIoErrorCode::ReadError, "Hit end of file while reading FUnversionedHeader ZeroMaskData.");
-            uint32_t Int;
-            Ar << Int;
-            *Data = Int;
+            Ar << Data[Idx];
         }
     }
 

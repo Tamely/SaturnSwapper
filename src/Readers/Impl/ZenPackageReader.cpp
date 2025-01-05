@@ -229,8 +229,8 @@ void FZenPackageReader::LoadProperties(UStructPtr Struct, UObjectPtr Object) {
         return;
     }
 
-    if (!header.HasValues()) {
-        LOG_ERROR("Header doesn't have values");
+    if (!header.HasNonZeroValues() or !header.HasValues()) {
+        Status = FIoStatus(EIoErrorCode::InvalidParameter, "Provided asset either doesn't have NonZero values or doesn't have values at all.");
         return;
     }
 
@@ -238,6 +238,8 @@ void FZenPackageReader::LoadProperties(UStructPtr Struct, UObjectPtr Object) {
         if (!It.IsNonZero()) continue;
 
         FProperty* Prop = *It;
+
+        LOG_TRACE("Loading Property [Name: ({0}), Pos: ({1})]", Prop->GetName(), Tell());
 
         TUniquePtr<IPropValue> Value = Prop->Serialize(*this);
 
