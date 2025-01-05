@@ -95,11 +95,12 @@ JSValueRef FOnLoadSaturn::OnLoadSaturn(JSContextRef ctx, JSObjectRef function, J
 	FBaseGenerator::InitializeAssetRegistry(path, defaultAES);
 	LOG_INFO("Loaded Asset Registry");
 
-	FFileProvider provider(FortniteFunctionLibrary::GetFortniteInstallationPath(), "D:\\++Fortnite+Release-33.11-CL-38773622-Windows_oo.usmap");
+	FContext::Provider = std::make_shared<FFileProvider>(FortniteFunctionLibrary::GetFortniteInstallationPath(), "D:\\++Fortnite+Release-33.11-CL-38773622-Windows_oo.usmap");
+
 	LOG_INFO("Created provider");
-	provider.SubmitKey(defaultGUID, defaultAES);
+	FContext::Provider->SubmitKey(defaultGUID, defaultAES);
 	LOG_INFO("Submited default key");
-	provider.MountAsync();
+	FContext::Provider->MountAsync();
 	LOG_INFO("Mounted");
 
 	return JSValueMakeBoolean(ctx, true);

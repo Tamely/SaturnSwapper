@@ -2,6 +2,8 @@
 
 import Saturn.Context;
 
+import Saturn.Files.FileProvider;
+
 import <AppCore/AppCore.h>;
 import <duktape/duktape.h>;
 
@@ -23,3 +25,5 @@ bool FContext::ResponseWaiting = false;
 bool FContext::HasInitializedCurl = false;
 
 FPluginModel FContext::SelectedPlugin;
+
+TSharedPtr<FFileProvider> FContext::Provider = nullptr;

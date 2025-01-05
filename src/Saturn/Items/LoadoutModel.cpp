@@ -14,7 +14,7 @@ void FLoadout::WriteToSaveGame(const FLoadout& Loadout) {
 	FortniteFunctionLibrary::PatchEpicGames();
 
 	// Add a check here for if this worked later please and thank you
-	FortniteFunctionLibrary::PatchFortnite();
+	FortniteFunctionLibrary::PatchFortnite(Loadout);
 
 
 	/*

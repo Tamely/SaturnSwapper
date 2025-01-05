@@ -19,6 +19,7 @@ import Saturn.Readers.ZenPackageReader;
 
 export class FFileProvider {
 public:
+    FFileProvider() {}
     FFileProvider(const std::string& PakDirectory, const std::string& MappingsFile);
     
     void SubmitKey(FGuid& Guid, FAESKey& Key);

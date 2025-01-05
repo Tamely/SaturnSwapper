@@ -7,6 +7,7 @@ export module Saturn.Context;
 import Saturn.CosmeticState;
 import Saturn.Items.PluginModel;
 import Saturn.Items.LoadoutModel;
+import Saturn.Files.FileProvider;
 import Saturn.Structs.FileModification;
 
 import <string>;
@@ -36,4 +37,6 @@ public:
 	static bool HasInitializedCurl;
 
 	static FPluginModel SelectedPlugin;
+
+	static TSharedPtr<FFileProvider> Provider;
 };

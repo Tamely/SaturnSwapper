@@ -1,6 +1,7 @@
 #include <DiscordSDK/rapidjson/document.h>
 #include <Crypt/skCrypter.h>
 
+#include "Saturn/Log.h"
 #include "Saturn/Defines.h"
 
 #include <windows.h>
@@ -9,18 +10,22 @@
 #include <winbase.h>
 #include <ShlObj_core.h>
 
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <filesystem>
-
 import Saturn.FortniteFunctionLibrary;
 
+import <string>;
+import <vector>;
+import <fstream>;
+import <sstream>;
+import <filesystem>;
+
+import Saturn.Config;
 import Saturn.Context;
 import Saturn.Structs.FileInfo;
 import Saturn.Readers.FileReader;
+import Saturn.Items.LoadoutModel;
+import Saturn.Paths.SoftObjectPath;
 import Saturn.WindowsFunctionLibrary;
-import Saturn.Config;
+import Saturn.Readers.ZenPackageReader;
 
 std::string FortniteFunctionLibrary::GetFortniteInstallationPath() {
 	static const std::string DRIVES[] = { "A:\\", "B:\\", "C:\\", "D:\\", "E:\\", "F:\\", "G:\\", "H:\\", "I:\\", "J:\\", "K:\\", "L:\\", "M:\\" };
@@ -135,8 +140,17 @@ bool FortniteFunctionLibrary::PatchEpicGames() {
 	}
 }
 
-bool FortniteFunctionLibrary::PatchFortnite() {
+bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 	FortniteFunctionLibrary::KillEpicProcesses();
+
+	UPackagePtr package = FContext::Provider->LoadPackage(Loadout.Skin.PackagePath + ".uasset");
+	UObjectPtr firstExport = package->GetFirstExport();
+
+	std::vector<FSoftObjectPath> characterParts = firstExport->GetProperty<std::vector<FSoftObjectPath>>("BaseCharacterParts");
+
+	for (FSoftObjectPath& characterPart : characterParts) {
+		LOG_INFO("CharacterPart '{0}'", characterPart.GetAssetPathString());
+	}
 
 	/*
 	try {

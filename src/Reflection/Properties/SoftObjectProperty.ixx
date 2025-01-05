@@ -16,11 +16,11 @@ public:
         FSoftObjectPath Path;
 
         __forceinline bool IsAcceptableType(EPropertyType Type) override {
-            return Type == EPropertyType::SoftObjectProperty or Type == EPropertyType::ObjectProperty;
+            return Type == EPropertyType::SoftObjectProperty || Type == EPropertyType::ObjectProperty || Type == EPropertyType::StructProperty;
         }
 
         __forceinline void PlaceValue(EPropertyType Type, void* OutBuffer) override {
-            if (Type == EPropertyType::SoftObjectProperty) {
+            if (Type == EPropertyType::SoftObjectProperty || Type == EPropertyType::StructProperty) {
                 *((FSoftObjectPath*)OutBuffer) = Path;
             }
             else if (Type == EPropertyType::ObjectProperty) {
