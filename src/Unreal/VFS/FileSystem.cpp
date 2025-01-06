@@ -176,6 +176,38 @@ TIoStatusOr<FIoBuffer> VirtualFileSystem::GetBufferByPathAndExtension(const std:
     return FIoStatus(EIoErrorCode::NotFound, "Provided file does not exist in registered readers.");
 }
 
+FIoStoreReader* VirtualFileSystem::GetReaderByPathAndExtension(const std::string& Path) {
+    std::optional<FGameFile> fileStatus = VirtualFileSystem::GetFileByPath(Path);
+    if (!fileStatus.has_value()) {
+        LOG_ERROR("File '{0}' has not been registered!", Path);
+        return nullptr;
+    }
+
+    FGameFile& file = fileStatus.value();
+    uint32_t extensionId = ExtensionPool::GetOrAdd(GetExtension(Path));
+
+    auto it = std::find_if(file.Extensions.begin(), file.Extensions.end(),
+        [extensionId](const auto& pair) { return pair.first == extensionId; });
+
+    if (it == file.Extensions.end()) {
+        LOG_ERROR("File '{0}' has not been registered with extension '{1}!", Path, ExtensionPool::Get(extensionId));
+        return nullptr;
+    }
+
+    const uint32_t TocEntryIndex = it->second;
+    for (auto& Reader : s_Readers) {
+        TIoStatusOr<FIoStoreTocChunkInfo> chunkStatus = Reader->GetChunkInfo(TocEntryIndex);
+        if (!chunkStatus.IsOk()) continue;
+
+        FIoStoreTocChunkInfo chunkInfo = chunkStatus.ConsumeValueOrDie();
+        if (NormalizeFilePath(chunkInfo.FileName) != NormalizeFilePath(Path)) continue;
+
+        return Reader;
+    }
+    LOG_ERROR("File '{0}' does not exist in registered readers!", Path);
+    return nullptr;
+}
+
 std::string VirtualFileSystem::GetExtension(const std::string& Path) {
     return std::filesystem::path(Path).extension().string();
 }

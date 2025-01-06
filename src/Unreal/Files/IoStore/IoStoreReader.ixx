@@ -21,6 +21,7 @@ import Saturn.Misc.IoReadOptions;
 import Saturn.Structs.IoContainerId;
 import Saturn.IoStore.IoDirectoryIndex;
 import Saturn.Structs.IoContainerFlags;
+import Saturn.Structs.IoStoreTocResource;
 import Saturn.Structs.IoStoreTocChunkInfo;
 import Saturn.Container.IoStoreCompressedReadResult;
 
@@ -40,6 +41,8 @@ public:
     void EnumerateChunks(std::function<bool(FIoStoreTocChunkInfo&&)>&& Callback) const;
     TIoStatusOr<FIoStoreTocChunkInfo> GetChunkInfo(const FIoChunkId& Chunk) const;
     TIoStatusOr<FIoStoreTocChunkInfo> GetChunkInfo(const uint32_t TocEntryIndex) const;
+
+    FIoStoreTocResource& GetTocResource();
 
     // Reads the chunk off the disk, decryption/decompressing as necessary.
     TIoStatusOr<FIoBuffer> Read(const FIoChunkId& Chunk, const FIoReadOptions& Options) const;

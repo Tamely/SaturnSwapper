@@ -146,3 +146,7 @@ UPackagePtr FFileProvider::LoadPackage(FIoBuffer& Entry, FExportState& State) {
     LOG_INFO("Made reader for {0}", std::string(reader.GetPackageName().begin(), reader.GetPackageName().end()));
     return reader.MakePackage(Context, State);
 }
+
+FIoStoreReader* FFileProvider::GetReaderByPathAndExtension(const std::string& Path) {
+    return VFS->GetReaderByPathAndExtension(Path);
+}

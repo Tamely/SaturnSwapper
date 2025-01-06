@@ -1,4 +1,5 @@
 #include "Saturn/Defines.h"
+#include <Saturn/Log.h>
 
 import Saturn.Structs.IoStoreTocResource;
 
@@ -220,9 +221,13 @@ FIoStatus FIoStoreTocResource::Write(const std::string& TocFilePath, FIoStoreToc
         return FIoStatus(EIoErrorCode::InvalidParameter, "Number of TOC chunk IDs doesn't match the number of chunk meta data");
     }
 
+    TocResource.CompressionMethods.erase(std::remove_if(TocResource.CompressionMethods.begin(), TocResource.CompressionMethods.end(), [](const std::string& s) {
+        return s.empty(); 
+    }), TocResource.CompressionMethods.end());
+
     bool bHasExplicitCompressionMethodNone = false;
     for (int32_t CompressionMethodIndex = 0; CompressionMethodIndex < TocResource.CompressionMethods.size(); ++CompressionMethodIndex) {
-        if (TocResource.CompressionMethods[CompressionMethodIndex].contains("None")) {
+        if (TocResource.CompressionMethods[CompressionMethodIndex] =="None") {
             if (CompressionMethodIndex != 0) {
                 return FIoStatus(EIoErrorCode::InvalidParameter, "Compression method None must be the first compression method");
             }
@@ -332,7 +337,7 @@ FIoStatus FIoStoreTocResource::Write(const std::string& TocFilePath, FIoStoreToc
         OutSize += sizeof(int32_t) + HashSize + HashSize;
 
         TocFileHandle.BulkWriteArray(TocResource.ChunkBlockSignatures, TocResource.ChunkBlockSignatures.size());
-        OutSize += sizeof(FSHAHash) + TocResource.ChunkBlockSignatures.size();
+        OutSize += sizeof(FSHAHash) * TocResource.ChunkBlockSignatures.size();
         if (TocFileHandle.Tell() != OutSize) {
             return FIoStatus(EIoErrorCode::WriteError, "Failed to write chunk block signatures");
         }

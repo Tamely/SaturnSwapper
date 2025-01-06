@@ -43,6 +43,7 @@ public:
     void PrintRegisteredFiles();
     std::optional<FGameFile> GetFileByPath(const std::string& Path);
     TIoStatusOr<FIoBuffer> GetBufferByPathAndExtension(const std::string& Path);
+    class FIoStoreReader* GetReaderByPathAndExtension(const std::string& Path);
 
 private:
     static std::string GetExtension(const std::string& Path);

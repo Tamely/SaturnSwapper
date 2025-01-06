@@ -706,6 +706,10 @@ public:
             OutPaths.push_back(Sb);
         }
     }
+
+    FIoStoreTocResource& GetTocResource() {
+        return TocReader.GetTocResource();
+    }
 private:
     FIoStoreTocReader TocReader;
     std::vector<TUniquePtr<FContainerFileAccess>> ContainerFileAccessors;
@@ -749,6 +753,10 @@ void FIoStoreReader::EnumerateChunks(std::function<bool(FIoStoreTocChunkInfo&&)>
 
 TIoStatusOr<FIoStoreTocChunkInfo> FIoStoreReader::GetChunkInfo(const FIoChunkId& Chunk) const {
     return Impl->GetChunkInfo(Chunk);
+}
+
+FIoStoreTocResource& FIoStoreReader::GetTocResource() {
+    return Impl->GetTocResource();
 }
 
 TIoStatusOr<FIoStoreTocChunkInfo> FIoStoreReader::GetChunkInfo(const uint32_t TocEntryIndex) const {

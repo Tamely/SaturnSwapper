@@ -24,8 +24,11 @@ import Saturn.Structs.FileInfo;
 import Saturn.Readers.FileReader;
 import Saturn.Items.LoadoutModel;
 import Saturn.Paths.SoftObjectPath;
+import Saturn.IoStore.IoStoreReader;
 import Saturn.WindowsFunctionLibrary;
+import Saturn.Toc.IoContainerSettings;
 import Saturn.Readers.ZenPackageReader;
+import Saturn.Structs.IoStoreTocResource;
 
 std::string FortniteFunctionLibrary::GetFortniteInstallationPath() {
 	static const std::string DRIVES[] = { "A:\\", "B:\\", "C:\\", "D:\\", "E:\\", "F:\\", "G:\\", "H:\\", "I:\\", "J:\\", "K:\\", "L:\\", "M:\\" };
@@ -198,7 +201,20 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 	uint8_t* originalAsset = std::move(ASSET_DATA);
 	std::vector<uint8_t> originalBuffer(originalAsset, originalAsset + ASSET_LENGTH);
 	std::vector<uint8_t> bufferToWrite = assetReader.SerializeAsByteArray(originalBuffer);
+	FIoStoreReader* reader = FContext::Provider->GetReaderByPathAndExtension("/Game/Balance/DefaultGameDataCosmetics.uasset");
 
+	FIoStoreTocResource& toc = reader->GetTocResource();
+
+	FIoContainerSettings containerSettings;
+	containerSettings.ContainerId = toc.Header.ContainerId;
+	containerSettings.ContainerFlags = toc.Header.ContainerFlags;
+	containerSettings.EncryptionKeyGuid = toc.Header.EncryptionKeyGuid;
+
+	uint64_t size = 0;
+	FIoStatus status = FIoStoreTocResource::Write("Test.utoc", toc, toc.Header.CompressionBlockSize, toc.Header.PartitionSize, containerSettings, size);
+	if (!status.IsOk()) {
+		LOG_ERROR("Failed to make toc. Error {0}", status.ToString());
+	}
 
 	/*
 	try {
