@@ -12,8 +12,6 @@ export struct FConfig {
 	
 	static bool bHasSwappedSkin;
 
-	static std::unordered_map<std::string, int64_t> UcasSizes;
-
 	static void Load();
 	static void Save();
 

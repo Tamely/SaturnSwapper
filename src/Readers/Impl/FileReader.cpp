@@ -76,6 +76,14 @@ bool FFileReader::WriteBuffer(void* V, int64_t Length) {
         return false;
     }
 
+    auto activeReaders = getActiveReaders(FilePath);
+
+    for (auto reader : activeReaders) {
+        if (reader != this) {
+            reader->closeFileMapping();
+        }
+    }
+
     try {
         if (FilePosition + Length > FileSize) {
             extendFile(FilePosition + Length);
@@ -96,6 +104,9 @@ bool FFileReader::WriteBuffer(void* V, int64_t Length) {
 #endif
 
         FilePosition += Length;
+
+        notifyReadersToRemap(activeReaders);
+
         return true;
     }
     catch (const std::exception&) {

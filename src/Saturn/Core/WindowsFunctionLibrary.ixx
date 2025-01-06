@@ -32,4 +32,5 @@ public:
 	static void RenameFile(const std::string& OldPath, const std::string& NewPath);
 	static std::vector<std::string> GetFilesInDirectory(const std::string& Path);
 	static void TrimFileToSize(const std::string& Path, int64_t Length);
+	static void DeleteFilePath(const std::string& Path);
 };

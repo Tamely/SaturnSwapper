@@ -20,9 +20,14 @@ window.saturn.itemManager = {
         }
     },
     addLoadoutItem: function() {
+        var shouldHideReverting = OnIsItemConverted();
         OnAddItem(this.currentId);
-        saturn.modalManager.hideModal('apply');
-        saturn.modalManager.hideModal('revert');
+        if (shouldHideReverting) {
+            saturn.modalManager.hideModal('revert');
+        }
+        else {
+            saturn.modalManager.hideModal('apply');
+        }
     },
     onSearch: function(event) {
         if (event.key == "Enter") {

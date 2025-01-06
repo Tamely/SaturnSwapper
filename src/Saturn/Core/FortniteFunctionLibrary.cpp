@@ -34,6 +34,11 @@ import Saturn.Structs.IoStoreTocResource;
 
 std::string FortniteFunctionLibrary::GetFortniteInstallationPath() {
 	static const std::string DRIVES[] = { "A:\\", "B:\\", "C:\\", "D:\\", "E:\\", "F:\\", "G:\\", "H:\\", "I:\\", "J:\\", "K:\\", "L:\\", "M:\\" };
+	static std::string loc;
+
+	if (!loc.empty()) {
+		return loc;
+	}
 
 	std::string filePath;
 	for (auto& drive : DRIVES) {
@@ -55,7 +60,8 @@ std::string FortniteFunctionLibrary::GetFortniteInstallationPath() {
 		std::string appName = iteration["AppName"].GetString();
 		if (appName == "Fortnite") {
 			std::string installLocation = iteration["InstallLocation"].GetString();
-			return installLocation + "\\FortniteGame\\Content\\Paks\\";
+			loc = installLocation + "\\FortniteGame\\Content\\Paks\\";
+			return loc;
 		}
 	}
 
@@ -143,6 +149,11 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 
 		WindowsFunctionLibrary::MakeDirectory(BackupDirectoryW);
 
+		std::wstring UcasBackupDirectoryW = WindowsFunctionLibrary::GetSaturnLocalPath() + L"\\UcasBackups\\";
+		std::string UcasBackupDirectory = std::string(UcasBackupDirectoryW.begin(), UcasBackupDirectoryW.end());
+
+		WindowsFunctionLibrary::MakeDirectory(UcasBackupDirectoryW);
+
 
 		LOG_INFO("Getting all TOCs from backup directory");
 
@@ -152,15 +163,76 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 			LOG_INFO("Moved TOC from '{0}' to '{1}'.", BackupDirectory + toc, GetFortniteInstallationPath() + toc);
 		}
 
-		for (auto& [path, size] : FConfig::UcasSizes) {
-			FFileReader reader(path.c_str());
-			reader.TrimToSize(size, true);
-			reader.Close();
+		std::vector<std::string> backedUpChunks = WindowsFunctionLibrary::GetFilesInDirectory(UcasBackupDirectory);
+		for (std::string& chunk : backedUpChunks) {
+			std::string info = std::filesystem::path(chunk).stem().string();
+			std::string fileName;
+			int64_t offset;
+			LOG_INFO("Reading backed up data from file: '{0}'", chunk);
+			size_t delimiterPos = info.find("   ");
+			if (delimiterPos != std::string::npos) {
+				fileName = info.substr(0, delimiterPos);
+				std::string offsetStr = info.substr(delimiterPos + 3);
+				offset = std::stoll(offsetStr);
+
+				FFileReader chunkReader(std::string(UcasBackupDirectory + chunk).c_str());
+				std::vector<uint8_t> chunkBuffer(chunkReader.TotalSize());
+				if (!chunkReader.Serialize(chunkBuffer.data(), chunkBuffer.size())) {
+					LOG_ERROR("Failed to read source data from chunk file");
+					continue;
+				}
+				LOG_INFO("Serialized data of size: {0}", chunkBuffer.size());
+
+				std::string targetPath = GetFortniteInstallationPath() + fileName;
+				FFileReader ucasReader(targetPath.c_str());
+				LOG_INFO("Target file size: {0}, write offset: {1}, write size: {2}",
+					ucasReader.TotalSize(), offset, chunkBuffer.size());
+
+				ucasReader.Seek(offset);
+				if (ucasReader.WriteBuffer(chunkBuffer.data(), chunkBuffer.size())) {
+					LOG_INFO("WriteBuffer reported success");
+
+					std::vector<uint8_t> immediateVerify(chunkBuffer.size());
+					ucasReader.Seek(offset);
+					if (ucasReader.Serialize(immediateVerify.data(), immediateVerify.size())) {
+						if (memcmp(chunkBuffer.data(), immediateVerify.data(), chunkBuffer.size()) == 0) {
+							LOG_INFO("Immediate verification passed");
+						}
+						else {
+							LOG_ERROR("Immediate verification failed - data mismatch");
+						}
+					}
+
+					ucasReader.Close();
+
+					FFileReader verifyReader(targetPath.c_str());
+					verifyReader.Seek(offset);
+					std::vector<uint8_t> verifyBuffer(chunkBuffer.size());
+					if (verifyReader.Serialize(verifyBuffer.data(), verifyBuffer.size())) {
+						if (memcmp(chunkBuffer.data(), verifyBuffer.data(), chunkBuffer.size()) == 0) {
+							LOG_INFO("Post-close verification passed");
+						}
+						else {
+							LOG_ERROR("Post-close verification failed - data mismatch");
+						}
+					}
+					verifyReader.Close();
+
+					LOG_INFO("Wrote backed up data to offset '{0}' in '{1}'.", offset, targetPath);
+				}
+				else {
+					LOG_ERROR("Failed to write backed up data to offset '{0}' in '{1}'.", offset, targetPath);
+				}
+
+				chunkReader.Close();
+				LOG_INFO("Closed readers");
+			}
+
+			WindowsFunctionLibrary::DeleteFilePath(UcasBackupDirectory + chunk);
 		}
 
 		LOG_INFO("Reverted!");
 		FConfig::bHasSwappedSkin = false;
-		FConfig::UcasSizes.clear();
 		FConfig::Save();
 
 		return true;
@@ -264,10 +336,10 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 			uint32_t MaxCompressionSize = Oodle::GetMaximumCompressedSize(blockBufferLen);
 			int32_t CompressedSize = 0;
 			uint8_t* compressedBlockBufferWithLargeLen = new uint8_t[MaxCompressionSize];
-			Oodle::Compress(compressedBlockBufferWithLargeLen, CompressedSize, bufferToWrite.data() + (i * toc.Header.CompressionBlockSize), blockBufferLen);
+			//Oodle::Compress(compressedBlockBufferWithLargeLen, CompressedSize, blockBuffer, blockBufferLen);
 
-			uint8_t* CompressedBlockBuffer = new uint8_t[CompressedSize];
-			memcpy(CompressedBlockBuffer, compressedBlockBufferWithLargeLen, CompressedSize);
+			std::vector<uint8_t> CompressedBlockBuffer(CompressedSize);
+			memcpy(CompressedBlockBuffer.data(), compressedBlockBufferWithLargeLen, CompressedSize);
 
 			int64_t Offset = Ar.Tell();
 
@@ -277,14 +349,36 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 			toc.CompressionBlocks[FirstBlockIndex + i].SetUncompressedSize(blockBufferLen);
 			toc.CompressionBlocks[FirstBlockIndex + i].SetCompressionMethodIndex(1);
 
-			if (!Ar.WriteBuffer(blockBuffer, blockBufferLen)) {
-				LOG_ERROR("Failed to write block buffer");
+			std::vector<uint8_t> ReadBuffer(CompressedSize + sizeof(uint64_t));
+			if (!Ar.Serialize(ReadBuffer.data(), ReadBuffer.size())) {
+				LOG_ERROR("Failed to read buffer");
+				return false;
+			}
+			else {
+				LOG_INFO("Creating buffer backup directory");
+				std::wstring BackupDirectoryW = WindowsFunctionLibrary::GetSaturnLocalPath() + L"\\UcasBackups\\";
+				std::string BackupDirectory = std::string(BackupDirectoryW.begin(), BackupDirectoryW.end());
+
+				WindowsFunctionLibrary::MakeDirectory(BackupDirectoryW);
+				LOG_INFO("Writing data to backup directory");
+				FFileReader backupReader(std::string(BackupDirectory + std::filesystem::path(ContainerPath).filename().string() + "   " + std::to_string(Offset) + ".tamely").c_str());
+				if (!backupReader.WriteBuffer(ReadBuffer.data(), ReadBuffer.size())) {
+					LOG_ERROR("Failed to write UCAS backup buffer");
+				}
+				backupReader.Close();
+			}
+			
+			Ar.Seek(Offset);
+
+			if (!Ar.WriteBuffer(CompressedBlockBuffer.data(), CompressedSize)) {
+				LOG_ERROR("Failed to write compressed buffer");
 				return false;
 			}
 
 			uint64_t Padding = 0;
 			Ar.WriteBuffer(&Padding, sizeof(uint64_t));
 
+			delete[] compressedBlockBufferWithLargeLen;
 			delete[] blockBuffer;
 		}
 

@@ -38,7 +38,7 @@ void Oodle::Compress(void* compressedData, int32_t& compressedSize, const void* 
 	}
 
 	OodleLZ_CompressOptions* options = OodleLZ_CompressOptions_GetDefault(OodleCompressorType::Kraken, OodleCompressionLevel::Optimal5);
-	compressedSize = OodleLZ_Compress(OodleCompressorType::Kraken, (void*)decompressedData, decompressedSize, compressedData, OodleCompressionLevel::Optimal5, options, nullptr, nullptr, nullptr, 0);
+	compressedSize = OodleLZ_Compress(OodleCompressorType::Kraken, (void*)decompressedData, decompressedSize, compressedData, OodleCompressionLevel::Optimal5, nullptr, nullptr, nullptr, nullptr, 0);
 }
 
 uint32_t Oodle::GetMaximumCompressedSize(uint32_t InUncompressedSize) {

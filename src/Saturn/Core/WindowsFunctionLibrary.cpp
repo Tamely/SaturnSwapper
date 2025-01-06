@@ -683,3 +683,44 @@ void WindowsFunctionLibrary::TrimFileToSize(const std::string& Path, int64_t Len
 		LOG_ERROR("Filesystem error while trimming file '{0}': {1}.", Path, e.what());
 	}
 }
+
+void WindowsFunctionLibrary::DeleteFilePath(const std::string& Path) {
+	LOG_INFO("Attempting to delete file: '{0}'", Path);
+#if defined(_WIN32) || defined(_WIN64)
+	if (DeleteFileA(Path.c_str()) == 0) {
+		DWORD error = GetLastError();
+		if (error == ERROR_FILE_NOT_FOUND) {
+			LOG_INFO("File '{0}' does not exist - nothing to delete", Path);
+			return;
+		}
+
+		char errorMsg[256];
+		FormatMessageA(
+			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL,
+			error,
+			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			errorMsg,
+			sizeof(errorMsg),
+			NULL
+		);
+		LOG_ERROR("Failed to delete file '{0}': {1} (Error code: {2})", Path, errorMsg, error);
+	}
+	else {
+		LOG_INFO("Successfully deleted file: '{0}'", Path);
+	}
+#else
+	if (unlink(Path.c_str()) != 0) {
+		if (errno == ENOENT) {
+			LOG_INFO("File '{0}' does not exist - nothing to delete", Path);
+			return;
+		}
+
+		LOG_ERROR("Failed to delete file '{0}': {1} (Error code: {2})",
+			Path, strerror(errno), errno);
+	}
+	else {
+		LOG_INFO("Successfully deleted file: '{0}'", Path);
+	}
+#endif
+}

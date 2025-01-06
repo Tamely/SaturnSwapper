@@ -18,8 +18,6 @@ std::string FConfig::RuntimeKey = "";
 
 bool FConfig::bHasSwappedSkin = false;
 
-std::unordered_map<std::string, int64_t> FConfig::UcasSizes = {};
-
 std::wstring localPathW = WindowsFunctionLibrary::GetSaturnLocalPath();
 std::string localPath = std::string(localPathW.begin(), localPathW.end());
 
@@ -45,13 +43,6 @@ void FConfig::Load() {
 
 	FConfig::Key = doc["Key"].GetString();
 	FConfig::bHasSwappedSkin = doc["bHasSwappedSkin"].GetBool();
-
-	rapidjson::Value& changes = doc["UcasSizes"];
-	for (rapidjson::Value::ConstMemberIterator itr = changes.MemberBegin(); itr != changes.MemberEnd(); ++itr) {
-		std::string key = itr->name.GetString();
-		int64_t val = itr->value.GetInt64();
-		FConfig::UcasSizes[key] = val;
-	}
 }
 
 void FConfig::Save() {
@@ -62,14 +53,6 @@ void FConfig::Save() {
 
 	doc.AddMember("Key", rapidjson::Value(FConfig::Key.c_str(), allocator).Move(), allocator);
 	doc.AddMember("bHasSwappedSkin", FConfig::bHasSwappedSkin, allocator);
-
-	rapidjson::Value changes(rapidjson::kObjectType);
-
-	for (const auto& [k, v] : FConfig::UcasSizes) {
-		changes.AddMember(rapidjson::Value(k.c_str(), allocator).Move(), v, allocator);
-	}
-
-	doc.AddMember("UcasSizes", changes, allocator);
 
 	rapidjson::StringBuffer buffer;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
