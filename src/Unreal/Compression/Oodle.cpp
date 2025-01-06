@@ -32,13 +32,13 @@ void Oodle::LoadDLL(const char* DllPath) {
 	OodleLZ_CompressOptions_GetDefault = (CompressOptions_GetDefaultFunc)GetProcAddress(OodleHandle, "OodleLZ_CompressOptions_GetDefault");
 }
 
-void Oodle::Compress(void* compressedData, int32_t* compressedSize, const void* decompressedData, intptr_t decompressedSize) {
+void Oodle::Compress(void* compressedData, int32_t& compressedSize, const void* decompressedData, intptr_t decompressedSize) {
 	if (!OodleLZ_Compress) {
 		throw std::exception("OodleLZ_Compress is called despite the DLL not being loaded!");
 	}
 
 	OodleLZ_CompressOptions* options = OodleLZ_CompressOptions_GetDefault(OodleCompressorType::Kraken, OodleCompressionLevel::Optimal5);
-	*compressedSize = OodleLZ_Compress(OodleCompressorType::Kraken, (void*)decompressedData, decompressedSize, compressedData, OodleCompressionLevel::Optimal5, options, nullptr, nullptr, nullptr, 0);
+	compressedSize = OodleLZ_Compress(OodleCompressorType::Kraken, (void*)decompressedData, decompressedSize, compressedData, OodleCompressionLevel::Optimal5, options, nullptr, nullptr, nullptr, 0);
 }
 
 uint32_t Oodle::GetMaximumCompressedSize(uint32_t InUncompressedSize) {

@@ -39,8 +39,8 @@ int64_t FCompression::CompressMemoryBound(const std::string& FormatName, int32_t
 	return CompressionBound;
 }
 
-void FCompression::CompressMemory(const std::string& FormatName, const void* UncompressedBuffer, int32_t UncompressedSize, void* CompressedBuffer, int32_t* CompressedSize) {
-	if (UncompressedSize == *CompressedSize) {
+void FCompression::CompressMemory(const std::string& FormatName, const void* UncompressedBuffer, int32_t UncompressedSize, void* CompressedBuffer, int32_t& CompressedSize) {
+	if (UncompressedSize == CompressedSize) {
 		memcpy(CompressedBuffer, UncompressedBuffer, UncompressedSize);
 		return;
 	}
@@ -59,7 +59,7 @@ void FCompression::CompressMemory(const std::string& FormatName, const void* Unc
 	}
 	else if (FormatName.contains("None")) {
 		memcpy(CompressedBuffer, UncompressedBuffer, UncompressedSize);
-		*CompressedSize = UncompressedSize;
+		CompressedSize = UncompressedSize;
 	}
 }
 

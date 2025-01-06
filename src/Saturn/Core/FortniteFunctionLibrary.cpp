@@ -21,6 +21,7 @@ import <filesystem>;
 import Saturn.Config;
 import Saturn.Context;
 import Saturn.Structs.FileInfo;
+import Saturn.Compression.Oodle;
 import Saturn.Readers.FileReader;
 import Saturn.Items.LoadoutModel;
 import Saturn.Paths.SoftObjectPath;
@@ -238,17 +239,18 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 
 		const int32_t FirstBlockIndex = int32_t(offsetAndLength->GetOffset() / toc.Header.CompressionBlockSize);
 
+		int32_t PartitionIndex = toc.CompressionBlocks[FirstBlockIndex].GetOffset() / toc.Header.PartitionSize;
+		int64_t PartitionOffset = toc.CompressionBlocks[FirstBlockIndex].GetOffset() % toc.Header.PartitionSize;
+
 		int32_t newBlockCount = (bufferToWrite.size() - 1) / toc.Header.CompressionBlockSize + 1;
 
 		std::vector<std::string> containerPaths;
 		reader->GetContainerFilePaths(containerPaths);
 
-		int idx = WindowsFunctionLibrary::FindSmallestFileSizeIndex(containerPaths);
-		std::string ContainerPath = containerPaths[idx];
+		std::string ContainerPath = containerPaths[PartitionIndex];
 
 		FFileReader Ar(ContainerPath.c_str());
-		FConfig::UcasSizes.insert_or_assign(ContainerPath, Ar.TotalSize());
-		Ar.Seek(Ar.TotalSize());
+		Ar.Seek(PartitionOffset);
 		LOG_INFO("Opened container '{0}' at offset {1}", ContainerPath, Ar.Tell());
 
 		for (int i = 0; i < newBlockCount; i++) {
@@ -256,16 +258,24 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 				? toc.Header.CompressionBlockSize
 				: bufferToWrite.size() - i * toc.Header.CompressionBlockSize;
 
+			uint8_t* blockBuffer = new uint8_t[blockBufferLen];
+			memcpy(blockBuffer, bufferToWrite.data() + (i * toc.Header.CompressionBlockSize), blockBufferLen);
+
+			uint32_t MaxCompressionSize = Oodle::GetMaximumCompressedSize(blockBufferLen);
+			int32_t CompressedSize = 0;
+			uint8_t* compressedBlockBufferWithLargeLen = new uint8_t[MaxCompressionSize];
+			Oodle::Compress(compressedBlockBufferWithLargeLen, CompressedSize, bufferToWrite.data() + (i * toc.Header.CompressionBlockSize), blockBufferLen);
+
+			uint8_t* CompressedBlockBuffer = new uint8_t[CompressedSize];
+			memcpy(CompressedBlockBuffer, compressedBlockBufferWithLargeLen, CompressedSize);
+
 			int64_t Offset = Ar.Tell();
 
 			toc.CompressionBlocks[FirstBlockIndex + i] = FIoStoreTocCompressedBlockEntry();
 			toc.CompressionBlocks[FirstBlockIndex + i].SetOffset(Offset + ((toc.Header.PartitionCount - 1) * toc.Header.PartitionSize));
-			toc.CompressionBlocks[FirstBlockIndex + i].SetCompressedSize(blockBufferLen);
+			toc.CompressionBlocks[FirstBlockIndex + i].SetCompressedSize(CompressedSize);
 			toc.CompressionBlocks[FirstBlockIndex + i].SetUncompressedSize(blockBufferLen);
-			toc.CompressionBlocks[FirstBlockIndex + i].SetCompressionMethodIndex(0);
-
-			uint8_t* blockBuffer = new uint8_t[blockBufferLen];
-			memcpy(blockBuffer, bufferToWrite.data() + (i * toc.Header.CompressionBlockSize), blockBufferLen);
+			toc.CompressionBlocks[FirstBlockIndex + i].SetCompressionMethodIndex(1);
 
 			if (!Ar.WriteBuffer(blockBuffer, blockBufferLen)) {
 				LOG_ERROR("Failed to write block buffer");

@@ -111,7 +111,7 @@ export class Oodle {
 	static inline OodleDecompressionFunc OodleLZ_Decompress;
 public:
 	static void LoadDLL(const char* DllPath);
-	static void Compress(void* compressedData, int32_t* compressedSize, const void* decompressedData, intptr_t decompressedSize);
+	static void Compress(void* compressedData, int32_t& compressedSize, const void* decompressedData, intptr_t decompressedSize);
 	static void Decompress(const void* compressedData, intptr_t compressedSize, void* decompressedData, intptr_t decompressedSize);
 	static uint32_t GetMaximumCompressedSize(uint32_t InUncompressedSize);
 };
