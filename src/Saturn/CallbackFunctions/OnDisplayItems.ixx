@@ -1,5 +1,6 @@
 export module Saturn.CallbackFunctions.OnDisplayItems;
 
+import Saturn.Config;
 import Saturn.Context;
 import Saturn.Items.ItemModel;
 import Saturn.Generators.BaseGenerator;
@@ -14,10 +15,17 @@ public:
 		JSEvaluateScript(ctx, script, NULL, NULL, NULL, nullptr);
 		JSStringRelease(script);
 
-		for (auto& item : FBaseGenerator::ItemsToDisplay) {
-			script = JSStringCreateWithUTF8CString(std::string(std::string("saturn.itemManager.addItem(\"") + item.Name + std::string("\", \"") + item.Id + std::string("\")")).c_str());
+		if (FConfig::RuntimeKey.empty()) {
+			script = JSStringCreateWithUTF8CString("saturn.itemManager.addItem(\"No key found\", \"CID_117_Athena_Commando_M_TacticalJungle\")");
 			JSEvaluateScript(ctx, script, NULL, NULL, NULL, nullptr);
 			JSStringRelease(script);
+		}
+		else {
+			for (auto& item : FBaseGenerator::ItemsToDisplay) {
+				script = JSStringCreateWithUTF8CString(std::string(std::string("saturn.itemManager.addItem(\"") + item.Name + std::string("\", \"") + item.Id + std::string("\")")).c_str());
+				JSEvaluateScript(ctx, script, NULL, NULL, NULL, nullptr);
+				JSStringRelease(script);
+			}
 		}
 
 		FBaseGenerator::ItemsToDisplay.clear();

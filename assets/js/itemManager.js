@@ -12,11 +12,17 @@ window.saturn.itemManager = {
     },
     onClick: function(id) {
         this.currentId = id;
-        saturn.modalManager.showModal('apply');
+        if (OnIsItemConverted()) {
+            saturn.modalManager.showModal('revert');
+        }
+        else {
+            saturn.modalManager.showModal('apply');
+        }
     },
     addLoadoutItem: function() {
         OnAddItem(this.currentId);
         saturn.modalManager.hideModal('apply');
+        saturn.modalManager.hideModal('revert');
     },
     onSearch: function(event) {
         if (event.key == "Enter") {

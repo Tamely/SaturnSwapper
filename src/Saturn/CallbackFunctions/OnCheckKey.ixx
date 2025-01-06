@@ -99,6 +99,7 @@ public:
 		}
 
 		FConfig::Key = keyString;
+		FConfig::RuntimeKey = keyString;
 		FConfig::Save();
 
 		delete[] buffer;

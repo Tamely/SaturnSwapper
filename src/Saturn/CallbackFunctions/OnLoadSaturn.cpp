@@ -46,16 +46,17 @@ JSValueRef FOnLoadSaturn::OnLoadSaturn(JSContextRef ctx, JSObjectRef function, J
 	WindowsFunctionLibrary::MakeDirectory(mappingsPathW);
 	LOG_INFO("Created externals directory");
 
+	if (FortniteFunctionLibrary::GetFortniteInstallationPath() == "NOTFOUND") {
+		MessageBoxW(nullptr, L"Couldn't find a Fortnite installation path! Please verify Fortnite in Epic Games Launcher! If you use Legendary, make sure the \"LauncherInstalled.dat\" file exists as specified in #FAQ!", L"Error getting Fortnite path", MB_OK);
+		return JSValueMakeBoolean(ctx, false);
+	}
+
+	/*
 	std::tuple<long, std::string> depContent = WindowsFunctionLibrary::GetRequestSaturn(_("https://tamelyapi.azurewebsites.net/api/v1/Saturn/Dependencies"));
 	LOG_INFO("Got Dependency endpoint with status {0}", std::get<long>(depContent));
 
 	if (std::get<long>(depContent) != 200) {
 		MessageBoxW(nullptr, L"Failed to fetch dependency modules! Please report this to staff then try again later or use a VPN!", L"Error retrieving dependencies", MB_OK);
-		return JSValueMakeBoolean(ctx, false);
-	}
-
-	if (FortniteFunctionLibrary::GetFortniteInstallationPath() == "NOTFOUND") {
-		MessageBoxW(nullptr, L"Couldn't find a Fortnite installation path! Please verify Fortnite in Epic Games Launcher! If you use Legendary, make sure the \"LauncherInstalled.dat\" file exists as specified in #FAQ!", L"Error getting Fortnite path", MB_OK);
 		return JSValueMakeBoolean(ctx, false);
 	}
 
@@ -70,10 +71,11 @@ JSValueRef FOnLoadSaturn::OnLoadSaturn(JSContextRef ctx, JSObjectRef function, J
 			LOG_INFO("Downloading dependency '{0}' from '{1}'", name, link);
 			WindowsFunctionLibrary::DownloadFile(externalsPath + name, link);
 		}
-	}
+	}*/
 
 	LOG_INFO("Loading Oodle dll");
-	std::wstring oodlePathW = WindowsFunctionLibrary::GetSaturnLocalPath() + L"\\Externals\\oo2core_9_win64.dll";
+	//std::wstring oodlePathW = WindowsFunctionLibrary::GetSaturnLocalPath() + L"\\Externals\\oo2core_9_win64.dll";
+	std::wstring oodlePathW = L"oo2core_9_win64.dll";
 	std::string oodlePath = std::string(oodlePathW.begin(), oodlePathW.end());
 	Oodle::LoadDLL(oodlePath.c_str());
 	LOG_INFO("Loaded Oodle dll");

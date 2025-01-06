@@ -10,9 +10,9 @@ import Saturn.Scripts.ScriptWrapper;
 int main(int argc, char* argv[]) {
 	Log::Init();
 	LOG_INFO("Started Saturn");
-	FScriptWrapper::InitBindings();
-	LOG_INFO("Init bindings");
-	FWebServer::CreateWebServerThread();
+	//FScriptWrapper::InitBindings();
+	//LOG_INFO("Init bindings");
+	//FWebServer::CreateWebServerThread();
 
 	SaturnApp app;
 	app.Run();

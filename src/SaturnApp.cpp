@@ -37,6 +37,7 @@ import Saturn.CallbackFunctions.OnRunLocalPlugin;
 import Saturn.CallbackFunctions.OnRevertAndClose;
 import Saturn.CallbackFunctions.OnDisplayPlugins;
 import Saturn.CallbackFunctions.OnGenerateEmotes;
+import Saturn.CallbackFunctions.OnIsItemConverted;
 import Saturn.CallbackFunctions.OnGeneratePickaxes;
 import Saturn.CallbackFunctions.OnGenerateBackblings;
 
@@ -113,6 +114,7 @@ void SaturnApp::OnDOMReady(ultralight::View* caller,
     SaturnFunctionLibrary::BIND_CALLBACK(caller, FOnRevertAndClose::GetName(), FOnRevertAndClose::OnRevertAndClose);
     SaturnFunctionLibrary::BIND_CALLBACK(caller, FOnDisplayPlugins::GetName(), FOnDisplayPlugins::OnDisplayPlugins);
     SaturnFunctionLibrary::BIND_CALLBACK(caller, FOnGenerateEmotes::GetName(), FOnGenerateEmotes::OnGenerateEmotes); 
+    SaturnFunctionLibrary::BIND_CALLBACK(caller, FOnIsItemConverted::GetName(), FOnIsItemConverted::OnIsItemConverted); 
     SaturnFunctionLibrary::BIND_CALLBACK(caller, FOnGeneratePickaxes::GetName(), FOnGeneratePickaxes::OnGeneratePickaxes);
     SaturnFunctionLibrary::BIND_CALLBACK(caller, FOnGenerateBackblings::GetName(), FOnGenerateBackblings::OnGenerateBackblings);
 }

@@ -14,6 +14,8 @@ import Saturn.WindowsFunctionLibrary;
 import Saturn.Context;
 
 std::string FConfig::Key = "";
+std::string FConfig::RuntimeKey = "";
+
 bool FConfig::bHasSwappedSkin = false;
 
 std::unordered_map<std::string, int64_t> FConfig::UcasSizes = {};

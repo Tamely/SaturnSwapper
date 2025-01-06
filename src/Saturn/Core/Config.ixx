@@ -8,6 +8,8 @@ import Saturn.Items.LoadoutModel;
 
 export struct FConfig {
 	static std::string Key;
+	static std::string RuntimeKey;
+	
 	static bool bHasSwappedSkin;
 
 	static std::unordered_map<std::string, int64_t> UcasSizes;
