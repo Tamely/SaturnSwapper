@@ -249,6 +249,7 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 
 		Ar.Close();
 
+		std::string containerName = reader->GetContainerName();
 		toc.ChunkOffsetAndLengths[TocEntryIndex].SetLength(bufferToWrite.size());
 
 		FIoContainerSettings containerSettings;
@@ -257,7 +258,50 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 		containerSettings.EncryptionKeyGuid = toc.Header.EncryptionKeyGuid;
 
 		uint64_t size = 0;
-		FIoStatus status = FIoStoreTocResource::Write(GetFortniteInstallationPath() + reader->GetContainerName() + ".utoc.tamely", toc, toc.Header.CompressionBlockSize, toc.Header.PartitionSize, containerSettings, size);
+		FIoStatus status = FIoStoreTocResource::Write(GetFortniteInstallationPath() + containerName + ".utoc.tamely", toc, toc.Header.CompressionBlockSize, toc.Header.PartitionSize, containerSettings, size);
+		if (!status.IsOk()) {
+			LOG_ERROR("Failed to make toc. Error {0}", status.ToString());
+			return false;
+		}
+		else {
+			LOG_INFO("Creating backup directory");
+			std::wstring BackupDirectoryW = WindowsFunctionLibrary::GetSaturnLocalPath() + L"\\TocBackups\\";
+			std::string BackupDirectory = std::string(BackupDirectoryW.begin(), BackupDirectoryW.end());
+
+			WindowsFunctionLibrary::MakeDirectory(BackupDirectoryW);
+			LOG_INFO("Moving TOC to backup directory");
+			WindowsFunctionLibrary::RenameFile(GetFortniteInstallationPath() + containerName + ".utoc", BackupDirectory + containerName + ".utoc");
+			LOG_INFO("Moving new TOC to old position");
+			WindowsFunctionLibrary::RenameFile(GetFortniteInstallationPath() + containerName + ".utoc.tamely", GetFortniteInstallationPath() + containerName + ".utoc");
+			LOG_INFO("Added fallback parts!");
+		}
+
+		reader = FContext::Provider->GetReaderByPathAndExtension("/BRCosmetics/Athena/Heroes/Meshes/Bodies/CP_Athena_Body_F_Prime.uasset");
+		TocEntryIndex = FContext::Provider->GetTocEntryIndexByPathAndExtension("/BRCosmetics/Athena/Heroes/Meshes/Bodies/CP_Athena_Body_F_Prime.uasset");
+		chunkStatus = reader->GetChunkInfo(TocEntryIndex);
+		if (!chunkStatus.IsOk()) {
+			LOG_ERROR("Failed to load CP_Athena_Body_F_Prime");
+			return false;
+		}
+
+		chunkInfo = chunkStatus.ConsumeValueOrDie();
+		FIoChunkId defaultChunkId = chunkInfo.Id;
+
+		toc = reader->GetTocResource();
+
+		for (auto& tocChunkId : toc.ChunkIds) {
+			if (tocChunkId == defaultChunkId) {
+				tocChunkId = CreateIoChunkId(0, tocChunkId.GetChunkIndex(), tocChunkId.GetChunkType());
+				break;
+			}
+		}
+
+		containerSettings.ContainerId = toc.Header.ContainerId;
+		containerSettings.ContainerFlags = toc.Header.ContainerFlags;
+		containerSettings.EncryptionKeyGuid = toc.Header.EncryptionKeyGuid;
+
+		size = 0;
+		status = FIoStoreTocResource::Write(GetFortniteInstallationPath() + reader->GetContainerName() + ".utoc.tamely", toc, toc.Header.CompressionBlockSize, toc.Header.PartitionSize, containerSettings, size);
 		if (!status.IsOk()) {
 			LOG_ERROR("Failed to make toc. Error {0}", status.ToString());
 			return false;
@@ -272,6 +316,7 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 			WindowsFunctionLibrary::RenameFile(GetFortniteInstallationPath() + reader->GetContainerName() + ".utoc", BackupDirectory + reader->GetContainerName() + ".utoc");
 			LOG_INFO("Moving new TOC to old position");
 			WindowsFunctionLibrary::RenameFile(GetFortniteInstallationPath() + reader->GetContainerName() + ".utoc.tamely", GetFortniteInstallationPath() + reader->GetContainerName() + ".utoc");
+			LOG_INFO("Invalidated default");
 			LOG_INFO("Converted!");
 
 			FConfig::bHasSwappedSkin = true;
