@@ -36,13 +36,14 @@ public:
     EIoContainerFlags GetContainerFlags() const;
     FGuid GetEncryptionKeyGuid() const;
     int32_t GetChunkCount() const;
-    std::string GetContainerName() const; // The container name is the babse filename of ContainerPath, e.g. "global"
+    std::string GetContainerName() const; // The container name is the base filename of ContainerPath, e.g. "global"
 
     void EnumerateChunks(std::function<bool(FIoStoreTocChunkInfo&&)>&& Callback) const;
     TIoStatusOr<FIoStoreTocChunkInfo> GetChunkInfo(const FIoChunkId& Chunk) const;
     TIoStatusOr<FIoStoreTocChunkInfo> GetChunkInfo(const uint32_t TocEntryIndex) const;
 
     FIoStoreTocResource& GetTocResource();
+    struct FIoOffsetAndLength* GetOffsetAndLength(struct FIoChunkId& ChunkId);
 
     // Reads the chunk off the disk, decryption/decompressing as necessary.
     TIoStatusOr<FIoBuffer> Read(const FIoChunkId& Chunk, const FIoReadOptions& Options) const;

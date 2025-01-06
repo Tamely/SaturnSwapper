@@ -1,6 +1,7 @@
 #include <curl/curl.h>
 #include <LodePNG/lodepng.h>
 #include <Crypt/skCrypter.h>
+#include <Saturn/Log.h>
 
 #include <map>
 #include <sstream>
@@ -17,6 +18,7 @@ import <tuple>;
 import <string>;
 import <vector>;
 import <fstream>;
+import <algorithm>;
 
 size_t WriteFunction(void* ptr, size_t size, size_t nmemb, std::string* data) {
 	data->append((char*)ptr, size * nmemb);
@@ -589,5 +591,39 @@ void WindowsFunctionLibrary::DownloadFile(const std::string& directory, const st
 	else {
 		MessageBoxW(nullptr, L"URL cannot be empty!", L"WindowsFunctionLibrary::DownloadFile", NULL);
 		return;
+	}
+}
+
+int WindowsFunctionLibrary::FindSmallestFileSizeIndex(const std::vector<std::string>& FilePaths) {
+	if (FilePaths.empty()) {
+		return -1; 
+	}
+
+	uintmax_t smallestSize = UINT64_MAX;
+	int smallestIndex = -1;
+
+	for (int i = 0; i < FilePaths.size(); ++i) {
+		try {
+			uintmax_t fileSize = std::filesystem::file_size(FilePaths[i]);
+
+			if (fileSize < smallestSize) {
+				smallestSize = fileSize;
+				smallestIndex = i;
+			}
+		}
+		catch (const std::filesystem::filesystem_error& e) {
+			LOG_ERROR("Error accessing file: {0} - {1}", FilePaths[i], e.what());
+		}
+	}
+
+	return smallestIndex;
+}
+
+void WindowsFunctionLibrary::RenameFile(const std::string& OldPath, const std::string& NewPath) {
+	try {
+		std::filesystem::rename(OldPath, NewPath);
+	}
+	catch (const std::filesystem::filesystem_error& e) {
+		LOG_ERROR("Failed to move file from '{0}' to '{1}': {2}", OldPath, NewPath, e.what());
 	}
 }

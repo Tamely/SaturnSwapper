@@ -208,6 +208,36 @@ FIoStoreReader* VirtualFileSystem::GetReaderByPathAndExtension(const std::string
     return nullptr;
 }
 
+uint32_t VirtualFileSystem::GetTocEntryIndexByPathAndExtension(const std::string& Path) {
+    std::optional<FGameFile> fileStatus = VirtualFileSystem::GetFileByPath(Path);
+    if (!fileStatus.has_value()) {
+        LOG_ERROR("File '{0}' has not been registered!", Path);
+        return 0;
+    }
+
+    FGameFile& file = fileStatus.value();
+    uint32_t extensionId = ExtensionPool::GetOrAdd(GetExtension(Path));
+
+    auto it = std::find_if(file.Extensions.begin(), file.Extensions.end(),
+        [extensionId](const auto& pair) { return pair.first == extensionId; });
+
+    if (it == file.Extensions.end()) {
+        LOG_ERROR("File '{0}' has not been registered with extension '{1}!", Path, ExtensionPool::Get(extensionId));
+        return 0;
+    }
+
+    const uint32_t TocEntryIndex = it->second;
+    for (auto& Reader : s_Readers) {
+        TIoStatusOr<FIoStoreTocChunkInfo> chunkStatus = Reader->GetChunkInfo(TocEntryIndex);
+        if (!chunkStatus.IsOk()) continue;
+
+        FIoStoreTocChunkInfo chunkInfo = chunkStatus.ConsumeValueOrDie();
+        if (NormalizeFilePath(chunkInfo.FileName) != NormalizeFilePath(Path)) continue;
+
+        return TocEntryIndex;
+    }
+}
+
 std::string VirtualFileSystem::GetExtension(const std::string& Path) {
     return std::filesystem::path(Path).extension().string();
 }

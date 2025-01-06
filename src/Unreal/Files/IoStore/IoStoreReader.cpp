@@ -11,6 +11,7 @@ import Saturn.Misc.IoBuffer;
 import Saturn.Core.IoStatus;
 import Saturn.Encryption.AES;
 import Saturn.Structs.IoChunkId;
+import Saturn.Readers.FileReader;
 import Saturn.Misc.IoReadOptions;
 import Saturn.Structs.IoOffsetLength;
 import Saturn.IoStore.IoDirectoryIndex;
@@ -147,14 +148,14 @@ public:
 	static constexpr uint32_t NumHandlesPerFile = 12;
 	struct FContainerFileAccess {
 		FCriticalSection HandleLock[NumHandlesPerFile];
-		FFileReaderNoWrite* Handle[NumHandlesPerFile];
+		FFileReader* Handle[NumHandlesPerFile];
 		std::atomic_uint32_t NextHandleIndex{ 0 };
 		bool bValid = false;
 
 		FContainerFileAccess(std::string& ContainerFileName) {
 			bValid = true;
 			for (uint32_t i = 0; i < NumHandlesPerFile; i++) {
-				Handle[i] = new FFileReaderNoWrite(ContainerFileName.c_str());
+				Handle[i] = new FFileReader(ContainerFileName.c_str());
 				if (Handle[i] == nullptr) {
 					bValid = false;
 				}
@@ -710,6 +711,10 @@ public:
     FIoStoreTocResource& GetTocResource() {
         return TocReader.GetTocResource();
     }
+
+    const FIoOffsetAndLength* GetOffsetAndLength(const FIoChunkId& ChunkId) const {
+        return TocReader.GetOffsetAndLength(ChunkId);
+    }
 private:
     FIoStoreTocReader TocReader;
     std::vector<TUniquePtr<FContainerFileAccess>> ContainerFileAccessors;
@@ -757,6 +762,10 @@ TIoStatusOr<FIoStoreTocChunkInfo> FIoStoreReader::GetChunkInfo(const FIoChunkId&
 
 FIoStoreTocResource& FIoStoreReader::GetTocResource() {
     return Impl->GetTocResource();
+}
+
+FIoOffsetAndLength* FIoStoreReader::GetOffsetAndLength(FIoChunkId& ChunkId) {
+    return const_cast<FIoOffsetAndLength*>(std::move(Impl->GetOffsetAndLength(ChunkId)));
 }
 
 TIoStatusOr<FIoStoreTocChunkInfo> FIoStoreReader::GetChunkInfo(const uint32_t TocEntryIndex) const {

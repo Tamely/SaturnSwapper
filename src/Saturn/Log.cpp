@@ -17,6 +17,6 @@ void Log::Init() {
 
 	s_CoreLogger = std::make_shared<spdlog::logger>("SATURN", begin(logSinks), end(logSinks));
 	spdlog::register_logger(s_CoreLogger);
-	s_CoreLogger->set_level(spdlog::level::trace);
-	s_CoreLogger->flush_on(spdlog::level::trace);
+	s_CoreLogger->set_level(spdlog::level::info);
+	s_CoreLogger->flush_on(spdlog::level::info);
 }

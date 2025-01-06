@@ -35,6 +35,7 @@ public:
 public:
     std::vector<class FIoStoreReader*>& GetArchives() { return TocArchives; }
     class FIoStoreReader* GetReaderByPathAndExtension(const std::string& Path);
+    uint32_t GetTocEntryIndexByPathAndExtension(const std::string& Path);
 private:
     TMap<FGuid, FAESKey> DecryptionKeys;
     std::vector<std::string> ArchivePaths;

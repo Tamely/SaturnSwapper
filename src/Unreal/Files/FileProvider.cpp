@@ -150,3 +150,7 @@ UPackagePtr FFileProvider::LoadPackage(FIoBuffer& Entry, FExportState& State) {
 FIoStoreReader* FFileProvider::GetReaderByPathAndExtension(const std::string& Path) {
     return VFS->GetReaderByPathAndExtension(Path);
 }
+
+uint32_t FFileProvider::GetTocEntryIndexByPathAndExtension(const std::string& Path) {
+    return VFS->GetTocEntryIndexByPathAndExtension(Path);
+}
