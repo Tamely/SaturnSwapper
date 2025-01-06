@@ -42,6 +42,7 @@ JSValueRef FOnLoadSaturn::OnLoadSaturn(JSContextRef ctx, JSObjectRef function, J
 	std::wstring mappingsPathW = WindowsFunctionLibrary::GetSaturnLocalPath() + L"\\Mappings\\";
 	std::string mappingsPath = std::string(mappingsPathW.begin(), mappingsPathW.end());
 
+	WindowsFunctionLibrary::MakeDirectory(WindowsFunctionLibrary::GetSaturnLocalPath());
 	WindowsFunctionLibrary::MakeDirectory(externalsPathW);
 	WindowsFunctionLibrary::MakeDirectory(mappingsPathW);
 	LOG_INFO("Created externals directory");
