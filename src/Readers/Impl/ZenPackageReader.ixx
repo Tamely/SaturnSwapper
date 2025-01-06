@@ -127,6 +127,8 @@ public:
     std::vector<class FDependencyBundleEntry>& GetDependencyBundleEntries();
     std::vector<std::wstring>& GetImportedPackageNames();
 
+    std::vector<uint8_t> SerializeAsByteArray(std::vector<uint8_t>& Original);
+
     friend FZenPackageReader& operator<<(FZenPackageReader& Ar, UObjectPtr& Object);
     friend FZenPackageReader& operator>>(FZenPackageReader& Ar, UObjectPtr& Object);
     friend FZenPackageReader& operator<<(FZenPackageReader& Ar, UStructPtr& Struct);

@@ -32,7 +32,7 @@ FZenPackageHeader FZenPackageHeader::MakeView(std::vector<uint8_t>& Memory, std:
 
     FZenPackageHeader PackageHeader;
     uint8_t* PackageHeaderDataPtr = reinterpret_cast<uint8_t*>(Memory.data());
-    PackageHeader.PackageSummary = reinterpret_cast<FZenPackageSummary*>(PackageHeaderDataPtr);
+    PackageHeader.PackageSummary = std::move(reinterpret_cast<FZenPackageSummary*>(PackageHeaderDataPtr));
 
     std::vector<uint8_t> PackageHeaderDataView(PackageHeaderDataPtr + sizeof(FZenPackageSummary), PackageHeaderDataPtr + PackageHeader.PackageSummary->HeaderSize - sizeof(FZenPackageSummary));
     FMemoryReader PackageHeaderDataReader(PackageHeaderDataView);

@@ -227,7 +227,7 @@ void FZenPackageReader::LoadProperties(UStructPtr Struct, UObjectPtr Object) {
     }
 
     if (!header.HasNonZeroValues() or !header.HasValues()) {
-        Status = FIoStatus(EIoErrorCode::InvalidParameter, "Provided asset either doesn't have NonZero values or doesn't have values at all.");
+        LOG_TRACE("Provided asset either doesn't have NonZero values or doesn't have values at all.");
         return;
     }
 
@@ -296,6 +296,36 @@ std::vector<FDependencyBundleEntry>& FZenPackageReader::GetDependencyBundleEntri
 
 std::vector<std::wstring>& FZenPackageReader::GetImportedPackageNames() {
     return PackageHeader.ImportedPackageNames;
+}
+
+std::vector<uint8_t> FZenPackageReader::SerializeAsByteArray(std::vector<uint8_t>& Original) {
+    FZenPackageReader otherReader(Original);
+    int32_t Difference = FNameMap::GetNameMapByteDifference(otherReader.GetNameMap(), GetNameMap());
+
+    std::vector<uint8_t> buffer;
+    buffer.resize(sizeof(FZenPackageSummary));
+    memcpy(buffer.data(), Original.data(), sizeof(FZenPackageSummary));
+
+    PackageHeader.NameMap.SaveToBuffer(buffer);
+
+    FZenPackageSummary* Summary = reinterpret_cast<FZenPackageSummary*>(buffer.data());
+    Summary->HeaderSize -= Difference;
+    Summary->ImportedPublicExportHashesOffset -= Difference;
+    Summary->ImportMapOffset -= Difference;
+    Summary->ExportMapOffset -= Difference;
+    Summary->ExportBundleEntriesOffset -= Difference;
+    Summary->DependencyBundleHeadersOffset -= Difference;
+    Summary->DependencyBundleEntriesOffset -= Difference;
+    Summary->ImportedPackageNamesOffset -= Difference;
+
+    std::vector<uint8_t> OtherNameMap;
+    otherReader.GetNameMap().SaveToBuffer(OtherNameMap);
+
+    Original.erase(Original.begin(), Original.begin() + sizeof(FZenPackageSummary) + OtherNameMap.size());
+
+    buffer.append_range(Original);
+
+    return buffer;
 }
 
 FZenPackageReader& operator<<(FZenPackageReader& Ar, UObjectPtr& Object) {

@@ -143,14 +143,62 @@ bool FortniteFunctionLibrary::PatchEpicGames() {
 bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 	FortniteFunctionLibrary::KillEpicProcesses();
 
-	UPackagePtr package = FContext::Provider->LoadPackage(Loadout.Skin.PackagePath + ".uasset");
-	UObjectPtr firstExport = package->GetFirstExport();
+	uint8_t* asset = std::move(ASSET_DATA);
+	int UsedCharacterParts = 0;
 
-	std::vector<FSoftObjectPath> characterParts = firstExport->GetProperty<std::vector<FSoftObjectPath>>("BaseCharacterParts");
+	static const std::vector<std::wstring> CharacterPartPathsToSearch = {
+		L"/Game/00000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+		L"/Game/11111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+		L"/Game/22222222222222222222222222222222222222222222222222222222222222222222222222222222222222",
+		L"/Game/33333333333333333333333333333333333333333333333333333333333333333333333333333333333333",
+		L"/Game/44444444444444444444444444444444444444444444444444444444444444444444444444444444444444"
+	};
 
-	for (FSoftObjectPath& characterPart : characterParts) {
-		LOG_INFO("CharacterPart '{0}'", characterPart.GetAssetPathString());
+	static const std::vector<std::wstring> CharacterPartNamesToSearch = {
+		L"000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+		L"111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+		L"222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222",
+		L"333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333",
+		L"444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444"
+	};
+
+	FZenPackageReader assetReader(asset, ASSET_LENGTH);
+	if (!assetReader.IsOk()) {
+		LOG_ERROR("Error patching Fortnite. Failed to load DefaultGameDataCosmetics. Error: {0}", assetReader.GetStatus().ToString());
+		return false;
 	}
+
+	if (FContext::Loadout.Skin.IsValid()) {
+		LOG_INFO("Loading skin '{0}'", Loadout.Skin.Name);
+		UPackagePtr package = FContext::Provider->LoadPackage(Loadout.Skin.PackagePath + ".uasset");
+		LOG_INFO("Getting first export");
+		UObjectPtr firstExport = package->GetFirstExport();
+		LOG_INFO("Got export");
+
+		std::vector<FSoftObjectPath> characterParts = firstExport->GetProperty<std::vector<FSoftObjectPath>>("BaseCharacterParts");
+		LOG_INFO("Skin '{0}' has {1} character parts!", Loadout.Skin.Name, characterParts.size());
+
+		for (FSoftObjectPath& charPart : characterParts) {
+			if (UsedCharacterParts > CharacterPartNamesToSearch.size() - 1) {
+				LOG_ERROR("Ran out of useable character part searches!");
+				break;
+			}
+
+			std::string packageName = charPart.GetAssetPath().GetPackageName();
+			std::string assetName = charPart.GetAssetPath().GetAssetName();
+
+			std::wstring packageNameW = std::wstring(packageName.begin(), packageName.end());
+			std::wstring assetNameW = std::wstring(assetName.begin(), assetName.end());
+
+			assetReader.GetNameMap().SetName(CharacterPartPathsToSearch[UsedCharacterParts], packageNameW);
+			assetReader.GetNameMap().SetName(CharacterPartNamesToSearch[UsedCharacterParts++], assetNameW);
+		}
+	}
+
+	uint8_t* originalAsset = std::move(ASSET_DATA);
+	std::vector<uint8_t> originalBuffer(originalAsset, originalAsset + ASSET_LENGTH);
+	std::vector<uint8_t> bufferToWrite = assetReader.SerializeAsByteArray(originalBuffer);
+
 
 	/*
 	try {

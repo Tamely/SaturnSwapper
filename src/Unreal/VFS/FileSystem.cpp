@@ -29,7 +29,7 @@ uint32_t ExtensionPool::GetOrAdd(const std::string& extension) {
 
     uint32_t id = static_cast<uint32_t>(s_ReverseLookup.size());
     s_ReverseLookup.push_back(extension);
-    s_Pool[extension] = id;
+    s_Pool.insert_or_assign(extension, id);
     return id;
 }
 
