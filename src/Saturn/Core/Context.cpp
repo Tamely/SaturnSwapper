@@ -18,7 +18,7 @@ uint8_t* FContext::ReplaceArray = nullptr;
 
 bool FContext::Paid = false;
 
-std::string FContext::VERSION = "3.0.0";
+std::string FContext::VERSION = "3.0.1";
 
 duk_context* FContext::DukContext = nullptr;
 bool FContext::ResponseWaiting = false;

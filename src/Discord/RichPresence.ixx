@@ -31,7 +31,7 @@ public:
 		m_RichPresence.state = buffer;
 		m_RichPresence.details = "discord.gg/SaturnSwapper";
 		m_RichPresence.largeImageKey = "templogo";
-		m_RichPresence.largeImageText = "3.0.0";
+		m_RichPresence.largeImageText = "3.0.1";
 		m_RichPresence.instance = 1;
 
 		Discord_UpdatePresence(&m_RichPresence);

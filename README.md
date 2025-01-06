@@ -11,7 +11,7 @@ Official Get-Started Page: NOT AVAILABLE YET
 1. Install Git and CMake (both listed at the bottom of this README)
 2. Clone the repo
 ```cmd
-git clone https://github.com/Tamely/SaturnSwapper -b 3.0.0 --recursive
+git clone https://github.com/Tamely/SaturnSwapper --recursive
 ```
 3. Navigate to the SaturnSwapper directory
 ```cmd

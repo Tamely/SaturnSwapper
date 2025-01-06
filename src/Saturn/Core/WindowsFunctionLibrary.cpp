@@ -40,7 +40,7 @@ std::tuple<long, std::string> WindowsFunctionLibrary::GetRequest(const std::stri
 	if (curl) {
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, "Saturn/3.0.0");
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "Saturn/3.0.1");
 		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
 		curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
 
@@ -78,7 +78,7 @@ std::tuple<long, std::string> WindowsFunctionLibrary::GetRequestSaturn(const std
 	if (curl) {
 		curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, "Saturn/3.0.0");
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "Saturn/3.0.1");
 		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
 		curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
 
