@@ -29,39 +29,6 @@ public:
 
 		std::string id = std::string(buffer);
 
-		if (id == FContext::Loadout.Skin.Id) {
-			FContext::Loadout.Skin = FItem();
-			FConfig::Save();
-			FLoadout::WriteToSaveGame(FContext::Loadout);
-
-			JSStringRelease(idString);
-			delete[] buffer;
-
-			return JSValueMakeNull(ctx);
-		}
-
-		if (id == FContext::Loadout.Backbling.Id) {
-			FContext::Loadout.Backbling = FItem();
-			FConfig::Save();
-			FLoadout::WriteToSaveGame(FContext::Loadout);
-
-			JSStringRelease(idString);
-			delete[] buffer;
-
-			return JSValueMakeNull(ctx);
-		}
-
-		if (id == FContext::Loadout.Pickaxe.Id) {
-			FContext::Loadout.Pickaxe = FItem();
-			FConfig::Save();
-			FLoadout::WriteToSaveGame(FContext::Loadout);
-
-			JSStringRelease(idString);
-			delete[] buffer;
-
-			return JSValueMakeNull(ctx);
-		}
-
 		switch (FContext::CosmeticState) {
 			case ECosmeticState::Skin:
 				FContext::Loadout.Skin = FSkinGenerator::GetItemById(id);

@@ -104,6 +104,36 @@ bool FortniteFunctionLibrary::PatchEpicGames() {
 bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 	FortniteFunctionLibrary::KillEpicProcesses();
 
+	if (FConfig::bHasSwappedSkin) {
+		LOG_INFO("Creating backup directory");
+		std::wstring BackupDirectoryW = WindowsFunctionLibrary::GetSaturnLocalPath() + L"\\TocBackups\\";
+		std::string BackupDirectory = std::string(BackupDirectoryW.begin(), BackupDirectoryW.end());
+
+		WindowsFunctionLibrary::MakeDirectory(BackupDirectoryW);
+
+
+		LOG_INFO("Getting all TOCs from backup directory");
+
+		std::vector<std::string> backedUpTOCs = WindowsFunctionLibrary::GetFilesInDirectory(BackupDirectory);
+		for (std::string& toc : backedUpTOCs) {
+			WindowsFunctionLibrary::RenameFile(BackupDirectory + toc, GetFortniteInstallationPath() + toc);
+			LOG_INFO("Moved TOC from '{0}' to '{1}'.", BackupDirectory + toc, GetFortniteInstallationPath() + toc);
+		}
+
+		for (auto& [path, size] : FConfig::UcasSizes) {
+			FFileReader reader(path.c_str());
+			reader.TrimToSize(size, true);
+			reader.Close();
+		}
+
+		LOG_INFO("Reverted!");
+		FConfig::bHasSwappedSkin = false;
+		FConfig::UcasSizes.clear();
+		FConfig::Save();
+
+		return true;
+	}
+
 	uint8_t* asset = std::move(ASSET_DATA);
 	int UsedCharacterParts = 0;
 
@@ -186,6 +216,7 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 		std::string ContainerPath = containerPaths[idx];
 
 		FFileReader Ar(ContainerPath.c_str());
+		FConfig::UcasSizes.insert_or_assign(ContainerPath, Ar.TotalSize());
 		Ar.Seek(Ar.TotalSize());
 		LOG_INFO("Opened container '{0}' at offset {1}", ContainerPath, Ar.Tell());
 
@@ -242,6 +273,8 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 			LOG_INFO("Moving new TOC to old position");
 			WindowsFunctionLibrary::RenameFile(GetFortniteInstallationPath() + reader->GetContainerName() + ".utoc.tamely", GetFortniteInstallationPath() + reader->GetContainerName() + ".utoc");
 			LOG_INFO("Converted!");
+
+			FConfig::bHasSwappedSkin = true;
 		}
 	}
 

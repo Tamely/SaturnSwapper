@@ -16,7 +16,6 @@ public:
 		bool fovEnabled = JSValueToBoolean(ctx, arguments[0]);
 		FLoadout::WriteFOV(fovEnabled);
 
-		FConfig::bFOVEnabled = fovEnabled;
 		FConfig::Save();
 
 		return JSValueMakeNull(ctx);

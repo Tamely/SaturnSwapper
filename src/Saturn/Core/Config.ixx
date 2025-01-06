@@ -8,12 +8,9 @@ import Saturn.Items.LoadoutModel;
 
 export struct FConfig {
 	static std::string Key;
-	static bool bFOVEnabled;
-	static std::vector<FLoadout> Loadouts;
+	static bool bHasSwappedSkin;
 
-	static std::string UcasPath;
-	static int64_t UcasSize;
-	static std::unordered_map<std::string, std::string> UtocChanges;
+	static std::unordered_map<std::string, int64_t> UcasSizes;
 
 	static void Load();
 	static void Save();

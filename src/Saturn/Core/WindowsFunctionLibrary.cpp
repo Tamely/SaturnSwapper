@@ -627,3 +627,59 @@ void WindowsFunctionLibrary::RenameFile(const std::string& OldPath, const std::s
 		LOG_ERROR("Failed to move file from '{0}' to '{1}': {2}", OldPath, NewPath, e.what());
 	}
 }
+
+std::vector<std::string> WindowsFunctionLibrary::GetFilesInDirectory(const std::string& Path) {
+	std::vector<std::string> files;
+
+	try {
+		for (const auto& entry : std::filesystem::directory_iterator(Path)) {
+			if (entry.is_regular_file()) {
+				files.push_back(entry.path().filename().string());
+			}
+		}
+	}
+	catch (const std::filesystem::filesystem_error& e) {
+		LOG_ERROR("Failed to get files in directory '{0}': {1}", Path, e.what());
+	}
+
+	return files;
+}
+
+void WindowsFunctionLibrary::TrimFileToSize(const std::string& Path, int64_t Length) {
+	try {
+		if (!std::filesystem::exists(Path)) {
+			LOG_ERROR("File '{0}' does not exist.", Path);
+			return;
+		}
+
+		int64_t currentSize = std::filesystem::file_size(Path);
+
+		if (Length > currentSize) {
+			LOG_ERROR("Cannot trim file to a larger size. Requested: {0}, Current: {1}", Length, currentSize);
+			return;
+		}
+
+		std::ofstream file(Path, std::ios::binary | std::ios::in | std::ios::out);
+		if (!file.is_open()) {
+			LOG_ERROR("Failed to open file '{0}' for trimming.", Path);
+		}
+
+#if defined(_WIN32) || defined(_WIN64)
+		file.close();
+		if (_chsize_s(fileno(fopen(Path.c_str(), "rb+")), Length) != 0) {
+			LOG_ERROR("Failed to trim file '{0}'.", Path);
+			return;
+		}
+#else
+		int fd = fileno(fopen(Path.c_str(), "rb+"));
+		if (fd == -1 || ftruncate(fd, Length) != 0) {
+			LOG_ERROR("Failed to trim file '{0}'.", Path);
+			return;
+		}
+		close(fd);
+#endif
+	}
+	catch (const std::filesystem::filesystem_error& e) {
+		LOG_ERROR("Filesystem error while trimming file '{0}': {1}.", Path, e.what());
+	}
+}

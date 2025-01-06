@@ -7,11 +7,8 @@ import Saturn.WindowsFunctionLibrary;
 import Saturn.FortniteFunctionLibrary;
 
 void FLoadout::WriteToSaveGame(const FLoadout& Loadout) {
-
 	FortniteFunctionLibrary::KillEpicProcesses();
 	Sleep(1000);
-
-	FortniteFunctionLibrary::PatchEpicGames();
 
 	// Add a check here for if this worked later please and thank you
 	FortniteFunctionLibrary::PatchFortnite(Loadout);

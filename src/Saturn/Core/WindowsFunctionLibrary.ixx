@@ -30,4 +30,6 @@ public:
 	static void DownloadFile(const std::string& directory, const std::string& url);
 	static int FindSmallestFileSizeIndex(const std::vector<std::string>& FilePaths);
 	static void RenameFile(const std::string& OldPath, const std::string& NewPath);
+	static std::vector<std::string> GetFilesInDirectory(const std::string& Path);
+	static void TrimFileToSize(const std::string& Path, int64_t Length);
 };

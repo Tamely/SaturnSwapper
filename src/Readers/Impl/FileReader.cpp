@@ -4,6 +4,9 @@ import Saturn.Readers.FileReader;
 #include <stdexcept>
 #include <memory>
 #include <string>
+#include <mutex>
+#include <unordered_map>
+#include <vector>
 
 #if defined(_WIN32) || defined(_WIN64)
     #include <Windows.h>
@@ -13,14 +16,19 @@ import Saturn.Readers.FileReader;
     #include <unistd.h>
 #endif
 
+std::mutex FFileReader::RegistryMutex;
+std::unordered_map<std::string, std::vector<FFileReader*>> FFileReader::ActiveReaders;
+
 FFileReader::FFileReader() {}
 
 FFileReader::FFileReader(const char* InFilename) {
     FilePath = InFilename;
     openFileForMapping();
+    registerReader();
 }
 
 FFileReader::~FFileReader() {
+    unregisterReader();
     closeFileMapping();
 }
 
@@ -95,7 +103,123 @@ bool FFileReader::WriteBuffer(void* V, int64_t Length) {
     }
 }
 
-// Add this method to verify file contents
+bool FFileReader::TrimToSize(int64_t newSize, bool force) {
+    if (newSize < 0) {
+        LOG_ERROR("Cannot trim file '{0}' to a negative size.", FilePath);
+        return false;
+    }
+
+    if (newSize > FileSize) {
+        LOG_ERROR("New size is larger than the current file size for '{0}'.", FilePath);
+        return false;
+    }
+
+    auto activeReaders = getActiveReaders(FilePath);
+
+    if (activeReaders.size() > 1 && !force) {
+        LOG_ERROR("Cannot trim file '{0}' - {1} other readers are still active", 
+                  FilePath, activeReaders.size() - 1);
+        return false;
+    }
+
+    try {
+        if (force) {
+            LOG_INFO("Force mode enabled. Notifying other readers to close mappings.");
+            for (auto reader : activeReaders) {
+                if (reader != this) {
+                    reader->closeFileMapping();
+                }
+            }
+        }
+
+        Close(); // Close our own mapping
+
+#if defined(_WIN32) || defined(_WIN64)
+        HANDLE resizeHandle = CreateFileA(FilePath.c_str(),
+            GENERIC_READ | GENERIC_WRITE,
+            0,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+
+        if (resizeHandle == INVALID_HANDLE_VALUE) {
+            LOG_ERROR("Failed to reopen file for trimming: {0}", GetLastError());
+            if (force) {
+                notifyReadersToRemap(activeReaders);
+            }
+            throw std::runtime_error("Failed to reopen file for trimming.");
+        }
+
+        LARGE_INTEGER liDistanceToMove;
+        liDistanceToMove.QuadPart = newSize;
+
+        BOOL success = SetFilePointerEx(resizeHandle, liDistanceToMove, NULL, FILE_BEGIN) &&
+                      SetEndOfFile(resizeHandle);
+        CloseHandle(resizeHandle);
+
+        if (!success) {
+            LOG_ERROR("Failed to resize file: {0}", GetLastError());
+            if (force) {
+                notifyReadersToRemap(activeReaders);
+            }
+            throw std::runtime_error("Failed to resize file.");
+        }
+
+#else
+        int resizeFd = open(FilePath.c_str(), O_RDWR);
+        if (resizeFd == -1) {
+            if (force) {
+                notifyReadersToRemap(activeReaders);
+            }
+            throw std::runtime_error("Failed to reopen file for trimming.");
+        }
+
+        if (ftruncate(resizeFd, newSize) == -1) {
+            close(resizeFd);
+            if (force) {
+                notifyReadersToRemap(activeReaders);
+            }
+            throw std::runtime_error("Failed to trim file size.");
+        }
+        close(resizeFd);
+#endif
+
+        FileSize = newSize;
+        if (FilePosition > FileSize) {
+            FilePosition = FileSize;
+        }
+
+        openFileForMapping(); // Remap this reader
+        if (force) {
+            notifyReadersToRemap(activeReaders);
+        }
+
+        LOG_INFO("Successfully trimmed file '{0}' to size {1}.", FilePath, newSize);
+        return true;
+    } catch (const std::exception& e) {
+        LOG_ERROR("Failed to trim file '{0}': {1}", FilePath, e.what());
+        try {
+            openFileForMapping();
+            if (force) {
+                notifyReadersToRemap(activeReaders);
+            }
+        } catch (...) {
+            LOG_ERROR("Failed to recover file mapping after trim attempt.");
+        }
+        return false;
+    }
+}
+
+void FFileReader::notifyReadersToRemap(const std::vector<FFileReader*>& readers) {
+    for (auto reader : readers) {
+        if (reader != this) {
+            reader->openFileForMapping();
+        }
+    }
+    LOG_INFO("Signaled other readers to remap file '{0}'.", FilePath);
+}
+
 bool FFileReader::VerifyWrite(int64_t position, int64_t length) {
     LOG_INFO("Verifying write at position {0} with length {1}", position, length);
 
@@ -333,4 +457,30 @@ void FFileReader::extendFile(int64_t NewSize) {
 #endif
 
     FileSize = NewSize;
+}
+
+void FFileReader::registerReader() {
+    std::lock_guard<std::mutex> lock(RegistryMutex);
+    ActiveReaders[FilePath].push_back(this);
+    LOG_INFO("Registered reader for file '{0}'. Active readers: {1}", 
+             FilePath, ActiveReaders[FilePath].size());
+}
+
+void FFileReader::unregisterReader() {
+    std::lock_guard<std::mutex> lock(RegistryMutex);
+    auto& readers = ActiveReaders[FilePath];
+    readers.erase(std::remove(readers.begin(), readers.end(), this), readers.end());
+    
+    if (readers.empty()) {
+        ActiveReaders.erase(FilePath);
+        LOG_INFO("Removed last reader for file '{0}'", FilePath);
+    } else {
+        LOG_INFO("Unregistered reader for file '{0}'. Remaining readers: {1}", 
+                 FilePath, readers.size());
+    }
+}
+
+std::vector<FFileReader*> FFileReader::getActiveReaders(const std::string& filePath) {
+    std::lock_guard<std::mutex> lock(RegistryMutex);
+    return ActiveReaders[filePath];
 }
