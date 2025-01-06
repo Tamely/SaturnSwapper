@@ -39,7 +39,11 @@ JSValueRef FOnLoadSaturn::OnLoadSaturn(JSContextRef ctx, JSObjectRef function, J
 	std::wstring externalsPathW = WindowsFunctionLibrary::GetSaturnLocalPath() + L"\\Externals\\";
 	std::string externalsPath = std::string(externalsPathW.begin(), externalsPathW.end());
 
+	std::wstring mappingsPathW = WindowsFunctionLibrary::GetSaturnLocalPath() + L"\\Mappings\\";
+	std::string mappingsPath = std::string(mappingsPathW.begin(), mappingsPathW.end());
+
 	WindowsFunctionLibrary::MakeDirectory(externalsPathW);
+	WindowsFunctionLibrary::MakeDirectory(mappingsPathW);
 	LOG_INFO("Created externals directory");
 
 	std::tuple<long, std::string> depContent = WindowsFunctionLibrary::GetRequestSaturn(_("https://tamelyapi.azurewebsites.net/api/v1/Saturn/Dependencies"));
@@ -95,7 +99,23 @@ JSValueRef FOnLoadSaturn::OnLoadSaturn(JSContextRef ctx, JSObjectRef function, J
 	FBaseGenerator::InitializeAssetRegistry(path, defaultAES);
 	LOG_INFO("Loaded Asset Registry");
 
-	FContext::Provider = std::make_shared<FFileProvider>(FortniteFunctionLibrary::GetFortniteInstallationPath(), "D:\\++Fortnite+Release-33.11-CL-38773622-Windows_oo.usmap");
+	LOG_INFO("Fetching mappings");
+	std::tuple<std::string, std::string> mappings = FortniteFunctionLibrary::GetFortniteMappingsURL();
+	if (std::get<0>(mappings) == "ERROR") {
+		JSStringRef script = JSStringCreateWithUTF8CString("saturn.modalManager.showModal('error')");
+		JSEvaluateScript(ctx, script, NULL, NULL, NULL, nullptr);
+		JSStringRelease(script);
+
+		return JSValueMakeBoolean(ctx, false);
+	}
+	LOG_INFO("Fetched mappings");
+
+	if (!WindowsFunctionLibrary::FileExists(mappingsPath + std::get<1>(mappings))) {
+		WindowsFunctionLibrary::DownloadFile(mappingsPath + std::get<1>(mappings), std::get<0>(mappings));
+	}
+	LOG_INFO("Downloaded mappings");
+
+	FContext::Provider = std::make_shared<FFileProvider>(FortniteFunctionLibrary::GetFortniteInstallationPath(), mappingsPath + std::get<1>(mappings));
 
 	LOG_INFO("Created provider");
 	FContext::Provider->SubmitKey(defaultGUID, defaultAES);

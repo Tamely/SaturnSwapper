@@ -84,6 +84,37 @@ std::string FortniteFunctionLibrary::GetFortniteAESKey() {
 	}
 }
 
+std::tuple<std::string, std::string> FortniteFunctionLibrary::GetFortniteMappingsURL()
+{
+	static std::tuple<int, std::string> stringData = WindowsFunctionLibrary::GetRequest("https://fortnitecentral.genxgames.gg/api/v1/mappings");
+
+	if (std::get<0>(stringData) != 200) {
+		return { "ERROR", "ERROR" };
+	}
+
+	rapidjson::Document json;
+	json.Parse(std::get<1>(stringData).c_str());
+
+	if (json.HasParseError() || !json.IsArray()) {
+		return { "ERROR", "ERROR" };
+	}
+
+	for (const auto& item : json.GetArray()) {
+		if (item.HasMember("url") && item.HasMember("fileName") && item.HasMember("meta") && item["meta"].HasMember("compressionMethod")) {
+			std::string compressionMethod = item["meta"]["compressionMethod"].GetString();
+
+			if (compressionMethod == "Oodle" || compressionMethod == "None") {
+				return {
+					item["url"].GetString(),
+					item["fileName"].GetString()
+				};
+			}
+		}
+	}
+
+	return { "ERROR", "ERROR" };
+}
+
 std::wstring FortniteFunctionLibrary::GetFortniteLocalPath() {
 	std::wstringstream ss;
 
