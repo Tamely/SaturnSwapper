@@ -28,7 +28,8 @@ void Oodle::LoadDLL(const char* DllPath) {
 
 	auto OodleHandle = LoadLibraryA(DllPath);
 	OodleLZ_Decompress = (OodleDecompressionFunc)GetProcAddress(OodleHandle, "OodleLZ_Decompress");
-	OodleLZ_Compress = (OodleCompressionFunc)GetProcAddress(OodleHandle, "OodleLZ_Compress");
+	OodleLZ_Compress = (OodleLZ_CompressFunc)GetProcAddress(OodleHandle, "OodleLZ_Compress");
+	OodleLZ_GetCompressedBufferSizeNeeded = (OodleLZ_GetCompressedBufferSizeNeededFunc)GetProcAddress(OodleHandle, "OodleLZ_GetCompressedBufferSizeNeeded");
 	OodleLZ_CompressOptions_GetDefault = (CompressOptions_GetDefaultFunc)GetProcAddress(OodleHandle, "OodleLZ_CompressOptions_GetDefault");
 }
 
@@ -37,14 +38,16 @@ void Oodle::Compress(void* compressedData, int32_t& compressedSize, const void* 
 		throw std::exception("OodleLZ_Compress is called despite the DLL not being loaded!");
 	}
 
-	OodleLZ_CompressOptions* options = OodleLZ_CompressOptions_GetDefault(OodleCompressorType::Kraken, OodleCompressionLevel::Optimal5);
-	compressedSize = OodleLZ_Compress(OodleCompressorType::Kraken, (void*)decompressedData, decompressedSize, compressedData, OodleCompressionLevel::Optimal5, nullptr, nullptr, nullptr, nullptr, 0);
+	OodleLZ_CompressOptions* options = OodleLZ_CompressOptions_GetDefault(OodleLZ_Compressor_Kraken, OodleCompressionLevel::Optimal5);
+	compressedSize = OodleLZ_Compress(OodleLZ_Compressor_Kraken, (void*)decompressedData, decompressedSize, compressedData, OodleCompressionLevel::Optimal5, options, nullptr, nullptr, nullptr, 0);
 }
 
 uint32_t Oodle::GetMaximumCompressedSize(uint32_t InUncompressedSize) {
-	int64_t NumBlocks = (InUncompressedSize + OODLELZ_BLOCK_LEN - 1) / OODLELZ_BLOCK_LEN;
-	int64_t MaxCompressedSize = InUncompressedSize + NumBlocks * OODLELZ_BLOCK_MAXIMUM_EXPANSION;
-	return MaxCompressedSize;
+	if (!OodleLZ_GetCompressedBufferSizeNeeded) {
+		throw std::exception("OodleLZ_GetCompressedBufferSizeNeeded is called despite the DLL not being loaded!");
+	}
+
+	return OodleLZ_GetCompressedBufferSizeNeeded(OodleLZ_Compressor_Kraken, (intptr_t)InUncompressedSize);
 }
 
 void Oodle::Decompress(const void* compressedData, intptr_t compressedSize, void* decompressedData, intptr_t decompressedSize) {

@@ -43,23 +43,6 @@ export typedef struct OodleLZ_CompressOptions {
 	int32_t              reserved[4];   // reserved space for adding more options; zero these!
 } OodleLZ_CompressOptions;
 
-export enum class OodleCompressorType : uint32_t {
-	LZH = 0,
-	LZHLW = 1,
-	LZNIB = 2,
-	None = 3,
-	LZB16 = 4,
-	LZBLW = 5,
-	LZA = 6,
-	LZNA = 7,
-	Kraken = 8,
-	Mermaid = 9,
-	BitKnit = 10,
-	Selkie = 11,
-	Hydra = 12,
-	Leviathan = 13
-};
-
 export enum class OodleCompressionLevel : uint32_t {
 	None = 0,
 	SuperFast = 1,
@@ -72,6 +55,33 @@ export enum class OodleCompressionLevel : uint32_t {
 	Optimal4 = 8,
 	Optimal5 = 9
 };
+
+export typedef enum OodleLZ_Compressor
+{
+	OodleLZ_Compressor_Invalid = -1,
+	OodleLZ_Compressor_None = 3,  // None = memcpy, pass through uncompressed bytes
+
+	// NEW COMPRESSORS :
+	OodleLZ_Compressor_Kraken = 8,    // Fast decompression and high compression ratios, amazing!
+	OodleLZ_Compressor_Leviathan = 13,// Leviathan = Kraken's big brother with higher compression, slightly slower decompression.
+	OodleLZ_Compressor_Mermaid = 9,   // Mermaid is between Kraken & Selkie - crazy fast, still decent compression.
+	OodleLZ_Compressor_Selkie = 11,   // Selkie is a super-fast relative of Mermaid.  For maximum decode speed.
+	OodleLZ_Compressor_Hydra = 12,    // Hydra, the many-headed beast = Leviathan, Kraken, Mermaid, or Selkie (see $OodleLZ_About_Hydra)
+
+#ifdef OODLE_ALLOW_DEPRECATED_COMPRESSORS
+	OodleLZ_Compressor_BitKnit = 10, // no longer supported as of Oodle 2.9.0
+	OodleLZ_Compressor_LZB16 = 4, // DEPRECATED but still supported
+	OodleLZ_Compressor_LZNA = 7,  // no longer supported as of Oodle 2.9.0
+	OodleLZ_Compressor_LZH = 0,   // no longer supported as of Oodle 2.9.0
+	OodleLZ_Compressor_LZHLW = 1, // no longer supported as of Oodle 2.9.0
+	OodleLZ_Compressor_LZNIB = 2, // no longer supported as of Oodle 2.9.0
+	OodleLZ_Compressor_LZBLW = 5, // no longer supported as of Oodle 2.9.0
+	OodleLZ_Compressor_LZA = 6,   // no longer supported as of Oodle 2.9.0
+#endif
+
+	OodleLZ_Compressor_Count = 14,
+	OodleLZ_Compressor_Force32 = 0x40000000
+} OodleLZ_Compressor;
 
 export typedef intptr_t(*OodleDecompressionFunc)(
 	const void* compressedBuffer,
@@ -90,24 +100,29 @@ export typedef intptr_t(*OodleDecompressionFunc)(
 	uint32_t threadPhase);
 
 export typedef OodleLZ_CompressOptions*(*CompressOptions_GetDefaultFunc)(
-	OodleCompressorType compressor,
+	OodleLZ_Compressor compressor,
 	OodleCompressionLevel lzLevel);
 
-export typedef intptr_t(*OodleCompressionFunc)(
-	OodleCompressorType compressor,
-	void* rawBuffer,
+export typedef intptr_t(*OodleLZ_GetCompressedBufferSizeNeededFunc)(
+	OodleLZ_Compressor compressor, 
+	intptr_t rawSize);
+
+export typedef intptr_t(*OodleLZ_CompressFunc)(
+	OodleLZ_Compressor compressor,
+	const void* rawBuffer,
 	intptr_t rawLength,
 	void* compressedBuffer,
 	OodleCompressionLevel level,
 	OodleLZ_CompressOptions* pOptions,
-	void* dictionaryBase,
-	void* lrm,
+	const void* dictionaryBase,
+	const void* lrm,
 	void* scratchMemory,
 	intptr_t scratchSize);
 
 export class Oodle {
 	static inline CompressOptions_GetDefaultFunc OodleLZ_CompressOptions_GetDefault;
-	static inline OodleCompressionFunc OodleLZ_Compress;
+	static inline OodleLZ_GetCompressedBufferSizeNeededFunc OodleLZ_GetCompressedBufferSizeNeeded;
+	static inline OodleLZ_CompressFunc OodleLZ_Compress;
 	static inline OodleDecompressionFunc OodleLZ_Decompress;
 public:
 	static void LoadDLL(const char* DllPath);

@@ -330,16 +330,14 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 				? toc.Header.CompressionBlockSize
 				: bufferToWrite.size() - i * toc.Header.CompressionBlockSize;
 
-			uint8_t* blockBuffer = new uint8_t[blockBufferLen];
-			memcpy(blockBuffer, bufferToWrite.data() + (i * toc.Header.CompressionBlockSize), blockBufferLen);
+			std::vector<uint8_t> blockBuffer(bufferToWrite.data() + (i * toc.Header.CompressionBlockSize), bufferToWrite.data() + (i * toc.Header.CompressionBlockSize) + blockBufferLen);
 
 			uint32_t MaxCompressionSize = Oodle::GetMaximumCompressedSize(blockBufferLen);
 			int32_t CompressedSize = 0;
-			uint8_t* compressedBlockBufferWithLargeLen = new uint8_t[MaxCompressionSize];
-			//Oodle::Compress(compressedBlockBufferWithLargeLen, CompressedSize, blockBuffer, blockBufferLen);
+			std::vector<uint8_t> CompressedBlockBuffer(MaxCompressionSize);
+			Oodle::Compress(CompressedBlockBuffer.data(), CompressedSize, blockBuffer.data(), blockBufferLen);
 
-			std::vector<uint8_t> CompressedBlockBuffer(CompressedSize);
-			memcpy(CompressedBlockBuffer.data(), compressedBlockBufferWithLargeLen, CompressedSize);
+			CompressedBlockBuffer.resize(CompressedSize);
 
 			int64_t Offset = Ar.Tell();
 
@@ -377,9 +375,6 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 
 			uint64_t Padding = 0;
 			Ar.WriteBuffer(&Padding, sizeof(uint64_t));
-
-			delete[] compressedBlockBufferWithLargeLen;
-			delete[] blockBuffer;
 		}
 
 		Ar.Close();
