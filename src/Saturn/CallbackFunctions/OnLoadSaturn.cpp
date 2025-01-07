@@ -63,6 +63,7 @@ JSValueRef FOnLoadSaturn::OnLoadSaturn(JSContextRef ctx, JSObjectRef function, J
 
 	rapidjson::Document doc;
 	doc.Parse(std::get<std::string>(depContent).c_str());
+	FConfig::Load();
 
 	for (rapidjson::Value& iteration : doc.GetArray()) {
 		std::string name = iteration["name"].GetString();
@@ -71,6 +72,7 @@ JSValueRef FOnLoadSaturn::OnLoadSaturn(JSContextRef ctx, JSObjectRef function, J
 
 		if (!WindowsFunctionLibrary::FileExists(externalsPath + name) || FConfig::Dependencies[name] != version) {
 			LOG_INFO("Downloading dependency '{0}'v{1} from '{2}'", name, version, link);
+
 			WindowsFunctionLibrary::DownloadFile(externalsPath + name, link);
 			FConfig::Dependencies[name] = version;
 			FConfig::Save();

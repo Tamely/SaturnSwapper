@@ -572,6 +572,7 @@ void WindowsFunctionLibrary::DownloadFile(const std::string& directory, const st
 
 			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteFileFunction);
 			curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+			curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
 			CURLcode res = curl_easy_perform(curl);
 
