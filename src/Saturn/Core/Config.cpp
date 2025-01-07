@@ -61,7 +61,6 @@ void FConfig::Load() {
 		FConfig::Dependencies[key] = val;
 	}
 }
-}
 
 void FConfig::Save() {
 	rapidjson::Document doc;
