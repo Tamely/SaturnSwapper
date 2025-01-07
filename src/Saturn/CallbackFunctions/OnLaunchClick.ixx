@@ -1,31 +1,24 @@
 export module Saturn.CallbackFunctions.OnLaunchClick;
 
-import Saturn.Items.ItemModel;
-import Saturn.Generators.SkinGenerator;
+import Saturn.WindowsFunctionLibrary;
 
 import <AppCore/AppCore.h>;
 import <string>;
 
+#include "Saturn/Log.h"
+
 export class FOnLaunchClick {
 public:
 	static JSValueRef OnLaunchClick(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception) {
-		//FortniteFunctionLibrary::LaunchFortnite();
+		std::wstring LauncherPathW = WindowsFunctionLibrary::GetSaturnLocalPath() + L"\\Externals\\Saturn.Launcher.exe";
+		std::string LauncherPath = std::string(LauncherPathW.begin(), LauncherPathW.end());
 
-		JSStringRef script = JSStringCreateWithUTF8CString("saturn.modalManager.hideModal('launch')");
-		JSEvaluateScript(ctx, script, NULL, NULL, NULL, nullptr);
-		JSStringRelease(script);
-
-		script = JSStringCreateWithUTF8CString("saturn.modalManager.showModal('item')");
-		JSEvaluateScript(ctx, script, NULL, NULL, NULL, nullptr);
-		JSStringRelease(script);
-
-		script = JSStringCreateWithUTF8CString("saturn.itemManager.clearItems()");
-		JSEvaluateScript(ctx, script, NULL, NULL, NULL, nullptr);
-		JSStringRelease(script);
-
-		script = JSStringCreateWithUTF8CString("OnGenerateSkins()");
-		JSEvaluateScript(ctx, script, NULL, NULL, NULL, nullptr);
-		JSStringRelease(script);
+		if (WindowsFunctionLibrary::FileExists(LauncherPath)) {
+			WindowsFunctionLibrary::LaunchExe(LauncherPath);
+		}
+		else {
+			LOG_ERROR("Failed to launch Fortnite. The launcher does not exist!");
+		}
 
 		return JSValueMakeNull(ctx);
 	}

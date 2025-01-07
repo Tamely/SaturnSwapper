@@ -724,3 +724,71 @@ void WindowsFunctionLibrary::DeleteFilePath(const std::string& Path) {
 	}
 #endif
 }
+
+void WindowsFunctionLibrary::LaunchExe(const std::string& ExePath) {
+	LOG_INFO("Attempting to launch executable: '{0}'", ExePath);
+
+#if defined(_WIN32) || defined(_WIN64)
+	STARTUPINFOA si;
+	PROCESS_INFORMATION pi;
+
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
+
+	// Create a copy of the path string since CreateProcessA can modify it
+	std::vector<char> cmdLine(ExePath.length() + 1);
+	strcpy_s(cmdLine.data(), cmdLine.size(), ExePath.c_str());
+
+	if (!CreateProcessA(
+		NULL,               // No module name (use command line)
+		cmdLine.data(),     // Command line
+		NULL,               // Process handle not inheritable
+		NULL,              // Thread handle not inheritable
+		FALSE,             // Set handle inheritance to FALSE
+		0,                // No creation flags
+		NULL,            // Use parent's environment block
+		NULL,           // Use parent's starting directory 
+		&si,           // Pointer to STARTUPINFO structure
+		&pi           // Pointer to PROCESS_INFORMATION structure
+	)) {
+		DWORD error = GetLastError();
+		char errorMsg[256];
+		FormatMessageA(
+			FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL,
+			error,
+			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			errorMsg,
+			sizeof(errorMsg),
+			NULL
+		);
+		LOG_ERROR("Failed to launch executable '{0}': {1} (Error code: {2})",
+			ExePath, errorMsg, error);
+		return;
+	}
+
+	// Close process and thread handles
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+	LOG_INFO("Successfully launched executable: '{0}'", ExePath);
+
+#else
+	pid_t pid = fork();
+
+	if (pid == -1) {
+		LOG_ERROR("Failed to fork process for '{0}': {1}", ExePath, strerror(errno));
+		return;
+	}
+
+	if (pid == 0) {
+		// Child process
+		execl(ExePath.c_str(), ExePath.c_str(), (char*)NULL);
+		// If execl returns, there was an error
+		LOG_ERROR("Failed to execute '{0}': {1}", ExePath, strerror(errno));
+		_exit(1);
+	}
+
+	LOG_INFO("Successfully launched executable: '{0}' with PID {1}", ExePath, pid);
+#endif
+}

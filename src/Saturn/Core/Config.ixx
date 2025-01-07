@@ -12,6 +12,8 @@ export struct FConfig {
 	
 	static bool bHasSwappedSkin;
 
+	static std::unordered_map<std::string, std::string> Dependencies;
+
 	static void Load();
 	static void Save();
 

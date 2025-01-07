@@ -18,6 +18,8 @@ std::string FConfig::RuntimeKey = "";
 
 bool FConfig::bHasSwappedSkin = false;
 
+std::unordered_map<std::string, std::string> FConfig::Dependencies = {};
+
 std::wstring localPathW = WindowsFunctionLibrary::GetSaturnLocalPath();
 std::string localPath = std::string(localPathW.begin(), localPathW.end());
 
@@ -39,10 +41,26 @@ void FConfig::Load() {
 	rapidjson::Document doc;
 	doc.Parse(content.c_str());
 
+	// This prevents it from erroring with the old config
+	if (doc["bHasSwappedSkin"].IsNull()) {
+		doc.Clear();
+		remove(std::string(localPath + "\\Config.json").c_str());
+		Load();
+		return;
+	}
+
 	bLoaded = true;
 
 	FConfig::Key = doc["Key"].GetString();
 	FConfig::bHasSwappedSkin = doc["bHasSwappedSkin"].GetBool();
+
+	rapidjson::Value& changes = doc["Dependencies"];
+	for (rapidjson::Value::ConstMemberIterator itr = changes.MemberBegin(); itr != changes.MemberEnd(); ++itr) {
+		std::string key = itr->name.GetString();
+		std::string val = itr->value.GetString();
+		FConfig::Dependencies[key] = val;
+	}
+}
 }
 
 void FConfig::Save() {
@@ -53,6 +71,14 @@ void FConfig::Save() {
 
 	doc.AddMember("Key", rapidjson::Value(FConfig::Key.c_str(), allocator).Move(), allocator);
 	doc.AddMember("bHasSwappedSkin", FConfig::bHasSwappedSkin, allocator);
+
+	rapidjson::Value changes(rapidjson::kObjectType);
+
+	for (const auto& [k, v] : FConfig::Dependencies) {
+		changes.AddMember(rapidjson::Value(k.c_str(), allocator).Move(), rapidjson::Value(v.c_str(), allocator).Move(), allocator);
+	}
+
+	doc.AddMember("Dependencies", changes, allocator);
 
 	rapidjson::StringBuffer buffer;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);

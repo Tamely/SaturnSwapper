@@ -31,6 +31,7 @@ import <filesystem>;
 
 import Saturn.Structs.Guid;
 import Saturn.Files.FileProvider;
+import Saturn.Config;
 
 JSValueRef FOnLoadSaturn::OnLoadSaturn(JSContextRef ctx, JSObjectRef function, JSObjectRef thisObject, size_t argumentCount, const JSValueRef arguments[], JSValueRef* exception) {
 	FRichPresence::Initialize();
@@ -52,7 +53,6 @@ JSValueRef FOnLoadSaturn::OnLoadSaturn(JSContextRef ctx, JSObjectRef function, J
 		return JSValueMakeBoolean(ctx, false);
 	}
 
-	/*
 	std::tuple<long, std::string> depContent = WindowsFunctionLibrary::GetRequestSaturn(_("https://tamelyapi.azurewebsites.net/api/v1/Saturn/Dependencies"));
 	LOG_INFO("Got Dependency endpoint with status {0}", std::get<long>(depContent));
 
@@ -67,16 +67,18 @@ JSValueRef FOnLoadSaturn::OnLoadSaturn(JSContextRef ctx, JSObjectRef function, J
 	for (rapidjson::Value& iteration : doc.GetArray()) {
 		std::string name = iteration["name"].GetString();
 		std::string link = iteration["link"].GetString();
+		std::string version = iteration["version"].GetString();
 
-		if (!WindowsFunctionLibrary::FileExists(externalsPath + name)) {
-			LOG_INFO("Downloading dependency '{0}' from '{1}'", name, link);
+		if (!WindowsFunctionLibrary::FileExists(externalsPath + name) || FConfig::Dependencies[name] != version) {
+			LOG_INFO("Downloading dependency '{0}'v{1} from '{2}'", name, version, link);
 			WindowsFunctionLibrary::DownloadFile(externalsPath + name, link);
+			FConfig::Dependencies[name] = version;
+			FConfig::Save();
 		}
-	}*/
+	}
 
 	LOG_INFO("Loading Oodle dll");
-	//std::wstring oodlePathW = WindowsFunctionLibrary::GetSaturnLocalPath() + L"\\Externals\\oo2core_9_win64.dll";
-	std::wstring oodlePathW = L"oo2core_9_win64.dll";
+	std::wstring oodlePathW = WindowsFunctionLibrary::GetSaturnLocalPath() + L"\\Externals\\oo2core_9_win64.dll";
 	std::string oodlePath = std::string(oodlePathW.begin(), oodlePathW.end());
 	Oodle::LoadDLL(oodlePath.c_str());
 	LOG_INFO("Loaded Oodle dll");
