@@ -300,6 +300,7 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 
 		TIoStatusOr<FIoStoreTocChunkInfo> chunkStatus = reader->GetChunkInfo(TocEntryIndex);
 		if (!chunkStatus.IsOk()) {
+			MessageBoxA(nullptr, "Failed to load DefaultGameDataCosmetics. Please verify your game from the Epic Games Launcher!", "Verify Your Game", MB_OK);
 			LOG_ERROR("Failed to load DefaultGameDataCosmetics");
 			return false;
 		}
@@ -410,6 +411,7 @@ bool FortniteFunctionLibrary::PatchFortnite(const FLoadout& Loadout) {
 		TocEntryIndex = FContext::Provider->GetTocEntryIndexByPathAndExtension("/BRCosmetics/Athena/Heroes/Meshes/Bodies/CP_Athena_Body_F_Prime.uasset");
 		chunkStatus = reader->GetChunkInfo(TocEntryIndex);
 		if (!chunkStatus.IsOk()) {
+			MessageBoxA(nullptr, "Failed to load CP_Athena_Body_F_Prime. Please verify your game from the Epic Games Launcher!", "Verify Your Game", MB_OK);
 			LOG_ERROR("Failed to load CP_Athena_Body_F_Prime");
 			return false;
 		}
