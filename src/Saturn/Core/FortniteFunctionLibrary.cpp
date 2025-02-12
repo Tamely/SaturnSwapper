@@ -91,6 +91,57 @@ std::string FortniteFunctionLibrary::GetFortniteAESKey() {
 	}
 }
 
+std::vector<std::tuple<std::string, std::string>>& FortniteFunctionLibrary::GetFortniteDynamicAESKeys() {
+	static std::tuple<int, std::string> stringData = WindowsFunctionLibrary::GetRequest("https://fortnite-api.com/v2/aes");
+	static std::vector<std::tuple<std::string, std::string>> keysAndGuids;
+
+	keysAndGuids.clear();
+
+	if (std::get<0>(stringData) != 200) {
+		keysAndGuids.emplace_back("ERROR", "ERROR");
+        return keysAndGuids;
+	}
+
+	rapidjson::Document json;
+	json.Parse(std::get<1>(stringData).c_str());
+
+	if (json.HasParseError()) {
+		keysAndGuids.emplace_back("ERROR", "ERROR");
+        return keysAndGuids;
+	}
+
+	try {
+		const rapidjson::Value& data = json["data"];
+		if (!data.IsObject()) {
+			keysAndGuids.emplace_back("ERROR", "ERROR");
+        	return keysAndGuids;
+		}
+
+		const rapidjson::Value& dynamicKeys = data["dynamicKeys"];
+		if (!dynamicKeys.IsArray()) {
+			keysAndGuids.emplace_back("ERROR", "ERROR");
+        	return keysAndGuids;
+		}
+		
+        for (const auto& keyEntry : dynamicKeys.GetArray()) {
+            if (keyEntry.IsObject() && keyEntry.HasMember("key") && keyEntry["key"].IsString() && keyEntry.HasMember("pakGuid") && keyEntry["pakGuid"].IsString()) {
+                keysAndGuids.emplace_back(keyEntry["key"].GetString(), keyEntry["pakGuid"].GetString());
+            }
+        }
+
+        if (keysAndGuids.empty()) {
+            keysAndGuids.emplace_back("ERROR", "ERROR");
+        	return keysAndGuids;
+        }
+
+		return keysAndGuids;
+	}
+	catch (std::exception e) {
+		keysAndGuids.emplace_back("ERROR", "ERROR");
+        return keysAndGuids;
+	}
+}
+
 std::tuple<std::string, std::string> FortniteFunctionLibrary::GetFortniteMappingsURL()
 {
 	static std::tuple<int, std::string> stringData = WindowsFunctionLibrary::GetRequest("https://fortnitecentral.genxgames.gg/api/v1/mappings");

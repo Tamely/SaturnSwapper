@@ -127,6 +127,16 @@ JSValueRef FOnLoadSaturn::OnLoadSaturn(JSContextRef ctx, JSObjectRef function, J
 	LOG_INFO("Created provider");
 	FContext::Provider->SubmitKey(defaultGUID, defaultAES);
 	LOG_INFO("Submited default key");
+	LOG_INFO("Fetching dynamic keys");
+	const auto& keysAndGuids = FortniteFunctionLibrary::GetFortniteDynamicAESKeys();
+	for (const auto& [key, guid] : keysAndGuids) {
+		if (key == "ERROR" || guid == "ERROR") continue;
+		FGuid dynamicGUID(guid.c_str());
+		FAESKey dynamicAES(key.c_str());
+		FContext::Provider->SubmitKey(dynamicGUID, dynamicAES);
+		LOG_INFO("Submitted Key: '{0}' with GUID: '{1}'", key, guid);
+	}
+	LOG_INFO("Finished submitting keys.");
 	FContext::Provider->MountAsync();
 	LOG_INFO("Mounted");
 
